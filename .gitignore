@@ -1,0 +1,8 @@
+bin
+target
+.metadata
+.gitignore~
+.project
+.classpath
+.settings
+.git/
