@@ -44,5 +44,12 @@
 			</executions>
 		</plugin>		
 	</plugins>	
-  </build>
+  </build>  
+  <dependencies>
+ 	<dependency>
+   		<groupId>org.controlsfx</groupId>
+   		<artifactId>controlsfx</artifactId>
+   		<version>8.20.8</version>
+	</dependency>
+  </dependencies>
 </project>

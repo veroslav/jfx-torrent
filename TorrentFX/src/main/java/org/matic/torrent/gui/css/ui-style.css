@@ -1,0 +1,26 @@
+.empty-torrent-list-text {
+	-fx-fill: #188a1d;
+	-fx-font-size: 13;
+	-fx-font-smoothing-type: lcd;
+	-fx-font-weight: bold;
+}
+
+.filter-list-view {
+	-fx-control-inner-background: #343f44; 
+	-fx-background-color: #343f44;	
+}
+
+.filter-list-text-cell {
+	-fx-fill: #eaeaea;
+	-fx-font-size: 12;
+	-fx-font-smoothing-type: lcd;
+	-fx-label-padding: 5 15 5 0
+}
+
+.split-pane > .split-pane-divider {  
+    -fx-padding: 0 0.15em 0 0.15em;  
+}
+
+.tree-cell:selected {
+    -fx-background-color: #76b83e;       
+}
