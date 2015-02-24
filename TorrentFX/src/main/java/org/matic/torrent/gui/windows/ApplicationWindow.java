@@ -18,61 +18,72 @@
 *
 */
 
-package org.matic.torrent.gui;
+package org.matic.torrent.gui.windows;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.matic.torrent.gui.action.WindowActionHandler;
-import org.matic.torrent.gui.model.TorrentStatus;
-
-import javafx.application.Application;
 import javafx.beans.binding.Bindings;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.Separator;
+import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TableView;
+import javafx.scene.control.Tooltip;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.KeyCombination;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
-public final class ApplicationWindow extends Application {
+import org.matic.torrent.gui.action.WindowActionHandler;
+import org.matic.torrent.gui.model.TorrentStatus;
+
+public final class ApplicationWindow {
+	
+	private static final String ADD_TORRENT_COMMAND = "add.torrent";
+	private static final String ADD_TORRENT_LINK_COMMAND = "add.torrent.link";
+	private static final String CREATE_TORRENT_COMMAND = "create.torrent"; 
+	private static final String DELETE_TORRENT_COMMAND = "delete.torrent";
+	private static final String DOWNLOAD_TORRENT_COMMAND = "download.torrent";
+	private static final String STOP_TORRENT_COMMAND = "stop.torrent"; 
+	private static final String MOVE_TORRENT_UP_COMMAND = "move.torrent.up"; 
+	private static final String MOVE_TORRENT_DOWN_COMMAND = "move.torrent.down";
+	private static final String LOCK_COMMAND = "lock.app";
 	
 	private final WindowActionHandler windowActionHandler = new WindowActionHandler();
+	
+	//Toolbar buttons, stored and identified by their command name string
+	private final Map<String, Button> toolbarButtons = new HashMap<>();
 	
 	//View for filtering torrents according to their status
 	private final TreeView<Node> filterTreeView = new TreeView<>(); 
 	
-	private Stage stage;
+	private final Stage stage;
 
-	/**
-	 * Main application execution entry point. Used when the application packaging
-	 * is performed by other means than by JavaFX
-	 * 
-	 * @param args Application parameters
-	 */
-	public static void main(final String[] args) {
-		launch(args);
-	}
-
-	@Override
-	public final void start(final Stage stage) throws Exception {
+	public ApplicationWindow(final Stage stage) {
 		this.stage = stage;
 		
 		final BorderPane mainPane = new BorderPane();		
@@ -80,7 +91,7 @@ public final class ApplicationWindow extends Application {
 		mainPane.setCenter(buildCenterPane());
 		
 		final Scene scene = new Scene(mainPane, 900, 550);
-		scene.getStylesheets().add(getClass().getResource("css/ui-style.css").toExternalForm());
+		scene.getStylesheets().add(getClass().getResource("../css/ui-style.css").toExternalForm());
 		stage.setScene(scene);
 		
 		initComponents();
@@ -104,7 +115,7 @@ public final class ApplicationWindow extends Application {
 		return treeViewStack;
 	}
 	
-	private TreeItem<Node> buildFilterTreeViewItems() {			
+	private TreeItem<Node> buildFilterTreeViewItems() {		
 		final List<TreeItem<Node>> torrentNodeElements = Arrays.asList("Downloading (0)",
 				"Seeding (0)", "Completed (0)", "Active (0)", "Inactive (0)").stream().map(labelName -> {
 			final Label label = new Label(labelName);
@@ -164,7 +175,7 @@ public final class ApplicationWindow extends Application {
 		final SplitPane verticalSplitPane = new SplitPane();
         verticalSplitPane.setOrientation(Orientation.VERTICAL);
         verticalSplitPane.setDividerPosition(0, 0.6f);      
-        verticalSplitPane.getItems().addAll(buildTorrentListTable(), buildTorrentDetailsTab());
+        verticalSplitPane.getItems().addAll(buildToolbarAndTorrentListPane(), buildTorrentDetailsPane());
         
         final SplitPane horizontalSplitPane = new SplitPane();        
         horizontalSplitPane.setOrientation(Orientation.HORIZONTAL);
@@ -172,6 +183,82 @@ public final class ApplicationWindow extends Application {
         horizontalSplitPane.getItems().addAll(initFilterTreeView(), verticalSplitPane);
         
         return horizontalSplitPane;
+	}
+	
+	private Pane buildToolbarAndTorrentListPane() {				
+		final BorderPane centerPane = new BorderPane();
+		centerPane.setTop(buildToolbarPane());
+		centerPane.setCenter(buildTorrentListTable());
+		
+		return centerPane;
+	}
+	
+	private Pane buildToolbarPane() {				
+		final String[] buttonUrls = new String[]{"/images/appbar.add.png",
+				"/images/appbar.link.png", null, "/images/appbar.page.new.png", null, 
+				"/images/appbar.delete.png", null, "/images/appbar.download.png",
+				"/images/appbar.control.stop.png", null, "/images/appbar.chevron.up.png",
+				"/images/appbar.chevron.down.png", null, "/images/appbar.unlock.keyhole.png", null};
+		final String[] buttonTooltips = {"Add Torrent", "Add Torrent from URL", "Create New Torrent", 
+				"Remove", "Start Torrent", "Stop Torrent", 
+				"Move Up Queue", "Move Down Queue", 
+				"Unlock Bundle"};
+		final String[] buttonCommands = {ADD_TORRENT_COMMAND, ADD_TORRENT_LINK_COMMAND,
+				CREATE_TORRENT_COMMAND, DELETE_TORRENT_COMMAND, DOWNLOAD_TORRENT_COMMAND,
+				STOP_TORRENT_COMMAND, MOVE_TORRENT_UP_COMMAND, MOVE_TORRENT_DOWN_COMMAND,
+				LOCK_COMMAND};
+		final boolean[] buttonState = {true, true, true, false, false, false, false,
+				false, false};
+		final List<Node> leftToolbarButtons = new ArrayList<>();
+			
+		for(int i = 0, j = 0; i < buttonUrls.length; ++i) {
+			final String buttonUrl = buttonUrls[i];
+			if(buttonUrl == null) {
+				final Separator separator = new Separator(Orientation.VERTICAL);
+				separator.getStyleClass().add("toolbar-separator");
+				separator.setDisable(true);
+				leftToolbarButtons.add(separator);
+				continue;
+			}
+			final String buttonCommand = buttonCommands[j];
+			final Button toolbarButton = new Button(null, new ImageView(new Image(
+					getClass().getResourceAsStream(buttonUrl),
+					26, 26, true, true)));
+			toolbarButton.getStyleClass().add("toolbar-button");
+			toolbarButton.setTooltip(new Tooltip(buttonTooltips[j]));
+			toolbarButton.setDisable(!buttonState[j]);
+			toolbarButton.setId(buttonCommand);
+			leftToolbarButtons.add(toolbarButton);
+			toolbarButtons.put(buttonCommand, toolbarButton);
+			++j;
+		}
+		
+		final List<Node> rightToolbarButtons = Arrays.stream(new String[]{null, "/images/appbar.monitor.png",
+				"/images/appbar.settings.png"}).map(url -> {
+			if(url == null) {
+				final Separator separator = new Separator(Orientation.VERTICAL);
+				separator.getStyleClass().add("toolbar-separator");
+				separator.setDisable(true);
+				return separator;
+			}
+			final Button toolbarButton = new Button(null, new ImageView(new Image(
+					getClass().getResourceAsStream(url),
+					26, 26, true, true)));
+			toolbarButton.getStyleClass().add("toolbar-button");
+			return toolbarButton;
+		}).collect(Collectors.toList());;
+		
+		final HBox leftToolbarPane = new HBox();
+		leftToolbarPane.getChildren().addAll(leftToolbarButtons);
+		
+		final HBox rightToolbarPane = new HBox();
+		rightToolbarPane.getChildren().addAll(rightToolbarButtons);
+		
+		final BorderPane toolbarPane = new BorderPane();
+		toolbarPane.setLeft(leftToolbarPane);
+		toolbarPane.setRight(rightToolbarPane);
+	
+		return toolbarPane;
 	}
 	
 	private Pane buildTorrentListTable() {		
@@ -193,7 +280,7 @@ public final class ApplicationWindow extends Application {
 		return torrentListPane;
 	}
 	
-	private Pane buildTorrentDetailsTab() {
+	private Pane buildTorrentDetailsPane() {
 		final TabPane detailsTab = new TabPane();
 		detailsTab.getTabs().addAll(buildTorrentDetailsTabs());
 		
@@ -203,13 +290,21 @@ public final class ApplicationWindow extends Application {
 	}
 	
 	private Collection<Tab> buildTorrentDetailsTabs() {
-        final List<String> tabNames = Arrays.asList("Files", "Info", "Peers");
-      
-        return tabNames.stream().map(tabName -> {
-        	final Tab tab = new Tab(tabName);
+		final String[] tabNames = {"Files", "Info", "Peers", "Trackers", "Speed"};        
+        final String[] imagePaths = {"/images/appbar.folder.open.png",
+        		"/images/appbar.information.circle.png", "/images/appbar.group.png",
+        		"/images/appbar.location.circle.png", "/images/appbar.graph.line.png"};
+        final List<Tab> tabList = new ArrayList<>();
+        
+        for(int i = 0; i < tabNames.length; ++i) {
+        	final Tab tab = new Tab(tabNames[i]);
+        	tab.setGraphic(new ImageView(new Image(
+					getClass().getResourceAsStream(imagePaths[i]), 20, 20, true, true)));
         	tab.setClosable(false);
-        	return tab;
-        }).collect(Collectors.toList());
+        	tabList.add(tab);
+        }
+        
+        return tabList;
     }
 	
 	private MenuBar buildMenuBar() {
@@ -224,12 +319,37 @@ public final class ApplicationWindow extends Application {
 		final Menu fileMenu = new Menu("_File");
 		fileMenu.setMnemonicParsing(true);
 		
+		final MenuItem addTorrentMenuItem = new MenuItem("Add Torrent...");
+		addTorrentMenuItem.setAccelerator(KeyCombination.keyCombination("Ctrl+O"));
+		
+		final MenuItem addTorrentAndChooseDirMenuItem = new MenuItem("Add Torrent (choose save dir)...");
+		addTorrentAndChooseDirMenuItem.setAccelerator(KeyCombination.keyCombination("Ctrl+D"));
+		
+		final MenuItem addTorrentFromUrlMenuItem = new MenuItem("Add Torrent from URL...");
+		addTorrentFromUrlMenuItem.setAccelerator(KeyCombination.keyCombination("Ctrl+U"));
+		
+		final MenuItem addRssFeedMenuItem = new MenuItem("Add RSS Feed...");
+		
+		final MenuItem createTorrentMenuItem = new MenuItem("Create New Torrent...");
+		createTorrentMenuItem.setAccelerator(KeyCombination.keyCombination("Ctrl+N"));
+		
+		final MenuItem exitMenuItem = new MenuItem("Exit");
+		
+		fileMenu.getItems().addAll(addTorrentMenuItem, addTorrentAndChooseDirMenuItem,
+				addTorrentFromUrlMenuItem, addRssFeedMenuItem, new SeparatorMenuItem(),
+				createTorrentMenuItem, new SeparatorMenuItem(), exitMenuItem);
+		
 		return fileMenu;
 	}
 	
 	private Menu buildOptionsMenu() {
 		final Menu optionsMenu = new Menu("_Options");
 		optionsMenu.setMnemonicParsing(true);
+		
+		final MenuItem optionsMenuItem = new MenuItem("Preferences...");
+		optionsMenuItem.setAccelerator(KeyCombination.keyCombination("Ctrl+P"));
+		
+		optionsMenu.getItems().addAll(optionsMenuItem);
 		
 		return optionsMenu;
 	}

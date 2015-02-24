@@ -6,7 +6,7 @@
   
   <properties>
   	<jar.final.name>jfx-torrent</jar.final.name>
-  	<main.class>org.matic.torrent.gui.ApplicationWindow</main.class>
+  	<main.class>org.matic.torrent.TorrentMain</main.class>
   </properties>
   
   <build>

@@ -17,10 +17,35 @@
 	-fx-label-padding: 5 15 5 0
 }
 
+.root {
+	-fx-faint-focus-color: transparent;
+	-fx-focus-color: transparent;
+}
+
 .split-pane > .split-pane-divider {  
     -fx-padding: 0 0.15em 0 0.15em;  
+}
+
+.toolbar-button {
+	-fx-background-insets: 0;
+}
+
+.toolbar-separator .line {
+	-fx-border-color: rgb(210, 210, 210);
+  	-fx-border-width: 1;
 }
 
 .tree-cell:selected {
     -fx-background-color: #76b83e;       
 }
+
+/*.tree-cell .tree-disclosure-node .arrow {
+    -fx-shape: null;
+    -fx-background-color: null;
+    -fx-background-image: url("../resources/images/appbar.section.expand.png");
+}
+.tree-cell:expanded .tree-disclosure-node .arrow {
+    -fx-shape: null;
+    -fx-background-color: null;
+    -fx-background-image: url("../resources/images/appbar.section.collapse.png");
+}*/
