@@ -1,2 +1,2 @@
 # jfx-torrent
-A BitTorrent client written in JavaFX
+An open source re-implementation of uTorrent BitTorrent client, written in JavaFX
