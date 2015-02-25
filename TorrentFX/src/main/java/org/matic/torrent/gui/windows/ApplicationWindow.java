@@ -45,6 +45,10 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.Tooltip;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
+import javafx.scene.effect.Blend;
+import javafx.scene.effect.BlendMode;
+import javafx.scene.effect.ColorAdjust;
+import javafx.scene.effect.ColorInput;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCombination;
@@ -53,6 +57,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
@@ -67,6 +72,9 @@ import org.matic.torrent.gui.model.TorrentStatus;
  *
  */
 public final class ApplicationWindow {
+	
+	private static final Color TAB_SELECTION_COLOR = Color.rgb(102, 162, 54);
+	private static final int TAB_ICON_SIZE = 22;
 	
 	private final WindowActionHandler windowActionHandler = new WindowActionHandler();
 	private final FileActionHandler fileActionHandler = new FileActionHandler();
@@ -274,7 +282,7 @@ public final class ApplicationWindow {
 	
 	private Pane buildTorrentDetailsPane() {
 		final TabPane detailsTab = new TabPane();
-		detailsTab.getTabs().addAll(buildTorrentDetailsTabs());
+		detailsTab.getTabs().addAll(buildTorrentDetailsTabs());		
 		
 		final StackPane detailsPane = new StackPane();
 		detailsPane.getChildren().add(detailsTab);
@@ -286,18 +294,45 @@ public final class ApplicationWindow {
         final String[] imagePaths = {"/images/appbar.folder.open.png",
         		"/images/appbar.information.circle.png", "/images/appbar.group.png",
         		"/images/appbar.location.circle.png", "/images/appbar.graph.line.png"};
-        final List<Tab> tabList = new ArrayList<>();
+        final List<Tab> tabList = new ArrayList<>(); 
         
-        for(int i = 0; i < tabNames.length; ++i) {
+        for(int i = 0; i < tabNames.length; ++i) {        	
         	final Tab tab = new Tab(tabNames[i]);
         	tab.setGraphic(new ImageView(new Image(
-					getClass().getResourceAsStream(imagePaths[i]), 20, 20, true, true)));
-        	tab.setClosable(false);
+					getClass().getResourceAsStream(imagePaths[i]), 
+					TAB_ICON_SIZE, TAB_ICON_SIZE, true, true)));
+        	tab.setClosable(false);        	
+        	tab.setOnSelectionChanged(event -> applyTabSelectionColor((Tab)event.getSource()));        		        	
         	tabList.add(tab);
         }
         
         return tabList;
     }
+	
+	//TODO: Generalize method (buttons as well): applyImageColorEffect(ImageView, boolean armed)
+	private void applyTabSelectionColor(final Tab tab) {
+		final ImageView imageView = (ImageView)tab.getGraphic();
+		if(tab.isSelected()) {
+			final Image image = imageView.getImage();
+			final ImageView monochromeImageView = new ImageView(image);
+			monochromeImageView.setClip(new ImageView(image));
+        	
+        	final ColorAdjust monochrome = new ColorAdjust();
+            monochrome.setSaturation(-1.0);
+            monochrome.setBrightness(0.75);
+            
+        	final Blend selectionColorBlend = new Blend(BlendMode.MULTIPLY,
+                    monochrome, new ColorInput(0, 0,
+                            monochromeImageView.getImage().getWidth(),
+                            monochromeImageView.getImage().getHeight(),
+                            TAB_SELECTION_COLOR));
+        	monochromeImageView.setEffect(selectionColorBlend);
+        	tab.setGraphic(monochromeImageView);
+		}
+		else {
+			imageView.setEffect(null);
+		}
+	}
 	
 	private MenuBar buildMenuBar() {
 		final MenuBar menuBar = new MenuBar();

@@ -61,8 +61,8 @@ public final class FileActionHandler {
 		fileChooser.setInitialDirectory(new File(System.getProperty("user.home")));
 		fileChooser.setTitle("Select a .torrent to open");
 		fileChooser.getExtensionFilters().addAll(
-                new FileChooser.ExtensionFilter("All Files", "*.*"),
-                new FileChooser.ExtensionFilter("Torrents", "*.torrent"));
+				new FileChooser.ExtensionFilter("Torrents", "*.torrent"),
+                new FileChooser.ExtensionFilter("All Files", "*.*")                );
 		
 		final File selectedFile = fileChooser.showOpenDialog(owner);
 		
