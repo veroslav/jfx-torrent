@@ -23,9 +23,7 @@ package org.matic.torrent.gui.windows;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import javafx.beans.binding.Bindings;
@@ -58,25 +56,20 @@ import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
+import org.matic.torrent.gui.action.FileActionHandler;
 import org.matic.torrent.gui.action.WindowActionHandler;
 import org.matic.torrent.gui.model.TorrentStatus;
 
+/**
+ * A main application window, showing all of the GUI components.
+ * 
+ * @author vedran
+ *
+ */
 public final class ApplicationWindow {
 	
-	private static final String ADD_TORRENT_COMMAND = "add.torrent";
-	private static final String ADD_TORRENT_LINK_COMMAND = "add.torrent.link";
-	private static final String CREATE_TORRENT_COMMAND = "create.torrent"; 
-	private static final String DELETE_TORRENT_COMMAND = "delete.torrent";
-	private static final String DOWNLOAD_TORRENT_COMMAND = "download.torrent";
-	private static final String STOP_TORRENT_COMMAND = "stop.torrent"; 
-	private static final String MOVE_TORRENT_UP_COMMAND = "move.torrent.up"; 
-	private static final String MOVE_TORRENT_DOWN_COMMAND = "move.torrent.down";
-	private static final String LOCK_COMMAND = "lock.app";
-	
 	private final WindowActionHandler windowActionHandler = new WindowActionHandler();
-	
-	//Toolbar buttons, stored and identified by their command name string
-	private final Map<String, Button> toolbarButtons = new HashMap<>();
+	private final FileActionHandler fileActionHandler = new FileActionHandler();
 	
 	//View for filtering torrents according to their status
 	private final TreeView<Node> filterTreeView = new TreeView<>(); 
@@ -177,10 +170,14 @@ public final class ApplicationWindow {
         verticalSplitPane.setDividerPosition(0, 0.6f);      
         verticalSplitPane.getItems().addAll(buildToolbarAndTorrentListPane(), buildTorrentDetailsPane());
         
+        final Pane filterTreeView = initFilterTreeView();
+        
         final SplitPane horizontalSplitPane = new SplitPane();        
         horizontalSplitPane.setOrientation(Orientation.HORIZONTAL);
         horizontalSplitPane.setDividerPosition(0, 0.20);
-        horizontalSplitPane.getItems().addAll(initFilterTreeView(), verticalSplitPane);
+        horizontalSplitPane.getItems().addAll(filterTreeView, verticalSplitPane);
+        
+        SplitPane.setResizableWithParent(filterTreeView, Boolean.FALSE);
         
         return horizontalSplitPane;
 	}
@@ -195,70 +192,65 @@ public final class ApplicationWindow {
 	
 	private Pane buildToolbarPane() {				
 		final String[] buttonUrls = new String[]{"/images/appbar.add.png",
-				"/images/appbar.link.png", null, "/images/appbar.page.new.png", null, 
-				"/images/appbar.delete.png", null, "/images/appbar.download.png",
-				"/images/appbar.control.stop.png", null, "/images/appbar.chevron.up.png",
-				"/images/appbar.chevron.down.png", null, "/images/appbar.unlock.keyhole.png", null};
+				"/images/appbar.link.png", "/images/appbar.page.new.png", 
+				"/images/appbar.delete.png", "/images/appbar.download.png",
+				"/images/appbar.control.stop.png", "/images/appbar.chevron.up.png",
+				"/images/appbar.chevron.down.png", "/images/appbar.unlock.keyhole.png",
+				"/images/appbar.monitor.png", "/images/appbar.settings.png"};
+		
 		final String[] buttonTooltips = {"Add Torrent", "Add Torrent from URL", "Create New Torrent", 
 				"Remove", "Start Torrent", "Stop Torrent", 
 				"Move Up Queue", "Move Down Queue", 
-				"Unlock Bundle"};
-		final String[] buttonCommands = {ADD_TORRENT_COMMAND, ADD_TORRENT_LINK_COMMAND,
-				CREATE_TORRENT_COMMAND, DELETE_TORRENT_COMMAND, DOWNLOAD_TORRENT_COMMAND,
-				STOP_TORRENT_COMMAND, MOVE_TORRENT_UP_COMMAND, MOVE_TORRENT_DOWN_COMMAND,
-				LOCK_COMMAND};
-		final boolean[] buttonState = {true, true, true, false, false, false, false,
-				false, false};
-		final List<Node> leftToolbarButtons = new ArrayList<>();
-			
-		for(int i = 0, j = 0; i < buttonUrls.length; ++i) {
-			final String buttonUrl = buttonUrls[i];
-			if(buttonUrl == null) {
-				final Separator separator = new Separator(Orientation.VERTICAL);
-				separator.getStyleClass().add("toolbar-separator");
-				separator.setDisable(true);
-				leftToolbarButtons.add(separator);
-				continue;
-			}
-			final String buttonCommand = buttonCommands[j];
-			final Button toolbarButton = new Button(null, new ImageView(new Image(
-					getClass().getResourceAsStream(buttonUrl),
-					26, 26, true, true)));
-			toolbarButton.getStyleClass().add("toolbar-button");
-			toolbarButton.setTooltip(new Tooltip(buttonTooltips[j]));
-			toolbarButton.setDisable(!buttonState[j]);
-			toolbarButton.setId(buttonCommand);
-			leftToolbarButtons.add(toolbarButton);
-			toolbarButtons.put(buttonCommand, toolbarButton);
-			++j;
+				"Unlock Bundle", "Remote", "Preferences"};
+		
+		final boolean[] buttonStates = {false, false, false, true, true, true, true, true, true, false, false};
+		
+		final Button[] toolbarButtons = new Button[buttonUrls.length];
+		for(int i = 0; i < toolbarButtons.length; ++i) {
+			toolbarButtons[i] = buildToolbarButton(buttonUrls[i], buttonTooltips[i], buttonStates[i]);
 		}
 		
-		final List<Node> rightToolbarButtons = Arrays.stream(new String[]{null, "/images/appbar.monitor.png",
-				"/images/appbar.settings.png"}).map(url -> {
-			if(url == null) {
-				final Separator separator = new Separator(Orientation.VERTICAL);
-				separator.getStyleClass().add("toolbar-separator");
-				separator.setDisable(true);
-				return separator;
-			}
-			final Button toolbarButton = new Button(null, new ImageView(new Image(
-					getClass().getResourceAsStream(url),
-					26, 26, true, true)));
-			toolbarButton.getStyleClass().add("toolbar-button");
-			return toolbarButton;
-		}).collect(Collectors.toList());;
+		toolbarButtons[0].setOnAction(event -> fileActionHandler.onFileOpen(stage));
+
+		final List<Node> leftToolbarNodes = Arrays.asList(toolbarButtons[0], toolbarButtons[1],
+				buildToolbarSeparator(), toolbarButtons[2], buildToolbarSeparator(), 
+				toolbarButtons[3], buildToolbarSeparator(), toolbarButtons[4], toolbarButtons[5],
+				buildToolbarSeparator(), toolbarButtons[6], toolbarButtons[7], buildToolbarSeparator(),
+				toolbarButtons[8], buildToolbarSeparator());
+
+		final List<Node> rightToolbarNodes = Arrays.asList(buildToolbarSeparator(), 
+				toolbarButtons[9], toolbarButtons[10]);
 		
 		final HBox leftToolbarPane = new HBox();
-		leftToolbarPane.getChildren().addAll(leftToolbarButtons);
+		leftToolbarPane.getChildren().addAll(leftToolbarNodes);
 		
 		final HBox rightToolbarPane = new HBox();
-		rightToolbarPane.getChildren().addAll(rightToolbarButtons);
+		rightToolbarPane.getChildren().addAll(rightToolbarNodes);
 		
 		final BorderPane toolbarPane = new BorderPane();
 		toolbarPane.setLeft(leftToolbarPane);
 		toolbarPane.setRight(rightToolbarPane);
 	
 		return toolbarPane;
+	}
+	
+	private Button buildToolbarButton(final String imagePath, final String tooltip, final boolean disabled) {
+		final int requestedHeight = 26;
+		final int requestedWidth = 26;		
+		final Button button = new Button(null, new ImageView(new Image(
+				getClass().getResourceAsStream(imagePath), requestedWidth, requestedHeight, true, true)));
+		button.getStyleClass().add("toolbar-button");
+		button.setTooltip(new Tooltip(tooltip));		
+		button.setDisable(disabled);
+		
+		return button;
+	}
+	
+	private Separator buildToolbarSeparator() {
+		final Separator separator = new Separator(Orientation.VERTICAL);
+		separator.getStyleClass().add("toolbar-separator");
+		separator.setDisable(true);
+		return separator;
 	}
 	
 	private Pane buildTorrentListTable() {		
@@ -320,9 +312,11 @@ public final class ApplicationWindow {
 		fileMenu.setMnemonicParsing(true);
 		
 		final MenuItem addTorrentMenuItem = new MenuItem("Add Torrent...");
+		addTorrentMenuItem.setOnAction(event -> fileActionHandler.onFileOpen(stage));
 		addTorrentMenuItem.setAccelerator(KeyCombination.keyCombination("Ctrl+O"));
 		
 		final MenuItem addTorrentAndChooseDirMenuItem = new MenuItem("Add Torrent (choose save dir)...");
+		addTorrentAndChooseDirMenuItem.setOnAction(event -> fileActionHandler.onFileOpenAndChooseSaveLocation(stage));
 		addTorrentAndChooseDirMenuItem.setAccelerator(KeyCombination.keyCombination("Ctrl+D"));
 		
 		final MenuItem addTorrentFromUrlMenuItem = new MenuItem("Add Torrent from URL...");
@@ -334,6 +328,7 @@ public final class ApplicationWindow {
 		createTorrentMenuItem.setAccelerator(KeyCombination.keyCombination("Ctrl+N"));
 		
 		final MenuItem exitMenuItem = new MenuItem("Exit");
+		exitMenuItem.setOnAction(event -> windowActionHandler.onWindowClose(event, stage));
 		
 		fileMenu.getItems().addAll(addTorrentMenuItem, addTorrentAndChooseDirMenuItem,
 				addTorrentFromUrlMenuItem, addRssFeedMenuItem, new SeparatorMenuItem(),

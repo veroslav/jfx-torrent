@@ -8,6 +8,7 @@
 .filter-list-view {
 	-fx-control-inner-background: #343f44; 
 	-fx-background-color: #343f44;	
+	-fx-min-width: 180;
 }
 
 .filter-list-text-cell {
