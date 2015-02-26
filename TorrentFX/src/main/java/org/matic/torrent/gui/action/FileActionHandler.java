@@ -38,9 +38,8 @@ public final class FileActionHandler {
 	public final void onFileOpen(final Window owner) {
 		final String torrentPath = getTorrentPath(owner);
 		if(torrentPath != null) {
-			final AddNewTorrentWindow addNewTorrentWindow = new AddNewTorrentWindow(owner, torrentPath);
+			final AddNewTorrentWindow addNewTorrentWindow = new AddNewTorrentWindow(owner, Paths.get(torrentPath));
 			final AddNewTorrentOptions addNewTorrentOptions = addNewTorrentWindow.showAndWait();
-			System.out.println(addNewTorrentOptions);
 		}
 	}
 	
