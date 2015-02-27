@@ -88,7 +88,7 @@ public final class AddNewTorrentWindow {
 		
 		dontShowAgainCheckbox = new CheckBox("Don't show this again");
 		addToTopQueueCheckbox = new CheckBox("Add to top of queue");
-		createSubFolderCheckbox = new CheckBox("Create Subfolder");
+		createSubFolderCheckbox = new CheckBox("Create subfolder");
 		startTorrentCheckbox = new CheckBox("Start torrent");
 		skipHashCheckbox = new CheckBox("Skip hash check");
 		

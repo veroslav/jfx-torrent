@@ -91,8 +91,8 @@ public final class ApplicationWindow {
 		mainPane.setTop(buildNorthPane());
 		mainPane.setCenter(buildCenterPane());
 		
-		final Scene scene = new Scene(mainPane, 900, 550);
-		scene.getStylesheets().add(getClass().getResource("../css/ui-style.css").toExternalForm());
+		final Scene scene = new Scene(mainPane, 900, 550);		
+		scene.getStylesheets().add("/ui-style.css");
 		stage.setScene(scene);
 		
 		initComponents();
@@ -108,10 +108,11 @@ public final class ApplicationWindow {
 	private Pane initFilterTreeView() {
 		filterTreeView.getStyleClass().add("filter-list-view");
 		filterTreeView.setRoot(buildFilterTreeViewItems());
-		filterTreeView.setShowRoot(false);		
+		filterTreeView.setShowRoot(false);
+		filterTreeView.getSelectionModel().select(0);
 		
 		final StackPane treeViewStack = new StackPane();
-		treeViewStack.getChildren().add(filterTreeView);
+		treeViewStack.getChildren().add(filterTreeView);		
 		
 		return treeViewStack;
 	}
@@ -120,20 +121,20 @@ public final class ApplicationWindow {
 		final List<TreeItem<Node>> torrentNodeElements = Arrays.asList("Downloading (0)",
 				"Seeding (0)", "Completed (0)", "Active (0)", "Inactive (0)").stream().map(labelName -> {
 			final Label label = new Label(labelName);
-			label.getStyleClass().add("filter-list-text-cell");
+			label.getStyleClass().add("filter-list-child-cell");
 			return new TreeItem<Node>(label);
 		}).collect(Collectors.toList());
 		
 		final List<TreeItem<Node>> labelsNodeElements = Arrays.asList("No Label (0)").stream().map(labelName -> {
 			final Label label = new Label(labelName);
-			label.getStyleClass().add("filter-list-text-cell");
+			label.getStyleClass().add("filter-list-child-cell");
 			return new TreeItem<Node>(label);
 		}).collect(Collectors.toList());
 		
 		final Image torrentsRootImage = new Image(getClass().getResourceAsStream("/images/appbar.arrow.down.up.png"),
 				25, 25, true, true);
 		final Label torrentsRootLabel = new Label("Torrents (0)");
-		torrentsRootLabel.getStyleClass().add("filter-list-text-cell");
+		torrentsRootLabel.getStyleClass().add("filter-list-root-cell");
 		torrentsRootLabel.setGraphic(new ImageView(torrentsRootImage));
 		final TreeItem<Node> torrentsRootNode = new TreeItem<>(torrentsRootLabel);
 		torrentsRootNode.setExpanded(true);
@@ -142,7 +143,7 @@ public final class ApplicationWindow {
 		final Image labelsRootImage = new Image(getClass().getResourceAsStream("/images/appbar.tag.label.png"),
 				25, 25, true, true);
 		final Label labelsRootLabel = new Label("Labels");
-		labelsRootLabel.getStyleClass().add("filter-list-text-cell");
+		labelsRootLabel.getStyleClass().add("filter-list-root-cell");
 		labelsRootLabel.setGraphic(new ImageView(labelsRootImage));
 		final TreeItem<Node> labelsRootNode = new TreeItem<>(labelsRootLabel);
 		labelsRootNode.setExpanded(true);
@@ -151,7 +152,7 @@ public final class ApplicationWindow {
 		final Image rssFeedsRootImage = new Image(getClass().getResourceAsStream("/images/appbar.rss.png"),
 				25, 25, true, true);
 		final Label rssFeedsRootLabel = new Label("Feeds (0)");
-		rssFeedsRootLabel.getStyleClass().add("filter-list-text-cell");
+		rssFeedsRootLabel.getStyleClass().add("filter-list-root-cell");
 		rssFeedsRootLabel.setGraphic(new ImageView(rssFeedsRootImage));
 		final TreeItem<Node> rssFeedsRootNode = new TreeItem<>(rssFeedsRootLabel);
 		rssFeedsRootNode.setExpanded(true);
