@@ -283,7 +283,8 @@ public final class ApplicationWindow {
 	
 	private Pane buildTorrentDetailsPane() {
 		final TabPane detailsTab = new TabPane();
-		detailsTab.getTabs().addAll(buildTorrentDetailsTabs());		
+		detailsTab.getTabs().addAll(buildTorrentDetailsTabs());	
+		detailsTab.getSelectionModel().selectFirst();
 		
 		final StackPane detailsPane = new StackPane();
 		detailsPane.getChildren().add(detailsTab);

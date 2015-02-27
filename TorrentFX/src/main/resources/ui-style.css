@@ -12,14 +12,12 @@
 }
 
 .filter-list-child-cell {
-	-fx-fill: #eaeaea;
 	-fx-font-size: 11;
 	-fx-padding: 0 0 0 30;
 	-fx-pref-height: 28;		
 }
 
-.filter-list-root-cell {
-	-fx-fill: #eaeaea;
+.filter-list-root-cell {	
 	-fx-font-size: 13;	
 	-fx-pref-height: 28;
 }
@@ -44,6 +42,10 @@
 
 .tree-cell: {
 	-fx-cell-size: 28;		
+}
+
+.tree-cell .text {
+       -fx-fill: #eaeaea;
 }
 
 .tree-cell:selected {
