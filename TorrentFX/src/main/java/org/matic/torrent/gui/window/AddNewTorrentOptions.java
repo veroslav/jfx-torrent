@@ -18,27 +18,15 @@
 *
 */
 
-package org.matic.torrent;
+package org.matic.torrent.gui.window;
 
-import org.matic.torrent.gui.window.ApplicationWindow;
+/**
+ * A bean containing all of the options selected by the user, during the adition of
+ * a new torrent.
+ * 
+ * @author vedran
+ *
+ */
+public final class AddNewTorrentOptions {
 
-import javafx.application.Application;
-import javafx.stage.Stage;
-
-public final class TorrentMain extends Application {
-
-	/**
-	 * Main application execution entry point. Used when the application packaging
-	 * is performed by other means than by JavaFX
-	 * 
-	 * @param args Application parameters
-	 */
-	public static void main(final String[] args) {
-		launch(args);
-	}
-
-	@Override
-	public final void start(final Stage stage) throws Exception {
-		new ApplicationWindow(stage);
-	}
 }

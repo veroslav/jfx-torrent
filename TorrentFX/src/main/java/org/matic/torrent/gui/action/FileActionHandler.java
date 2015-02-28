@@ -23,8 +23,8 @@ package org.matic.torrent.gui.action;
 import java.io.File;
 import java.nio.file.Paths;
 
-import org.matic.torrent.gui.windows.AddNewTorrentOptions;
-import org.matic.torrent.gui.windows.AddNewTorrentWindow;
+import org.matic.torrent.gui.window.AddNewTorrentOptions;
+import org.matic.torrent.gui.window.AddNewTorrentWindow;
 
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;

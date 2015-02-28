@@ -18,7 +18,7 @@
 *
 */
 
-package org.matic.torrent.gui.windows;
+package org.matic.torrent.gui.window;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;

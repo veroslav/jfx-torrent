@@ -18,27 +18,24 @@
 *
 */
 
-package org.matic.torrent;
+package org.matic.torrent.io.codec;
 
-import org.matic.torrent.gui.window.ApplicationWindow;
+/**
+ * A class representing an exception thrown when binary encoded data decoder
+ * encounters an error when parsing an invalid torrent file.
+ * 
+ * @author vedran
+ *
+ */
+public final class BinaryDecoderException extends Exception {
 
-import javafx.application.Application;
-import javafx.stage.Stage;
+	private static final long serialVersionUID = 1L;
 
-public final class TorrentMain extends Application {
-
-	/**
-	 * Main application execution entry point. Used when the application packaging
-	 * is performed by other means than by JavaFX
-	 * 
-	 * @param args Application parameters
-	 */
-	public static void main(final String[] args) {
-		launch(args);
+	public BinaryDecoderException(final String msg) {
+		super(msg);
 	}
-
-	@Override
-	public final void start(final Stage stage) throws Exception {
-		new ApplicationWindow(stage);
+	
+	public BinaryDecoderException(final String msg, final Throwable cause) {
+		super(msg, cause);
 	}
 }

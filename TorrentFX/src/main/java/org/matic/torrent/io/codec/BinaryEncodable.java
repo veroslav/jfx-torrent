@@ -18,15 +18,14 @@
 *
 */
 
-package org.matic.torrent.gui.windows;
+package org.matic.torrent.io.codec;
 
 /**
- * A bean containing all of the options selected by the user, during the adition of
- * a new torrent.
+ * A marker interface for all of the binary encoded types. These types are:
+ * strings, integers, lists and dictionaries. The torrent meta data files
+ * are usually encoded using these data types.
  * 
  * @author vedran
  *
  */
-public final class AddNewTorrentOptions {
-
-}
+public interface BinaryEncodable {}
