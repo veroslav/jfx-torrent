@@ -23,6 +23,7 @@ package org.matic.torrent.io.codec;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.zip.GZIPInputStream;
@@ -36,14 +37,25 @@ import java.util.zip.GZIPInputStream;
  */
 public final class BinaryDecoder {
 	
-	protected static final String HASH_ALGORITHM = "SHA-1";
+	public static final BinaryEncodedString KEY_INFO =  new BinaryEncodedString(
+			"info".getBytes(Charset.forName(BinaryEncodedString.ENCODING_UTF8)));
 	
+	public static final BinaryEncodedString KEY_NAME =  new BinaryEncodedString(
+			"name".getBytes(Charset.forName(BinaryEncodedString.ENCODING_UTF8)));
+	
+	public static final BinaryEncodedString KEY_COMMENT =  new BinaryEncodedString(
+			"comment".getBytes(Charset.forName(BinaryEncodedString.ENCODING_UTF8)));
+	
+	public static final BinaryEncodedString KEY_PIECES =  new BinaryEncodedString(
+			"pieces".getBytes(Charset.forName(BinaryEncodedString.ENCODING_UTF8)));
+	
+	public static final BinaryEncodedString KEY_ENCODING =  new BinaryEncodedString(
+			"encoding".getBytes(Charset.forName(BinaryEncodedString.ENCODING_UTF8)));
+		
 	protected static final BinaryEncodedString KEY_INFO_HASH = new BinaryEncodedString(
-			"jfxInfoHash".getBytes());
+			"jfxInfoHash".getBytes(Charset.forName(BinaryEncodedString.ENCODING_UTF8)));
 	
-	private static final String KEY_ENCODING = "encoding";
-	private static final String KEY_PIECES = "pieces";	
-	private static final String KEY_INFO = "info";
+	protected static final String HASH_ALGORITHM = "SHA-1";
 		
 	private final MessageDigest messageDigest;
 	
@@ -96,7 +108,7 @@ public final class BinaryDecoder {
 			
 			BinaryEncodable value = null;
 			
-			if(BinaryDecoder.KEY_INFO.equals(key.toString())) {
+			if(BinaryDecoder.KEY_INFO.equals(key)) {
 				messageDigest.reset();
 				value = decodeGenericType(input, true);
 				final BinaryEncodedString infoHash = new BinaryEncodedString(
@@ -107,9 +119,9 @@ public final class BinaryDecoder {
 				value = decodeGenericType(input, copyDictionary);
 			}
 			
-			if(BinaryDecoder.KEY_PIECES.equals(key.toString())) {
+			if(BinaryDecoder.KEY_PIECES.equals(key)) {
 				final BinaryEncodedString encoding = (BinaryEncodedString)(
-						dictionary.get(new BinaryEncodedString(BinaryDecoder.KEY_ENCODING.getBytes())));
+						dictionary.get(KEY_ENCODING));
 				if(encoding != null && !BinaryEncodedString.ENCODING_UTF8.equals(encoding.toString())) {
 					value = new BinaryEncodedString(((BinaryEncodedString)value).getBytes(), 
 							encoding.toString());					

@@ -36,8 +36,8 @@ public final class BinaryEncodedString implements BinaryEncodable {
 	protected static final String ENCODING_UTF8 = "UTF-8";
 	protected static final char SEPARATOR_TOKEN = ':';
 	
-	private final byte[] value;
-	private String encoding;
+	private final String encoding;
+	private final byte[] value;	
 	
 	public BinaryEncodedString(final byte[] value) {
 		this(value, BinaryEncodedString.ENCODING_UTF8);

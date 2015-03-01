@@ -20,8 +20,6 @@
 
 package org.matic.torrent.gui.window;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
@@ -31,12 +29,12 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
-import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TreeTableColumn;
 import javafx.scene.control.TreeTableView;
@@ -52,6 +50,9 @@ import javafx.stage.Window;
 
 import org.controlsfx.tools.Borders;
 import org.matic.torrent.gui.model.TorrentFile;
+import org.matic.torrent.io.codec.BinaryDecoder;
+import org.matic.torrent.io.codec.BinaryEncodedDictionary;
+import org.matic.torrent.io.codec.BinaryEncodedString;
 
 /**
  * A window showing contents of a torrent to be opened and added to a list of torrents
@@ -79,10 +80,19 @@ public final class AddNewTorrentWindow {
 	private final Button browseButton;
 	
 	private final Dialog<ButtonType> window;
-	private final Path torrentPath;
+	
+	private final BinaryEncodedDictionary infoDictionary;
+	
+	private final String fileName;
+	private final String comment;
 
-	public AddNewTorrentWindow(final Window owner, final Path torrentPath) {
-		this.torrentPath = torrentPath;
+	public AddNewTorrentWindow(final Window owner, final BinaryEncodedDictionary torrentMetaData) {		
+		infoDictionary = ((BinaryEncodedDictionary)torrentMetaData.get(BinaryDecoder.KEY_INFO));
+		
+		final BinaryEncodedString metaDataComment = (BinaryEncodedString)torrentMetaData.get(BinaryDecoder.KEY_COMMENT);
+		comment = metaDataComment != null? metaDataComment.toString() : "";
+		fileName = infoDictionary.get(BinaryDecoder.KEY_NAME).toString();		
+		
 		window = new Dialog<>();
 		window.initOwner(owner);
 		
@@ -93,7 +103,7 @@ public final class AddNewTorrentWindow {
 		skipHashCheckbox = new CheckBox("Skip hash check");
 		
 		torrentContentsTable = new TreeTableView<TorrentFile>();
-		nameTextField = new TextField(torrentPath.getFileName().toString());
+		nameTextField = new TextField(fileName);
 		
 		savePathCombo = new ComboBox<String>();
 		labelCombo = new ComboBox<String>();
@@ -116,16 +126,19 @@ public final class AddNewTorrentWindow {
 		startTorrentCheckbox.setSelected(true);
 		savePathCombo.setMinWidth(400);		
 		
+		final TreeTableColumn<TorrentFile, String> pathColumn = new TreeTableColumn<TorrentFile, String>("Path");
+		pathColumn.setVisible(false);
+		
 		final Collection<TreeTableColumn<TorrentFile, String>> tableColumns = Arrays.asList(
-				new TreeTableColumn<TorrentFile, String>("Name"),
-				new TreeTableColumn<TorrentFile, String>("Path"),
+				new TreeTableColumn<TorrentFile, String>("Name"), pathColumn,
 				new TreeTableColumn<TorrentFile, String>("Size"));
         
 		torrentContentsTable.setEditable(false);
+		torrentContentsTable.setTableMenuButtonVisible(true);
 		torrentContentsTable.getColumns().addAll(tableColumns);
         
 		window.setHeaderText(null);
-		window.setTitle(torrentPath.getFileName() + " - Add New Torrent");
+		window.setTitle(fileName + " - Add New Torrent");
 		
 		window.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 
@@ -173,10 +186,10 @@ public final class AddNewTorrentWindow {
 		labelPane.getColumnConstraints().addAll(nameColumnConstraints, valueColumnConstraints);
 		
 		labelPane.add(new Label("Name:"), 0, 0);
-		labelPane.add(new Label(torrentPath.getFileName().toString()), 1, 0);
+		labelPane.add(new Label(fileName), 1, 0);
 		
 		labelPane.add(new Label("Comment:"), 0, 1);	
-		labelPane.add(new Label("My comment"), 1, 1);
+		labelPane.add(new Label(comment), 1, 1);
 		
 		labelPane.add(new Label("Size:"), 0, 2);	
 		labelPane.add(new Label("761 MB (disk space: 11.3 GB)"), 1, 2);
@@ -189,12 +202,16 @@ public final class AddNewTorrentWindow {
 		selectionButtonsPane.getChildren().addAll(selectAllButton, selectNoneButton);
 		
 		final VBox northPane = new VBox(10);
-		northPane.getChildren().addAll(labelPane, selectionButtonsPane);				
+		northPane.getChildren().addAll(labelPane, selectionButtonsPane);
+		
+		final ScrollPane torrentContentsScroll = new ScrollPane(torrentContentsTable);
+		torrentContentsScroll.setFitToWidth(true);
+		torrentContentsScroll.setFitToHeight(true);
 		
 		final BorderPane torrentContentsPane = new BorderPane();
 		torrentContentsPane.setPrefWidth(450);
 		torrentContentsPane.setTop(northPane);
-		torrentContentsPane.setCenter(torrentContentsTable);
+		torrentContentsPane.setCenter(torrentContentsScroll);
 		
 		BorderPane.setMargin(northPane, new Insets(0, 0, 10, 0));
 		

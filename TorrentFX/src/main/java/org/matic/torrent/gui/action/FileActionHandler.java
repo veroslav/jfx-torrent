@@ -20,25 +20,51 @@
 
 package org.matic.torrent.gui.action;
 
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.nio.file.Paths;
 
 import org.matic.torrent.gui.window.AddNewTorrentOptions;
 import org.matic.torrent.gui.window.AddNewTorrentWindow;
+import org.matic.torrent.io.codec.BinaryDecoder;
+import org.matic.torrent.io.codec.BinaryDecoderException;
+import org.matic.torrent.io.codec.BinaryEncodedDictionary;
 
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
 
 /**
  * Handle file related action events, such as opening and loading files.
+ * 
+ * @author vedran
  */
 public final class FileActionHandler {
 
 	public final void onFileOpen(final Window owner) {
 		final String torrentPath = getTorrentPath(owner);
 		if(torrentPath != null) {
-			final AddNewTorrentWindow addNewTorrentWindow = new AddNewTorrentWindow(owner, Paths.get(torrentPath));
+			final BinaryDecoder metaDataDecoder = new BinaryDecoder();
+			BinaryEncodedDictionary metaDataDictionary = null;
+			try {
+				metaDataDictionary = metaDataDecoder.decode(
+						new BufferedInputStream(new FileInputStream(torrentPath)));
+			}
+			catch (final IOException | BinaryDecoderException e) {
+				final Alert errorAlert = new Alert(AlertType.ERROR);
+				errorAlert.setTitle("Invalid torrent file");
+				errorAlert.setContentText("An error occured while opening the torrent.\n"
+						+ "The file appears to be invalid.");
+				errorAlert.setHeaderText(null);
+				errorAlert.showAndWait();
+				return;
+			}
+			final AddNewTorrentWindow addNewTorrentWindow = new AddNewTorrentWindow(owner, metaDataDictionary);
 			final AddNewTorrentOptions addNewTorrentOptions = addNewTorrentWindow.showAndWait();
 		}
 	}
