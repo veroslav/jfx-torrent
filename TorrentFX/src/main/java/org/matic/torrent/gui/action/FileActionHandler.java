@@ -23,21 +23,20 @@ package org.matic.torrent.gui.action;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Paths;
-
-import org.matic.torrent.gui.window.AddNewTorrentOptions;
-import org.matic.torrent.gui.window.AddNewTorrentWindow;
-import org.matic.torrent.io.codec.BinaryDecoder;
-import org.matic.torrent.io.codec.BinaryDecoderException;
-import org.matic.torrent.io.codec.BinaryEncodedDictionary;
 
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
+
+import org.matic.torrent.gui.window.AddNewTorrentOptions;
+import org.matic.torrent.gui.window.AddNewTorrentWindow;
+import org.matic.torrent.io.codec.BinaryDecoder;
+import org.matic.torrent.io.codec.BinaryDecoderException;
+import org.matic.torrent.io.codec.BinaryEncodedDictionary;
 
 /**
  * Handle file related action events, such as opening and loading files.
@@ -56,15 +55,16 @@ public final class FileActionHandler {
 						new BufferedInputStream(new FileInputStream(torrentPath)));
 			}
 			catch (final IOException | BinaryDecoderException e) {
-				final Alert errorAlert = new Alert(AlertType.ERROR);
+				final Alert errorAlert = new Alert(AlertType.WARNING);
 				errorAlert.setTitle("Invalid torrent file");
-				errorAlert.setContentText("An error occured while opening the torrent.\n"
-						+ "The file appears to be invalid.");
+				errorAlert.setContentText("Unable to load " + Paths.get(torrentPath).getFileName() + "\n"
+						+ "The torrent file appears to be invalid.");
 				errorAlert.setHeaderText(null);
 				errorAlert.showAndWait();
 				return;
 			}
-			final AddNewTorrentWindow addNewTorrentWindow = new AddNewTorrentWindow(owner, metaDataDictionary);
+			final AddNewTorrentWindow addNewTorrentWindow = new AddNewTorrentWindow(
+					owner, Paths.get(torrentPath), metaDataDictionary);
 			final AddNewTorrentOptions addNewTorrentOptions = addNewTorrentWindow.showAndWait();
 		}
 	}
@@ -75,8 +75,7 @@ public final class FileActionHandler {
 			final String targetFileName = Paths.get(torrentPath).getFileName().toString();
 			final String saveLocationPath = getSaveLocationPath(owner, targetFileName);
 			if(saveLocationPath != null) {
-				System.out.println("Target file: " + targetFileName);
-				System.out.println("Save location: " + saveLocationPath);
+				//TODO: Use selected target save location
 			}			
 		}
 	}

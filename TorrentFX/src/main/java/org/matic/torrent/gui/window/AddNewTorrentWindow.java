@@ -20,6 +20,8 @@
 
 package org.matic.torrent.gui.window;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
@@ -50,6 +52,7 @@ import javafx.stage.Window;
 
 import org.controlsfx.tools.Borders;
 import org.matic.torrent.gui.model.TorrentFile;
+import org.matic.torrent.io.DiskUtilities;
 import org.matic.torrent.io.codec.BinaryDecoder;
 import org.matic.torrent.io.codec.BinaryEncodedDictionary;
 import org.matic.torrent.io.codec.BinaryEncodedString;
@@ -82,16 +85,19 @@ public final class AddNewTorrentWindow {
 	private final Dialog<ButtonType> window;
 	
 	private final BinaryEncodedDictionary infoDictionary;
-	
+		
 	private final String fileName;
 	private final String comment;
+	private final Path filePath;
 
-	public AddNewTorrentWindow(final Window owner, final BinaryEncodedDictionary torrentMetaData) {		
+	public AddNewTorrentWindow(final Window owner, final Path filePath, final BinaryEncodedDictionary torrentMetaData) {		
 		infoDictionary = ((BinaryEncodedDictionary)torrentMetaData.get(BinaryDecoder.KEY_INFO));
 		
 		final BinaryEncodedString metaDataComment = (BinaryEncodedString)torrentMetaData.get(BinaryDecoder.KEY_COMMENT);
 		comment = metaDataComment != null? metaDataComment.toString() : "";
 		fileName = infoDictionary.get(BinaryDecoder.KEY_NAME).toString();		
+		
+		this.filePath = filePath;
 		
 		window = new Dialog<>();
 		window.initOwner(owner);
@@ -192,7 +198,16 @@ public final class AddNewTorrentWindow {
 		labelPane.add(new Label(comment), 1, 1);
 		
 		labelPane.add(new Label("Size:"), 0, 2);	
-		labelPane.add(new Label("761 MB (disk space: 11.3 GB)"), 1, 2);
+		
+		long availableDiskSpace = -1;
+		try {
+			availableDiskSpace = DiskUtilities.getAvailableDiskSpace(filePath);
+		} 
+		catch (final IOException ioe) {
+			//Can't do anything here
+		}
+		labelPane.add(new Label("761 MB (disk space: " + (availableDiskSpace != -1? 
+				availableDiskSpace : "Unavailable") + ")"), 1, 2);
 		
 		labelPane.add(new Label("Date:"), 0, 3);	
 		labelPane.add(new Label("2015-02-24 12:41:00"), 1, 3);
