@@ -112,7 +112,7 @@ public final class BinaryDecoder {
 						dictionary.get(new BinaryEncodedString(BinaryDecoder.KEY_ENCODING.getBytes())));
 				if(encoding != null && !BinaryEncodedString.ENCODING_UTF8.equals(encoding.toString())) {
 					value = new BinaryEncodedString(((BinaryEncodedString)value).getBytes(), 
-							encoding.getEncoding());					
+							encoding.toString());					
 				}
 			}
 						

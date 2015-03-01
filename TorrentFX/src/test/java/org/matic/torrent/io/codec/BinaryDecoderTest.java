@@ -166,12 +166,12 @@ public final class BinaryDecoderTest {
 	}
 
 	@Test
-	@Ignore
 	public final void testStringEncoding() throws Exception {
 		final String metaData = "d8:encoding6:UTF-166:pieces6:blablae";
 		
 		final BinaryEncodedDictionary contents = unitUnderTest.decode(
 				new ByteArrayInputStream(metaData.getBytes()));
+		
 		final BinaryEncodedString encodingValue = (BinaryEncodedString)(contents.get(
 				new BinaryEncodedString("encoding".getBytes())));
 		final BinaryEncodedString piecesValue = (BinaryEncodedString)(contents.get(
