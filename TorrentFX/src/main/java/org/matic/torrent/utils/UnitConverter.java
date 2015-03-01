@@ -18,25 +18,22 @@
 *
 */
 
-package org.matic.torrent.io;
+package org.matic.torrent.utils;
 
-import java.io.IOException;
-import java.nio.file.FileStore;
-import java.nio.file.Files;
-import java.nio.file.Path;
-
-public final class DiskUtilities {
+public final class UnitConverter {
 
 	/**
-	 * Calculate available space for a disk/partition containing the
-	 * specified path on that disk/partition.
+	 * Return a humanly readable presentation of input byte count
 	 * 
-	 * @param pathOnDisk Target path on the disk/partition
-	 * @return Available disk space in bytes
-	 * @throws IOException If available disk space can't be calculated 
+	 * @param v Number of bytes to format
+	 * @return
 	 */
-	public static long getAvailableDiskSpace(final Path pathOnDisk) throws IOException {		
-		final FileStore fileStore = Files.getFileStore(pathOnDisk);
-		return fileStore.getUsableSpace();		
-	}
+	public static String formatByteCount(final long byteCount) {
+        if(byteCount < 1024) {
+        	return byteCount + " B";
+        }
+        final int unit = (63 - Long.numberOfLeadingZeros(byteCount)) / 10;
+        return String.format("%.1f %sB", (double)byteCount / (1L << (unit * 10)), 
+        		" KMGTPE".charAt(unit));
+    }
 }

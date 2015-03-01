@@ -56,6 +56,7 @@ import org.matic.torrent.io.DiskUtilities;
 import org.matic.torrent.io.codec.BinaryDecoder;
 import org.matic.torrent.io.codec.BinaryEncodedDictionary;
 import org.matic.torrent.io.codec.BinaryEncodedString;
+import org.matic.torrent.utils.UnitConverter;
 
 /**
  * A window showing contents of a torrent to be opened and added to a list of torrents
@@ -199,15 +200,16 @@ public final class AddNewTorrentWindow {
 		
 		labelPane.add(new Label("Size:"), 0, 2);	
 		
-		long availableDiskSpace = -1;
+		String availableDiskSpace = "Unknown";
 		try {
-			availableDiskSpace = DiskUtilities.getAvailableDiskSpace(filePath);
+			availableDiskSpace = UnitConverter.formatByteCount(
+					DiskUtilities.getAvailableDiskSpace(filePath));
+			
 		} 
 		catch (final IOException ioe) {
 			//Can't do anything here
 		}
-		labelPane.add(new Label("761 MB (disk space: " + (availableDiskSpace != -1? 
-				availableDiskSpace : "Unavailable") + ")"), 1, 2);
+		labelPane.add(new Label("761 MB (disk space: " + availableDiskSpace + ")"), 1, 2);
 		
 		labelPane.add(new Label("Date:"), 0, 3);	
 		labelPane.add(new Label("2015-02-24 12:41:00"), 1, 3);
