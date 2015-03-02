@@ -26,6 +26,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -38,6 +40,8 @@ import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TreeItem;
+import javafx.scene.control.TreeTableCell;
 import javafx.scene.control.TreeTableColumn;
 import javafx.scene.control.TreeTableView;
 import javafx.scene.layout.BorderPane;
@@ -51,7 +55,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Window;
 
 import org.controlsfx.tools.Borders;
-import org.matic.torrent.gui.model.TorrentFile;
+import org.matic.torrent.gui.model.TorrentContentModel;
 import org.matic.torrent.io.DiskUtilities;
 import org.matic.torrent.io.codec.BinaryDecoder;
 import org.matic.torrent.io.codec.BinaryEncodedDictionary;
@@ -75,7 +79,7 @@ public final class AddNewTorrentWindow {
 	private final ComboBox<String> savePathCombo;
 	private final ComboBox<String> labelCombo;
 	
-	private final TreeTableView<TorrentFile> torrentContentsTable;
+	private final TreeTableView<TorrentContentModel> torrentContentsTable;
 	private final TextField nameTextField;
 	
 	private final Button selectNoneButton;
@@ -83,13 +87,19 @@ public final class AddNewTorrentWindow {
 	private final Button advancedButton;
 	private final Button browseButton;
 	
+	private final Label fileSizeLabel;
+	
 	private final Dialog<ButtonType> window;
 	
 	private final BinaryEncodedDictionary infoDictionary;
+	
+	private ObservableList<TorrentContentModel> torrentContents;
 		
 	private final String fileName;
 	private final String comment;
 	private final Path filePath;
+	
+	private long availableDiskSpace;
 
 	public AddNewTorrentWindow(final Window owner, final Path filePath, final BinaryEncodedDictionary torrentMetaData) {		
 		infoDictionary = ((BinaryEncodedDictionary)torrentMetaData.get(BinaryDecoder.KEY_INFO));
@@ -97,6 +107,12 @@ public final class AddNewTorrentWindow {
 		final BinaryEncodedString metaDataComment = (BinaryEncodedString)torrentMetaData.get(BinaryDecoder.KEY_COMMENT);
 		comment = metaDataComment != null? metaDataComment.toString() : "";
 		fileName = infoDictionary.get(BinaryDecoder.KEY_NAME).toString();		
+		
+		try {
+			availableDiskSpace = DiskUtilities.getAvailableDiskSpace(filePath);
+		} catch (final IOException ioe) {
+			availableDiskSpace = -1;
+		}
 		
 		this.filePath = filePath;
 		
@@ -109,8 +125,10 @@ public final class AddNewTorrentWindow {
 		startTorrentCheckbox = new CheckBox("Start torrent");
 		skipHashCheckbox = new CheckBox("Skip hash check");
 		
-		torrentContentsTable = new TreeTableView<TorrentFile>();
+		torrentContentsTable = new TreeTableView<TorrentContentModel>();
 		nameTextField = new TextField(fileName);
+		
+		fileSizeLabel = new Label();
 		
 		savePathCombo = new ComboBox<String>();
 		labelCombo = new ComboBox<String>();
@@ -133,16 +151,13 @@ public final class AddNewTorrentWindow {
 		startTorrentCheckbox.setSelected(true);
 		savePathCombo.setMinWidth(400);		
 		
-		final TreeTableColumn<TorrentFile, String> pathColumn = new TreeTableColumn<TorrentFile, String>("Path");
+		final TreeTableColumn<TorrentContentModel, String> pathColumn = new TreeTableColumn<TorrentContentModel, String>("Path");
 		pathColumn.setVisible(false);
-		
-		final Collection<TreeTableColumn<TorrentFile, String>> tableColumns = Arrays.asList(
-				new TreeTableColumn<TorrentFile, String>("Name"), pathColumn,
-				new TreeTableColumn<TorrentFile, String>("Size"));
-        
-		torrentContentsTable.setEditable(false);
+			
+		torrentContentsTable.setRoot(createTorrentContentTree());
 		torrentContentsTable.setTableMenuButtonVisible(true);
-		torrentContentsTable.getColumns().addAll(tableColumns);
+		torrentContentsTable.setEditable(true);				
+		addTreeViewColumns(torrentContentsTable);
         
 		window.setHeaderText(null);
 		window.setTitle(fileName + " - Add New Torrent");
@@ -151,6 +166,78 @@ public final class AddNewTorrentWindow {
 
 		window.setResizable(true);		
 		window.getDialogPane().setContent(layoutContent());
+	}
+	
+	private void addTreeViewColumns(final TreeTableView<TorrentContentModel> torrentContentsTable) {
+		final TreeTableColumn<TorrentContentModel, Boolean> selectedColumn = new TreeTableColumn<TorrentContentModel, Boolean>("Name");	
+		selectedColumn.setCellValueFactory(param -> param.getValue().getValue().selectedProperty());	
+		//selectedColumn.setCellFactory(CheckBoxTreeTableCell.forTreeTableColumn(selectedColumn));
+		
+		/*selectedColumn.setCellFactory(CheckBoxTreeTableCell.forTreeTableColumn(new Callback<Integer, ObservableValue<Boolean>>() {
+			@Override
+			public ObservableValue<Boolean> call(final Integer index) {
+				return torrentContents.get(index).selectedProperty();
+			}			
+		}));*/
+		
+		/*selectedColumn.setCellFactory(new Callback<TreeTableColumn<TorrentContentModel,Boolean>, 
+				TreeTableCell<TorrentContentModel,Boolean>>() {
+			@Override
+			public TreeTableCell<TorrentContentModel, Boolean> call(
+					TreeTableColumn<TorrentContentModel, Boolean> column) {
+				return new CheckBoxTreeTableCell<>();
+			}
+		});*/
+		
+		selectedColumn.setCellFactory(column -> new TreeTableCell<TorrentContentModel, Boolean>() {			
+			@Override
+			protected final void updateItem(final Boolean selected, boolean empty) {
+				super.updateItem(selected, empty);
+				if(selected == null || empty) {
+					this.setGraphic(null);
+				}
+				else {
+					final TorrentContentModel fileContent = torrentContents.get(getIndex());					
+					final CheckBox selectionCheckBox = new CheckBox();
+					final HBox checkBoxPane = new HBox();
+					checkBoxPane.getChildren().addAll(selectionCheckBox, 
+							new Label(fileContent.nameProperty().get()));
+										
+	                selectionCheckBox.setSelected(fileContent.selectedProperty().get());
+	                selectionCheckBox.selectedProperty().bindBidirectional(fileContent.selectedProperty());
+	                setGraphic(checkBoxPane);
+				}
+			}			
+		});
+		
+		selectedColumn.setEditable(true);
+		
+		final TreeTableColumn<TorrentContentModel, String> pathColumn = new TreeTableColumn<TorrentContentModel, String>("Path");
+		pathColumn.setCellValueFactory(param -> param.getValue().getValue().pathProperty());
+		pathColumn.setVisible(false);
+		
+		final TreeTableColumn<TorrentContentModel, Long> sizeColumn = new TreeTableColumn<TorrentContentModel, Long>("Size");
+		sizeColumn.setCellValueFactory(param -> param.getValue().getValue().sizeProperty().asObject());
+		sizeColumn.setCellFactory(column -> new TreeTableCell<TorrentContentModel, Long>() {
+			@Override
+			protected void updateItem(final Long value, final boolean empty) {
+				super.updateItem(value, empty);
+				if(value == null || empty) {
+					this.setGraphic(null);
+				}
+				else {
+					final TorrentContentModel fileContent = torrentContents.get(getIndex());					
+					final String formattedValue = UnitConverter.formatByteCount(fileContent.sizeProperty().get());
+					final Label valueLabel = new Label(formattedValue);
+	                setGraphic(valueLabel);
+				}
+			}			
+		});
+		
+		final Collection<TreeTableColumn<TorrentContentModel, ?>> tableColumns = Arrays.asList(
+				selectedColumn, pathColumn, sizeColumn);
+		
+		torrentContentsTable.getColumns().addAll(tableColumns);
 	}
 	
 	private Node layoutContent() {
@@ -198,18 +285,8 @@ public final class AddNewTorrentWindow {
 		labelPane.add(new Label("Comment:"), 0, 1);	
 		labelPane.add(new Label(comment), 1, 1);
 		
-		labelPane.add(new Label("Size:"), 0, 2);	
-		
-		String availableDiskSpace = "Unknown";
-		try {
-			availableDiskSpace = UnitConverter.formatByteCount(
-					DiskUtilities.getAvailableDiskSpace(filePath));
-			
-		} 
-		catch (final IOException ioe) {
-			//Can't do anything here
-		}
-		labelPane.add(new Label("761 MB (disk space: " + availableDiskSpace + ")"), 1, 2);
+		labelPane.add(new Label("Size:"), 0, 2);			
+		labelPane.add(fileSizeLabel, 1, 2);
 		
 		labelPane.add(new Label("Date:"), 0, 3);	
 		labelPane.add(new Label("2015-02-24 12:41:00"), 1, 3);
@@ -293,5 +370,33 @@ public final class AddNewTorrentWindow {
 				torrentOptionsPane).etchedBorder().title("Torrent Options").buildAll();
 		
 		return borderedTorrentOptionsPane;
+	}
+	
+	private TreeItem<TorrentContentModel> createTorrentContentTree() {
+		//TODO: Populate from infoDictionary
+		final TorrentContentModel file1 = new TorrentContentModel("VTS_1.vob", "/home/Downloads", 565324762);		
+		final TorrentContentModel file2 = new TorrentContentModel("VTS_2.vob", "/temp", 13753859387L);
+		
+		torrentContents = FXCollections.observableArrayList(file1, file2);
+		torrentContents.forEach(m -> {
+			m.selectedProperty().addListener((observable, oldValue, newValue) -> {	
+				if(availableDiskSpace != -1) {
+					final long affectedFileSize = m.sizeProperty().get();
+					availableDiskSpace += (newValue? -affectedFileSize : affectedFileSize);
+					
+					fileSizeLabel.setText("761 MB (disk space: " + 
+					UnitConverter.formatByteCount(availableDiskSpace) + ")");
+				}
+				else {
+					fileSizeLabel.setText("761 MB (disk space: unavailable)");
+				}
+			});
+		});
+		
+		final TreeItem<TorrentContentModel> root = new TreeItem<>(torrentContents.get(0));
+		root.getChildren().add(new TreeItem<TorrentContentModel>(torrentContents.get(1)));
+		
+		root.setExpanded(true);
+		return root;
 	}
 }
