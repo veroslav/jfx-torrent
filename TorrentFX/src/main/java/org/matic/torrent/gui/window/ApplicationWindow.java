@@ -63,7 +63,7 @@ import javafx.stage.Stage;
 
 import org.matic.torrent.gui.action.FileActionHandler;
 import org.matic.torrent.gui.action.WindowActionHandler;
-import org.matic.torrent.gui.model.TorrentStatus;
+import org.matic.torrent.gui.model.TorrentJobStatus;
 
 /**
  * A main application window, showing all of the GUI components.
@@ -263,7 +263,7 @@ public final class ApplicationWindow {
 	}
 	
 	private Pane buildTorrentListTable() {		
-		final TableView<TorrentStatus> torrentListTable = new TableView<>();
+		final TableView<TorrentJobStatus> torrentListTable = new TableView<>();
 		
 		final Text emptyTorrentListPlaceholder = new Text("Go to Bundles to get torrents.");
 		emptyTorrentListPlaceholder.getStyleClass().add("empty-torrent-list-text");

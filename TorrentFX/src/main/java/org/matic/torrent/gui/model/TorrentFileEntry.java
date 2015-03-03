@@ -34,7 +34,7 @@ import javafx.beans.property.StringProperty;
  * @author vedran
  *
  */
-public final class TorrentContentModel {
+public final class TorrentFileEntry {
 	
 	private BooleanProperty selected;
 
@@ -44,7 +44,7 @@ public final class TorrentContentModel {
 	
 	private final LongProperty size;
 	
-	public TorrentContentModel(final String name, final String path, final long size) {
+	public TorrentFileEntry(final String name, final String path, final long size) {
 		this.selected = new SimpleBooleanProperty(false);
 		this.name = new SimpleStringProperty(name);
 		this.path = new SimpleStringProperty(path);

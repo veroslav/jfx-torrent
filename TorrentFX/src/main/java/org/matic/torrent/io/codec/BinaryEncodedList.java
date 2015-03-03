@@ -22,6 +22,7 @@ package org.matic.torrent.io.codec;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * A list of values is encoded as l<contents>e . The contents consist of
@@ -51,6 +52,10 @@ public final class BinaryEncodedList implements BinaryEncodable {
 	
 	public final int size() {
 		return list.size();
+	}
+	
+	public Stream<BinaryEncodable> stream() {
+		return list.stream();
 	}
 
 	@Override

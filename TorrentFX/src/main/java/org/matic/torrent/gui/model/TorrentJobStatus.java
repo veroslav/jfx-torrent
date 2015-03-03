@@ -20,6 +20,6 @@
 
 package org.matic.torrent.gui.model;
 
-public final class TorrentStatus {
+public final class TorrentJobStatus {
 
 }

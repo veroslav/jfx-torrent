@@ -55,11 +55,13 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Window;
 
 import org.controlsfx.tools.Borders;
-import org.matic.torrent.gui.model.TorrentContentModel;
+import org.matic.torrent.gui.model.TorrentFileEntry;
 import org.matic.torrent.io.DiskUtilities;
-import org.matic.torrent.io.codec.BinaryDecoder;
 import org.matic.torrent.io.codec.BinaryEncodedDictionary;
+import org.matic.torrent.io.codec.BinaryEncodedInteger;
+import org.matic.torrent.io.codec.BinaryEncodedList;
 import org.matic.torrent.io.codec.BinaryEncodedString;
+import org.matic.torrent.io.codec.BinaryEncodingKeyNames;
 import org.matic.torrent.utils.UnitConverter;
 
 /**
@@ -79,7 +81,7 @@ public final class AddNewTorrentWindow {
 	private final ComboBox<String> savePathCombo;
 	private final ComboBox<String> labelCombo;
 	
-	private final TreeTableView<TorrentContentModel> torrentContentsTable;
+	private final TreeTableView<TorrentFileEntry> torrentContentsTable;
 	private final TextField nameTextField;
 	
 	private final Button selectNoneButton;
@@ -93,20 +95,27 @@ public final class AddNewTorrentWindow {
 	
 	private final BinaryEncodedDictionary infoDictionary;
 	
-	private ObservableList<TorrentContentModel> torrentContents;
+	private final ObservableList<TorrentFileEntry> torrentContents = 
+			FXCollections.observableArrayList();;
 		
+	private final String creationDate;
 	private final String fileName;
 	private final String comment;
 	private final Path filePath;
 	
 	private long availableDiskSpace;
 
-	public AddNewTorrentWindow(final Window owner, final Path filePath, final BinaryEncodedDictionary torrentMetaData) {		
-		infoDictionary = ((BinaryEncodedDictionary)torrentMetaData.get(BinaryDecoder.KEY_INFO));
+	public AddNewTorrentWindow(final Window owner, final Path filePath, final BinaryEncodedDictionary torrentMetaData) {	
 		
-		final BinaryEncodedString metaDataComment = (BinaryEncodedString)torrentMetaData.get(BinaryDecoder.KEY_COMMENT);
+		final BinaryEncodedInteger creationDateInSeconds = (BinaryEncodedInteger)torrentMetaData.get(
+				BinaryEncodingKeyNames.KEY_CREATION_DATE);
+		creationDate = creationDateInSeconds != null? UnitConverter.formatTime(creationDateInSeconds.getValue() * 1000) : "";
+		
+		infoDictionary = ((BinaryEncodedDictionary)torrentMetaData.get(BinaryEncodingKeyNames.KEY_INFO));
+		
+		final BinaryEncodedString metaDataComment = (BinaryEncodedString)torrentMetaData.get(BinaryEncodingKeyNames.KEY_COMMENT);
 		comment = metaDataComment != null? metaDataComment.toString() : "";
-		fileName = infoDictionary.get(BinaryDecoder.KEY_NAME).toString();		
+		fileName = infoDictionary.get(BinaryEncodingKeyNames.KEY_NAME).toString();		
 		
 		try {
 			availableDiskSpace = DiskUtilities.getAvailableDiskSpace(filePath);
@@ -125,9 +134,10 @@ public final class AddNewTorrentWindow {
 		startTorrentCheckbox = new CheckBox("Start torrent");
 		skipHashCheckbox = new CheckBox("Skip hash check");
 		
-		torrentContentsTable = new TreeTableView<TorrentContentModel>();
-		nameTextField = new TextField(fileName);
+		torrentContentsTable = new TreeTableView<TorrentFileEntry>();
+		torrentContentsTable.setRoot(createTorrentContentTree(infoDictionary));
 		
+		nameTextField = new TextField(fileName);		
 		fileSizeLabel = new Label();
 		
 		savePathCombo = new ComboBox<String>();
@@ -151,11 +161,11 @@ public final class AddNewTorrentWindow {
 		startTorrentCheckbox.setSelected(true);
 		savePathCombo.setMinWidth(400);		
 		
-		final TreeTableColumn<TorrentContentModel, String> pathColumn = new TreeTableColumn<TorrentContentModel, String>("Path");
+		final TreeTableColumn<TorrentFileEntry, String> pathColumn = new TreeTableColumn<TorrentFileEntry, String>("Path");
 		pathColumn.setVisible(false);
 			
-		torrentContentsTable.setRoot(createTorrentContentTree());
 		torrentContentsTable.setTableMenuButtonVisible(true);
+		torrentContentsTable.setShowRoot(false);
 		torrentContentsTable.setEditable(true);				
 		addTreeViewColumns(torrentContentsTable);
         
@@ -168,28 +178,10 @@ public final class AddNewTorrentWindow {
 		window.getDialogPane().setContent(layoutContent());
 	}
 	
-	private void addTreeViewColumns(final TreeTableView<TorrentContentModel> torrentContentsTable) {
-		final TreeTableColumn<TorrentContentModel, Boolean> selectedColumn = new TreeTableColumn<TorrentContentModel, Boolean>("Name");	
-		selectedColumn.setCellValueFactory(param -> param.getValue().getValue().selectedProperty());	
-		//selectedColumn.setCellFactory(CheckBoxTreeTableCell.forTreeTableColumn(selectedColumn));
-		
-		/*selectedColumn.setCellFactory(CheckBoxTreeTableCell.forTreeTableColumn(new Callback<Integer, ObservableValue<Boolean>>() {
-			@Override
-			public ObservableValue<Boolean> call(final Integer index) {
-				return torrentContents.get(index).selectedProperty();
-			}			
-		}));*/
-		
-		/*selectedColumn.setCellFactory(new Callback<TreeTableColumn<TorrentContentModel,Boolean>, 
-				TreeTableCell<TorrentContentModel,Boolean>>() {
-			@Override
-			public TreeTableCell<TorrentContentModel, Boolean> call(
-					TreeTableColumn<TorrentContentModel, Boolean> column) {
-				return new CheckBoxTreeTableCell<>();
-			}
-		});*/
-		
-		selectedColumn.setCellFactory(column -> new TreeTableCell<TorrentContentModel, Boolean>() {			
+	private void addTreeViewColumns(final TreeTableView<TorrentFileEntry> torrentContentsTable) {
+		final TreeTableColumn<TorrentFileEntry, Boolean> selectedColumn = new TreeTableColumn<TorrentFileEntry, Boolean>("Name");	
+		selectedColumn.setCellValueFactory(param -> param.getValue().getValue().selectedProperty());			
+		selectedColumn.setCellFactory(column -> new TreeTableCell<TorrentFileEntry, Boolean>() {			
 			@Override
 			protected final void updateItem(final Boolean selected, boolean empty) {
 				super.updateItem(selected, empty);
@@ -197,7 +189,7 @@ public final class AddNewTorrentWindow {
 					this.setGraphic(null);
 				}
 				else {
-					final TorrentContentModel fileContent = torrentContents.get(getIndex());					
+					final TorrentFileEntry fileContent = torrentContents.get(getIndex());					
 					final CheckBox selectionCheckBox = new CheckBox();
 					final HBox checkBoxPane = new HBox();
 					checkBoxPane.getChildren().addAll(selectionCheckBox, 
@@ -212,13 +204,13 @@ public final class AddNewTorrentWindow {
 		
 		selectedColumn.setEditable(true);
 		
-		final TreeTableColumn<TorrentContentModel, String> pathColumn = new TreeTableColumn<TorrentContentModel, String>("Path");
+		final TreeTableColumn<TorrentFileEntry, String> pathColumn = new TreeTableColumn<TorrentFileEntry, String>("Path");
 		pathColumn.setCellValueFactory(param -> param.getValue().getValue().pathProperty());
 		pathColumn.setVisible(false);
 		
-		final TreeTableColumn<TorrentContentModel, Long> sizeColumn = new TreeTableColumn<TorrentContentModel, Long>("Size");
+		final TreeTableColumn<TorrentFileEntry, Long> sizeColumn = new TreeTableColumn<TorrentFileEntry, Long>("Size");
 		sizeColumn.setCellValueFactory(param -> param.getValue().getValue().sizeProperty().asObject());
-		sizeColumn.setCellFactory(column -> new TreeTableCell<TorrentContentModel, Long>() {
+		sizeColumn.setCellFactory(column -> new TreeTableCell<TorrentFileEntry, Long>() {
 			@Override
 			protected void updateItem(final Long value, final boolean empty) {
 				super.updateItem(value, empty);
@@ -226,7 +218,7 @@ public final class AddNewTorrentWindow {
 					this.setGraphic(null);
 				}
 				else {
-					final TorrentContentModel fileContent = torrentContents.get(getIndex());					
+					final TorrentFileEntry fileContent = torrentContents.get(getIndex());					
 					final String formattedValue = UnitConverter.formatByteCount(fileContent.sizeProperty().get());
 					final Label valueLabel = new Label(formattedValue);
 	                setGraphic(valueLabel);
@@ -234,7 +226,7 @@ public final class AddNewTorrentWindow {
 			}			
 		});
 		
-		final Collection<TreeTableColumn<TorrentContentModel, ?>> tableColumns = Arrays.asList(
+		final Collection<TreeTableColumn<TorrentFileEntry, ?>> tableColumns = Arrays.asList(
 				selectedColumn, pathColumn, sizeColumn);
 		
 		torrentContentsTable.getColumns().addAll(tableColumns);
@@ -288,8 +280,8 @@ public final class AddNewTorrentWindow {
 		labelPane.add(new Label("Size:"), 0, 2);			
 		labelPane.add(fileSizeLabel, 1, 2);
 		
-		labelPane.add(new Label("Date:"), 0, 3);	
-		labelPane.add(new Label("2015-02-24 12:41:00"), 1, 3);
+		labelPane.add(new Label("Date:"), 0, 3);			
+		labelPane.add(new Label(creationDate), 1, 3);
 		
 		final HBox selectionButtonsPane = new HBox(10);
 		selectionButtonsPane.setAlignment(Pos.CENTER_RIGHT);
@@ -372,12 +364,36 @@ public final class AddNewTorrentWindow {
 		return borderedTorrentOptionsPane;
 	}
 	
-	private TreeItem<TorrentContentModel> createTorrentContentTree() {
-		//TODO: Populate from infoDictionary
-		final TorrentContentModel file1 = new TorrentContentModel("VTS_1.vob", "/home/Downloads", 565324762);		
-		final TorrentContentModel file2 = new TorrentContentModel("VTS_2.vob", "/temp", 13753859387L);
+	private TreeItem<TorrentFileEntry> createTorrentContentTree(final BinaryEncodedDictionary infoDictionary) {
+		final BinaryEncodedInteger length = (BinaryEncodedInteger)infoDictionary.get(BinaryEncodingKeyNames.KEY_LENGTH);
+		final BinaryEncodedList files = (BinaryEncodedList)infoDictionary.get(BinaryEncodingKeyNames.KEY_FILES);
 		
-		torrentContents = FXCollections.observableArrayList(file1, file2);
+		final TreeItem<TorrentFileEntry> root = new TreeItem<>();					
+		
+		if(length != null) {
+			//Handle single file torrent mode
+			final TorrentFileEntry fileModel = new TorrentFileEntry(fileName, ". (current path)", 
+					length.getValue());
+			
+			torrentContents.add(fileModel);
+			
+			final TreeItem<TorrentFileEntry> fileEntry = new TreeItem<>(torrentContents.get(0));
+			root.getChildren().add(fileEntry);
+		}
+		else if(files != null) {
+			//TODO: Handle multiple files torrent mode
+			files.stream().forEach(fd -> {
+				final BinaryEncodedDictionary fileDictionary = (BinaryEncodedDictionary)fd;
+				final long fileLength = ((BinaryEncodedInteger)fileDictionary.get(
+						BinaryEncodingKeyNames.KEY_LENGTH)).getValue();				
+				((BinaryEncodedList)fileDictionary.get(BinaryEncodingKeyNames.KEY_PATH)).stream().forEach(pathSegment -> {								
+				});
+			});
+		}
+		else {
+			//TODO: Handle invalid torrent, no files found (show an error to the user)
+		}
+		
 		torrentContents.forEach(m -> {
 			m.selectedProperty().addListener((observable, oldValue, newValue) -> {	
 				if(availableDiskSpace != -1) {
@@ -392,9 +408,6 @@ public final class AddNewTorrentWindow {
 				}
 			});
 		});
-		
-		final TreeItem<TorrentContentModel> root = new TreeItem<>(torrentContents.get(0));
-		root.getChildren().add(new TreeItem<TorrentContentModel>(torrentContents.get(1)));
 		
 		root.setExpanded(true);
 		return root;

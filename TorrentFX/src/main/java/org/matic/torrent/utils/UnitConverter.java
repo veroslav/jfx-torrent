@@ -20,7 +20,13 @@
 
 package org.matic.torrent.utils;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 public final class UnitConverter {
+	
+	private static final DateFormat DATE_FORMATTER = new SimpleDateFormat("yyyy-MM-dd kk:mm:ss");
 
 	/**
 	 * Return a humanly readable presentation of input byte count
@@ -36,4 +42,15 @@ public final class UnitConverter {
         return String.format("%.1f %sB", (double)byteCount / (1L << (unit * 10)), 
         		" KMGTPE".charAt(unit));
     }
+	
+	/**
+	 * Return a humanly readable presentation of time in milliseconds
+	 * 
+	 * @param timeMillis Time to format (in ms)
+	 * @return
+	 */
+	public static String formatTime(final long timeMillis) {
+		final Date timeAsDate = new Date(timeMillis);		
+		return UnitConverter.DATE_FORMATTER.format(timeAsDate);
+	}
 }
