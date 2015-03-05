@@ -23,6 +23,14 @@ package org.matic.torrent.gui.tree;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * A node representing a relation between a partial torrent file path and a
+ * corresponding TreeItem in the view model. 
+ * 
+ * @author vedran
+ *
+ * @param <T> Type contained by this node, usually TreeItem
+ */
 public final class TorrentEntryNode<T> {
 	
 	private final Map<String, TorrentEntryNode<T>> children;
@@ -55,4 +63,49 @@ public final class TorrentEntryNode<T> {
 	public final void add(final TorrentEntryNode<T> child) {
 		children.put(child.getName(), child);
 	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result
+				+ ((children == null) ? 0 : children.hashCode());
+		result = prime * result + ((data == null) ? 0 : data.hashCode());
+		result = prime * result + ((name == null) ? 0 : name.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(final Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		@SuppressWarnings("unchecked")
+		TorrentEntryNode<T> other = (TorrentEntryNode<T>) obj;
+		if (children == null) {
+			if (other.children != null)
+				return false;
+		} else if (!children.equals(other.children))
+			return false;
+		if (data == null) {
+			if (other.data != null)
+				return false;
+		} else if (!data.equals(other.data))
+			return false;
+		if (name == null) {
+			if (other.name != null)
+				return false;
+		} else if (!name.equals(other.name))
+			return false;
+		return true;
+	}
+
+	@Override
+	public String toString() {
+		return "TorrentEntryNode [children=" + children + ", data=" + data
+				+ ", name=" + name + "]";
+	}	
 }

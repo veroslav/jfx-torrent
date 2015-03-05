@@ -24,6 +24,8 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 import javafx.collections.FXCollections;
@@ -44,6 +46,8 @@ import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeTableCell;
 import javafx.scene.control.TreeTableColumn;
 import javafx.scene.control.TreeTableView;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
@@ -55,8 +59,10 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Window;
 
 import org.controlsfx.tools.Borders;
+import org.matic.torrent.gui.image.ImageUtils;
 import org.matic.torrent.gui.model.TorrentFileEntry;
 import org.matic.torrent.gui.tree.TorrentEntryNode;
+import org.matic.torrent.gui.tree.TorrentEntryTreeItem;
 import org.matic.torrent.io.DiskUtilities;
 import org.matic.torrent.io.codec.BinaryEncodedDictionary;
 import org.matic.torrent.io.codec.BinaryEncodedInteger;
@@ -97,12 +103,13 @@ public final class AddNewTorrentWindow {
 	private final BinaryEncodedDictionary infoDictionary;
 	
 	private final ObservableList<TorrentFileEntry> torrentContents = 
-			FXCollections.observableArrayList();;
+			FXCollections.observableArrayList();
+	
+	private final Map<TorrentFileEntry, TorrentEntryTreeItem<TorrentFileEntry>> modelViewMapping = new HashMap<>();
 		
 	private final String creationDate;
 	private final String fileName;
 	private final String comment;
-	private final Path filePath;
 	
 	private long availableDiskSpace;
 
@@ -122,9 +129,7 @@ public final class AddNewTorrentWindow {
 			availableDiskSpace = DiskUtilities.getAvailableDiskSpace(filePath);
 		} catch (final IOException ioe) {
 			availableDiskSpace = -1;
-		}
-		
-		this.filePath = filePath;
+		}		
 		
 		window = new Dialog<>();
 		window.initOwner(owner);
@@ -176,7 +181,7 @@ public final class AddNewTorrentWindow {
 		pathColumn.setVisible(false);
 			
 		torrentContentsTable.setTableMenuButtonVisible(true);
-		torrentContentsTable.setShowRoot(true);
+		torrentContentsTable.setShowRoot(false);
 		torrentContentsTable.setEditable(true);				
 		torrentContentsTable.getColumns().addAll(buildTreeViewColumns());
         
@@ -190,23 +195,47 @@ public final class AddNewTorrentWindow {
 	}
 	
 	private Collection<TreeTableColumn<TorrentFileEntry, ?>> buildTreeViewColumns() {
-		final TreeTableColumn<TorrentFileEntry, Boolean> selectedColumn = new TreeTableColumn<TorrentFileEntry, Boolean>("Name");	
+		final TreeTableColumn<TorrentFileEntry, Boolean> selectedColumn = 
+				new TreeTableColumn<TorrentFileEntry, Boolean>("Name");	
 		selectedColumn.setEditable(true);
 		selectedColumn.setCellValueFactory(param -> param.getValue().getValue().selectedProperty());			
 		selectedColumn.setCellFactory(column -> new TreeTableCell<TorrentFileEntry, Boolean>() {			
+			final ImageView fileImageView = new ImageView();			
+			final Label fileNameLabel = new Label();						
+			
 			@Override
 			protected final void updateItem(final Boolean selected, boolean empty) {
-				super.updateItem(selected, empty);
-				if(selected == null || empty) {
-					this.setGraphic(null);
+				super.updateItem(selected, empty);				
+				
+				if(empty) {
+					setText(null);
+					setGraphic(null);
 				}
 				else {
-					final TorrentFileEntry fileContent = torrentContents.get(getIndex());					
+					final TorrentFileEntry fileContent = this.getTreeTableRow().getItem();					
+					
+					if(fileContent == null) {
+						return;
+					}			
+					
 					final CheckBox selectionCheckBox = new CheckBox();
 					selectionCheckBox.setFocusTraversable(false);
-					final HBox checkBoxPane = new HBox();
-					checkBoxPane.getChildren().addAll(selectionCheckBox, 
-							new Label(fileContent.nameProperty().get()));
+					
+					final TorrentEntryTreeItem<TorrentFileEntry> treeItem = modelViewMapping.get(fileContent);
+					Image fileImage = ImageUtils.FILE_IMAGE;
+					
+					if(treeItem == null) {
+						System.out.println("fileContent: " + fileContent.toString());
+					}
+					
+					if(!treeItem.isLeaf()) {
+						fileImage = treeItem.isExpanded()? ImageUtils.FOLDER_OPENED_IMAGE : ImageUtils.FOLDER_CLOSED_IMAGE;
+					}
+					fileImageView.setImage(fileImage);
+					fileNameLabel.setText(fileContent.nameProperty().get());
+					
+					final HBox checkBoxPane = new HBox();								
+					checkBoxPane.getChildren().addAll(selectionCheckBox, fileImageView, fileNameLabel);
 										
 	                selectionCheckBox.setSelected(fileContent.selectedProperty().get());
 	                selectionCheckBox.selectedProperty().bindBidirectional(fileContent.selectedProperty());
@@ -222,16 +251,24 @@ public final class AddNewTorrentWindow {
 		final TreeTableColumn<TorrentFileEntry, Long> sizeColumn = new TreeTableColumn<TorrentFileEntry, Long>("Size");
 		sizeColumn.setCellValueFactory(param -> param.getValue().getValue().sizeProperty().asObject());
 		sizeColumn.setCellFactory(column -> new TreeTableCell<TorrentFileEntry, Long>() {
+			final Label valueLabel = new Label();
+			
 			@Override
-			protected void updateItem(final Long value, final boolean empty) {
+			protected final void updateItem(final Long value, final boolean empty) {
 				super.updateItem(value, empty);
-				if(value == null || empty) {
-					this.setGraphic(null);
+				if(empty) {
+					setText(null);
+					setGraphic(null);
 				}
 				else {
-					final TorrentFileEntry fileContent = torrentContents.get(getIndex());					
+					final TorrentFileEntry fileContent = this.getTreeTableRow().getItem();
+					
+					if(fileContent == null) {
+						return;
+					}
+					
 					final String formattedValue = UnitConverter.formatByteCount(fileContent.sizeProperty().get());
-					final Label valueLabel = new Label(formattedValue);
+					valueLabel.setText(formattedValue);
 	                setGraphic(valueLabel);
 				}
 			}			
@@ -380,15 +417,12 @@ public final class AddNewTorrentWindow {
 		
 		if(length != null) {
 			//Handle single file torrent mode
-			final TorrentFileEntry fileModel = new TorrentFileEntry(fileName, ". (current path)", 
-					length.getValue());
-			torrentContents.add(fileModel);
+			root = buildSingleFileTree(length.getValue());
 			
-			root = new TreeItem<>(fileModel);
 		}
 		else if(files != null) {
 			//Handle multiple files torrent mode
-			root = buildFileTree(files);
+			root = buildMultiFileTree(files);
 		}
 		else {
 			//TODO: Handle invalid torrent, no files found (show an error to the user)
@@ -407,21 +441,34 @@ public final class AddNewTorrentWindow {
 				else {
 					fileSizeLabel.setText("761 MB (disk space: unavailable)");
 				}				
-				final int rowIndex = torrentContents.indexOf(m);
-				torrentContentsTable.getSelectionModel().select(rowIndex);				
+				
+				torrentContentsTable.getSelectionModel().select(modelViewMapping.get(m));				
 				torrentContentsTable.requestFocus();
 			});
-		});		
+		});
 		
 		root.setExpanded(true);
 		
 		return root;
 	}
 	
-	private TreeItem<TorrentFileEntry> buildFileTree(final BinaryEncodedList files) {			
-		final TorrentFileEntry fileDirEntry = new TorrentFileEntry(fileName, ". (current path)", 0L);
-		torrentContents.add(fileDirEntry);					
-		final TreeItem<TorrentFileEntry> fileDirTreeItem = new TreeItem<>(fileDirEntry);
+	private TreeItem<TorrentFileEntry> buildSingleFileTree(final long fileLength) {
+		final TorrentFileEntry fileModel = new TorrentFileEntry(fileName, ". (current path)", fileLength);
+		torrentContents.add(fileModel);
+		
+		final TorrentEntryTreeItem<TorrentFileEntry> fileTreeItem = new TorrentEntryTreeItem<>(fileModel, true);
+		modelViewMapping.put(fileModel, fileTreeItem);
+		
+		final TreeItem<TorrentFileEntry> root = new TorrentEntryTreeItem<>(new TorrentFileEntry(
+				"root", ". (current path)", 0L), false);			
+		root.getChildren().add(fileTreeItem);
+		
+		return root;
+	}
+	
+	private TreeItem<TorrentFileEntry> buildMultiFileTree(final BinaryEncodedList files) {			
+		final TorrentFileEntry fileDirEntry = new TorrentFileEntry(fileName, ". (current path)", 0L);					
+		final TreeItem<TorrentFileEntry> fileDirTreeItem = new TorrentEntryTreeItem<>(fileDirEntry, false);
 		final TorrentEntryNode<TreeItem<TorrentFileEntry>> fileDirNode = new TorrentEntryNode<>(fileName, fileDirTreeItem);
 		
 		//Iterate through all the files contained by this torrent
@@ -432,16 +479,21 @@ public final class AddNewTorrentWindow {
 									
 			final BinaryEncodedList filePaths = (BinaryEncodedList)fileDictionary.get(BinaryEncodingKeyNames.KEY_PATH);
 			TorrentEntryNode<TreeItem<TorrentFileEntry>> currentNode = fileDirNode;
+			final StringBuilder pathBuilder = new StringBuilder("./");
 			final int filePathSize = filePaths.size();
 			
 			//Process all directories on the file path
 			for(int i = 0; i < filePathSize - 1; ++i) {				
-				final String pathName = filePaths.get(i).toString();				
-				if(!currentNode.contains(pathName)) {					
-					final TorrentFileEntry fileEntry = new TorrentFileEntry(pathName, ". (current path)", 0L);
+				final String pathName = filePaths.get(i).toString();
+				pathBuilder.append(pathName);
+				if(!currentNode.contains(pathName)) {										
+					final TorrentFileEntry fileEntry = new TorrentFileEntry(pathName, pathBuilder.toString(), 0L);
 					torrentContents.add(fileEntry);
-					final TreeItem<TorrentFileEntry> treeItem = new TreeItem<>(fileEntry);
+					final TorrentEntryTreeItem<TorrentFileEntry> treeItem = new TorrentEntryTreeItem<>(fileEntry, false);
+					treeItem.setExpanded(true);
 					currentNode.getData().getChildren().add(treeItem);		
+					
+					modelViewMapping.put(fileEntry, treeItem);
 					
 					final TorrentEntryNode<TreeItem<TorrentFileEntry>> childNode = new TorrentEntryNode<>(pathName, treeItem);					
 					currentNode.add(childNode);					
@@ -450,15 +502,21 @@ public final class AddNewTorrentWindow {
 				else {
 					currentNode = currentNode.getChild(pathName);
 				}
+				pathBuilder.append("/");
 			}			
 			
 			//Process the file itself when we get here (last element on the path)
-			final TorrentFileEntry fileEntry = new TorrentFileEntry(filePaths.get(filePathSize-1).toString(), 
-					". (current path)", fileLength);
+			final String leafName = filePaths.get(filePathSize-1).toString();			
+			final TorrentFileEntry fileEntry = new TorrentFileEntry(leafName, pathBuilder.toString(), fileLength);
 			
 			torrentContents.add(fileEntry);
-			final TreeItem<TorrentFileEntry> treeItem = new TreeItem<>(fileEntry);
+			final TorrentEntryTreeItem<TorrentFileEntry> treeItem = new TorrentEntryTreeItem<>(fileEntry, true);
 			currentNode.getData().getChildren().add(treeItem);
+			
+			modelViewMapping.put(fileEntry, treeItem);
+			
+			final TorrentEntryNode<TreeItem<TorrentFileEntry>> childNode = new TorrentEntryNode<>(leafName, treeItem);					
+			currentNode.add(childNode);					
 		});
 		return fileDirTreeItem;
 	}
