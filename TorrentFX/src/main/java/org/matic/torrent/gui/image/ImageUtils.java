@@ -20,16 +20,23 @@
 
 package org.matic.torrent.gui.image;
 
-import org.matic.torrent.gui.tree.TorrentEntryTreeItem;
-
 import javafx.scene.image.Image;
+
+import org.matic.torrent.gui.window.ApplicationWindow;
 
 public final class ImageUtils {
 
 	public static final Image FOLDER_CLOSED_IMAGE = new Image(
-			TorrentEntryTreeItem.class.getResourceAsStream("/images/appbar.folder.png"), 25, 25, true, true);
+			ApplicationWindow.class.getResourceAsStream("/images/appbar.folder.png"));
 	public static final Image FOLDER_OPENED_IMAGE = new Image(
-			TorrentEntryTreeItem.class.getResourceAsStream("/images/appbar.folder.open.png"), 25, 25, true, true);
+			ApplicationWindow.class.getResourceAsStream("/images/appbar.folder.open.png"));
 	public static final Image FILE_IMAGE = new Image(
-			TorrentEntryTreeItem.class.getResourceAsStream("/images/appbar.page.small.png"), 25, 25, true, true);
+			ApplicationWindow.class.getResourceAsStream("/images/appbar.page.small.png"));
+	
+	public static final Image DOWNLOADS_IMAGE = new Image(
+			ApplicationWindow.class.getResourceAsStream("/images/appbar.arrow.down.up.png"), 25, 25, true, true);
+	public static final Image LABEL_IMAGE = new Image(
+			ApplicationWindow.class.getResourceAsStream("/images/appbar.tag.label.png"), 25, 25, true, true);
+	public static final Image RSS_IMAGE = new Image(
+			ApplicationWindow.class.getResourceAsStream("/images/appbar.rss.png"), 25, 25, true, true);	
 }

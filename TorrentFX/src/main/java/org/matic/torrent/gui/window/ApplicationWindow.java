@@ -63,6 +63,7 @@ import javafx.stage.Stage;
 
 import org.matic.torrent.gui.action.FileActionHandler;
 import org.matic.torrent.gui.action.WindowActionHandler;
+import org.matic.torrent.gui.image.ImageUtils;
 import org.matic.torrent.gui.model.TorrentJobStatus;
 
 /**
@@ -131,29 +132,23 @@ public final class ApplicationWindow {
 			return new TreeItem<Node>(label);
 		}).collect(Collectors.toList());
 		
-		final Image torrentsRootImage = new Image(getClass().getResourceAsStream("/images/appbar.arrow.down.up.png"),
-				25, 25, true, true);
 		final Label torrentsRootLabel = new Label("Torrents (0)");
 		torrentsRootLabel.getStyleClass().add("filter-list-root-cell");
-		torrentsRootLabel.setGraphic(new ImageView(torrentsRootImage));
+		torrentsRootLabel.setGraphic(new ImageView(ImageUtils.DOWNLOADS_IMAGE));
 		final TreeItem<Node> torrentsRootNode = new TreeItem<>(torrentsRootLabel);
 		torrentsRootNode.setExpanded(true);
 		torrentsRootNode.getChildren().addAll(torrentNodeElements);
 		
-		final Image labelsRootImage = new Image(getClass().getResourceAsStream("/images/appbar.tag.label.png"),
-				25, 25, true, true);
 		final Label labelsRootLabel = new Label("Labels");
 		labelsRootLabel.getStyleClass().add("filter-list-root-cell");
-		labelsRootLabel.setGraphic(new ImageView(labelsRootImage));
+		labelsRootLabel.setGraphic(new ImageView(ImageUtils.LABEL_IMAGE));
 		final TreeItem<Node> labelsRootNode = new TreeItem<>(labelsRootLabel);
 		labelsRootNode.setExpanded(true);
 		labelsRootNode.getChildren().addAll(labelsNodeElements);
 		
-		final Image rssFeedsRootImage = new Image(getClass().getResourceAsStream("/images/appbar.rss.png"),
-				25, 25, true, true);
 		final Label rssFeedsRootLabel = new Label("Feeds (0)");
 		rssFeedsRootLabel.getStyleClass().add("filter-list-root-cell");
-		rssFeedsRootLabel.setGraphic(new ImageView(rssFeedsRootImage));
+		rssFeedsRootLabel.setGraphic(new ImageView(ImageUtils.RSS_IMAGE));
 		final TreeItem<Node> rssFeedsRootNode = new TreeItem<>(rssFeedsRootLabel);
 		rssFeedsRootNode.setExpanded(true);
 		
