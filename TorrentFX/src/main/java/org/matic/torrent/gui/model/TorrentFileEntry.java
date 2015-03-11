@@ -60,6 +60,14 @@ public final class TorrentFileEntry {
 		System.out.println("getSelected(" + selected.get() + ")");
 		return selected.get();
 	}
+	
+	public final long getSize() {
+		return size.get();
+	}
+	
+	public final void updateSize(final long additionalSize) {
+		size.set(size.get() + additionalSize);
+	}
 		
 	public final BooleanProperty selectedProperty() {		
 		return selected;

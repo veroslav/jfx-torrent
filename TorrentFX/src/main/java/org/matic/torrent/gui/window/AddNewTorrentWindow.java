@@ -25,7 +25,10 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
+import java.util.function.Consumer;
 
+import javafx.beans.property.LongProperty;
+import javafx.beans.property.SimpleLongProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.HPos;
@@ -56,6 +59,10 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.text.FontSmoothingType;
+import javafx.scene.text.Text;
+import javafx.scene.text.TextFlow;
 import javafx.stage.Window;
 
 import org.controlsfx.tools.Borders;
@@ -95,14 +102,18 @@ public final class AddNewTorrentWindow {
 	private final Button advancedButton;
 	private final Button browseButton;
 	
-	private final Label fileSizeLabel;
+	private final TextFlow fileSizeLabel;
+	private final Text diskSpaceText;
+	private final Text fileSizeText;
 	
 	private final Dialog<ButtonType> window;
 	
 	private final BinaryEncodedDictionary infoDictionary;
 	
-	private final ObservableList<TorrentFileEntry> torrentContents = 
+	private final ObservableList<TorrentFileEntry> torrentFileEntries = 
 			FXCollections.observableArrayList();
+	
+	private final LongProperty selectedFilesSize;
 		
 	private final String creationDate;
 	private final String fileName;
@@ -121,13 +132,14 @@ public final class AddNewTorrentWindow {
 		
 		final BinaryEncodedString metaDataComment = (BinaryEncodedString)torrentMetaData.get(BinaryEncodingKeyNames.KEY_COMMENT);
 		comment = metaDataComment != null? metaDataComment.toString() : "";
-		fileName = infoDictionary.get(BinaryEncodingKeyNames.KEY_NAME).toString();		
+		fileName = infoDictionary.get(BinaryEncodingKeyNames.KEY_NAME).toString();
 		
 		try {
 			availableDiskSpace = DiskUtilities.getAvailableDiskSpace(filePath);
 		} catch (final IOException ioe) {
+			//TODO: Perhaps throw an exception here?
 			availableDiskSpace = -1;
-		}		
+		}
 		
 		window = new Dialog<>();
 		window.initOwner(owner);
@@ -137,12 +149,27 @@ public final class AddNewTorrentWindow {
 		createSubFolderCheckbox = new CheckBox("Create subfolder");
 		startTorrentCheckbox = new CheckBox("Start torrent");
 		skipHashCheckbox = new CheckBox("Skip hash check");
+				
+		diskSpaceText = new Text();
+		fileSizeText = new Text();		
+		fileSizeLabel = new TextFlow();
 		
+		fileSizeText.setFontSmoothingType(FontSmoothingType.LCD);		
+		diskSpaceText.setFontSmoothingType(FontSmoothingType.LCD);
+		fileSizeLabel.getChildren().addAll(fileSizeText, diskSpaceText);		
+		
+		final TreeItem<TorrentFileEntry> rootNode = createTorrentContentTree(infoDictionary); 
 		torrentContentsTable = new TreeTableView<TorrentFileEntry>();
-		torrentContentsTable.setRoot(createTorrentContentTree(infoDictionary));
+		torrentContentsTable.setRoot(rootNode);
 		
+		final long totalSelectionLength = rootNode.getValue().getSize();
+		updateSelectedFileLengths(totalSelectionLength, totalSelectionLength);
+		
+		selectedFilesSize = new SimpleLongProperty(rootNode.getValue().getSize());				
+		selectedFilesSize.addListener((observable, oldValue, newValue) ->
+			updateSelectedFileLengths(newValue.longValue(), rootNode.getValue().getSize()));		
+				
 		nameTextField = new TextField(fileName);		
-		fileSizeLabel = new Label();
 		
 		savePathCombo = new ComboBox<String>();
 		labelCombo = new ComboBox<String>();
@@ -160,18 +187,23 @@ public final class AddNewTorrentWindow {
 		return null;
 	}
 	
-	private void initComponents() {
+	private void initComponents() {				
 		createSubFolderCheckbox.setSelected(true);
 		startTorrentCheckbox.setSelected(true);
-		savePathCombo.setMinWidth(400);	
+		savePathCombo.setMinWidth(400);
+		savePathCombo.setEditable(true);
+		labelCombo.setEditable(true);
 		
 		selectAllButton.setOnAction(event -> {
-			torrentContents.forEach(entry -> entry.selectedProperty().set(true));
+			torrentContentsTable.getRoot().getChildren().forEach(child -> child.getValue().selectedProperty().set(true));
 			selectAllButton.requestFocus();
 		});
 		
+		//TODO: Fix bug, no deselection when only one child is selected->root is in undetermined state
 		selectNoneButton.setOnAction(event -> {
-			torrentContents.forEach(entry -> entry.selectedProperty().set(false));
+			torrentContentsTable.getRoot().getChildren().forEach(child -> {
+				child.getValue().selectedProperty().set(false);
+			});
 			selectNoneButton.requestFocus();
 		});
 			
@@ -289,6 +321,36 @@ public final class AddNewTorrentWindow {
 		return Arrays.asList(selectedColumn, pathColumn, sizeColumn);
 	}
 	
+	private void updateSelectedFileLengths(final long selectedFilesLength, final long totalFilesLength) {
+		final StringBuilder fileSizeBuilder = new StringBuilder();
+		fileSizeBuilder.append(UnitConverter.formatByteCount(selectedFilesLength));
+		
+		if(selectedFilesLength < totalFilesLength) {
+			fileSizeBuilder.append(" (of ");
+			fileSizeBuilder.append(UnitConverter.formatByteCount(totalFilesLength));
+			fileSizeBuilder.append(")");
+		}
+		
+		final StringBuilder diskSpaceBuilder = new StringBuilder();
+		diskSpaceBuilder.append(" (disk space: ");				
+		
+		fileSizeText.setText(fileSizeBuilder.toString());			
+		final long remainingDiskSpace = availableDiskSpace - selectedFilesLength;
+		
+		if(remainingDiskSpace < 0) {
+			diskSpaceBuilder.append(UnitConverter.formatByteCount(Math.abs(remainingDiskSpace)));
+			diskSpaceBuilder.append(" too short)");
+			diskSpaceText.setText(diskSpaceBuilder.toString());
+			diskSpaceText.setFill(Color.RED);
+		}
+		else {
+			diskSpaceBuilder.append(UnitConverter.formatByteCount(remainingDiskSpace));
+			diskSpaceBuilder.append(")");
+			diskSpaceText.setText(diskSpaceBuilder.toString());
+			diskSpaceText.setFill(Color.BLACK);
+		}		
+	}
+	
 	private Node layoutContent() {
 		final BorderPane mainPane = new BorderPane();
 		mainPane.setPrefHeight(400);
@@ -324,7 +386,7 @@ public final class AddNewTorrentWindow {
 		final GridPane labelPane = new GridPane();
 		
 		final ColumnConstraints nameColumnConstraints = new ColumnConstraints(100);		
-		final ColumnConstraints valueColumnConstraints = new ColumnConstraints();		
+		final ColumnConstraints valueColumnConstraints = new ColumnConstraints();			
 		
 		labelPane.getColumnConstraints().addAll(nameColumnConstraints, valueColumnConstraints);
 		
@@ -446,18 +508,14 @@ public final class AddNewTorrentWindow {
 		return root;
 	}
 	
-	private void applySelectionListener(final TorrentFileEntry fileEntry, final TreeItem<TorrentFileEntry> treeItem) {
+	private void addTreeItemListener(final TreeItem<TorrentFileEntry> treeItem) {
+		final TorrentFileEntry fileEntry = treeItem.getValue();
 		fileEntry.selectedProperty().addListener((observable, oldValue, newValue) -> {	
-			if(availableDiskSpace != -1) {
-				final long affectedFileSize = fileEntry.sizeProperty().get();
-				availableDiskSpace += (newValue? -affectedFileSize : affectedFileSize);
-				
-				fileSizeLabel.setText("761 MB (disk space: " + 
-				UnitConverter.formatByteCount(availableDiskSpace) + ")");
-			}
-			else {
-				fileSizeLabel.setText("761 MB (disk space: unavailable)");
-			}									
+			if(treeItem.isLeaf()) {
+				final long fileSize = fileEntry.sizeProperty().get();
+				final long affectedFileSize = (newValue? -fileSize: fileSize);
+				selectedFilesSize.set(selectedFilesSize.get() - affectedFileSize);
+			}								
 			torrentContentsTable.getSelectionModel().select(treeItem);
 			torrentContentsTable.requestFocus();
 		});
@@ -465,11 +523,12 @@ public final class AddNewTorrentWindow {
 	
 	private TreeItem<TorrentFileEntry> buildSingleFileTree(final long fileLength) {
 		final TorrentFileEntry fileEntry = new TorrentFileEntry(fileName, ". (current path)", fileLength);
-		torrentContents.add(fileEntry);
+		torrentFileEntries.add(fileEntry);
 		
-		final CheckBoxTreeItem<TorrentFileEntry> fileTreeItem = new CheckBoxTreeItem<>(fileEntry);
-		fileTreeItem.selectedProperty().bindBidirectional(fileEntry.selectedProperty());	
-		applySelectionListener(fileEntry, fileTreeItem);
+		final CheckBoxTreeItem<TorrentFileEntry> fileTreeItem = new CheckBoxTreeItem<>(fileEntry);		
+		fileTreeItem.selectedProperty().bindBidirectional(fileEntry.selectedProperty());
+		fileTreeItem.setSelected(true);
+		addTreeItemListener(fileTreeItem);
 		
 		final CheckBoxTreeItem<TorrentFileEntry> root = new CheckBoxTreeItem<>(new TorrentFileEntry(
 				"root", ". (current path)", 0L));			
@@ -483,7 +542,7 @@ public final class AddNewTorrentWindow {
 		final CheckBoxTreeItem<TorrentFileEntry> fileDirTreeItem = new CheckBoxTreeItem<>(fileDirEntry);
 		final TorrentEntryNode<TreeItem<TorrentFileEntry>> fileDirNode = new TorrentEntryNode<>(fileName, fileDirTreeItem);
 		
-		fileDirTreeItem.selectedProperty().bindBidirectional(fileDirEntry.selectedProperty());
+		fileDirTreeItem.selectedProperty().bindBidirectional(fileDirEntry.selectedProperty());	
 		
 		//Iterate through all the files contained by this torrent
 		files.stream().forEach(fd -> {
@@ -502,12 +561,12 @@ public final class AddNewTorrentWindow {
 				pathBuilder.append(pathName);
 				if(!currentNode.contains(pathName)) {										
 					final TorrentFileEntry fileEntry = new TorrentFileEntry(pathName, pathBuilder.toString(), 0L);
-					torrentContents.add(fileEntry);
-					final CheckBoxTreeItem<TorrentFileEntry> treeItem = new CheckBoxTreeItem<>(fileEntry);
-					treeItem.setExpanded(true);
-					
+					torrentFileEntries.add(fileEntry);
+					final CheckBoxTreeItem<TorrentFileEntry> treeItem = new CheckBoxTreeItem<>(fileEntry);					
 					treeItem.selectedProperty().bindBidirectional(fileEntry.selectedProperty());
-					applySelectionListener(fileEntry, treeItem);
+					treeItem.setSelected(true);
+					treeItem.setExpanded(true);
+					addTreeItemListener(treeItem);
 					currentNode.getData().getChildren().add(treeItem);		
 					
 					final TorrentEntryNode<TreeItem<TorrentFileEntry>> childNode = new TorrentEntryNode<>(pathName, treeItem);					
@@ -524,15 +583,30 @@ public final class AddNewTorrentWindow {
 			final String leafName = filePaths.get(filePathSize-1).toString();			
 			final TorrentFileEntry fileEntry = new TorrentFileEntry(leafName, pathBuilder.toString(), fileLength);
 			
-			torrentContents.add(fileEntry);
-			final CheckBoxTreeItem<TorrentFileEntry> treeItem = new CheckBoxTreeItem<>(fileEntry);
+			torrentFileEntries.add(fileEntry);
+			final CheckBoxTreeItem<TorrentFileEntry> treeItem = new CheckBoxTreeItem<>(fileEntry);			
 			treeItem.selectedProperty().bindBidirectional(fileEntry.selectedProperty());
-			applySelectionListener(fileEntry, treeItem);
+			treeItem.setSelected(true);
+			addTreeItemListener(treeItem);
 			currentNode.getData().getChildren().add(treeItem);
 			
 			final TorrentEntryNode<TreeItem<TorrentFileEntry>> childNode = new TorrentEntryNode<>(leafName, treeItem);					
-			currentNode.add(childNode);					
+			currentNode.add(childNode);		
+			
+			//Update file sizes for all of the childNode's parents in the tree
+			final Consumer<CheckBoxTreeItem<TorrentFileEntry>> fileSizePropagation = (item) -> 
+				item.getValue().updateSize(fileLength);
+			applyOnParents(treeItem, fileSizePropagation);
 		});
 		return fileDirTreeItem;
+	}
+	
+	private void applyOnParents(final CheckBoxTreeItem<TorrentFileEntry> child,
+			final Consumer<CheckBoxTreeItem<TorrentFileEntry>> consumer) {
+		CheckBoxTreeItem<TorrentFileEntry> current = (CheckBoxTreeItem<TorrentFileEntry>)child.getParent();		
+		while(current != null) {			
+			consumer.accept(current);
+			current = (CheckBoxTreeItem<TorrentFileEntry>)current.getParent();
+		}		
 	}
 }
