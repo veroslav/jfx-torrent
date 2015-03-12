@@ -34,7 +34,6 @@ import javafx.collections.ObservableList;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.geometry.Rectangle2D;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
@@ -50,6 +49,7 @@ import javafx.scene.control.TreeTableCell;
 import javafx.scene.control.TreeTableColumn;
 import javafx.scene.control.TreeTableView;
 import javafx.scene.control.cell.CheckBoxTreeTableCell;
+import javafx.scene.control.cell.TreeItemPropertyValueFactory;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.ColumnConstraints;
@@ -127,12 +127,7 @@ public final class AddNewTorrentWindow {
 		final BinaryEncodedInteger creationDateInSeconds = (BinaryEncodedInteger)torrentMetaData.get(
 				BinaryEncodingKeyNames.KEY_CREATION_DATE);
 		creationDate = creationDateInSeconds != null? UnitConverter.formatTime(creationDateInSeconds.getValue() * 1000) : "";
-		
 		infoDictionary = ((BinaryEncodedDictionary)torrentMetaData.get(BinaryEncodingKeyNames.KEY_INFO));
-		
-		final BinaryEncodedString metaDataComment = (BinaryEncodedString)torrentMetaData.get(BinaryEncodingKeyNames.KEY_COMMENT);
-		comment = metaDataComment != null? metaDataComment.toString() : "";
-		fileName = infoDictionary.get(BinaryEncodingKeyNames.KEY_NAME).toString();
 		
 		try {
 			availableDiskSpace = DiskUtilities.getAvailableDiskSpace(filePath);
@@ -140,6 +135,10 @@ public final class AddNewTorrentWindow {
 			//TODO: Perhaps throw an exception here?
 			availableDiskSpace = -1;
 		}
+		
+		final BinaryEncodedString metaDataComment = (BinaryEncodedString)torrentMetaData.get(BinaryEncodingKeyNames.KEY_COMMENT);
+		comment = metaDataComment != null? metaDataComment.toString() : "";
+		fileName = infoDictionary.get(BinaryEncodingKeyNames.KEY_NAME).toString();
 		
 		window = new Dialog<>();
 		window.initOwner(owner);
@@ -199,9 +198,12 @@ public final class AddNewTorrentWindow {
 			selectAllButton.requestFocus();
 		});
 		
-		//TODO: Fix bug, no deselection when only one child is selected->root is in undetermined state
 		selectNoneButton.setOnAction(event -> {
 			torrentContentsTable.getRoot().getChildren().forEach(child -> {
+				final CheckBoxTreeItem<TorrentFileEntry> checkBoxItem = (CheckBoxTreeItem<TorrentFileEntry>)child;
+				if(checkBoxItem.isIndeterminate()) {
+					checkBoxItem.setSelected(true);
+				}
 				child.getValue().selectedProperty().set(false);
 			});
 			selectNoneButton.requestFocus();
@@ -226,17 +228,13 @@ public final class AddNewTorrentWindow {
 				new TreeTableColumn<TorrentFileEntry, Boolean>("Name");	
 		selectedColumn.setEditable(true);
 		selectedColumn.setPrefWidth(350);
-		selectedColumn.setCellValueFactory(param -> param.getValue().getValue().selectedProperty());			
+		selectedColumn.setCellValueFactory(new TreeItemPropertyValueFactory<TorrentFileEntry, Boolean>("selected"));			
 		selectedColumn.setCellFactory(column -> new CheckBoxTreeTableCell<TorrentFileEntry, Boolean>() {			
-			final Rectangle2D croppedPortion = new Rectangle2D(17, 19, 42, 38);			
 			final ImageView imageView = new ImageView();	
 			final Label fileNameLabel = new Label();
 			
 			{
-				imageView.setViewport(croppedPortion);
-				imageView.setFitWidth(16);
-				imageView.setFitHeight(16);					
-				imageView.setSmooth(true);
+				ImageUtils.cropToSmallImage(imageView);
 			}
 			
 			@Override
@@ -258,7 +256,7 @@ public final class AddNewTorrentWindow {
 							(CheckBoxTreeItem<TorrentFileEntry>)this.getTreeTableRow().getTreeItem();
 					
 					if(treeItem.isLeaf()) {
-						imageView.setImage(ImageUtils.FILE_IMAGE);
+						imageView.setImage(fileEntry.getImage());
 					}
 					else {
 						imageView.setImage(treeItem.isExpanded()? 
@@ -280,20 +278,18 @@ public final class AddNewTorrentWindow {
 					
 					final HBox checkBoxPane = new HBox();			
 					checkBoxPane.getChildren().addAll(selectionCheckBox, fileNameLabel);
-										
-	                selectionCheckBox.setSelected(fileEntry.selectedProperty().get());
-	                selectionCheckBox.selectedProperty().bindBidirectional(fileEntry.selectedProperty());
+											                
 	                setGraphic(checkBoxPane);
 				}
 			}			
 		});
 		
 		final TreeTableColumn<TorrentFileEntry, String> pathColumn = new TreeTableColumn<TorrentFileEntry, String>("Path");
-		pathColumn.setCellValueFactory(param -> param.getValue().getValue().pathProperty());
+		pathColumn.setCellValueFactory(new TreeItemPropertyValueFactory<TorrentFileEntry, String>("path"));
 		pathColumn.setVisible(false);
 		
 		final TreeTableColumn<TorrentFileEntry, Long> sizeColumn = new TreeTableColumn<TorrentFileEntry, Long>("Size");
-		sizeColumn.setCellValueFactory(param -> param.getValue().getValue().sizeProperty().asObject());
+		sizeColumn.setCellValueFactory(new TreeItemPropertyValueFactory<TorrentFileEntry, Long>("size"));
 		sizeColumn.setCellFactory(column -> new TreeTableCell<TorrentFileEntry, Long>() {
 			final Label valueLabel = new Label();
 			
@@ -522,23 +518,18 @@ public final class AddNewTorrentWindow {
 	}
 	
 	private TreeItem<TorrentFileEntry> buildSingleFileTree(final long fileLength) {
-		final TorrentFileEntry fileEntry = new TorrentFileEntry(fileName, ". (current path)", fileLength);
-		torrentFileEntries.add(fileEntry);
-		
-		final CheckBoxTreeItem<TorrentFileEntry> fileTreeItem = new CheckBoxTreeItem<>(fileEntry);		
-		fileTreeItem.selectedProperty().bindBidirectional(fileEntry.selectedProperty());
-		fileTreeItem.setSelected(true);
-		addTreeItemListener(fileTreeItem);
-		
+		final TorrentFileEntry fileEntry = new TorrentFileEntry(fileName, ". (current path)", 
+				fileLength, ImageUtils.getFileTypeImage(fileName));
+		final TreeItem<TorrentFileEntry> treeItem = initTreeItem(fileEntry);		
 		final CheckBoxTreeItem<TorrentFileEntry> root = new CheckBoxTreeItem<>(new TorrentFileEntry(
-				"root", ". (current path)", 0L));			
-		root.getChildren().add(fileTreeItem);
+				"root", ". (current path)", fileLength, null));			
+		root.getChildren().add(treeItem);
 		
 		return root;
 	}
 	
 	private TreeItem<TorrentFileEntry> buildMultiFileTree(final BinaryEncodedList files) {			
-		final TorrentFileEntry fileDirEntry = new TorrentFileEntry(fileName, ". (current path)", 0L);					
+		final TorrentFileEntry fileDirEntry = new TorrentFileEntry(fileName, ". (current path)", 0L, null);					
 		final CheckBoxTreeItem<TorrentFileEntry> fileDirTreeItem = new CheckBoxTreeItem<>(fileDirEntry);
 		final TorrentEntryNode<TreeItem<TorrentFileEntry>> fileDirNode = new TorrentEntryNode<>(fileName, fileDirTreeItem);
 		
@@ -560,13 +551,9 @@ public final class AddNewTorrentWindow {
 				final String pathName = filePaths.get(i).toString();
 				pathBuilder.append(pathName);
 				if(!currentNode.contains(pathName)) {										
-					final TorrentFileEntry fileEntry = new TorrentFileEntry(pathName, pathBuilder.toString(), 0L);
-					torrentFileEntries.add(fileEntry);
-					final CheckBoxTreeItem<TorrentFileEntry> treeItem = new CheckBoxTreeItem<>(fileEntry);					
-					treeItem.selectedProperty().bindBidirectional(fileEntry.selectedProperty());
-					treeItem.setSelected(true);
+					final TorrentFileEntry fileEntry = new TorrentFileEntry(pathName, pathBuilder.toString(), 0L, null);
+					final TreeItem<TorrentFileEntry> treeItem = initTreeItem(fileEntry);
 					treeItem.setExpanded(true);
-					addTreeItemListener(treeItem);
 					currentNode.getData().getChildren().add(treeItem);		
 					
 					final TorrentEntryNode<TreeItem<TorrentFileEntry>> childNode = new TorrentEntryNode<>(pathName, treeItem);					
@@ -581,13 +568,9 @@ public final class AddNewTorrentWindow {
 			
 			//Process the file itself when we get here (last element on the path)
 			final String leafName = filePaths.get(filePathSize-1).toString();			
-			final TorrentFileEntry fileEntry = new TorrentFileEntry(leafName, pathBuilder.toString(), fileLength);
-			
-			torrentFileEntries.add(fileEntry);
-			final CheckBoxTreeItem<TorrentFileEntry> treeItem = new CheckBoxTreeItem<>(fileEntry);			
-			treeItem.selectedProperty().bindBidirectional(fileEntry.selectedProperty());
-			treeItem.setSelected(true);
-			addTreeItemListener(treeItem);
+			final TorrentFileEntry fileEntry = new TorrentFileEntry(leafName, pathBuilder.toString(), 
+					fileLength, ImageUtils.getFileTypeImage(leafName));
+			final TreeItem<TorrentFileEntry> treeItem = initTreeItem(fileEntry);
 			currentNode.getData().getChildren().add(treeItem);
 			
 			final TorrentEntryNode<TreeItem<TorrentFileEntry>> childNode = new TorrentEntryNode<>(leafName, treeItem);					
@@ -601,7 +584,17 @@ public final class AddNewTorrentWindow {
 		return fileDirTreeItem;
 	}
 	
-	private void applyOnParents(final CheckBoxTreeItem<TorrentFileEntry> child,
+	private TreeItem<TorrentFileEntry> initTreeItem(final TorrentFileEntry fileEntry) {		
+		torrentFileEntries.add(fileEntry);
+		final CheckBoxTreeItem<TorrentFileEntry> treeItem = new CheckBoxTreeItem<>(fileEntry);
+		treeItem.selectedProperty().bindBidirectional(fileEntry.selectedProperty());
+		treeItem.setSelected(true);
+		addTreeItemListener(treeItem);
+		
+		return treeItem;
+	}
+	
+	private void applyOnParents(final TreeItem<TorrentFileEntry> child,
 			final Consumer<CheckBoxTreeItem<TorrentFileEntry>> consumer) {
 		CheckBoxTreeItem<TorrentFileEntry> current = (CheckBoxTreeItem<TorrentFileEntry>)child.getParent();		
 		while(current != null) {			

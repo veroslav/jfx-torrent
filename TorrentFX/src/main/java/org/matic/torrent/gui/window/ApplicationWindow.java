@@ -45,10 +45,6 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.Tooltip;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
-import javafx.scene.effect.Blend;
-import javafx.scene.effect.BlendMode;
-import javafx.scene.effect.ColorAdjust;
-import javafx.scene.effect.ColorInput;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCombination;
@@ -306,25 +302,12 @@ public final class ApplicationWindow {
         return tabList;
     }
 	
-	//TODO: Generalize method (buttons as well): applyImageColorEffect(ImageView, boolean armed)
 	private void applyTabSelectionColor(final Tab tab) {
 		final ImageView imageView = (ImageView)tab.getGraphic();
 		if(tab.isSelected()) {
 			final Image image = imageView.getImage();
-			final ImageView monochromeImageView = new ImageView(image);
-			monochromeImageView.setClip(new ImageView(image));
-        	
-        	final ColorAdjust monochrome = new ColorAdjust();
-            monochrome.setSaturation(-1.0);
-            monochrome.setBrightness(0.75);
-            
-        	final Blend selectionColorBlend = new Blend(BlendMode.MULTIPLY,
-                    monochrome, new ColorInput(0, 0,
-                            monochromeImageView.getImage().getWidth(),
-                            monochromeImageView.getImage().getHeight(),
-                            TAB_SELECTION_COLOR));
-        	monochromeImageView.setEffect(selectionColorBlend);
-        	tab.setGraphic(monochromeImageView);
+			final Node colorizedImage = ImageUtils.colorizeImage(image, TAB_SELECTION_COLOR);
+        	tab.setGraphic(colorizedImage);
 		}
 		else {
 			imageView.setEffect(null);

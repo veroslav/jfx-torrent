@@ -26,6 +26,7 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleLongProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import javafx.scene.image.Image;
 
 /**
  * A representation of a file entry in a torrent meta data file. It is used for
@@ -37,27 +38,31 @@ import javafx.beans.property.StringProperty;
 public final class TorrentFileEntry {
 	
 	private BooleanProperty selected;
-
 	private final StringProperty name;
-	
 	private final StringProperty path;
-	
 	private final LongProperty size;
 	
-	public TorrentFileEntry(final String name, final String path, final long size) {
+	private final Image fileImage;
+	
+	public TorrentFileEntry(final String name, final String path, 
+			final long size, final Image fileImage) {
 		this.selected = new SimpleBooleanProperty(false);
 		this.name = new SimpleStringProperty(name);
 		this.path = new SimpleStringProperty(path);
 		this.size = new SimpleLongProperty(size);
+		
+		this.fileImage = fileImage;
 	}
 	
-	public final void setSelected(final boolean selected) {
-		System.out.println("setSelected(" + selected + ")");
+	public final Image getImage() {
+		return fileImage;
+	}
+	
+	public final void setSelected(final boolean selected) {		
 		this.selected.set(selected);	
 	}
 	
 	public final boolean isSelected() {	
-		System.out.println("getSelected(" + selected.get() + ")");
 		return selected.get();
 	}
 	
