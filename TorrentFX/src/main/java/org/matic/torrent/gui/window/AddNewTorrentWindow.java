@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 
@@ -40,13 +41,20 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.CheckBoxTreeItem;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
+import javafx.scene.control.Menu;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.RadioMenuItem;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.TextField;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeTableCell;
 import javafx.scene.control.TreeTableColumn;
+import javafx.scene.control.TreeTableRow;
 import javafx.scene.control.TreeTableView;
 import javafx.scene.control.cell.CheckBoxTreeTableCell;
 import javafx.scene.control.cell.TreeItemPropertyValueFactory;
@@ -62,6 +70,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.FontSmoothingType;
 import javafx.scene.text.Text;
+import javafx.scene.text.TextAlignment;
 import javafx.scene.text.TextFlow;
 import javafx.stage.Window;
 
@@ -194,18 +203,12 @@ public final class AddNewTorrentWindow {
 		labelCombo.setEditable(true);
 		
 		selectAllButton.setOnAction(event -> {
-			torrentContentsTable.getRoot().getChildren().forEach(child -> child.getValue().selectedProperty().set(true));
+			onSelectAllTorrentEntries(torrentContentsTable);
 			selectAllButton.requestFocus();
 		});
 		
 		selectNoneButton.setOnAction(event -> {
-			torrentContentsTable.getRoot().getChildren().forEach(child -> {
-				final CheckBoxTreeItem<TorrentFileEntry> checkBoxItem = (CheckBoxTreeItem<TorrentFileEntry>)child;
-				if(checkBoxItem.isIndeterminate()) {
-					checkBoxItem.setSelected(true);
-				}
-				child.getValue().selectedProperty().set(false);
-			});
+			onUnselectAllTorrentEntries(torrentContentsTable);
 			selectNoneButton.requestFocus();
 		});
 			
@@ -213,6 +216,7 @@ public final class AddNewTorrentWindow {
 		torrentContentsTable.setShowRoot(false);
 		torrentContentsTable.setEditable(true);				
 		torrentContentsTable.getColumns().addAll(buildTreeViewColumns());
+		addTreeViewContextMenus();
         
 		window.setHeaderText(null);
 		window.setTitle(fileName + " - Add New Torrent");
@@ -221,6 +225,129 @@ public final class AddNewTorrentWindow {
 
 		window.setResizable(true);		
 		window.getDialogPane().setContent(layoutContent());
+	}
+	
+	private void onSelectAllTorrentEntries(final TreeTableView<TorrentFileEntry> table) {
+		final int selectedIndex = table.getSelectionModel().getSelectedIndex();
+		table.getRoot().getChildren().forEach(child -> child.getValue().selectedProperty().set(true));
+		table.getSelectionModel().select(selectedIndex);
+	}
+	
+	private void onUnselectAllTorrentEntries(final TreeTableView<TorrentFileEntry> table) {
+		final int selectedIndex = table.getSelectionModel().getSelectedIndex();
+		table.getRoot().getChildren().forEach(child -> {
+			final CheckBoxTreeItem<TorrentFileEntry> checkBoxItem = (CheckBoxTreeItem<TorrentFileEntry>)child;
+			if(checkBoxItem.isIndeterminate()) {
+				checkBoxItem.setSelected(true);
+			}
+			child.getValue().selectedProperty().set(false);
+		});		
+		table.getSelectionModel().select(selectedIndex);
+	}
+	
+	private void onCollapseFolderTree(final TreeItem<TorrentFileEntry> treeItem) {
+		if(treeItem.isExpanded()) {
+			treeItem.setExpanded(false);
+		}
+		else if(treeItem.isLeaf()) {
+			final TreeItem<TorrentFileEntry> parentItem = treeItem.getParent(); 
+			if(parentItem != null && parentItem.getParent() != null && parentItem.isExpanded()) {
+				parentItem.setExpanded(false);
+			}
+		}
+	}
+	
+	private void onExpandFolderTree(final TreeItem<TorrentFileEntry> treeItem) {
+		if(treeItem.isLeaf() || treeItem.isExpanded()) {
+			return;
+		}
+		treeItem.setExpanded(true);
+	}
+	
+	private void addTreeViewContextMenus() {
+		torrentContentsTable.setRowFactory(table -> {
+			final ContextMenu contextMenu = new ContextMenu();
+			
+			final MenuItem collapseFolderTreeMenuItem = new MenuItem("Collapse Folder Tree");
+			final MenuItem expandFolderTreeMenuItem = new MenuItem("Expand Folder Tree");
+			final MenuItem selectNoneMenuItem = new MenuItem("Select None");						
+			final MenuItem selectAllMenuItem = new MenuItem("Select All");
+			final MenuItem unselectMenuItem = new MenuItem("Unselect");
+			final MenuItem selectMenuItem = new MenuItem("Select");
+			
+			final Menu priorityTreeMenu = new Menu("Priority");
+			
+			final RadioMenuItem noPriorityMenuItem = new RadioMenuItem("Don't Download");
+			final RadioMenuItem highestPriorityMenuItem = new RadioMenuItem("Highest");
+			final RadioMenuItem lowestPriorityMenuItem = new RadioMenuItem("Lowest");			
+			final RadioMenuItem normalPriorityMenuItem = new RadioMenuItem("Normal");
+			final RadioMenuItem highPriorityMenuItem = new RadioMenuItem("High");
+			final RadioMenuItem lowPriorityMenuItem = new RadioMenuItem("Low");			
+			{			
+				final List<RadioMenuItem> radioMenuItems = Arrays.asList(lowestPriorityMenuItem, 
+						lowPriorityMenuItem, normalPriorityMenuItem, highPriorityMenuItem, 
+						highestPriorityMenuItem, noPriorityMenuItem);
+				final ToggleGroup radioMenuGroup = new ToggleGroup();
+				
+				for(final RadioMenuItem radioMenuItem : radioMenuItems) {
+					radioMenuItem.setToggleGroup(radioMenuGroup);
+				}
+				
+				normalPriorityMenuItem.setSelected(true);
+				priorityTreeMenu.getItems().addAll(lowestPriorityMenuItem, lowPriorityMenuItem,
+						normalPriorityMenuItem, highPriorityMenuItem, highestPriorityMenuItem,
+						new SeparatorMenuItem(), noPriorityMenuItem);
+				contextMenu.getItems().addAll(selectMenuItem, unselectMenuItem, new SeparatorMenuItem(), 
+						selectAllMenuItem, selectNoneMenuItem, new SeparatorMenuItem(), 
+						collapseFolderTreeMenuItem, expandFolderTreeMenuItem, new SeparatorMenuItem(), 
+						priorityTreeMenu);
+			}
+			
+			final TreeTableRow<TorrentFileEntry> row = new TreeTableRow<TorrentFileEntry>() {				
+				@Override
+				protected void updateItem(final TorrentFileEntry item, final boolean empty) {
+					super.updateItem(item, empty);
+					if(empty) {
+		                setContextMenu(null);
+		            } 
+					else {
+						final CheckBoxTreeItem<TorrentFileEntry> treeItem = (CheckBoxTreeItem<TorrentFileEntry>)super.getTreeItem();
+						expandFolderTreeMenuItem.setDisable(treeItem.isLeaf() || treeItem.isExpanded());
+						collapseFolderTreeMenuItem.setDisable((treeItem.isLeaf() && (treeItem.getParent() == 
+								this.getTreeTableView().getRoot())) || (!treeItem.isLeaf() && !treeItem.isExpanded()));
+						selectMenuItem.setDisable(treeItem.isLeaf() && treeItem.isSelected() ||
+								!treeItem.isLeaf() && !treeItem.isIndeterminate() && treeItem.isSelected());
+						unselectMenuItem.setDisable(treeItem.isLeaf() && !treeItem.isSelected() ||
+								!treeItem.isLeaf() && !treeItem.isIndeterminate() && !treeItem.isSelected());
+		                setContextMenu(contextMenu);
+		            }
+				}				
+			};
+			
+			selectMenuItem.setOnAction(evt -> {
+				final CheckBoxTreeItem<TorrentFileEntry> checkBoxItem = (CheckBoxTreeItem<TorrentFileEntry>)row.getTreeItem();
+				if(checkBoxItem.isIndeterminate()) {
+					checkBoxItem.setSelected(false);
+				}
+				row.getItem().setSelected(true);
+				unselectMenuItem.setDisable(false);
+				}
+			);
+			unselectMenuItem.setOnAction(evt -> {
+				final CheckBoxTreeItem<TorrentFileEntry> checkBoxItem = (CheckBoxTreeItem<TorrentFileEntry>)row.getTreeItem();
+				if(checkBoxItem.isIndeterminate()) {
+					checkBoxItem.setSelected(true);
+				}
+				row.getItem().setSelected(false);
+				selectMenuItem.setDisable(false);
+			});
+			selectAllMenuItem.setOnAction(evt -> onSelectAllTorrentEntries(torrentContentsTable));
+			selectNoneMenuItem.setOnAction(evt -> onUnselectAllTorrentEntries(torrentContentsTable));
+			collapseFolderTreeMenuItem.setOnAction(evt -> onCollapseFolderTree(row.getTreeItem()));
+			expandFolderTreeMenuItem.setOnAction(evt -> onExpandFolderTree(row.getTreeItem()));
+			
+			return row;
+		});
 	}
 	
 	private Collection<TreeTableColumn<TorrentFileEntry, ?>> buildTreeViewColumns() {
@@ -270,8 +397,7 @@ public final class AddNewTorrentWindow {
 					selectionCheckBox.setIndeterminate(treeItem.isIndeterminate());
 					
 					treeItem.indeterminateProperty().bindBidirectional(
-							selectionCheckBox.indeterminateProperty());
-					treeItem.setSelected(selectionCheckBox.isSelected());
+							selectionCheckBox.indeterminateProperty());					
 					
 					fileNameLabel.setText(fileEntry.nameProperty().get());
 					fileNameLabel.setGraphic(imageView);
@@ -288,10 +414,35 @@ public final class AddNewTorrentWindow {
 		pathColumn.setCellValueFactory(new TreeItemPropertyValueFactory<TorrentFileEntry, String>("path"));
 		pathColumn.setVisible(false);
 		
+		final TreeTableColumn<TorrentFileEntry, Integer> priorityColumn = new TreeTableColumn<TorrentFileEntry, Integer>("Priority");
+		priorityColumn.setCellValueFactory(new TreeItemPropertyValueFactory<TorrentFileEntry, Integer>("priority"));
+		priorityColumn.setCellFactory(column -> new TreeTableCell<TorrentFileEntry, Integer>() {
+			final Label valueLabel = new Label();			
+			@Override
+			protected final void updateItem(final Integer value, final boolean empty) {
+				super.updateItem(value, empty);
+				if(empty) {
+					setText(null);
+					setGraphic(null);
+				}
+				else {
+					final TorrentFileEntry fileContent = this.getTreeTableRow().getItem();
+					
+					if(fileContent == null) {
+						return;
+					}
+					
+					valueLabel.setText(String.valueOf(fileContent.priorityProperty().get()));
+	                setGraphic(valueLabel);
+	                this.setAlignment(Pos.CENTER);
+				}
+			}		
+		});
+		
 		final TreeTableColumn<TorrentFileEntry, Long> sizeColumn = new TreeTableColumn<TorrentFileEntry, Long>("Size");
 		sizeColumn.setCellValueFactory(new TreeItemPropertyValueFactory<TorrentFileEntry, Long>("size"));
 		sizeColumn.setCellFactory(column -> new TreeTableCell<TorrentFileEntry, Long>() {
-			final Label valueLabel = new Label();
+			final Label valueLabel = new Label();			
 			
 			@Override
 			protected final void updateItem(final Long value, final boolean empty) {
@@ -307,14 +458,15 @@ public final class AddNewTorrentWindow {
 						return;
 					}
 					
-					final String formattedValue = UnitConverter.formatByteCount(fileContent.sizeProperty().get());
+					final String formattedValue = UnitConverter.formatByteCount(fileContent.sizeProperty().get());					
 					valueLabel.setText(formattedValue);
 	                setGraphic(valueLabel);
+	                this.setAlignment(Pos.CENTER_RIGHT);
 				}
 			}			
 		});
 		
-		return Arrays.asList(selectedColumn, pathColumn, sizeColumn);
+		return Arrays.asList(selectedColumn, pathColumn, sizeColumn, priorityColumn);
 	}
 	
 	private void updateSelectedFileLengths(final long selectedFilesLength, final long totalFilesLength) {
@@ -349,7 +501,8 @@ public final class AddNewTorrentWindow {
 	
 	private Node layoutContent() {
 		final BorderPane mainPane = new BorderPane();
-		mainPane.setPrefHeight(400);
+		mainPane.setPrefHeight(500);
+		mainPane.setPrefWidth(1100);
 		
 		mainPane.setLeft(buildLeftPane());
 		mainPane.setCenter(buildTorrentContentsPane());
@@ -553,7 +706,6 @@ public final class AddNewTorrentWindow {
 				if(!currentNode.contains(pathName)) {										
 					final TorrentFileEntry fileEntry = new TorrentFileEntry(pathName, pathBuilder.toString(), 0L, null);
 					final TreeItem<TorrentFileEntry> treeItem = initTreeItem(fileEntry);
-					treeItem.setExpanded(true);
 					currentNode.getData().getChildren().add(treeItem);		
 					
 					final TorrentEntryNode<TreeItem<TorrentFileEntry>> childNode = new TorrentEntryNode<>(pathName, treeItem);					

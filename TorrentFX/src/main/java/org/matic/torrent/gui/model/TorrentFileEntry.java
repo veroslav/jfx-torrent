@@ -21,8 +21,10 @@
 package org.matic.torrent.gui.model;
 
 import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.LongProperty;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleLongProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
@@ -37,6 +39,7 @@ import javafx.scene.image.Image;
  */
 public final class TorrentFileEntry {
 	
+	private final IntegerProperty priority;
 	private BooleanProperty selected;
 	private final StringProperty name;
 	private final StringProperty path;
@@ -46,6 +49,7 @@ public final class TorrentFileEntry {
 	
 	public TorrentFileEntry(final String name, final String path, 
 			final long size, final Image fileImage) {
+		this.priority = new SimpleIntegerProperty(2);
 		this.selected = new SimpleBooleanProperty(false);
 		this.name = new SimpleStringProperty(name);
 		this.path = new SimpleStringProperty(path);
@@ -84,6 +88,10 @@ public final class TorrentFileEntry {
 	
 	public final StringProperty pathProperty() {
 		return path;
+	}
+	
+	public final IntegerProperty priorityProperty() {
+		return priority;
 	}
 	
 	public final LongProperty sizeProperty() {
