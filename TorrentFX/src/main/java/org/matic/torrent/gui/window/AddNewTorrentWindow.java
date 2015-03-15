@@ -23,13 +23,13 @@ package org.matic.torrent.gui.window;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 
 import javafx.beans.property.LongProperty;
 import javafx.beans.property.SimpleLongProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.HPos;
@@ -70,13 +70,13 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.FontSmoothingType;
 import javafx.scene.text.Text;
-import javafx.scene.text.TextAlignment;
 import javafx.scene.text.TextFlow;
 import javafx.stage.Window;
 
 import org.controlsfx.tools.Borders;
 import org.matic.torrent.gui.image.ImageUtils;
 import org.matic.torrent.gui.model.TorrentFileEntry;
+import org.matic.torrent.gui.tree.FileNameColumnModel;
 import org.matic.torrent.gui.tree.TorrentEntryNode;
 import org.matic.torrent.io.DiskUtilities;
 import org.matic.torrent.io.codec.BinaryEncodedDictionary;
@@ -215,7 +215,7 @@ public final class AddNewTorrentWindow {
 		torrentContentsTable.setTableMenuButtonVisible(true);
 		torrentContentsTable.setShowRoot(false);
 		torrentContentsTable.setEditable(true);				
-		torrentContentsTable.getColumns().addAll(buildTreeViewColumns());
+		addTreeViewColumns(torrentContentsTable);
 		addTreeViewContextMenus();
         
 		window.setHeaderText(null);
@@ -350,13 +350,21 @@ public final class AddNewTorrentWindow {
 		});
 	}
 	
-	private Collection<TreeTableColumn<TorrentFileEntry, ?>> buildTreeViewColumns() {
-		final TreeTableColumn<TorrentFileEntry, Boolean> selectedColumn = 
-				new TreeTableColumn<TorrentFileEntry, Boolean>("Name");	
-		selectedColumn.setEditable(true);
-		selectedColumn.setPrefWidth(350);
-		selectedColumn.setCellValueFactory(new TreeItemPropertyValueFactory<TorrentFileEntry, Boolean>("selected"));			
-		selectedColumn.setCellFactory(column -> new CheckBoxTreeTableCell<TorrentFileEntry, Boolean>() {			
+	private void addTreeViewColumns(final TreeTableView<TorrentFileEntry> table) {
+		final TreeTableColumn<TorrentFileEntry, FileNameColumnModel> fileNameColumn = 
+				new TreeTableColumn<TorrentFileEntry, FileNameColumnModel>("Name");	
+		fileNameColumn.setSortType(TreeTableColumn.SortType.DESCENDING);
+		fileNameColumn.setEditable(true);
+		fileNameColumn.setPrefWidth(350);
+		fileNameColumn.setCellValueFactory(p -> {
+			final TreeItem<TorrentFileEntry> treeItem = p.getValue();
+			final TorrentFileEntry fileEntry = p.getValue().getValue();
+			final FileNameColumnModel columnModel = new FileNameColumnModel(
+					treeItem.isLeaf(), fileEntry.nameProperty().get());
+			return new SimpleObjectProperty<FileNameColumnModel>(columnModel);
+		});			
+		fileNameColumn.setCellFactory(column -> new CheckBoxTreeTableCell<
+				TorrentFileEntry, FileNameColumnModel>() {			
 			final ImageView imageView = new ImageView();	
 			final Label fileNameLabel = new Label();
 			
@@ -365,7 +373,7 @@ public final class AddNewTorrentWindow {
 			}
 			
 			@Override
-			public final void updateItem(final Boolean item, final boolean empty) {
+			public final void updateItem(final FileNameColumnModel item, final boolean empty) {
 				super.updateItem(item, empty);				
 				
 				if(empty) {
@@ -408,6 +416,15 @@ public final class AddNewTorrentWindow {
 	                setGraphic(checkBoxPane);
 				}
 			}			
+		});
+		fileNameColumn.setComparator((m, o) -> {
+			if(!m.isLeaf() && o.isLeaf()) {
+				return 1;
+			}
+			if(m.isLeaf() && !o.isLeaf()) {
+				return -1;
+			}
+			return o.getName().compareTo(m.getName());
 		});
 		
 		final TreeTableColumn<TorrentFileEntry, String> pathColumn = new TreeTableColumn<TorrentFileEntry, String>("Path");
@@ -466,7 +483,8 @@ public final class AddNewTorrentWindow {
 			}			
 		});
 		
-		return Arrays.asList(selectedColumn, pathColumn, sizeColumn, priorityColumn);
+		table.getColumns().addAll(Arrays.asList(fileNameColumn, pathColumn, sizeColumn, priorityColumn));
+		table.getSortOrder().add(fileNameColumn);
 	}
 	
 	private void updateSelectedFileLengths(final long selectedFilesLength, final long totalFilesLength) {
