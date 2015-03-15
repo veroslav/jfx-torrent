@@ -40,7 +40,7 @@ public final class UnitConverter {
         }
         final int unit = (63 - Long.numberOfLeadingZeros(byteCount)) / 10;
         return String.format("%.1f %sB", (double)byteCount / (1L << (unit * 10)), 
-        		" KMGTPE".charAt(unit));
+        		" KMGTPE".charAt(unit) + (unit > 0? "i" : ""));
     }
 	
 	/**
