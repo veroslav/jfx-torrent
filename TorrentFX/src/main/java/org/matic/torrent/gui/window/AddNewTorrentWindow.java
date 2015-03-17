@@ -106,6 +106,8 @@ public final class AddNewTorrentWindow {
 	private final TreeTableView<TorrentFileEntry> torrentContentsTable;
 	private final TextField nameTextField;
 	
+	private final Button collapseAllButton;
+	private final Button expandAllButton;
 	private final Button selectNoneButton;
 	private final Button selectAllButton;
 	private final Button advancedButton;
@@ -183,6 +185,8 @@ public final class AddNewTorrentWindow {
 		labelCombo = new ComboBox<String>();
 		advancedButton = new Button("Advanced...");
 		
+		collapseAllButton = new Button("Collapse All");
+		expandAllButton = new Button("Expand All");
 		selectNoneButton = new Button("Select None");
 		selectAllButton = new Button("Select All");
 		browseButton = new Button("...");
@@ -211,6 +215,10 @@ public final class AddNewTorrentWindow {
 			onUnselectAllTorrentEntries(torrentContentsTable);
 			selectNoneButton.requestFocus();
 		});
+		
+		collapseAllButton.setOnAction(event -> torrentContentsTable.getRoot().getChildren().forEach(
+				child -> onCollapseFolderTree(child)));
+		expandAllButton.setOnAction(event -> onExpandFolderTree(torrentContentsTable.getRoot()));
 			
 		torrentContentsTable.setTableMenuButtonVisible(true);
 		torrentContentsTable.setShowRoot(false);
@@ -246,21 +254,18 @@ public final class AddNewTorrentWindow {
 	}
 	
 	private void onCollapseFolderTree(final TreeItem<TorrentFileEntry> treeItem) {
-		if(treeItem.isExpanded()) {
-			treeItem.setExpanded(false);
+		if(treeItem.isLeaf()) {
+			return;
 		}
-		else if(treeItem.isLeaf()) {
-			final TreeItem<TorrentFileEntry> parentItem = treeItem.getParent(); 
-			if(parentItem != null && parentItem.getParent() != null && parentItem.isExpanded()) {
-				parentItem.setExpanded(false);
-			}
-		}
+		treeItem.getChildren().forEach(child -> onCollapseFolderTree(child));
+		treeItem.setExpanded(false);
 	}
 	
 	private void onExpandFolderTree(final TreeItem<TorrentFileEntry> treeItem) {
-		if(treeItem.isLeaf() || treeItem.isExpanded()) {
+		if(treeItem.isLeaf()) {
 			return;
 		}
+		treeItem.getChildren().forEach(child -> onExpandFolderTree(child));
 		treeItem.setExpanded(true);
 	}
 	
@@ -277,7 +282,7 @@ public final class AddNewTorrentWindow {
 			
 			final Menu priorityTreeMenu = new Menu("Priority");
 			
-			final RadioMenuItem noPriorityMenuItem = new RadioMenuItem("Don't Download");
+			final RadioMenuItem noPriorityMenuItem = new RadioMenuItem("Skip");
 			final RadioMenuItem highestPriorityMenuItem = new RadioMenuItem("Highest");
 			final RadioMenuItem lowestPriorityMenuItem = new RadioMenuItem("Lowest");			
 			final RadioMenuItem normalPriorityMenuItem = new RadioMenuItem("Normal");
@@ -343,8 +348,20 @@ public final class AddNewTorrentWindow {
 			});
 			selectAllMenuItem.setOnAction(evt -> onSelectAllTorrentEntries(torrentContentsTable));
 			selectNoneMenuItem.setOnAction(evt -> onUnselectAllTorrentEntries(torrentContentsTable));
-			collapseFolderTreeMenuItem.setOnAction(evt -> onCollapseFolderTree(row.getTreeItem()));
 			expandFolderTreeMenuItem.setOnAction(evt -> onExpandFolderTree(row.getTreeItem()));
+			collapseFolderTreeMenuItem.setOnAction(evt -> {
+				TreeItem<TorrentFileEntry> treeItem = row.getTreeItem();
+				if(row.getTreeItem().isLeaf()) {
+					final TreeItem<TorrentFileEntry> leafParent = treeItem.getParent();
+					if(leafParent != torrentContentsTable.getRoot()) {
+						treeItem = leafParent;
+					}
+					else {
+						return;
+					}
+				}
+				onCollapseFolderTree(treeItem);
+			});
 			
 			return row;
 		});
@@ -569,12 +586,20 @@ public final class AddNewTorrentWindow {
 		labelPane.add(new Label("Date:"), 0, 3);			
 		labelPane.add(new Label(creationDate), 1, 3);
 		
+		final HBox expandCollapseButtonsPane = new HBox(10);
+		expandCollapseButtonsPane.setAlignment(Pos.CENTER_LEFT);
+		expandCollapseButtonsPane.getChildren().addAll(collapseAllButton, expandAllButton);
+		
 		final HBox selectionButtonsPane = new HBox(10);
 		selectionButtonsPane.setAlignment(Pos.CENTER_RIGHT);
 		selectionButtonsPane.getChildren().addAll(selectAllButton, selectNoneButton);
 		
+		final BorderPane buttonsPane = new BorderPane();
+		buttonsPane.setLeft(expandCollapseButtonsPane);
+		buttonsPane.setRight(selectionButtonsPane);
+		
 		final VBox northPane = new VBox(10);
-		northPane.getChildren().addAll(labelPane, selectionButtonsPane);
+		northPane.getChildren().addAll(labelPane, buttonsPane);
 		
 		final ScrollPane torrentContentsScroll = new ScrollPane(torrentContentsTable);
 		torrentContentsScroll.setFitToWidth(true);
