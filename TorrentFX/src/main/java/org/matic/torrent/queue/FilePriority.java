@@ -1,5 +1,4 @@
-/*
-* This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
+/* This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
 * Copyright (C) 2015 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
@@ -18,15 +17,36 @@
 *
 */
 
-package org.matic.torrent.gui.window;
+package org.matic.torrent.queue;
 
 /**
- * A bean containing all of the options selected by the user, during the addition of
- * a new torrent.
+ * Possible priorities for a file download
  * 
  * @author vedran
  *
  */
-public final class AddNewTorrentOptions {
+public enum FilePriority {
+	SKIP(0), LOWEST(1), LOW(2), NORMAL(3), HIGH(4), HIGHEST(5), MIXED(6);
+	
+	private static final String[] NAMES = {"Skip", "Lowest",
+		"Low", "Normal", "High", "Highest", "Mixed"};
+	
+	private final int value;
+	
+	FilePriority(final int priority) {
+		this.value = priority;
+	}
+	
+	public final int getValue() {
+		return value;
+	}
 
+	@Override
+	public final String toString() {	
+		return FilePriority.NAMES[value];
+	}
+
+	public static String valueOf(int i) {
+		return FilePriority.NAMES[i];
+	}	
 }

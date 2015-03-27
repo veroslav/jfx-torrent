@@ -20,6 +20,8 @@
 
 package org.matic.torrent.gui.model;
 
+import org.matic.torrent.queue.FilePriority;
+
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.LongProperty;
@@ -49,7 +51,7 @@ public final class TorrentFileEntry {
 	
 	public TorrentFileEntry(final String name, final String path, 
 			final long size, final Image fileImage) {
-		this.priority = new SimpleIntegerProperty(2);
+		this.priority = new SimpleIntegerProperty(FilePriority.NORMAL.getValue());
 		this.selected = new SimpleBooleanProperty(false);
 		this.name = new SimpleStringProperty(name);
 		this.path = new SimpleStringProperty(path);
