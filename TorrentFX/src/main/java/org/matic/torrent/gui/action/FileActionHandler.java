@@ -52,7 +52,7 @@ public final class FileActionHandler {
 			BinaryEncodedDictionary metaDataDictionary = null;
 			try {
 				metaDataDictionary = metaDataDecoder.decode(
-						new BufferedInputStream(new FileInputStream(torrentPath)));
+						new BufferedInputStream(new FileInputStream(torrentPath)));				
 			}
 			catch (final IOException | BinaryDecoderException e) {
 				final Alert errorAlert = new Alert(AlertType.WARNING);
@@ -64,7 +64,7 @@ public final class FileActionHandler {
 				return;
 			}
 			final AddNewTorrentWindow addNewTorrentWindow = new AddNewTorrentWindow(
-					owner, Paths.get(torrentPath), metaDataDictionary);
+					owner, metaDataDictionary);
 			final AddNewTorrentOptions addNewTorrentOptions = addNewTorrentWindow.showAndWait();
 		}
 	}

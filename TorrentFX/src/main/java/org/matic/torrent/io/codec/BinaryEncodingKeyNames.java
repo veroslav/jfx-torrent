@@ -50,6 +50,12 @@ public final class BinaryEncodingKeyNames {
 	
 	public static final BinaryEncodedString KEY_CREATION_DATE = new BinaryEncodedString(
 			"creation date".getBytes(Charset.forName(BinaryEncodedString.ENCODING_UTF8)));
+	
+	public static final BinaryEncodedString KEY_ANNOUNCE = new BinaryEncodedString(
+			"announce".getBytes(Charset.forName(BinaryEncodedString.ENCODING_UTF8)));
+	
+	public static final BinaryEncodedString KEY_ANNOUNCE_LIST = new BinaryEncodedString(
+			"announce-list".getBytes(Charset.forName(BinaryEncodedString.ENCODING_UTF8)));
 		
 	protected static final BinaryEncodedString KEY_INFO_HASH = new BinaryEncodedString(
 			"jfxInfoHash".getBytes(Charset.forName(BinaryEncodedString.ENCODING_UTF8)));

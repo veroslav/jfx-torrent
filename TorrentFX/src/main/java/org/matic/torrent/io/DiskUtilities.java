@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.file.FileStore;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 
 public final class DiskUtilities {
 
@@ -32,11 +33,17 @@ public final class DiskUtilities {
 	 * specified path on that disk/partition.
 	 * 
 	 * @param pathOnDisk Target path on the disk/partition
-	 * @return Available disk space in bytes
-	 * @throws IOException If available disk space can't be calculated 
+	 * @return Available disk space in bytes or empty Optional
+	 * 		if available disk space can't be calculated 
 	 */
-	public static long getAvailableDiskSpace(final Path pathOnDisk) throws IOException {		
-		final FileStore fileStore = Files.getFileStore(pathOnDisk);
-		return fileStore.getUsableSpace();		
+	public static Optional<Long> getAvailableDiskSpace(final Path pathOnDisk) {	
+		Optional<Long> diskSpace = null;
+		try {
+			final FileStore fileStore = Files.getFileStore(pathOnDisk);
+			diskSpace = Optional.of(fileStore.getUsableSpace());
+		} catch (final IOException ioe) {		
+			diskSpace = Optional.empty();
+		}
+		return diskSpace;	
 	}
 }

@@ -20,8 +20,10 @@
 
 package org.matic.torrent.gui.window;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Optional;
 
 import javafx.geometry.HPos;
@@ -48,6 +50,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.FontSmoothingType;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
+import javafx.stage.DirectoryChooser;
 import javafx.stage.Window;
 
 import org.controlsfx.tools.Borders;
@@ -99,22 +102,21 @@ public final class AddNewTorrentWindow {
 	private final String fileName;
 	private final String comment;
 	
-	private long availableDiskSpace;
+	private Optional<Long> availableDiskSpace;
+	private long fileSelectionLength;
 
-	//TODO: Dont pass filePath to constructor; use download target partition for available disk space calculation
-	public AddNewTorrentWindow(final Window owner, final Path filePath, final BinaryEncodedDictionary torrentMetaData) {	
+	public AddNewTorrentWindow(final Window owner, final BinaryEncodedDictionary torrentMetaData) {	
 		
 		final BinaryEncodedInteger creationDateInSeconds = (BinaryEncodedInteger)torrentMetaData.get(
 				BinaryEncodingKeyNames.KEY_CREATION_DATE);
 		creationDate = creationDateInSeconds != null? UnitConverter.formatTime(creationDateInSeconds.getValue() * 1000) : "";
 		infoDictionary = ((BinaryEncodedDictionary)torrentMetaData.get(BinaryEncodingKeyNames.KEY_INFO));
 		
-		try {
-			availableDiskSpace = DiskUtilities.getAvailableDiskSpace(filePath);
-		} catch (final IOException ioe) {
-			//TODO: Perhaps throw an exception here?
-			availableDiskSpace = -1;
-		}
+		final Path savePath = Paths.get(System.getProperty("user.home"));
+		availableDiskSpace = DiskUtilities.getAvailableDiskSpace(savePath);
+		
+		savePathCombo = new ComboBox<String>();
+		savePathCombo.getItems().add(savePath.toString());		
 		
 		final BinaryEncodedString metaDataComment = (BinaryEncodedString)torrentMetaData.get(BinaryEncodingKeyNames.KEY_COMMENT);
 		comment = metaDataComment != null? metaDataComment.toString() : "";
@@ -135,23 +137,24 @@ public final class AddNewTorrentWindow {
 		
 		fileSizeText.setFontSmoothingType(FontSmoothingType.LCD);		
 		diskSpaceText.setFontSmoothingType(FontSmoothingType.LCD);
-		fileSizeLabel.getChildren().addAll(fileSizeText, diskSpaceText);		
+		fileSizeLabel.getChildren().addAll(fileSizeText, diskSpaceText);	
+		
+		labelCombo = new ComboBox<String>();
+		advancedButton = new Button("Advanced...");
 		
 		torrentContentTree = new TorrentContentTree(fileName, 
 				(BinaryEncodedInteger)infoDictionary.get(BinaryEncodingKeyNames.KEY_LENGTH),
 				(BinaryEncodedList)infoDictionary.get(BinaryEncodingKeyNames.KEY_FILES));
 		
-		final long totalSelectionLength = torrentContentTree.getRootFileEntry().getSize();
-		updateSelectedFileLengths(totalSelectionLength, totalSelectionLength);
+		fileSelectionLength = torrentContentTree.getRootFileEntry().getSize();
+		updateDiskUsageLabel();
 						
-		torrentContentTree.fileSelectionSize().addListener((observable, oldValue, newValue) ->
-			updateSelectedFileLengths(newValue.longValue(), torrentContentTree.getRootFileEntry().getSize()));		
+		torrentContentTree.fileSelectionSize().addListener((observable, oldValue, newValue) -> {
+			fileSelectionLength = newValue.longValue();
+			updateDiskUsageLabel();
+		});		
 				
 		nameTextField = new TextField(fileName);		
-		
-		savePathCombo = new ComboBox<String>();
-		labelCombo = new ComboBox<String>();
-		advancedButton = new Button("Advanced...");
 		
 		collapseAllButton = new Button("Collapse All");
 		expandAllButton = new Button("Expand All");
@@ -170,9 +173,19 @@ public final class AddNewTorrentWindow {
 	private void initComponents() {				
 		createSubFolderCheckbox.setSelected(true);
 		startTorrentCheckbox.setSelected(true);
-		savePathCombo.setMinWidth(400);
-		savePathCombo.setEditable(true);
 		labelCombo.setEditable(true);
+		
+		savePathCombo.setMinWidth(400);
+		savePathCombo.setMaxWidth(400);
+		savePathCombo.setEditable(true);
+		savePathCombo.getSelectionModel().selectFirst();
+		savePathCombo.setOnAction(event -> {
+			final Path targetDownloadPath = Paths.get(savePathCombo.getSelectionModel().getSelectedItem());
+			availableDiskSpace = DiskUtilities.getAvailableDiskSpace(targetDownloadPath);
+			updateDiskUsageLabel();
+		});
+		
+		browseButton.setOnAction(event -> onBrowseForTargetDirectory());
 		
 		selectAllButton.setOnAction(event -> {
 			torrentContentTree.selectAllEntries();
@@ -196,11 +209,12 @@ public final class AddNewTorrentWindow {
 		window.getDialogPane().setContent(layoutContent());
 	}
 	
-	private void updateSelectedFileLengths(final long selectedFilesLength, final long totalFilesLength) {
+	private void updateDiskUsageLabel() {
+		final long totalFilesLength = torrentContentTree.getRootFileEntry().getSize();
 		final StringBuilder fileSizeBuilder = new StringBuilder();
-		fileSizeBuilder.append(UnitConverter.formatByteCount(selectedFilesLength));
+		fileSizeBuilder.append(UnitConverter.formatByteCount(fileSelectionLength));
 		
-		if(selectedFilesLength < totalFilesLength) {
+		if(fileSelectionLength < totalFilesLength) {
 			fileSizeBuilder.append(" (of ");
 			fileSizeBuilder.append(UnitConverter.formatByteCount(totalFilesLength));
 			fileSizeBuilder.append(")");
@@ -209,20 +223,45 @@ public final class AddNewTorrentWindow {
 		final StringBuilder diskSpaceBuilder = new StringBuilder();
 		diskSpaceBuilder.append(" (disk space: ");				
 		
-		fileSizeText.setText(fileSizeBuilder.toString());			
-		final long remainingDiskSpace = availableDiskSpace - selectedFilesLength;
+		fileSizeText.setText(fileSizeBuilder.toString());	
 		
-		if(remainingDiskSpace < 0) {
-			diskSpaceBuilder.append(UnitConverter.formatByteCount(Math.abs(remainingDiskSpace)));
-			diskSpaceBuilder.append(" too short)");
+		try {
+			final long availableDiskSpaceValue = availableDiskSpace.orElseThrow(() ->
+				new IOException("Disk usage can't be calculated"));
+			final long remainingDiskSpace = availableDiskSpaceValue - fileSelectionLength;
+			
+			if(remainingDiskSpace < 0) {
+				diskSpaceBuilder.append(UnitConverter.formatByteCount(Math.abs(remainingDiskSpace)));
+				diskSpaceBuilder.append(" too short)");
+				diskSpaceText.setText(diskSpaceBuilder.toString());
+				diskSpaceText.setFill(Color.RED);
+			}
+			else {
+				diskSpaceBuilder.append(UnitConverter.formatByteCount(remainingDiskSpace));
+				diskSpaceBuilder.append(")");
+				diskSpaceText.setText(diskSpaceBuilder.toString());
+				diskSpaceText.setFill(Color.BLACK);
+			}	
+		} catch(final IOException ioe) {
+			diskSpaceBuilder.append("can't be calculated)");
 			diskSpaceText.setText(diskSpaceBuilder.toString());
 			diskSpaceText.setFill(Color.RED);
 		}
-		else {
-			diskSpaceBuilder.append(UnitConverter.formatByteCount(remainingDiskSpace));
-			diskSpaceBuilder.append(")");
-			diskSpaceText.setText(diskSpaceBuilder.toString());
-			diskSpaceText.setFill(Color.BLACK);
+	}
+	
+	private void onBrowseForTargetDirectory() {
+		final DirectoryChooser directoryChooser = new DirectoryChooser();
+		directoryChooser.setInitialDirectory(new File(System.getProperty("user.home")));
+		directoryChooser.setTitle("Select download directory");
+		
+		final File selectedDirectory = directoryChooser.showDialog(window.getOwner());
+		
+		if(selectedDirectory != null) {
+			final String selectedTargetDirectory = selectedDirectory.getAbsolutePath();
+			if(!savePathCombo.getItems().contains(selectedTargetDirectory)) {
+				savePathCombo.getItems().add(selectedTargetDirectory);
+			}
+			savePathCombo.getSelectionModel().select(selectedTargetDirectory);
 		}		
 	}
 	
