@@ -38,6 +38,7 @@ import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
@@ -185,6 +186,7 @@ public final class AddNewTorrentWindow {
 			updateDiskUsageLabel();
 		});
 		
+		browseButton.setTooltip(new Tooltip("Browse for download directory"));
 		browseButton.setOnAction(event -> onBrowseForTargetDirectory());
 		
 		selectAllButton.setOnAction(event -> {
@@ -250,9 +252,13 @@ public final class AddNewTorrentWindow {
 	}
 	
 	private void onBrowseForTargetDirectory() {
+		final StringBuilder chooserTitle = new StringBuilder("Choose where to download '");
+		chooserTitle.append(fileName);
+		chooserTitle.append("' to:");
+		
 		final DirectoryChooser directoryChooser = new DirectoryChooser();
 		directoryChooser.setInitialDirectory(new File(System.getProperty("user.home")));
-		directoryChooser.setTitle("Select download directory");
+		directoryChooser.setTitle(chooserTitle.toString());
 		
 		final File selectedDirectory = directoryChooser.showDialog(window.getOwner());
 		

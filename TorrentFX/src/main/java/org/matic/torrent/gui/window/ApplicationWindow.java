@@ -256,7 +256,7 @@ public final class ApplicationWindow {
 	private Pane buildTorrentListTable() {		
 		final TableView<TorrentJobStatus> torrentListTable = new TableView<>();
 		
-		final Text emptyTorrentListPlaceholder = new Text("Go to Bundles to get torrents.");
+		final Text emptyTorrentListPlaceholder = new Text("Go to 'File->Add Torrent...' to add torrents.");
 		emptyTorrentListPlaceholder.getStyleClass().add("empty-torrent-list-text");
 		emptyTorrentListPlaceholder.visibleProperty().bind(Bindings.isEmpty(torrentListTable.getItems()));
 		
