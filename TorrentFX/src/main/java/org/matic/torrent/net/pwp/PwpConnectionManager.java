@@ -39,6 +39,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -70,8 +71,8 @@ public final class PwpConnectionManager {
 	private final Set<PwpPeer> inProgressConnectionRequests;
 	private final List<PwpPeer> peerConnectionRequestQueue;	
 	
-	private final List<PwpConnectionListener> connectionListeners;
-	private final List<PwpMessageListener> messageListeners;
+	private final Set<PwpConnectionListener> connectionListeners;
+	private final Set<PwpMessageListener> messageListeners;
 	private final List<PwpMessageRequest> messageRequests;	
 	
 	private final Selector connectionSelector;
@@ -106,8 +107,8 @@ public final class PwpConnectionManager {
 		messageRequests = Collections.synchronizedList(new ArrayList<>());
 		inProgressConnectionRequests = new HashSet<>();
 		
-		connectionListeners = Collections.synchronizedList(new ArrayList<>());
-		messageListeners = Collections.synchronizedList(new ArrayList<>());
+		connectionListeners = new CopyOnWriteArraySet<>();
+		messageListeners = new CopyOnWriteArraySet<>();
 		
 		
 		connectionManagerExecutor = Executors.newSingleThreadExecutor();
@@ -119,10 +120,8 @@ public final class PwpConnectionManager {
 	 * 
 	 * @param listener Listener to add
 	 */
-	public final void addConnectionListener(final PwpConnectionListener listener) {
-		synchronized(connectionListeners) {
-			connectionListeners.add(listener);
-		}
+	public final void addConnectionListener(final PwpConnectionListener listener) {		
+		connectionListeners.add(listener);
 	}
 	
 	/**
@@ -131,9 +130,7 @@ public final class PwpConnectionManager {
 	 * @param listener Listener to remove
 	 */
 	public final void removeConnectionListener(final PwpConnectionListener listener) {
-		synchronized(connectionListeners) {
-			connectionListeners.remove(listener);
-		}
+		connectionListeners.remove(listener);
 	}
 	
 	/**
@@ -141,10 +138,8 @@ public final class PwpConnectionManager {
 	 * 
 	 * @param listener Listener to add
 	 */
-	public final void addMessageListener(final PwpMessageListener listener) {
-		synchronized(messageListeners) {
-			messageListeners.add(listener);
-		}
+	public final void addMessageListener(final PwpMessageListener listener) {		
+		messageListeners.add(listener);
 	}
 	
 	/**
@@ -153,9 +148,7 @@ public final class PwpConnectionManager {
 	 * @param listener Listener to remove
 	 */
 	public final void removeMessageListener(final PwpMessageListener listener) {
-		synchronized(messageListeners) {
-			messageListeners.remove(listener);
-		}
+		messageListeners.remove(listener);
 	}
 	
 	/**
@@ -490,6 +483,7 @@ public final class PwpConnectionManager {
 	}
 	
 	//TODO: Do NOT fallback to default interface unless user specifically requests it (VPN case)
+	//TODO: Extract network interface handling to a dedicated class
 	private InetSocketAddress getSocketAddressFromNetworkInterface(final String networkInterface) {
 		try {
 			final NetworkInterface listenInterface = NetworkInterface.getByName(networkInterface);

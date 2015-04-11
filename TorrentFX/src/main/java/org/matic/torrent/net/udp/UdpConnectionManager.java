@@ -23,10 +23,10 @@ package org.matic.torrent.net.udp;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -55,7 +55,7 @@ public final class UdpConnectionManager {
 	
 	public UdpConnectionManager() throws IOException {
 		serverSocket = new DatagramSocket(SERVER_PORT);
-		listeners = new HashSet<UdpConnectionListener>();
+		listeners = new CopyOnWriteArraySet<>();
 		outgoingMessages = new ArrayBlockingQueue<>(MAX_OUTGOING_MESSAGES);
 		threadPool = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
 	}
@@ -70,26 +70,20 @@ public final class UdpConnectionManager {
 		threadPool.shutdownNow();
 	}
 	
-	public final void addListener(final UdpConnectionListener listener) {
-		synchronized(listeners) {
-			listeners.add(listener);
-		}
+	public final void addListener(final UdpConnectionListener listener) {		
+		listeners.add(listener);
 	}
 	
-	public final void removeListener(final UdpConnectionListener listener) {
-		synchronized(listeners) {
-			listeners.remove(listener);
-		}
+	public final void removeListener(final UdpConnectionListener listener) {		
+		listeners.remove(listener);
 	}
 	
 	public final boolean send(final UdpRequest request) {
 		return outgoingMessages.offer(request);
 	}
 	
-	private void notifyListeners(final UdpResponse response) {
-		synchronized(listeners) {
-			listeners.stream().forEach(l -> l.onUdpResponseReceived(response));
-		}
+	private void notifyListeners(final UdpResponse response) {		
+		listeners.stream().forEach(l -> l.onUdpResponseReceived(response));
 	}
 	
 	private void handleOutgoing() {
