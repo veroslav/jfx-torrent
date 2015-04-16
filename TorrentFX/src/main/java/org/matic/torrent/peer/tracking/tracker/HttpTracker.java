@@ -63,8 +63,8 @@ public final class HttpTracker extends Tracker {
 	}
 
 	@Override
-	public final void announce(final AnnounceRequest announceParameters) {				
-		final TrackerResponse trackerResponse = sendRequest(announceParameters);
+	public final void announce(final AnnounceRequest announceRequest) {				
+		final TrackerResponse trackerResponse = sendRequest(announceRequest);
 		responseListener.onResponseReceived(trackerResponse, this);				
 	}
 	

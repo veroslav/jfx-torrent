@@ -81,9 +81,9 @@ public abstract class Tracker implements Comparable<Tracker> {
 	/**
 	 * Make an announce request against the tracker
 	 * 
-	 * @param announceParameters Parameters to the announcement request
+	 * @param announceRequest Announcement request
 	 */
-	public abstract void announce(final AnnounceRequest announceParameters);
+	public abstract void announce(final AnnounceRequest announceRequest);
 	
 	public abstract Type getType();
 
