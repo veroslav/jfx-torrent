@@ -18,22 +18,14 @@
 *
 */
 
-package org.matic.torrent.peer.discovery;
+package org.matic.torrent.peer.tracking;
 
 /**
- * An interface for notifying implementing classes when a new peer is
- * obtained by peer discovery strategies 
+ * A marker interface representing an implementation of a peer finding strategy 
  * 
  * @author vedran
  *
  */
-public interface PeerDiscoveryListener {
+public interface PeerFinderStrategy {
 
-	/**
-	 * Notify implementing classes when a new peer is found
-	 * 
-	 * @param ip The remote IP address of the peer
-	 * @param port The remote port of the peer
-	 */
-	void onPeerDiscovered(String ip, int port);
 }

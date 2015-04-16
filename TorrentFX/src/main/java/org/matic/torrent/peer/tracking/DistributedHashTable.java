@@ -18,7 +18,7 @@
 *
 */
 
-package org.matic.torrent.peer.discovery;
+package org.matic.torrent.peer.tracking;
 
 /**
  * A peer discovery strategy implementing a Distributed Hash Table (DHT)
@@ -27,6 +27,6 @@ package org.matic.torrent.peer.discovery;
  * @author vedran
  *
  */
-public final class DistributedHashTable implements PeerDiscoveryStrategy {
+public final class DistributedHashTable implements PeerFinderStrategy {
 
 }
