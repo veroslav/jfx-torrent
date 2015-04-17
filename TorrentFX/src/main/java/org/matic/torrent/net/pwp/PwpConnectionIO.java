@@ -45,18 +45,21 @@ public final class PwpConnectionIO {
 	private static final int RESERVED_BYTES_LENGTH = 8;
 	private static final int INFO_HASH_LENGTH = 20;
 	private static final int PEER_ID_LENGTH = 20;
-	private static final int WRITER_BUFFER_SIZE = 1024;
-	private static final int READER_BUFFER_SIZE = 1024;
+	
+	//Default reader and writer buffer sizes 
+	protected static final int WRITER_BUFFER_SIZE = 1024;
+	protected static final int READER_BUFFER_SIZE = 1024;
 	
 	private final ByteBuffer readerBuffer;		
 	private final ByteBuffer writerBuffer;
 	
 	//Leftover data, if any, left from a previous read on this session's connection
-	private ByteBuffer backupReaderBuffer;
+	protected ByteBuffer backupReaderBuffer;
 	
-	public PwpConnectionIO() {
-		readerBuffer = ByteBuffer.allocateDirect(PwpConnectionIO.READER_BUFFER_SIZE);
-		writerBuffer = ByteBuffer.allocateDirect(PwpConnectionIO.WRITER_BUFFER_SIZE);
+	public PwpConnectionIO(final int readerBufferSize, final int writerBufferSize) {		
+		readerBuffer = ByteBuffer.allocateDirect(readerBufferSize);
+		writerBuffer = ByteBuffer.allocateDirect(writerBufferSize);
+				
 		backupReaderBuffer = null;
 	}
 	
@@ -116,7 +119,7 @@ public final class PwpConnectionIO {
 	 * @return A list of parsed peer-wire-protocol messages
 	 * @throws UnsupportedEncodingException If a string contained by a message can't be properly decoded
 	 */
-	private List<PwpMessage> read(final ByteBuffer buffer) throws UnsupportedEncodingException {
+	protected List<PwpMessage> read(final ByteBuffer buffer) throws UnsupportedEncodingException {
 		final List<PwpMessage> messages = new ArrayList<>();
 		
 		buffer.flip();

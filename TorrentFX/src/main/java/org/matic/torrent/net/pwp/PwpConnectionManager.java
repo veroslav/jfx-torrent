@@ -405,7 +405,9 @@ public final class PwpConnectionManager {
 		try {
 			if(peerConnection.finishConnect()) {	
 				selectedKey.interestOps(SelectionKey.OP_READ);
-				ioBuffers.put(peerConnection, new PwpConnectionIO());
+				ioBuffers.put(peerConnection, new PwpConnectionIO(
+						PwpConnectionIO.READER_BUFFER_SIZE,
+						PwpConnectionIO.WRITER_BUFFER_SIZE));
 				
 				System.out.println(name + ": Successfully connected to the remote peer");
 				//TODO: Immediately send HANDSHAKE to this connection
@@ -453,7 +455,9 @@ public final class PwpConnectionManager {
 			final int remotePeerPort = connectionAddress.getPort();
 			
 			connection.register(selectedKey.selector(), SelectionKey.OP_READ);
-			ioBuffers.put(connection, new PwpConnectionIO());
+			ioBuffers.put(connection, new PwpConnectionIO(
+					PwpConnectionIO.READER_BUFFER_SIZE,
+					PwpConnectionIO.WRITER_BUFFER_SIZE));
 			
 			System.out.println(name + ": Accepted remote connection: ip: " + remotePeerIp + ", port " + remotePeerPort);
 		} catch (final IOException ioe) {
