@@ -167,6 +167,7 @@ public final class TrackerManager implements TrackerResponseListener, UdpConnect
 	}
 	
 	private TrackerResponse parseUdpTrackerResponse(final UdpResponse response) {
-		return new TrackerResponse(TrackerResponse.Type.NORMAL);
+		//TODO: Implement method
+		return null;
 	}
 }

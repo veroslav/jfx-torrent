@@ -24,6 +24,41 @@ import java.nio.charset.Charset;
 
 public final class BinaryEncodingKeyNames {
 	
+	//TRACKER RESPONSE KEYS
+	public static final BinaryEncodedString KEY_FAILURE_REASON =  new BinaryEncodedString(
+			"failure reason".getBytes(Charset.forName(BinaryEncodedString.ENCODING_UTF8)));
+	
+	public static final BinaryEncodedString KEY_WARNING_MESSAGE =  new BinaryEncodedString(
+			"warning message".getBytes(Charset.forName(BinaryEncodedString.ENCODING_UTF8)));
+	
+	public static final BinaryEncodedString KEY_INTERVAL =  new BinaryEncodedString(
+			"interval".getBytes(Charset.forName(BinaryEncodedString.ENCODING_UTF8)));
+	
+	public static final BinaryEncodedString KEY_MIN_INTERVAL =  new BinaryEncodedString(
+			"min interval".getBytes(Charset.forName(BinaryEncodedString.ENCODING_UTF8)));
+	
+	public static final BinaryEncodedString KEY_TRACKER_ID =  new BinaryEncodedString(
+			"tracker id".getBytes(Charset.forName(BinaryEncodedString.ENCODING_UTF8)));
+	
+	public static final BinaryEncodedString KEY_COMPLETE =  new BinaryEncodedString(
+			"complete".getBytes(Charset.forName(BinaryEncodedString.ENCODING_UTF8)));
+	
+	public static final BinaryEncodedString KEY_INCOMPLETE =  new BinaryEncodedString(
+			"incomplete".getBytes(Charset.forName(BinaryEncodedString.ENCODING_UTF8)));
+	
+	public static final BinaryEncodedString KEY_PEERS =  new BinaryEncodedString(
+			"peers".getBytes(Charset.forName(BinaryEncodedString.ENCODING_UTF8)));
+	
+	public static final BinaryEncodedString KEY_PEER_ID =  new BinaryEncodedString(
+			"peer id".getBytes(Charset.forName(BinaryEncodedString.ENCODING_UTF8)));
+	
+	public static final BinaryEncodedString KEY_IP =  new BinaryEncodedString(
+			"ip".getBytes(Charset.forName(BinaryEncodedString.ENCODING_UTF8)));
+	
+	public static final BinaryEncodedString KEY_PORT =  new BinaryEncodedString(
+			"port".getBytes(Charset.forName(BinaryEncodedString.ENCODING_UTF8)));
+	
+	//TORRENT META FILE KEYS
 	public static final BinaryEncodedString KEY_PATH =  new BinaryEncodedString(
 			"path".getBytes(Charset.forName(BinaryEncodedString.ENCODING_UTF8)));
 

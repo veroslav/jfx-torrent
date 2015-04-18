@@ -85,6 +85,8 @@ public abstract class Tracker implements Comparable<Tracker> {
 	 */
 	public abstract void announce(final AnnounceRequest announceRequest);
 	
+	public abstract boolean isScrapeSupported();
+	
 	public abstract Type getType();
 
 	@Override

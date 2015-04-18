@@ -62,9 +62,14 @@ public final class UdpTracker extends Tracker {
 	}
 	
 	@Override
-	public Type getType() {
+	public final Type getType() {
 		return Type.UDP;
 	}
+	
+	@Override
+	public final boolean isScrapeSupported() {		
+		return true;
+	};
 
 	@Override
 	public final void announce(final AnnounceRequest announceRequest) {

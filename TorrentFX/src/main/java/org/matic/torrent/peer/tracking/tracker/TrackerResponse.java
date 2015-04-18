@@ -20,29 +20,88 @@
 
 package org.matic.torrent.peer.tracking.tracker;
 
+import java.util.Collections;
+import java.util.Optional;
+import java.util.Set;
+
+import org.matic.torrent.net.pwp.PwpPeer;
+
 public final class TrackerResponse {
 	
 	public enum Type {
-		INVALID_URL, READ_WRITE_ERROR, NORMAL, TRACKER_ERROR
-	}
-	
-	private final String errorMessage;
-	private final Type type;
-	
-	public TrackerResponse(final Type type) {
-		this(type, null);
+		INVALID_URL, READ_WRITE_ERROR, NORMAL, TRACKER_ERROR, INVALID_RESPONSE, WARNING
 	}
 
+	private final Optional<String> trackerId;
+	private final Optional<Long> minInterval;
+	private final Optional<String> message;
+	
+	private final Set<PwpPeer> peers;
+	
+	private final long incomplete;
+	private final long interval;
+	private final long complete;
+	private final Type type;
+	
+	/**
+	 * Constructor for building an error response
+	 * 
+	 * @param type Type of tracker error
+	 * @param errorMessage Error message detailing the error
+	 */
 	public TrackerResponse(final Type type, final String errorMessage) {
+		this(type, Optional.of(errorMessage), 0, Optional.of(0L), 
+				Optional.ofNullable(null), 0, 0, Collections.emptySet());
+	}
+	
+	/**
+	 * Constructor for building a normal response
+	 * 
+	 * @param type Type of response (either NORMAL or WARNING)
+	 * @param warningMessage null if NORMAL, warning message otherwise
+	 */
+	public TrackerResponse(final Type type, final Optional<String> warningMessage, final long interval,
+			final Optional<Long> minInterval, final Optional<String> trackerId, final long complete,
+			final long incomplete, final Set<PwpPeer> peers) {
 		this.type = type;
-		this.errorMessage = errorMessage;
+		this.message = warningMessage;
+		this.interval = interval;
+		this.minInterval = minInterval; 
+		this.trackerId = trackerId;
+		this.incomplete = incomplete;
+		this.complete = complete;
+		this.peers = peers;
+	}
+	
+	public final Set<PwpPeer> getPeers() {
+		return peers;
+	}
+	
+	public final long getIncomplete() {
+		return incomplete;
+	}
+	
+	public final long getComplete() {
+		return complete;
+	}
+	
+	public final Optional<String> getTrackerId() {
+		return trackerId;
+	}
+	
+	public final Optional<Long> getMinInterval() {
+		return minInterval;
+	}
+	
+	public final long getInterval() {
+		return interval;
 	}
 	
 	public final Type getType() {
 		return type;
 	}
 	
-	public final String getErrorMessage() {
-		return errorMessage;
+	public final Optional<String> getMessage() {
+		return message;
 	}
 }
