@@ -20,6 +20,10 @@
 
 package org.matic.torrent.peer.tracking;
 
+import java.util.Set;
+
+import org.matic.torrent.net.pwp.PwpPeer;
+
 /**
  * An interface for notifying implementing classes when a new peer is
  * obtained by peer discovery strategies 
@@ -30,11 +34,9 @@ package org.matic.torrent.peer.tracking;
 public interface PeerFoundListener {
 
 	/**
-	 * Notify implementing classes when a new peer is found
+	 * Notify implementing classes when new peers are found
 	 * 
-	 * @param ip The remote IP address of the peer
-	 * @param port The remote port of the peer
-	 * @param torrent The torrent the found peer is serving
+	 * @param peer Newly obtained set of peers
 	 */
-	void onPeerFound(final String ip, final long port, final TrackableTorrent torrent);
+	void onPeersFound(final Set<PwpPeer> peers);
 }

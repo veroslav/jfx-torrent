@@ -29,6 +29,7 @@ import java.util.concurrent.Executors;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import org.matic.torrent.net.pwp.PwpPeer;
 import org.matic.torrent.net.udp.UdpConnectionListener;
 import org.matic.torrent.net.udp.UdpConnectionManager;
 import org.matic.torrent.net.udp.UdpResponse;
@@ -128,10 +129,6 @@ public final class TrackerManager implements TrackerResponseListener, UdpConnect
 		return peerListeners.remove(peerListener);
 	}
 	
-	public final void notifyOnPeerFound(final String ip, final long port, final TrackableTorrent torrent) {
-		peerListeners.stream().forEach(l -> l.onPeerFound(ip, port, torrent));
-	}
-	
 	/**
 	 * Cleanup after closing down the tracker manager
 	 */
@@ -141,9 +138,12 @@ public final class TrackerManager implements TrackerResponseListener, UdpConnect
 	}
 
 	@Override
-	public final void onResponseReceived(final TrackerResponse response, final Tracker tracker) {
-		//Extract peers, if any, and notify listeners (notifyOnPeerFound(...))
+	public final void onResponseReceived(final TrackerResponse response, final Tracker tracker) {		
 		//TODO: Perhaps handle the received response in a dedicated thread?
+		final Set<PwpPeer> peers = response.getPeers();
+		if(!peers.isEmpty()) {
+			peerListeners.stream().forEach(l -> l.onPeersFound(response.getPeers()));
+		}
 		tracker.setLastResponse(System.nanoTime());
 	}	
 	

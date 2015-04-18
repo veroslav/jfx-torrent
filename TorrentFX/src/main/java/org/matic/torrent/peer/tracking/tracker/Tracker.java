@@ -78,16 +78,23 @@ public abstract class Tracker implements Comparable<Tracker> {
 		lastResponse = 0;
 	}
 
+	public abstract boolean isScrapeSupported();
+	
+	public abstract Type getType();
+	
 	/**
 	 * Make an announce request against the tracker
 	 * 
 	 * @param announceRequest Announcement request
 	 */
-	public abstract void announce(final AnnounceRequest announceRequest);
+	protected abstract void announce(final AnnounceRequest announceRequest);
 	
-	public abstract boolean isScrapeSupported();
-	
-	public abstract Type getType();
+	/**
+	 * Make a scrape request against the tracker (only if supported)
+	 * 
+	 * @param torrents Torrents to be scraped
+	 */
+	protected abstract void scrape(final Set<TrackableTorrent> torrents);
 
 	@Override
 	public final int compareTo(final Tracker other) {

@@ -26,10 +26,12 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Set;
 
 import org.matic.torrent.net.udp.UdpConnectionManager;
 import org.matic.torrent.net.udp.UdpRequest;
 import org.matic.torrent.peer.ClientProperties;
+import org.matic.torrent.peer.tracking.TrackableTorrent;
 
 public final class UdpTracker extends Tracker {
 	
@@ -67,12 +69,17 @@ public final class UdpTracker extends Tracker {
 	}
 	
 	@Override
-	public final boolean isScrapeSupported() {		
+	public boolean isScrapeSupported() {
 		return true;
+	}
+	
+	@Override
+	public final void scrape(final Set<TrackableTorrent> torrents) {
+		//TODO: Implement method
 	};
 
 	@Override
-	public final void announce(final AnnounceRequest announceRequest) {
+	protected final void announce(final AnnounceRequest announceRequest) {
 		final UdpRequest udpRequest = buildUdpRequest(announceRequest);
 		
 		if(udpRequest != null) {
