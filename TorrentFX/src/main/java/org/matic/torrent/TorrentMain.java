@@ -20,10 +20,10 @@
 
 package org.matic.torrent;
 
-import org.matic.torrent.gui.window.ApplicationWindow;
-
 import javafx.application.Application;
 import javafx.stage.Stage;
+
+import org.matic.torrent.gui.window.ApplicationWindow;
 
 public final class TorrentMain extends Application {
 
@@ -33,7 +33,7 @@ public final class TorrentMain extends Application {
 	 * 
 	 * @param args Application parameters
 	 */
-	public static void main(final String[] args) {
+	public static void main(final String[] args) {		
 		launch(args);
 	}
 

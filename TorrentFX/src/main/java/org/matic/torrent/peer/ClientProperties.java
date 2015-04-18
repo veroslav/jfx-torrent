@@ -20,13 +20,17 @@
 
 package org.matic.torrent.peer;
 
+import java.lang.management.ManagementFactory;
 import java.util.Properties;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 
 public final class ClientProperties {
 	
+	private static final char[] LETTER_HEX_VALUES = {'A', 'B', 'C', 'D', 'E', 'F'};
+	
 	private static final AtomicLong ID_GENERATOR_BASE = new AtomicLong(System.nanoTime());
-	private static final String CLIENT_IDENTIFIER = "FX";
+	private static final String CLIENT_IDENTIFIER = "-jX0001-";
 	
 	//Unique client id to be sent in tracker requests and to other peers
 	public static final String PEER_ID = ClientProperties.generatePeerId();
@@ -41,7 +45,7 @@ public final class ClientProperties {
 		final StringBuilder transactionId = new StringBuilder(ClientProperties.getUniqueHashBase());
 		transactionId.append(ID_GENERATOR_BASE.incrementAndGet());
 		
-		return transactionId.hashCode();
+		return transactionId.toString().hashCode();
 	}	
 	
 	private static String getUniqueHashBase() {
@@ -54,13 +58,21 @@ public final class ClientProperties {
 		hashBase.append(systemProps.getProperty("user.name"));
 		hashBase.append(systemProps.getProperty("user.home"));
 		hashBase.append(systemProps.getProperty("user.dir"));
+		hashBase.append(ManagementFactory.getRuntimeMXBean().getName());
 		
 		return hashBase.toString();
 	}
 	
 	private static String generatePeerId() {
-		//TODO: Generate a real and correct peer id (20 bytes)
-		return CLIENT_IDENTIFIER + "-12345678";
-	}
-	
+		final String uniqueHash = String.valueOf(Math.abs(generateUniqueId()));
+		final StringBuilder peerId = new StringBuilder(CLIENT_IDENTIFIER);
+		final Random random = new Random(System.nanoTime());
+		
+		for(int i = 0; i < 12 - uniqueHash.length(); ++i) {
+			peerId.append(LETTER_HEX_VALUES[random.nextInt(LETTER_HEX_VALUES.length)]);
+		}
+		
+		peerId.append(uniqueHash);
+		return peerId.toString();
+	}	
 }
