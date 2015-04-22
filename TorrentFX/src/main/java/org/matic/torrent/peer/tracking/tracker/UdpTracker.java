@@ -24,7 +24,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
-import java.net.URL;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
 
@@ -52,14 +53,14 @@ public final class UdpTracker extends Tracker {
 	private final int trackerPort;
 	
 	public UdpTracker(final String url, final UdpConnectionManager connectionManager) 
-			throws IOException {
+			throws IOException, URISyntaxException {
 		super(url);		
 		this.connectionManager = connectionManager;
 		
-		final URL trackerUrl = new URL(url);
-		final int urlPort = trackerUrl.getPort();
+		final URI trackerUri = new URI(url);
+		final int urlPort = trackerUri.getPort();
 		
-		trackerAddress = InetAddress.getByName(trackerUrl.getHost());
+		trackerAddress = InetAddress.getByName(trackerUri.getHost());
 		trackerPort = urlPort != -1? urlPort : DEFAULT_PORT;
 	}
 	
@@ -82,7 +83,7 @@ public final class UdpTracker extends Tracker {
 	protected final void announce(final AnnounceRequest announceRequest) {
 		final UdpRequest udpRequest = buildUdpRequest(announceRequest);
 		
-		if(udpRequest != null) {
+		if(udpRequest != null) {			
 			connectionManager.send(udpRequest);
 		}
 	}
@@ -108,7 +109,7 @@ public final class UdpTracker extends Tracker {
 		}
 	}
 
-	private UdpRequest buildUdpRequest(final AnnounceRequest announceRequest) {
+	final UdpRequest buildUdpRequest(final AnnounceRequest announceRequest) {
 		final ByteArrayOutputStream baos = new ByteArrayOutputStream(ANNOUNCE_LENGTH);
 		try(final DataOutputStream dos = new DataOutputStream(baos)) {
 			dos.writeLong(connectionId);

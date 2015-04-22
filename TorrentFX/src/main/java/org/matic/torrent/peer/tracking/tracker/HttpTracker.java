@@ -32,8 +32,8 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -106,6 +106,10 @@ public final class HttpTracker extends Tracker {
 		responseListener.onResponseReceived(trackerResponse, this);				
 	}
 	
+	protected String getScrapeUrl() {
+		return scrapeUrl;
+	}
+	
 	private String getEventName(final Tracker.Event event) {
 		switch(event) {
 		case STARTED:
@@ -119,11 +123,13 @@ public final class HttpTracker extends Tracker {
 		}
 	}
 	
-	private String buildRequestUrl(final AnnounceRequest announceRequest) 
+	protected String buildRequestUrl(final AnnounceRequest announceRequest) 
 			throws UnsupportedEncodingException {		
 		final TrackableTorrent torrent = announceRequest.getTorrent();
 		final String urlTemplate = "info_hash=%s&peer_id=%s&uploaded=%d&downloaded=%d&left=%d&port=%d&compact=1";		
-		final StringBuilder result = new StringBuilder(String.format(urlTemplate, URLEncoder.encode(
+		final StringBuilder result = new StringBuilder(url);
+				result.append("?");
+				result.append(String.format(urlTemplate, URLEncoder.encode(
 				torrent.getInfoHashHexValue(), StandardCharsets.UTF_8.name()),
 				URLEncoder.encode(ClientProperties.PEER_ID, StandardCharsets.UTF_8.name()),
 				announceRequest.getUploaded(), announceRequest.getDownloaded(),
@@ -143,7 +149,7 @@ public final class HttpTracker extends Tracker {
 		URL targetUrl = null;
 		
 		try {
-			targetUrl = new URL(url + "?" + buildRequestUrl(announceRequest));			
+			targetUrl = new URL(buildRequestUrl(announceRequest));			
 			final HttpURLConnection connection = (HttpURLConnection)targetUrl.openConnection();
 			connection.setRequestProperty(ACCEPT_CHARSET, StandardCharsets.UTF_8.name());
 			connection.setRequestProperty(USER_AGENT_NAME, USER_AGENT_VALUE);			
@@ -185,7 +191,7 @@ public final class HttpTracker extends Tracker {
 		}
 	}
 	
-	private TrackerResponse buildErrorResponse(final InputStream errorStream) throws IOException {
+	protected TrackerResponse buildErrorResponse(final InputStream errorStream) throws IOException {
 		final StringBuilder errorMessage = new StringBuilder();
 		
 		try(final BufferedReader reader = new BufferedReader(new InputStreamReader(
@@ -197,7 +203,7 @@ public final class HttpTracker extends Tracker {
 	}
 	
 	//TODO: Validate that all mandatory values are present, otherwise return INVALID_RESPONSE
-	private TrackerResponse buildResponse(final BinaryEncodedDictionary responseMap, final String infoHash) {
+	protected TrackerResponse buildResponse(final BinaryEncodedDictionary responseMap, final String infoHash) {
 		final BinaryEncodedString failureReason = (BinaryEncodedString)responseMap.get(
 				BinaryEncodingKeyNames.KEY_FAILURE_REASON);
 		
@@ -210,21 +216,18 @@ public final class HttpTracker extends Tracker {
 		
 		final TrackerResponse.Type responseType = warningMessage != null? 
 				TrackerResponse.Type.WARNING : TrackerResponse.Type.NORMAL;
-		final Optional<String> trackerMessage = Optional.ofNullable(
-				warningMessage != null? warningMessage.toString() : null);
+		final String trackerMessage = warningMessage != null? warningMessage.toString() : null;
 		
 		final BinaryEncodedInteger minInterval = (BinaryEncodedInteger)responseMap.get(
 				BinaryEncodingKeyNames.KEY_MIN_INTERVAL);
-		final Optional<Long> minIntervalValue = Optional.ofNullable(
-				minInterval != null? minInterval.getValue() : null);
+		final Long minIntervalValue = minInterval != null? minInterval.getValue() : null;
 		
 		final BinaryEncodedString trackerId = (BinaryEncodedString)responseMap.get(
 				BinaryEncodingKeyNames.KEY_TRACKER_ID);
-		final Optional<String> trackerIdValue = Optional.ofNullable(
-				trackerId != null? trackerId.toString() : null);
+		final String trackerIdValue = trackerId != null? trackerId.toString() : null;
 		
 		final long interval = ((BinaryEncodedInteger)responseMap.get(
-				BinaryEncodingKeyNames.KEY_INTERVAL)).getValue() * 1000;
+				BinaryEncodingKeyNames.KEY_INTERVAL)).getValue();
 		
 		final long complete = ((BinaryEncodedInteger)responseMap.get(
 				BinaryEncodingKeyNames.KEY_COMPLETE)).getValue();
@@ -232,16 +235,19 @@ public final class HttpTracker extends Tracker {
 		final long incomplete = ((BinaryEncodedInteger)responseMap.get(
 				BinaryEncodingKeyNames.KEY_INCOMPLETE)).getValue();
 		
+		final BinaryEncodable peerList = responseMap.get(BinaryEncodingKeyNames.KEY_PEERS);
+		final Set<PwpPeer> peers = peerList == null? Collections.emptySet() : extractPeers(peerList, infoHash);
+		
 		return new TrackerResponse(responseType, trackerMessage, interval, minIntervalValue, trackerIdValue,
-				complete, incomplete, extractPeers(responseMap.get(BinaryEncodingKeyNames.KEY_PEERS), infoHash));
+				complete, incomplete, peers);
 	}
 	
-	private Set<PwpPeer> extractPeers(final BinaryEncodable peerList, final String infoHash) {		
+	protected Set<PwpPeer> extractPeers(final BinaryEncodable peerList, final String infoHash) {				
 		return peerList instanceof BinaryEncodedList? extractPeerList(
 				(BinaryEncodedList)peerList, infoHash) : extractPeerString((BinaryEncodedString)peerList, infoHash);
 	}
 	
-	private Set<PwpPeer> extractPeerList(final BinaryEncodedList peerList, final String infoHash) {
+	protected Set<PwpPeer> extractPeerList(final BinaryEncodedList peerList, final String infoHash) {
 		return peerList.stream().map(p -> {
 			final BinaryEncodedDictionary peerInfo = (BinaryEncodedDictionary)p;
 			//TODO: Extract peer id
@@ -251,7 +257,7 @@ public final class HttpTracker extends Tracker {
 		}).collect(Collectors.toSet());
 	}
 	
-	private Set<PwpPeer> extractPeerString(final BinaryEncodedString peerString, final String infoHash) {
+	protected Set<PwpPeer> extractPeerString(final BinaryEncodedString peerString, final String infoHash) {
 		final Set<PwpPeer> peers = new HashSet<>();
 		final byte[] peerInfo = peerString.getBytes();
 		for(int i = 0; i < peerInfo.length; i += 6) {

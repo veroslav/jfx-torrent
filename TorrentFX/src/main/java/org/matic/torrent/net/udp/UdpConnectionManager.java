@@ -38,7 +38,7 @@ import java.util.concurrent.Executors;
  * @author vedran
  *
  */
-public final class UdpConnectionManager {
+public class UdpConnectionManager {
 	
 	private static final int MAX_OUTGOING_MESSAGES = 30;
 	private static final int RECEIVER_BUFFER_SIZE = 10;
@@ -78,7 +78,7 @@ public final class UdpConnectionManager {
 		listeners.remove(listener);
 	}
 	
-	public final boolean send(final UdpRequest request) {
+	public boolean send(final UdpRequest request) {		
 		return outgoingMessages.offer(request);
 	}
 	
@@ -89,8 +89,7 @@ public final class UdpConnectionManager {
 	private void handleOutgoing() {
 		while(true) {
 			try (final DatagramSocket clientSocket = new DatagramSocket()){
-				final UdpRequest outgoingRequest = outgoingMessages.take();
-				System.out.println("Request to send: " + outgoingRequest);
+				final UdpRequest outgoingRequest = outgoingMessages.take();				
 				
 				final byte[] packetData = outgoingRequest.getRequestData();
 				final DatagramPacket outgoingPacket = new DatagramPacket(packetData, 

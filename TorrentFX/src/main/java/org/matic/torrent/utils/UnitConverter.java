@@ -23,16 +23,22 @@ package org.matic.torrent.utils;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.TimeZone;
 
 public final class UnitConverter {
 	
 	private static final DateFormat DATE_FORMATTER = new SimpleDateFormat("yyyy-MM-dd kk:mm:ss");
+	private static final String UTC_TIMEZONE = "UTC";
+	
+	static {
+		DATE_FORMATTER.setTimeZone(TimeZone.getTimeZone(UTC_TIMEZONE));
+	}
 
 	/**
 	 * Return a humanly readable presentation of input byte count
 	 * 
-	 * @param v Number of bytes to format
-	 * @return
+	 * @param byteCount Number of bytes to format
+	 * @return Formatted byteCount (either B, kiB, MiB or GiB)
 	 */
 	public static String formatByteCount(final long byteCount) {
         if(byteCount < 1024) {

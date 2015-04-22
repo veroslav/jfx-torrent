@@ -20,23 +20,17 @@
 
 package org.matic.torrent.utils;
 
-public final class HashUtilities {
-	
-	private static final char[] HEX_VALUES = "0123456789ABCDEF".toCharArray();
+import org.junit.Assert;
+import org.junit.Test;
+import org.matic.torrent.peer.ClientProperties;
 
-	/**
-	 * Convert (SHA-1) byte value to it's hexadecimal representation
-	 * 
-	 * @param bytes Bytes to be converted
-	 * @return Hexadecimal representation of input bytes
-	 */
-	public static String convertToHexValue(final byte[] bytes) {
-		final char[] hexChars = new char[bytes.length * 2];
-	    for(int j = 0; j < bytes.length; j++) {
-	        final int v = bytes[j] & 0xFF;
-	        hexChars[j*2] = HEX_VALUES[v >>> 4];
-	        hexChars[j*2+1] = HEX_VALUES[v & 0x0F];
-	    }
-	    return new String(hexChars);
+public final class HashUtilitiesTest {
+
+	@Test
+	public final void testConvertToHexValue() {		
+		final byte[] inputBytes = "This is your message".getBytes(ClientProperties.STRING_ENCODING_CHARSET);
+		final String expectedHexValue = "5468697320697320796F7572206D657373616765";
+		
+		Assert.assertEquals(expectedHexValue, HashUtilities.convertToHexValue(inputBytes));
 	}
 }

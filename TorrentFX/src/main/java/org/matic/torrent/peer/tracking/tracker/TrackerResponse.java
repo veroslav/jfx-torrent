@@ -21,7 +21,6 @@
 package org.matic.torrent.peer.tracking.tracker;
 
 import java.util.Collections;
-import java.util.Optional;
 import java.util.Set;
 
 import org.matic.torrent.net.pwp.PwpPeer;
@@ -32,9 +31,9 @@ public final class TrackerResponse {
 		INVALID_URL, READ_WRITE_ERROR, NORMAL, TRACKER_ERROR, INVALID_RESPONSE, WARNING
 	}
 
-	private final Optional<String> trackerId;
-	private final Optional<Long> minInterval;
-	private final Optional<String> message;
+	private final String trackerId;
+	private final Long minInterval;
+	private final String message;
 	
 	private final Set<PwpPeer> peers;
 	
@@ -50,8 +49,7 @@ public final class TrackerResponse {
 	 * @param errorMessage Error message detailing the error
 	 */
 	public TrackerResponse(final Type type, final String errorMessage) {
-		this(type, Optional.of(errorMessage), 0, Optional.of(0L), 
-				Optional.ofNullable(null), 0, 0, Collections.emptySet());
+		this(type, errorMessage, 0, null, null, 0, 0, Collections.emptySet());
 	}
 	
 	/**
@@ -60,8 +58,8 @@ public final class TrackerResponse {
 	 * @param type Type of response (either NORMAL or WARNING)
 	 * @param warningMessage null if NORMAL, warning message otherwise
 	 */
-	public TrackerResponse(final Type type, final Optional<String> warningMessage, final long interval,
-			final Optional<Long> minInterval, final Optional<String> trackerId, final long complete,
+	public TrackerResponse(final Type type, final String warningMessage, final long interval,
+			final Long minInterval, final String trackerId, final long complete,
 			final long incomplete, final Set<PwpPeer> peers) {
 		this.type = type;
 		this.message = warningMessage;
@@ -85,11 +83,11 @@ public final class TrackerResponse {
 		return complete;
 	}
 	
-	public final Optional<String> getTrackerId() {
+	public final String getTrackerId() {
 		return trackerId;
 	}
 	
-	public final Optional<Long> getMinInterval() {
+	public final Long getMinInterval() {
 		return minInterval;
 	}
 	
@@ -101,7 +99,72 @@ public final class TrackerResponse {
 		return type;
 	}
 	
-	public final Optional<String> getMessage() {
+	public final String getMessage() {
 		return message;
+	}	
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + (int) (complete ^ (complete >>> 32));
+		result = prime * result + (int) (incomplete ^ (incomplete >>> 32));
+		result = prime * result + (int) (interval ^ (interval >>> 32));
+		result = prime * result + ((message == null) ? 0 : message.hashCode());
+		result = prime * result
+				+ ((minInterval == null) ? 0 : minInterval.hashCode());
+		result = prime * result + ((peers == null) ? 0 : peers.hashCode());
+		result = prime * result
+				+ ((trackerId == null) ? 0 : trackerId.hashCode());
+		result = prime * result + ((type == null) ? 0 : type.hashCode());
+		return result;
 	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		TrackerResponse other = (TrackerResponse) obj;
+		if (complete != other.complete)
+			return false;
+		if (incomplete != other.incomplete)
+			return false;
+		if (interval != other.interval)
+			return false;
+		if (message == null) {
+			if (other.message != null)
+				return false;
+		} else if (!message.equals(other.message))
+			return false;
+		if (minInterval == null) {
+			if (other.minInterval != null)
+				return false;
+		} else if (!minInterval.equals(other.minInterval))
+			return false;
+		if (peers == null) {
+			if (other.peers != null)
+				return false;
+		} else if (!peers.equals(other.peers))
+			return false;
+		if (trackerId == null) {
+			if (other.trackerId != null)
+				return false;
+		} else if (!trackerId.equals(other.trackerId))
+			return false;
+		if (type != other.type)
+			return false;
+		return true;
+	}
+
+	@Override
+	public String toString() {
+		return "TrackerResponse [trackerId=" + trackerId + ", minInterval="
+				+ minInterval + ", message=" + message + ", peers=" + peers
+				+ ", incomplete=" + incomplete + ", interval=" + interval
+				+ ", complete=" + complete + ", type=" + type + "]";
+	}	
 }

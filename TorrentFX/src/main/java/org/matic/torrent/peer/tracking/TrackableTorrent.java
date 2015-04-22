@@ -22,7 +22,6 @@ package org.matic.torrent.peer.tracking;
 
 import java.util.Arrays;
 
-import org.matic.torrent.peer.ClientProperties;
 import org.matic.torrent.peer.tracking.tracker.Tracker;
 import org.matic.torrent.utils.HashUtilities;
 
@@ -53,9 +52,10 @@ public final class TrackableTorrent {
 		return transactionId;
 	}
 	
-	public final int updateTransactionId() {		
-		return transactionId = ClientProperties.generateUniqueId();
-	}
+	//transactionId = ClientProperties.generateUniqueId();
+	public final void setTransactionId(final int transactionId) {
+		this.transactionId = transactionId;		
+	}	
 	
 	public final String getInfoHashHexValue() {
 		return hexInfoHash;

@@ -20,80 +20,80 @@
 
 package org.matic.torrent.io.codec;
 
-import java.nio.charset.Charset;
+import org.matic.torrent.peer.ClientProperties;
 
 public final class BinaryEncodingKeyNames {
 	
 	//TRACKER RESPONSE KEYS
 	public static final BinaryEncodedString KEY_FAILURE_REASON =  new BinaryEncodedString(
-			"failure reason".getBytes(Charset.forName(BinaryEncodedString.ENCODING_UTF8)));
+			"failure reason".getBytes(ClientProperties.STRING_ENCODING_CHARSET));
 	
 	public static final BinaryEncodedString KEY_WARNING_MESSAGE =  new BinaryEncodedString(
-			"warning message".getBytes(Charset.forName(BinaryEncodedString.ENCODING_UTF8)));
+			"warning message".getBytes(ClientProperties.STRING_ENCODING_CHARSET));
 	
 	public static final BinaryEncodedString KEY_INTERVAL =  new BinaryEncodedString(
-			"interval".getBytes(Charset.forName(BinaryEncodedString.ENCODING_UTF8)));
+			"interval".getBytes(ClientProperties.STRING_ENCODING_CHARSET));
 	
 	public static final BinaryEncodedString KEY_MIN_INTERVAL =  new BinaryEncodedString(
-			"min interval".getBytes(Charset.forName(BinaryEncodedString.ENCODING_UTF8)));
+			"min interval".getBytes(ClientProperties.STRING_ENCODING_CHARSET));
 	
 	public static final BinaryEncodedString KEY_TRACKER_ID =  new BinaryEncodedString(
-			"tracker id".getBytes(Charset.forName(BinaryEncodedString.ENCODING_UTF8)));
+			"tracker id".getBytes(ClientProperties.STRING_ENCODING_CHARSET));
 	
 	public static final BinaryEncodedString KEY_COMPLETE =  new BinaryEncodedString(
-			"complete".getBytes(Charset.forName(BinaryEncodedString.ENCODING_UTF8)));
+			"complete".getBytes(ClientProperties.STRING_ENCODING_CHARSET));
 	
 	public static final BinaryEncodedString KEY_INCOMPLETE =  new BinaryEncodedString(
-			"incomplete".getBytes(Charset.forName(BinaryEncodedString.ENCODING_UTF8)));
+			"incomplete".getBytes(ClientProperties.STRING_ENCODING_CHARSET));
 	
 	public static final BinaryEncodedString KEY_PEERS =  new BinaryEncodedString(
-			"peers".getBytes(Charset.forName(BinaryEncodedString.ENCODING_UTF8)));
+			"peers".getBytes(ClientProperties.STRING_ENCODING_CHARSET));
 	
 	public static final BinaryEncodedString KEY_PEER_ID =  new BinaryEncodedString(
-			"peer id".getBytes(Charset.forName(BinaryEncodedString.ENCODING_UTF8)));
+			"peer id".getBytes(ClientProperties.STRING_ENCODING_CHARSET));
 	
 	public static final BinaryEncodedString KEY_IP =  new BinaryEncodedString(
-			"ip".getBytes(Charset.forName(BinaryEncodedString.ENCODING_UTF8)));
+			"ip".getBytes(ClientProperties.STRING_ENCODING_CHARSET));
 	
 	public static final BinaryEncodedString KEY_PORT =  new BinaryEncodedString(
-			"port".getBytes(Charset.forName(BinaryEncodedString.ENCODING_UTF8)));
+			"port".getBytes(ClientProperties.STRING_ENCODING_CHARSET));
 	
 	//TORRENT META FILE KEYS
 	public static final BinaryEncodedString KEY_PATH =  new BinaryEncodedString(
-			"path".getBytes(Charset.forName(BinaryEncodedString.ENCODING_UTF8)));
+			"path".getBytes(ClientProperties.STRING_ENCODING_CHARSET));
 
 	public static final BinaryEncodedString KEY_INFO =  new BinaryEncodedString(
-			"info".getBytes(Charset.forName(BinaryEncodedString.ENCODING_UTF8)));
+			"info".getBytes(ClientProperties.STRING_ENCODING_CHARSET));
 	
 	public static final BinaryEncodedString KEY_NAME =  new BinaryEncodedString(
-			"name".getBytes(Charset.forName(BinaryEncodedString.ENCODING_UTF8)));
+			"name".getBytes(ClientProperties.STRING_ENCODING_CHARSET));
 	
 	public static final BinaryEncodedString KEY_PIECES =  new BinaryEncodedString(
-			"pieces".getBytes(Charset.forName(BinaryEncodedString.ENCODING_UTF8)));
+			"pieces".getBytes(ClientProperties.STRING_ENCODING_CHARSET));
 	
 	public static final BinaryEncodedString KEY_FILES =  new BinaryEncodedString(
-			"files".getBytes(Charset.forName(BinaryEncodedString.ENCODING_UTF8)));
+			"files".getBytes(ClientProperties.STRING_ENCODING_CHARSET));
 	
 	public static final BinaryEncodedString KEY_LENGTH =  new BinaryEncodedString(
-			"length".getBytes(Charset.forName(BinaryEncodedString.ENCODING_UTF8)));
+			"length".getBytes(ClientProperties.STRING_ENCODING_CHARSET));
 	
 	public static final BinaryEncodedString KEY_COMMENT =  new BinaryEncodedString(
-			"comment".getBytes(Charset.forName(BinaryEncodedString.ENCODING_UTF8)));
+			"comment".getBytes(ClientProperties.STRING_ENCODING_CHARSET));
 	
 	public static final BinaryEncodedString KEY_ENCODING =  new BinaryEncodedString(
-			"encoding".getBytes(Charset.forName(BinaryEncodedString.ENCODING_UTF8)));
+			"encoding".getBytes(ClientProperties.STRING_ENCODING_CHARSET));
 	
 	public static final BinaryEncodedString KEY_CREATION_DATE = new BinaryEncodedString(
-			"creation date".getBytes(Charset.forName(BinaryEncodedString.ENCODING_UTF8)));
+			"creation date".getBytes(ClientProperties.STRING_ENCODING_CHARSET));
 	
 	public static final BinaryEncodedString KEY_ANNOUNCE = new BinaryEncodedString(
-			"announce".getBytes(Charset.forName(BinaryEncodedString.ENCODING_UTF8)));
+			"announce".getBytes(ClientProperties.STRING_ENCODING_CHARSET));
 	
 	public static final BinaryEncodedString KEY_ANNOUNCE_LIST = new BinaryEncodedString(
-			"announce-list".getBytes(Charset.forName(BinaryEncodedString.ENCODING_UTF8)));
+			"announce-list".getBytes(ClientProperties.STRING_ENCODING_CHARSET));
 		
 	protected static final BinaryEncodedString KEY_INFO_HASH = new BinaryEncodedString(
-			"jfxInfoHash".getBytes(Charset.forName(BinaryEncodedString.ENCODING_UTF8)));
+			"jfxInfoHash".getBytes(ClientProperties.STRING_ENCODING_CHARSET));
 		
 }
 

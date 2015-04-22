@@ -21,6 +21,8 @@
 package org.matic.torrent.peer;
 
 import java.lang.management.ManagementFactory;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
@@ -40,6 +42,9 @@ public final class ClientProperties {
 	
 	//Port used for UDP communication (tracker and DHT responses)
 	public static final int UDP_PORT = 43893;
+	
+	//UTF-8 encoding is used for all string encoding used in the client
+	public static final Charset STRING_ENCODING_CHARSET = StandardCharsets.UTF_8;
 	
 	public static int generateUniqueId() {
 		final StringBuilder transactionId = new StringBuilder(ClientProperties.getUniqueHashBase());
