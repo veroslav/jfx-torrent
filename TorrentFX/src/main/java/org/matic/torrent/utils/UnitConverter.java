@@ -59,4 +59,28 @@ public final class UnitConverter {
 		final Date timeAsDate = new Date(timeMillis);		
 		return UnitConverter.DATE_FORMATTER.format(timeAsDate);
 	}
+	
+	/**
+	 * Convert a short digit to (Big Endian/Network byte-order) bytes
+	 * 
+	 * @param digit Digit to be converted
+	 * @return Converted byte value (Big Endian)
+	 */
+	public static byte[] getBytes(final short digit) {
+		final byte[] result = {(byte)(digit >> 8), (byte)digit};
+		return result;
+	}
+	
+	/**
+	 * Convert an integer digit to (Big Endian/Network byte-order) bytes
+	 * 
+	 * @param digit Digit to be converted
+	 * @return Converted byte value (Big Endian)
+	 */
+	public static byte[] getBytes(final int digit) {
+		final byte[] result = {(byte)(digit >> 24),
+		  (byte)(digit >> 16), (byte)(digit >> 8),
+		  (byte)digit};
+		return result;
+	}
 }

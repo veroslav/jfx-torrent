@@ -32,7 +32,7 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -202,7 +202,6 @@ public final class HttpTracker extends Tracker {
 		return new TrackerResponse(TrackerResponse.Type.TRACKER_ERROR, errorMessage.toString());
 	}
 	
-	//TODO: Validate that all mandatory values are present, otherwise return INVALID_RESPONSE
 	protected TrackerResponse buildResponse(final BinaryEncodedDictionary responseMap, final String infoHash) {
 		final BinaryEncodedString failureReason = (BinaryEncodedString)responseMap.get(
 				BinaryEncodingKeyNames.KEY_FAILURE_REASON);
@@ -210,6 +209,26 @@ public final class HttpTracker extends Tracker {
 		if(failureReason != null) {
 			return new TrackerResponse(TrackerResponse.Type.TRACKER_ERROR, failureReason.toString());
 		}
+		
+		final BinaryEncodable peerList = responseMap.get(BinaryEncodingKeyNames.KEY_PEERS);
+		
+		final BinaryEncodedInteger interval = ((BinaryEncodedInteger)responseMap.get(
+				BinaryEncodingKeyNames.KEY_INTERVAL));
+		
+		final BinaryEncodedInteger complete = ((BinaryEncodedInteger)responseMap.get(
+				BinaryEncodingKeyNames.KEY_COMPLETE));
+		
+		final BinaryEncodedInteger incomplete = ((BinaryEncodedInteger)responseMap.get(
+				BinaryEncodingKeyNames.KEY_INCOMPLETE));
+		
+		if(!validateMandatoryResponseValues(peerList, interval, complete, incomplete)) {
+			return new TrackerResponse(TrackerResponse.Type.INVALID_RESPONSE, 
+					"Missing mandatory response value");
+		}
+		
+		final long incompleteValue = incomplete.getValue();
+		final long intervalValue = interval.getValue();
+		final long completeValue = complete.getValue();
 		
 		final BinaryEncodedString warningMessage = (BinaryEncodedString)responseMap.get(
 				BinaryEncodingKeyNames.KEY_WARNING_MESSAGE);
@@ -226,20 +245,10 @@ public final class HttpTracker extends Tracker {
 				BinaryEncodingKeyNames.KEY_TRACKER_ID);
 		final String trackerIdValue = trackerId != null? trackerId.toString() : null;
 		
-		final long interval = ((BinaryEncodedInteger)responseMap.get(
-				BinaryEncodingKeyNames.KEY_INTERVAL)).getValue();
+		final Set<PwpPeer> peers = extractPeers(peerList, infoHash);
 		
-		final long complete = ((BinaryEncodedInteger)responseMap.get(
-				BinaryEncodingKeyNames.KEY_COMPLETE)).getValue();
-		
-		final long incomplete = ((BinaryEncodedInteger)responseMap.get(
-				BinaryEncodingKeyNames.KEY_INCOMPLETE)).getValue();
-		
-		final BinaryEncodable peerList = responseMap.get(BinaryEncodingKeyNames.KEY_PEERS);
-		final Set<PwpPeer> peers = peerList == null? Collections.emptySet() : extractPeers(peerList, infoHash);
-		
-		return new TrackerResponse(responseType, trackerMessage, interval, minIntervalValue, trackerIdValue,
-				complete, incomplete, peers);
+		return new TrackerResponse(responseType, trackerMessage, intervalValue, minIntervalValue, trackerIdValue,
+				completeValue, incompleteValue, peers);
 	}
 	
 	protected Set<PwpPeer> extractPeers(final BinaryEncodable peerList, final String infoHash) {				
@@ -250,7 +259,7 @@ public final class HttpTracker extends Tracker {
 	protected Set<PwpPeer> extractPeerList(final BinaryEncodedList peerList, final String infoHash) {
 		return peerList.stream().map(p -> {
 			final BinaryEncodedDictionary peerInfo = (BinaryEncodedDictionary)p;
-			//TODO: Extract peer id
+			//TODO: Extract peer id, do we need it?
 			final String peerIp = ((BinaryEncodedString)peerInfo.get(BinaryEncodingKeyNames.KEY_IP)).toString();
 			final long peerPort = ((BinaryEncodedInteger)peerInfo.get(BinaryEncodingKeyNames.KEY_PORT)).getValue();
 			return new PwpPeer(peerIp, (int)peerPort, infoHash);
@@ -277,5 +286,9 @@ public final class HttpTracker extends Tracker {
 		}
 		
 		return peers;
+	}
+	
+	private boolean validateMandatoryResponseValues(final BinaryEncodable... values) {
+		return !Arrays.stream(values).anyMatch(v -> v == null);		
 	}
 }
