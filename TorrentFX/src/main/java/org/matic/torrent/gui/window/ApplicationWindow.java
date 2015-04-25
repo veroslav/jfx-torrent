@@ -211,6 +211,7 @@ public final class ApplicationWindow {
 		}
 		
 		toolbarButtons[0].setOnAction(event -> fileActionHandler.onFileOpen(stage));
+		toolbarButtons[1].setOnAction(event -> fileActionHandler.onLoadUrl(stage));
 
 		final List<Node> leftToolbarNodes = Arrays.asList(toolbarButtons[0], toolbarButtons[1],
 				buildToolbarSeparator(), toolbarButtons[2], buildToolbarSeparator(), 
@@ -335,6 +336,7 @@ public final class ApplicationWindow {
 		addTorrentAndChooseDirMenuItem.setAccelerator(KeyCombination.keyCombination("Ctrl+D"));
 		
 		final MenuItem addTorrentFromUrlMenuItem = new MenuItem("Add Torrent from URL...");
+		addTorrentFromUrlMenuItem.setOnAction(event -> fileActionHandler.onLoadUrl(stage));
 		addTorrentFromUrlMenuItem.setAccelerator(KeyCombination.keyCombination("Ctrl+U"));
 		
 		final MenuItem addRssFeedMenuItem = new MenuItem("Add RSS Feed...");

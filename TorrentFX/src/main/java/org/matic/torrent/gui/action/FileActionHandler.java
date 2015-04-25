@@ -34,6 +34,8 @@ import javafx.stage.Window;
 
 import org.matic.torrent.gui.window.AddNewTorrentOptions;
 import org.matic.torrent.gui.window.AddNewTorrentWindow;
+import org.matic.torrent.gui.window.UrlLoaderWindow;
+import org.matic.torrent.gui.window.UrlLoaderWindowOptions;
 import org.matic.torrent.io.codec.BinaryDecoder;
 import org.matic.torrent.io.codec.BinaryDecoderException;
 import org.matic.torrent.io.codec.BinaryEncodedDictionary;
@@ -78,6 +80,13 @@ public final class FileActionHandler {
 				//TODO: Use selected target save location
 			}			
 		}
+	}
+	
+	public final void onLoadUrl(final Window owner) {
+		final UrlLoaderWindow urlLoaderWindow = new UrlLoaderWindow(owner);
+		final UrlLoaderWindowOptions urlLoaderWindowOptions = urlLoaderWindow.showAndWait();
+		
+		System.out.println(urlLoaderWindowOptions);
 	}
 	
 	private String getTorrentPath(final Window owner) {

@@ -20,8 +20,14 @@
 
 package org.matic.torrent.utils;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 public final class HashUtilities {
 	
+	public static final int HEX_INFO_HASH_LENGTH = 10;	//160 bits / 16 == 10 places
+	
+	private static final Pattern HEX_MATCH_PATTERN = Pattern.compile("[0-9a-fA-F]+");
 	private static final char[] HEX_VALUES = "0123456789ABCDEF".toCharArray();
 
 	/**
@@ -38,5 +44,17 @@ public final class HashUtilities {
 	        hexChars[j*2+1] = HEX_VALUES[v & 0x0F];
 	    }
 	    return new String(hexChars);
+	}
+	
+	/**
+	 * Check whether a string contains a valid hexadecimal number
+	 * (valid values are 0123456789ABCDEF)
+	 * 
+	 * @param value String value to check
+	 * @return Whether value is a valid hexadecimal number
+	 */
+	public static boolean isValidHexNumber(final String value) {
+		final Matcher hexPatternMatch = HEX_MATCH_PATTERN.matcher(value);
+		return hexPatternMatch.matches();
 	}
 }

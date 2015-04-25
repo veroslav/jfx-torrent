@@ -45,23 +45,12 @@ import org.matic.torrent.io.codec.BinaryEncodedInteger;
 import org.matic.torrent.io.codec.BinaryEncodedList;
 import org.matic.torrent.io.codec.BinaryEncodedString;
 import org.matic.torrent.io.codec.BinaryEncodingKeyNames;
+import org.matic.torrent.net.NetworkUtilities;
 import org.matic.torrent.net.pwp.PwpPeer;
 import org.matic.torrent.peer.ClientProperties;
 import org.matic.torrent.peer.tracking.TrackableTorrent;
 
 public final class HttpTracker extends Tracker {
-	
-	private static final String CONTENT_ENCODING = "Content-Encoding";
-	private static final String ACCEPT_ENCODING = "Accept-Encoding";
-	
-	private static final String CONTENT_TYPE = "Content-Type";
-	private static final String TEXT_PLAIN = "text/plain";
-	
-	//TODO: Use a real user agent value
-	private static final String USER_AGENT_VALUE = "Mozilla/34.0";
-	private static final String ACCEPT_CHARSET = "Accept-Charset";	
-	private static final String USER_AGENT_NAME = "User-Agent";	
-	private static final String GZIP_ENCODING = "gzip";
 	
 	private static final String EVENT_COMPLETED = "completed";
 	private static final String EVENT_STOPPED = "stopped";
@@ -151,25 +140,25 @@ public final class HttpTracker extends Tracker {
 		try {
 			targetUrl = new URL(buildRequestUrl(announceRequest));			
 			final HttpURLConnection connection = (HttpURLConnection)targetUrl.openConnection();
-			connection.setRequestProperty(ACCEPT_CHARSET, StandardCharsets.UTF_8.name());
-			connection.setRequestProperty(USER_AGENT_NAME, USER_AGENT_VALUE);			
-			connection.setRequestProperty(ACCEPT_ENCODING, GZIP_ENCODING);
+			connection.setRequestProperty(NetworkUtilities.HTTP_ACCEPT_CHARSET, StandardCharsets.UTF_8.name());
+			connection.setRequestProperty(NetworkUtilities.HTTP_USER_AGENT_NAME, NetworkUtilities.HTTP_USER_AGENT_VALUE);			
+			connection.setRequestProperty(NetworkUtilities.HTTP_ACCEPT_ENCODING, NetworkUtilities.HTTP_GZIP_ENCODING);
 			
 			final int responseCode = connection.getResponseCode();
 			
 			if(responseCode == HttpURLConnection.HTTP_OK) {
 				final InputStream responseStream = connection.getInputStream();
 				
-				final String contentType = connection.getHeaderField(CONTENT_TYPE);
-				if(contentType == null || !TEXT_PLAIN.equals(contentType)) {
+				final String contentType = connection.getHeaderField(NetworkUtilities.HTTP_CONTENT_TYPE);
+				if(contentType == null || !NetworkUtilities.HTTP_TEXT_PLAIN.equals(contentType)) {
 					return new TrackerResponse(TrackerResponse.Type.INVALID_RESPONSE, "Not a text/plain response");
 				}
 				
 				//Check whether the response stream is gzip encoded
-				final String contentEncoding = connection.getHeaderField(CONTENT_ENCODING);
+				final String contentEncoding = connection.getHeaderField(NetworkUtilities.HTTP_CONTENT_ENCODING);
 				
 				final BinaryEncodedDictionary responseMap = contentEncoding != null && 
-						GZIP_ENCODING.equals(contentEncoding)? decoder.decodeGzip(responseStream) :
+						NetworkUtilities.HTTP_GZIP_ENCODING.equals(contentEncoding)? decoder.decodeGzip(responseStream) :
 							decoder.decode(responseStream);
 				
 				return buildResponse(responseMap, announceRequest.getTorrent().getInfoHashHexValue());
