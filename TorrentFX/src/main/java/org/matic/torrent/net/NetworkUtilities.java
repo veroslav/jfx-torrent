@@ -28,6 +28,8 @@ public final class NetworkUtilities {
 	public static final String HTTP_CONTENT_TYPE = "Content-Type";
 	public static final String HTTP_TEXT_PLAIN = "text/plain";
 	
+	public static final int HTTP_CONNECTION_TIMEOUT = 5000; //5 seconds
+	
 	//TODO: Use a real user agent value
 	public static final String HTTP_USER_AGENT_VALUE = 
 			"Mozilla/5.0 (Windows NT 6.3; rv:36.0) Gecko/20100101 Firefox/36.0";

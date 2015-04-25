@@ -20,6 +20,8 @@
 
 package org.matic.torrent.gui.window;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -52,6 +54,8 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Window;
 
+import org.matic.torrent.io.codec.BinaryDecoder;
+import org.matic.torrent.io.codec.BinaryDecoderException;
 import org.matic.torrent.io.codec.BinaryEncodedDictionary;
 import org.matic.torrent.net.NetworkUtilities;
 import org.matic.torrent.utils.HashUtilities;
@@ -66,11 +70,11 @@ import org.matic.torrent.utils.UnitConverter;
  */
 public final class UrlLoaderWindow {
 	
-	protected enum ResourceType {
+	public enum ResourceType {
 		URL, MAGNET_LINK, INFO_HASH, INVALID
 	}
 	
-	private static final int BUFFER_SIZE = 1024;
+	private static final int BUFFER_SIZE = 16384;
 	
 	private static final String WINDOW_TITLE = "Add Torrent from URL";
 	private static final String EMPTY_CLIPBOARD_CONTENT = "";
@@ -122,7 +126,8 @@ public final class UrlLoaderWindow {
 			torrentMap = (BinaryEncodedDictionary)handler.getSource().getValue();
 			window.close();
 		});
-		urlDownloaderTask.setOnCancelled(handler -> {			
+		urlDownloaderTask.setOnCancelled(handler -> {
+			progressBar.progressProperty().unbind();
 			if(window.getResult() != ButtonType.OK) {
 				resourceType = ResourceType.INVALID;
 			}			
@@ -192,12 +197,7 @@ public final class UrlLoaderWindow {
 	private boolean requestUrlResource(final String url) {		
 		if(url.trim().equals(EMPTY_CLIPBOARD_CONTENT) || 
 				(resourceType = validateUrlResource(urlEntryField.getText())) == ResourceType.INVALID) {
-			//Show error dialog
-			final Alert invalidUrlAlert = new Alert(AlertType.ERROR);
-			invalidUrlAlert.setContentText("Invalid or no path entered.");
-			invalidUrlAlert.setTitle(WINDOW_TITLE);
-			invalidUrlAlert.setHeaderText(null);
-			invalidUrlAlert.showAndWait();			
+			showErrorMessage("Invalid or no path entered.");			
 			return false;
 		}
 		if(resourceType != ResourceType.URL) {
@@ -206,13 +206,21 @@ public final class UrlLoaderWindow {
 			window.setResult(ButtonType.OK);
 			return true;
 		}		
-		urlDownloaderTask.setUrl(url);			
+		urlDownloaderTask.setUrl(url);		
 		progressBar.progressProperty().bind(urlDownloaderTask.progressProperty());		
 		urlEntryField.setDisable(true);
 		
-		urlDownloadExecutor.execute(urlDownloaderTask);
-				
+		urlDownloadExecutor.submit(urlDownloaderTask);
+		
 		return true;
+	}
+	
+	private void showErrorMessage(final String message) {
+		final Alert invalidUrlAlert = new Alert(AlertType.ERROR);
+		invalidUrlAlert.setContentText(message);
+		invalidUrlAlert.setTitle(WINDOW_TITLE);
+		invalidUrlAlert.setHeaderText(null);
+		invalidUrlAlert.showAndWait();
 	}
 		
 	private ResourceType validateUrlResource(final String urlPath) {
@@ -256,27 +264,34 @@ public final class UrlLoaderWindow {
         }
 
 		@Override
-		protected BinaryEncodedDictionary call() throws IOException {			
+		protected final BinaryEncodedDictionary call() throws IOException, BinaryDecoderException {			
 			updateProgress(0, 100);			
 			
 			final URL targetUrl = new URL(getUrl());	
 			
+			//TODO: Handle HTTPS (SSL exceptions will be thrown)
+			HttpURLConnection.setFollowRedirects(false);
 			final HttpURLConnection connection = (HttpURLConnection)targetUrl.openConnection();
 			connection.setRequestProperty(NetworkUtilities.HTTP_ACCEPT_CHARSET, StandardCharsets.UTF_8.name());
 			connection.setRequestProperty(NetworkUtilities.HTTP_USER_AGENT_NAME, NetworkUtilities.HTTP_USER_AGENT_VALUE);
+			connection.setConnectTimeout(NetworkUtilities.HTTP_CONNECTION_TIMEOUT);
+			connection.setReadTimeout(NetworkUtilities.HTTP_CONNECTION_TIMEOUT);
 			
 			final long contentLength = connection.getContentLengthLong();			
 			final int responseCode = connection.getResponseCode();
 			
 			if(responseCode == HttpURLConnection.HTTP_OK) {
 				final InputStream responseStream = connection.getInputStream();
+				final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+				
 				final byte[] buffer = new byte[BUFFER_SIZE];
 				long totalBytesRead = 0;
-				long bytesRead = 0;
+				int bytesRead = 0;
 				
-				while(!Thread.currentThread().isInterrupted() && 
-						(bytesRead = responseStream.read(buffer)) != -1) {
-					totalBytesRead += bytesRead;						
+				while(!isCancelled() && (bytesRead = responseStream.read(buffer)) != -1) {										
+					baos.write(buffer, 0, bytesRead);
+					totalBytesRead += bytesRead;
+					
 					if(contentLength != -1) {
 						updateProgress(totalBytesRead, contentLength);
 					}
@@ -285,13 +300,26 @@ public final class UrlLoaderWindow {
 								UnitConverter.formatByteCount(totalBytesRead));
 					}					
 				}
+				
+				final InputStream torrentStream = new ByteArrayInputStream(baos.toByteArray());
+				final BinaryDecoder decoder = new BinaryDecoder();
+				
+				return decoder.decode(torrentStream);
 			}
 			else {
 				throw new IOException("Remote server returned an error (error code: " 
 						+ responseCode + ")");
-			}
-			//TODO: Return downloaded torrent map
-			return null;								
-		}			
+			}										
+		}
+		
+		@Override
+		protected final void failed() {
+			super.failed();					
+			showErrorMessage("Failed to open torrent: " + 
+					super.exceptionProperty().getValue().toString());
+			
+			resourceType = ResourceType.INVALID;
+			window.close();			
+		}		
 	}
 }

@@ -32,7 +32,6 @@ import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
 
-import org.matic.torrent.gui.window.AddNewTorrentOptions;
 import org.matic.torrent.gui.window.AddNewTorrentWindow;
 import org.matic.torrent.gui.window.UrlLoaderWindow;
 import org.matic.torrent.gui.window.UrlLoaderWindowOptions;
@@ -67,7 +66,7 @@ public final class FileActionHandler {
 			}
 			final AddNewTorrentWindow addNewTorrentWindow = new AddNewTorrentWindow(
 					owner, metaDataDictionary);
-			final AddNewTorrentOptions addNewTorrentOptions = addNewTorrentWindow.showAndWait();
+			addNewTorrentWindow.showAndWait();
 		}
 	}
 	
@@ -86,7 +85,11 @@ public final class FileActionHandler {
 		final UrlLoaderWindow urlLoaderWindow = new UrlLoaderWindow(owner);
 		final UrlLoaderWindowOptions urlLoaderWindowOptions = urlLoaderWindow.showAndWait();
 		
-		System.out.println(urlLoaderWindowOptions);
+		if(urlLoaderWindowOptions.getUrlType() == UrlLoaderWindow.ResourceType.URL) {
+			final AddNewTorrentWindow addNewTorrentWindow = new AddNewTorrentWindow(
+					owner, urlLoaderWindowOptions.getTorrentMap());
+			addNewTorrentWindow.showAndWait();
+		}				
 	}
 	
 	private String getTorrentPath(final Window owner) {

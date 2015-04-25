@@ -139,10 +139,13 @@ public final class HttpTracker extends Tracker {
 		
 		try {
 			targetUrl = new URL(buildRequestUrl(announceRequest));			
-			final HttpURLConnection connection = (HttpURLConnection)targetUrl.openConnection();
+			
+			HttpURLConnection.setFollowRedirects(false);
+			final HttpURLConnection connection = (HttpURLConnection)targetUrl.openConnection();			
 			connection.setRequestProperty(NetworkUtilities.HTTP_ACCEPT_CHARSET, StandardCharsets.UTF_8.name());
 			connection.setRequestProperty(NetworkUtilities.HTTP_USER_AGENT_NAME, NetworkUtilities.HTTP_USER_AGENT_VALUE);			
 			connection.setRequestProperty(NetworkUtilities.HTTP_ACCEPT_ENCODING, NetworkUtilities.HTTP_GZIP_ENCODING);
+			connection.setConnectTimeout(NetworkUtilities.HTTP_CONNECTION_TIMEOUT);
 			
 			final int responseCode = connection.getResponseCode();
 			
