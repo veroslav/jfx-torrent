@@ -29,11 +29,11 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
-import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.geometry.Pos;
@@ -78,9 +78,10 @@ public final class UrlLoaderWindow {
 	private static final String VALID_MAGNET_LINK_PREFIX = "magnet";
 		
 	private ResourceType resourceType = ResourceType.INVALID;
-	private BinaryEncodedDictionary torrentMap = null;
+	private UrlDownloaderTask urlDownloaderTask = null;
+	private BinaryEncodedDictionary torrentMap = null;		
 	
-	private final UrlDownloaderService urlDownloaderService;
+	private final ExecutorService urlDownloadExecutor;
 	
 	private final TextField urlEntryField;	
 	private final ProgressBar progressBar;
@@ -92,11 +93,12 @@ public final class UrlLoaderWindow {
 		window = new Dialog<>();
 		window.initOwner(owner);
 		
-		urlEntryField = new TextField();
-		progressBar = new ProgressBar(0);
-		progressLabel = new Label();
+		urlDownloadExecutor = Executors.newSingleThreadExecutor();
+		urlDownloaderTask = new UrlDownloaderTask();
 		
-		urlDownloaderService = new UrlDownloaderService();
+		progressBar = new ProgressBar(0);
+		urlEntryField = new TextField();		
+		progressLabel = new Label();
 		
 		initComponents();
 	}
@@ -104,10 +106,8 @@ public final class UrlLoaderWindow {
 	public final UrlLoaderWindowOptions showAndWait() {
 		final Optional<ButtonType> result = window.showAndWait();
 		if(result.isPresent()) {
-			System.out.println("Result available");
 			return new UrlLoaderWindowOptions(resourceType, urlEntryField.getText(), torrentMap);
-		}
-		System.out.println("Cancelled by user");
+		}		
 		return null;
 	}
 	
@@ -117,35 +117,46 @@ public final class UrlLoaderWindow {
 			urlEntryField.setText(clipBoardContents);
 		}
 		
-		urlDownloaderService.setOnSucceeded(handler -> {
+		urlDownloaderTask.setOnSucceeded(handler -> {
 			progressBar.progressProperty().unbind();
-			System.out.println("Download SUCCESS");
 			torrentMap = (BinaryEncodedDictionary)handler.getSource().getValue();
 			window.close();
 		});
-		urlDownloaderService.setOnCancelled(handler -> {
-			System.out.println("onCancelled()");
-			resourceType = ResourceType.INVALID;
-			//window.close();
+		urlDownloaderTask.setOnCancelled(handler -> {			
+			if(window.getResult() != ButtonType.OK) {
+				resourceType = ResourceType.INVALID;
+			}			
 		});
-				
-		urlDownloaderService.messageProperty().addListener((obs, oldV, newV) -> progressLabel.setText(newV));		
-		progressBar.progressProperty().addListener((obs, oldV, newV) -> 
-			progressLabel.setText("Downloading torrent (" + (int)(newV.doubleValue() * 100) + "% done)")
-		);
+		
+		urlDownloaderTask.messageProperty().addListener((obs, oldV, newV) -> progressLabel.setText(newV));		
+		progressBar.progressProperty().addListener((obs, oldV, newV) -> {
+			final int percentDone = (int)(newV.doubleValue() * 100);
+			if(percentDone == 0) {
+				progressLabel.setText("Waiting for download to start...");
+			}
+			else {
+				progressLabel.setText("Downloading torrent (" + percentDone + "% done)");
+			}
+		});
 		
 		window.setHeaderText(null);
 		window.setTitle(WINDOW_TITLE);
 		
 		window.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+		window.setOnCloseRequest(handler -> urlDownloaderTask.cancel());
+		
 		final Button okButton = (Button)window.getDialogPane().lookupButton(ButtonType.OK);
 		okButton.addEventFilter(ActionEvent.ACTION, event -> {
 			okButton.setDisable(true);
 			event.consume();	
-			requestUrlResource(urlEntryField.getText());			
+			final boolean urlValidated = requestUrlResource(urlEntryField.getText());
+			okButton.setDisable(urlValidated);
 		});
 		final Button cancelButton = (Button)window.getDialogPane().lookupButton(ButtonType.CANCEL);
-		cancelButton.addEventFilter(ActionEvent.ACTION, event -> urlDownloaderService.cancel());
+		cancelButton.addEventFilter(ActionEvent.ACTION, event -> {
+			window.setResult(ButtonType.CANCEL);
+			urlDownloaderTask.cancel();
+		});
 
 		window.setResizable(true);		
 		window.getDialogPane().setContent(layoutContent());
@@ -178,8 +189,7 @@ public final class UrlLoaderWindow {
 		return clipboard.hasString()? clipboard.getString() : EMPTY_CLIPBOARD_CONTENT;		
 	}
 	
-	//https://docs.oracle.com/javase/8/javafx/interoperability-tutorial/concurrency.htm
-	private void requestUrlResource(final String url) {		
+	private boolean requestUrlResource(final String url) {		
 		if(url.trim().equals(EMPTY_CLIPBOARD_CONTENT) || 
 				(resourceType = validateUrlResource(urlEntryField.getText())) == ResourceType.INVALID) {
 			//Show error dialog
@@ -187,22 +197,22 @@ public final class UrlLoaderWindow {
 			invalidUrlAlert.setContentText("Invalid or no path entered.");
 			invalidUrlAlert.setTitle(WINDOW_TITLE);
 			invalidUrlAlert.setHeaderText(null);
-			invalidUrlAlert.showAndWait();
-			return;
+			invalidUrlAlert.showAndWait();			
+			return false;
 		}
 		if(resourceType != ResourceType.URL) {
 			/* We will leave loading of info hashes and magnet links to the caller
 			   because it could take a while and as we can't show any progress anyway */
-			window.close();
-			return;
-		}
-		
-		urlDownloaderService.setUrl(url);	
-		
-		progressBar.progressProperty().bind(urlDownloaderService.progressProperty());
+			window.setResult(ButtonType.OK);
+			return true;
+		}		
+		urlDownloaderTask.setUrl(url);			
+		progressBar.progressProperty().bind(urlDownloaderTask.progressProperty());		
 		urlEntryField.setDisable(true);
 		
-		urlDownloaderService.start();
+		urlDownloadExecutor.execute(urlDownloaderTask);
+				
+		return true;
 	}
 		
 	private ResourceType validateUrlResource(final String urlPath) {
@@ -233,7 +243,7 @@ public final class UrlLoaderWindow {
 		}
 	}
 	
-	private class UrlDownloaderService extends Service<BinaryEncodedDictionary> {
+	private class UrlDownloaderTask extends Task<BinaryEncodedDictionary> {
 		
 		private final StringProperty url = new SimpleStringProperty();
 
@@ -245,64 +255,43 @@ public final class UrlLoaderWindow {
             return url.get();
         }
 
-        public final StringProperty urlProperty() {
-           return url;
-        }
-
 		@Override
-		protected Task<BinaryEncodedDictionary> createTask() {
-			return new Task<BinaryEncodedDictionary>() {
-				@Override
-				protected BinaryEncodedDictionary call() throws IOException {
-					System.out.println("Download started");
-					final URL targetUrl = new URL(getUrl());			
-					final HttpURLConnection connection = (HttpURLConnection)targetUrl.openConnection();
-					connection.setRequestProperty(NetworkUtilities.HTTP_ACCEPT_CHARSET, StandardCharsets.UTF_8.name());
-					connection.setRequestProperty(NetworkUtilities.HTTP_USER_AGENT_NAME, NetworkUtilities.HTTP_USER_AGENT_VALUE);
-					
-					final long contentLength = connection.getContentLengthLong();
-					System.out.println("Content-Length: " + contentLength);
-					
-					//Platform.runLater(() -> progressBar.setProgress(contentLength != -1? 0 : ProgressBar.INDETERMINATE_PROGRESS));
-					
-					final int responseCode = connection.getResponseCode();
-					if(responseCode == HttpURLConnection.HTTP_OK) {
-						System.out.println("Received OK from the server, start downloading...");
-						final InputStream responseStream = connection.getInputStream();
-						final byte[] buffer = new byte[BUFFER_SIZE];
-						long totalBytesRead = 0;
-						long bytesRead = 0;
-						
-						while(!Thread.currentThread().isInterrupted() && (bytesRead = responseStream.read(buffer)) != -1) {
-							totalBytesRead += bytesRead;						
-							if(contentLength != -1) {
-								updateProgress(totalBytesRead, contentLength);
-							}
-							else {
-								System.out.println("updateMessage() called, should repaint ProgressBar");
-								updateMessage("Unknown size, downloaded " + UnitConverter.formatByteCount(totalBytesRead));
-							}
-							try {
-								Thread.sleep(500);
-								System.out.println("Downloaded " + UnitConverter.formatByteCount(totalBytesRead));
-							} catch (InterruptedException e) {
-								System.err.println("Interrupted");
-								Thread.currentThread().interrupt();
-							}
-						}
-						
-						System.out.println("Total bytes read: " + UnitConverter.formatByteCount(totalBytesRead));
+		protected BinaryEncodedDictionary call() throws IOException {			
+			updateProgress(0, 100);			
+			
+			final URL targetUrl = new URL(getUrl());	
+			
+			final HttpURLConnection connection = (HttpURLConnection)targetUrl.openConnection();
+			connection.setRequestProperty(NetworkUtilities.HTTP_ACCEPT_CHARSET, StandardCharsets.UTF_8.name());
+			connection.setRequestProperty(NetworkUtilities.HTTP_USER_AGENT_NAME, NetworkUtilities.HTTP_USER_AGENT_VALUE);
+			
+			final long contentLength = connection.getContentLengthLong();			
+			final int responseCode = connection.getResponseCode();
+			
+			if(responseCode == HttpURLConnection.HTTP_OK) {
+				final InputStream responseStream = connection.getInputStream();
+				final byte[] buffer = new byte[BUFFER_SIZE];
+				long totalBytesRead = 0;
+				long bytesRead = 0;
+				
+				while(!Thread.currentThread().isInterrupted() && 
+						(bytesRead = responseStream.read(buffer)) != -1) {
+					totalBytesRead += bytesRead;						
+					if(contentLength != -1) {
+						updateProgress(totalBytesRead, contentLength);
 					}
 					else {
-						throw new IOException("Remote server returned an error (error code: " 
-								+ responseCode + ")");
-					}
-					//TODO: Return downloaded torrent map
-					return null;
+						updateMessage("Unknown size, downloaded " + 
+								UnitConverter.formatByteCount(totalBytesRead));
+					}					
 				}
-				
-			};
-		}
-		
+			}
+			else {
+				throw new IOException("Remote server returned an error (error code: " 
+						+ responseCode + ")");
+			}
+			//TODO: Return downloaded torrent map
+			return null;								
+		}			
 	}
 }

@@ -25,7 +25,7 @@ import java.util.regex.Pattern;
 
 public final class HashUtilities {
 	
-	public static final int HEX_INFO_HASH_LENGTH = 10;	//160 bits / 16 == 10 places
+	public static final int HEX_INFO_HASH_LENGTH = 40;	//160 bits / 4 bytes == 40 places
 	
 	private static final Pattern HEX_MATCH_PATTERN = Pattern.compile("[0-9a-fA-F]+");
 	private static final char[] HEX_VALUES = "0123456789ABCDEF".toCharArray();
