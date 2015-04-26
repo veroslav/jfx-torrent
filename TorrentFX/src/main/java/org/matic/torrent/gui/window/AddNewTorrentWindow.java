@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
+import java.util.TimeZone;
 
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
@@ -110,7 +111,8 @@ public final class AddNewTorrentWindow {
 		
 		final BinaryEncodedInteger creationDateInSeconds = (BinaryEncodedInteger)torrentMetaData.get(
 				BinaryEncodingKeyNames.KEY_CREATION_DATE);
-		creationDate = creationDateInSeconds != null? UnitConverter.formatTime(creationDateInSeconds.getValue() * 1000) : "";
+		creationDate = creationDateInSeconds != null? UnitConverter.formatTime(
+				creationDateInSeconds.getValue() * 1000, TimeZone.getDefault()) : "";
 		infoDictionary = ((BinaryEncodedDictionary)torrentMetaData.get(BinaryEncodingKeyNames.KEY_INFO));
 		
 		final Path savePath = Paths.get(System.getProperty("user.home"));

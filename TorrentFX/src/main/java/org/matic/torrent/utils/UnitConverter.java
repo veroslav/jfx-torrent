@@ -28,11 +28,7 @@ import java.util.TimeZone;
 public final class UnitConverter {
 	
 	private static final DateFormat DATE_FORMATTER = new SimpleDateFormat("yyyy-MM-dd kk:mm:ss");
-	private static final String UTC_TIMEZONE = "UTC";
-	
-	static {
-		DATE_FORMATTER.setTimeZone(TimeZone.getTimeZone(UTC_TIMEZONE));
-	}
+	public static final String UTC_TIMEZONE = "UTC";
 
 	/**
 	 * Return a humanly readable presentation of input byte count
@@ -55,7 +51,8 @@ public final class UnitConverter {
 	 * @param timeMillis Time to format (in ms)
 	 * @return
 	 */
-	public static String formatTime(final long timeMillis) {
+	public static String formatTime(final long timeMillis, final TimeZone timeZone) {
+		DATE_FORMATTER.setTimeZone(timeZone);
 		final Date timeAsDate = new Date(timeMillis);		
 		return UnitConverter.DATE_FORMATTER.format(timeAsDate);
 	}

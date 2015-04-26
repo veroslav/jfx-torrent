@@ -33,4 +33,28 @@ public final class HashUtilitiesTest {
 		
 		Assert.assertEquals(expectedHexValue, HashUtilities.convertToHexValue(inputBytes));
 	}
+	
+	@Test
+	public final void testValidHexNumberUpperCase() {
+		final String hexNumber = "0123456789ABCDEF0123456789ABCDEF012345678";
+		Assert.assertTrue(HashUtilities.isValidHexNumber(hexNumber)); 
+	}
+	
+	@Test
+	public final void testValidHexNumberMixedCase() {
+		final String hexNumber = "0123456789AbCdEf0123456789aBcDeF012345678";
+		Assert.assertTrue(HashUtilities.isValidHexNumber(hexNumber));
+	}
+	
+	@Test
+	public final void testInvalidHexNumberEmpty() {
+		final String hexNumber = "";
+		Assert.assertFalse(HashUtilities.isValidHexNumber(hexNumber));
+	}
+	
+	@Test
+	public final void testInvalidHexInvalidCharacter() {
+		final String hexNumber = "0123456789AbCdEf0123456789aBcheF012345678";
+		Assert.assertFalse(HashUtilities.isValidHexNumber(hexNumber));
+	}
 }
