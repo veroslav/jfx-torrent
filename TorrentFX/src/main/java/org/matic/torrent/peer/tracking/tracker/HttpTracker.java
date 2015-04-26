@@ -150,21 +150,20 @@ public final class HttpTracker extends Tracker {
 			final int responseCode = connection.getResponseCode();
 			
 			if(responseCode == HttpURLConnection.HTTP_OK) {
-				final InputStream responseStream = connection.getInputStream();
-				
-				final String contentType = connection.getHeaderField(NetworkUtilities.HTTP_CONTENT_TYPE);
-				if(contentType == null || !NetworkUtilities.HTTP_TEXT_PLAIN.equals(contentType)) {
-					return new TrackerResponse(TrackerResponse.Type.INVALID_RESPONSE, "Not a text/plain response");
-				}
-				
-				//Check whether the response stream is gzip encoded
-				final String contentEncoding = connection.getHeaderField(NetworkUtilities.HTTP_CONTENT_ENCODING);
-				
-				final BinaryEncodedDictionary responseMap = contentEncoding != null && 
-						NetworkUtilities.HTTP_GZIP_ENCODING.equals(contentEncoding)? decoder.decodeGzip(responseStream) :
-							decoder.decode(responseStream);
-				
-				return buildResponse(responseMap, announceRequest.getTorrent().getInfoHashHexValue());
+				try(final InputStream responseStream = connection.getInputStream()) {					
+					final String contentType = connection.getHeaderField(NetworkUtilities.HTTP_CONTENT_TYPE);
+					if(contentType == null || !NetworkUtilities.HTTP_TEXT_PLAIN.equals(contentType)) {
+						return new TrackerResponse(TrackerResponse.Type.INVALID_RESPONSE, "Not a text/plain response");
+					}
+					
+					//Check whether the response stream is gzip encoded
+					final String contentEncoding = connection.getHeaderField(NetworkUtilities.HTTP_CONTENT_ENCODING);
+					
+					final BinaryEncodedDictionary responseMap = contentEncoding != null && 
+							NetworkUtilities.HTTP_GZIP_ENCODING.equals(contentEncoding)? decoder.decodeGzip(responseStream) :
+								decoder.decode(responseStream);
+					return buildResponse(responseMap, announceRequest.getTorrent().getInfoHashHexValue());
+				}				
 			}
 			else if(responseCode >= HttpURLConnection.HTTP_BAD_REQUEST &&
 					responseCode <= HttpURLConnection.HTTP_GATEWAY_TIMEOUT){

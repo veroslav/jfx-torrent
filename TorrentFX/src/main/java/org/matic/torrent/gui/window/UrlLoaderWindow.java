@@ -29,7 +29,6 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -58,6 +57,7 @@ import org.matic.torrent.io.codec.BinaryDecoder;
 import org.matic.torrent.io.codec.BinaryDecoderException;
 import org.matic.torrent.io.codec.BinaryEncodedDictionary;
 import org.matic.torrent.net.NetworkUtilities;
+import org.matic.torrent.peer.ClientProperties;
 import org.matic.torrent.utils.HashUtilities;
 import org.matic.torrent.utils.UnitConverter;
 
@@ -93,7 +93,7 @@ public final class UrlLoaderWindow {
 	
 	private final Dialog<ButtonType> window;
 
-	public UrlLoaderWindow(final Window owner) {
+	public UrlLoaderWindow(final Window owner) {		
 		window = new Dialog<>();
 		window.initOwner(owner);
 		
@@ -109,6 +109,7 @@ public final class UrlLoaderWindow {
 	
 	public final UrlLoaderWindowOptions showAndWait() {
 		final Optional<ButtonType> result = window.showAndWait();
+		urlDownloadExecutor.shutdown();
 		if(result.isPresent()) {
 			return new UrlLoaderWindowOptions(resourceType, urlEntryField.getText(), torrentMap);
 		}		
@@ -251,8 +252,7 @@ public final class UrlLoaderWindow {
 		}
 	}
 	
-	private class UrlDownloaderTask extends Task<BinaryEncodedDictionary> {
-		
+	private class UrlDownloaderTask extends Task<BinaryEncodedDictionary> {		
 		private final StringProperty url = new SimpleStringProperty();
 
         public final void setUrl(final String value) {
@@ -270,41 +270,44 @@ public final class UrlLoaderWindow {
 			final URL targetUrl = new URL(getUrl());	
 			
 			//TODO: Handle HTTPS (SSL exceptions will be thrown)
-			HttpURLConnection.setFollowRedirects(false);
+			HttpURLConnection.setFollowRedirects(true);
 			final HttpURLConnection connection = (HttpURLConnection)targetUrl.openConnection();
-			connection.setRequestProperty(NetworkUtilities.HTTP_ACCEPT_CHARSET, StandardCharsets.UTF_8.name());
-			connection.setRequestProperty(NetworkUtilities.HTTP_USER_AGENT_NAME, NetworkUtilities.HTTP_USER_AGENT_VALUE);
+			connection.setRequestProperty(NetworkUtilities.HTTP_USER_AGENT_NAME, 
+					NetworkUtilities.HTTP_USER_AGENT_VALUE);
+			//connection.setRequestProperty(NetworkUtilities.HTTP_ACCEPT_ENCODING, 
+				//	NetworkUtilities.HTTP_GZIP_ENCODING);
+			connection.setRequestProperty(NetworkUtilities.HTTP_ACCEPT_LANGUAGE, 
+					ClientProperties.getUserLocale());
 			connection.setConnectTimeout(NetworkUtilities.HTTP_CONNECTION_TIMEOUT);
-			connection.setReadTimeout(NetworkUtilities.HTTP_CONNECTION_TIMEOUT);
+			connection.setReadTimeout(NetworkUtilities.HTTP_CONNECTION_TIMEOUT);			
 			
 			final long contentLength = connection.getContentLengthLong();			
 			final int responseCode = connection.getResponseCode();
 			
 			if(responseCode == HttpURLConnection.HTTP_OK) {
-				final InputStream responseStream = connection.getInputStream();
 				final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-				
-				final byte[] buffer = new byte[BUFFER_SIZE];
-				long totalBytesRead = 0;
-				int bytesRead = 0;
-				
-				while(!isCancelled() && (bytesRead = responseStream.read(buffer)) != -1) {										
-					baos.write(buffer, 0, bytesRead);
-					totalBytesRead += bytesRead;
+				try(final InputStream responseStream = connection.getInputStream()) {
+					final byte[] buffer = new byte[BUFFER_SIZE];
+					long totalBytesRead = 0;
+					int bytesRead = 0;
 					
-					if(contentLength != -1) {
-						updateProgress(totalBytesRead, contentLength);
+					while(!isCancelled() && (bytesRead = responseStream.read(buffer)) != -1) {										
+						baos.write(buffer, 0, bytesRead);
+						totalBytesRead += bytesRead;
+						
+						if(contentLength != -1) {
+							updateProgress(totalBytesRead, contentLength);
+						}
+						else {
+							updateMessage("Unknown size, downloaded " + 
+									UnitConverter.formatByteCount(totalBytesRead));
+						}					
 					}
-					else {
-						updateMessage("Unknown size, downloaded " + 
-								UnitConverter.formatByteCount(totalBytesRead));
-					}					
+				}				
+				try(final InputStream torrentStream = new ByteArrayInputStream(baos.toByteArray())) {
+					final BinaryDecoder decoder = new BinaryDecoder();
+					return decoder.decode(torrentStream);
 				}
-				
-				final InputStream torrentStream = new ByteArrayInputStream(baos.toByteArray());
-				final BinaryDecoder decoder = new BinaryDecoder();
-				
-				return decoder.decode(torrentStream);
 			}
 			else {
 				throw new IOException("Remote server returned an error (error code: " 

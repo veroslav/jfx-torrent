@@ -23,6 +23,7 @@ package org.matic.torrent.peer;
 import java.lang.management.ManagementFactory;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 import java.util.Properties;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
@@ -45,6 +46,16 @@ public final class ClientProperties {
 	
 	//UTF-8 encoding is used for all string encoding used in the client
 	public static final Charset STRING_ENCODING_CHARSET = StandardCharsets.UTF_8;
+	
+	public static String getUserLocale() {
+		final Locale currentLocale = Locale.getDefault();
+
+		final StringBuilder userLocale = new StringBuilder(currentLocale.getLanguage());
+		userLocale.append("-");
+		userLocale.append(currentLocale.getCountry());
+		
+		return userLocale.toString();
+	}
 	
 	public static int generateUniqueId() {
 		final StringBuilder transactionId = new StringBuilder(ClientProperties.getUniqueHashBase());

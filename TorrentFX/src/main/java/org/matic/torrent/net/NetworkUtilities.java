@@ -24,6 +24,7 @@ public final class NetworkUtilities {
 
 	public static final String HTTP_CONTENT_ENCODING = "Content-Encoding";
 	public static final String HTTP_ACCEPT_ENCODING = "Accept-Encoding";
+	public static final String HTTP_ACCEPT_LANGUAGE = "Accept-Language";
 	
 	public static final String HTTP_CONTENT_TYPE = "Content-Type";
 	public static final String HTTP_TEXT_PLAIN = "text/plain";
