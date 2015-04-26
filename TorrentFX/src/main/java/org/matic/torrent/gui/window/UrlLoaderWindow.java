@@ -274,15 +274,18 @@ public final class UrlLoaderWindow {
 			final HttpURLConnection connection = (HttpURLConnection)targetUrl.openConnection();
 			connection.setRequestProperty(NetworkUtilities.HTTP_USER_AGENT_NAME, 
 					NetworkUtilities.HTTP_USER_AGENT_VALUE);
-			//connection.setRequestProperty(NetworkUtilities.HTTP_ACCEPT_ENCODING, 
-				//	NetworkUtilities.HTTP_GZIP_ENCODING);
+			connection.setRequestProperty(NetworkUtilities.HTTP_ACCEPT_ENCODING, 
+					NetworkUtilities.HTTP_GZIP_ENCODING);
 			connection.setRequestProperty(NetworkUtilities.HTTP_ACCEPT_LANGUAGE, 
 					ClientProperties.getUserLocale());
 			connection.setConnectTimeout(NetworkUtilities.HTTP_CONNECTION_TIMEOUT);
 			connection.setReadTimeout(NetworkUtilities.HTTP_CONNECTION_TIMEOUT);			
 			
+			
 			final long contentLength = connection.getContentLengthLong();			
 			final int responseCode = connection.getResponseCode();
+			final String contentEncoding = connection.getHeaderField(
+					NetworkUtilities.HTTP_CONTENT_ENCODING);
 			
 			if(responseCode == HttpURLConnection.HTTP_OK) {
 				final ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -306,7 +309,9 @@ public final class UrlLoaderWindow {
 				}				
 				try(final InputStream torrentStream = new ByteArrayInputStream(baos.toByteArray())) {
 					final BinaryDecoder decoder = new BinaryDecoder();
-					return decoder.decode(torrentStream);
+					return contentEncoding != null && 
+							NetworkUtilities.HTTP_GZIP_ENCODING.equals(contentEncoding)?
+							decoder.decodeGzip(torrentStream) : decoder.decode(torrentStream);
 				}
 			}
 			else {
