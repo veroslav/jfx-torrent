@@ -30,7 +30,14 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public final class ClientProperties {
 	
+	public enum Platform {
+		Windows, Mac, Linux
+	}
+	
+	private static Platform os = null;
+	
 	private static final char[] LETTER_HEX_VALUES = {'A', 'B', 'C', 'D', 'E', 'F'};
+	private static final String OS_PROPERTY_NAME = "os.name";
 	
 	private static final AtomicLong ID_GENERATOR_BASE = new AtomicLong(System.nanoTime());
 	private static final String CLIENT_IDENTIFIER = "-jX0001-";
@@ -63,6 +70,30 @@ public final class ClientProperties {
 		
 		return transactionId.toString().hashCode();
 	}	
+	
+	/**
+	 * Get the name of the host operating system
+	 * 
+	 * @return Host platform 
+	 */
+	public static Platform getOS() {
+		if(os == null) {
+			final String osName = System.getProperty(OS_PROPERTY_NAME).toLowerCase();
+ 
+			switch(osName) {
+			case "win":
+				os = Platform.Windows;
+				break;
+			case "mac":
+				os = Platform.Mac;
+				break;
+			default:
+				os = Platform.Linux;	
+			}
+		}
+ 
+		return os;
+	}
 	
 	private static String getUniqueHashBase() {
 		final Properties systemProps = System.getProperties();		

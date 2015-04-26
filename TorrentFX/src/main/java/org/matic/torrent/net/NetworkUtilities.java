@@ -20,6 +20,8 @@
 
 package org.matic.torrent.net;
 
+import org.matic.torrent.peer.ClientProperties;
+
 public final class NetworkUtilities {
 
 	public static final String HTTP_CONTENT_ENCODING = "Content-Encoding";
@@ -31,10 +33,29 @@ public final class NetworkUtilities {
 	
 	public static final int HTTP_CONNECTION_TIMEOUT = 5000; //5 seconds
 	
-	//TODO: Use a real user agent value
-	public static final String HTTP_USER_AGENT_VALUE = 
-			"Mozilla/5.0 (Windows NT 6.3; rv:36.0) Gecko/20100101 Firefox/36.0";
+	private static final String HTTP_USER_AGENT_VALUE = buildHttpUserAgentValue(); 
+			
 	public static final String HTTP_ACCEPT_CHARSET = "Accept-Charset";	
 	public static final String HTTP_USER_AGENT_NAME = "User-Agent";	
 	public static final String HTTP_GZIP_ENCODING = "gzip";
+	
+	public static String getHttpUserAgent() {
+		return HTTP_USER_AGENT_VALUE;
+	}
+	
+	private static String buildHttpUserAgentValue() {
+		final StringBuilder userAgent = new StringBuilder("Mozilla/5.0 (");
+		switch(ClientProperties.getOS()) {
+		case Windows:
+			userAgent.append("Windows NT 6.3");
+			break;
+		case Mac:
+			userAgent.append("Macintosh; Intel Mac OS X 10_10");
+			break;
+		default:
+			userAgent.append("X11; Linux x86_64");
+		}
+		userAgent.append("; rv:36.0) Gecko/20100101 Firefox/37.0");
+		return userAgent.toString();
+	}
 }

@@ -273,7 +273,7 @@ public final class UrlLoaderWindow {
 			HttpURLConnection.setFollowRedirects(true);
 			final HttpURLConnection connection = (HttpURLConnection)targetUrl.openConnection();
 			connection.setRequestProperty(NetworkUtilities.HTTP_USER_AGENT_NAME, 
-					NetworkUtilities.HTTP_USER_AGENT_VALUE);
+					NetworkUtilities.getHttpUserAgent());
 			connection.setRequestProperty(NetworkUtilities.HTTP_ACCEPT_ENCODING, 
 					NetworkUtilities.HTTP_GZIP_ENCODING);
 			connection.setRequestProperty(NetworkUtilities.HTTP_ACCEPT_LANGUAGE, 
