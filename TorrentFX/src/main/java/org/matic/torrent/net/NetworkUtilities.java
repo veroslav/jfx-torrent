@@ -20,6 +20,13 @@
 
 package org.matic.torrent.net;
 
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.security.cert.X509Certificate;
+
+import javax.net.ssl.HttpsURLConnection;
+
 import org.matic.torrent.peer.ClientProperties;
 
 public final class NetworkUtilities {
@@ -32,6 +39,7 @@ public final class NetworkUtilities {
 	public static final String HTTP_TEXT_PLAIN = "text/plain";
 	
 	public static final int HTTP_CONNECTION_TIMEOUT = 5000; //5 seconds
+	private static final String HTTPS_PROTOCOL = "https";
 	
 	private static final String HTTP_USER_AGENT_VALUE = buildHttpUserAgentValue(); 
 			
@@ -39,8 +47,57 @@ public final class NetworkUtilities {
 	public static final String HTTP_USER_AGENT_NAME = "User-Agent";	
 	public static final String HTTP_GZIP_ENCODING = "gzip";
 	
+	private static final SelfSignedCertificateManager CERTIFICATE_MANAGER = initCertificateManager();
+	
 	public static String getHttpUserAgent() {
 		return HTTP_USER_AGENT_VALUE;
+	}
+	
+	public static HttpURLConnection connectTo(final URL url) throws IOException, 
+		CertificateManagerInitializationException {
+		HttpURLConnection.setFollowRedirects(true);
+		final HttpURLConnection connection = HTTPS_PROTOCOL.equals(url.getProtocol())? 
+				initSecureConnection(url) : (HttpURLConnection)url.openConnection(); 
+		
+		connection.setConnectTimeout(HTTP_CONNECTION_TIMEOUT);
+		connection.setReadTimeout(HTTP_CONNECTION_TIMEOUT);
+				
+		return connection;
+	}
+	
+	public static void addTrustedCertificate(final String url, final X509Certificate[] certificates) 
+			throws CertificateManagerInitializationException {
+		if(CERTIFICATE_MANAGER == null) {
+			throw new CertificateManagerInitializationException("Certificate manager is null");
+		}
+		CERTIFICATE_MANAGER.addToTrustStore(url, certificates);
+	}
+	
+	public static X509Certificate[] getInterceptedCertificates() {		
+		return CERTIFICATE_MANAGER == null? new X509Certificate[0] : CERTIFICATE_MANAGER.getCertificateChain();
+	}
+	
+	private static HttpURLConnection initSecureConnection(final URL url) throws IOException, 
+		CertificateManagerInitializationException {
+		if(CERTIFICATE_MANAGER == null) {
+			throw new CertificateManagerInitializationException("Certificate manager is null");
+		}
+		final HttpsURLConnection connection = (HttpsURLConnection)url.openConnection();
+		connection.setSSLSocketFactory(CERTIFICATE_MANAGER.getSslSocketFactory());
+		
+		return connection;
+	}
+	
+	private static SelfSignedCertificateManager initCertificateManager() {
+		//TODO: Always perform null check on returned certificate manager
+		SelfSignedCertificateManager manager;
+		try {
+			manager = new SelfSignedCertificateManager();
+		} 
+		catch(final CertificateManagerInitializationException cie) {
+			manager = null;
+		}
+		return manager;
 	}
 	
 	private static String buildHttpUserAgentValue() {

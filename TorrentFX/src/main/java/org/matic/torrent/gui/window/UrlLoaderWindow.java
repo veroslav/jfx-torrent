@@ -53,9 +53,12 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Window;
 
+import javax.net.ssl.SSLException;
+
 import org.matic.torrent.io.codec.BinaryDecoder;
 import org.matic.torrent.io.codec.BinaryDecoderException;
 import org.matic.torrent.io.codec.BinaryEncodedDictionary;
+import org.matic.torrent.net.CertificateManagerInitializationException;
 import org.matic.torrent.net.NetworkUtilities;
 import org.matic.torrent.peer.ClientProperties;
 import org.matic.torrent.utils.HashUtilities;
@@ -133,6 +136,13 @@ public final class UrlLoaderWindow {
 				resourceType = ResourceType.INVALID;
 			}			
 		});
+		urlDownloaderTask.setOnFailed(handler -> {
+			final Throwable throwable = handler.getSource().getException();
+			final String url = urlDownloaderTask.url.get();
+			
+			System.err.println("Is SSLException? " + (throwable instanceof SSLException));
+			System.err.println("URL: " + url);
+		});
 		
 		urlDownloaderTask.messageProperty().addListener((obs, oldV, newV) -> progressLabel.setText(newV));		
 		progressBar.progressProperty().addListener((obs, oldV, newV) -> {
@@ -163,7 +173,7 @@ public final class UrlLoaderWindow {
 			window.setResult(ButtonType.CANCEL);
 			urlDownloaderTask.cancel();
 		});
-
+	
 		window.setResizable(true);		
 		window.getDialogPane().setContent(layoutContent());
 	}
@@ -264,23 +274,19 @@ public final class UrlLoaderWindow {
         }
 
 		@Override
-		protected final BinaryEncodedDictionary call() throws IOException, BinaryDecoderException {			
+		protected final BinaryEncodedDictionary call() throws IOException, 
+			BinaryDecoderException, CertificateManagerInitializationException {			
 			updateProgress(0, 100);			
 			
 			final URL targetUrl = new URL(getUrl());	
 			
-			//TODO: Handle HTTPS (SSL exceptions will be thrown)
-			HttpURLConnection.setFollowRedirects(true);
-			final HttpURLConnection connection = (HttpURLConnection)targetUrl.openConnection();
+			final HttpURLConnection connection = NetworkUtilities.connectTo(targetUrl);
 			connection.setRequestProperty(NetworkUtilities.HTTP_USER_AGENT_NAME, 
 					NetworkUtilities.getHttpUserAgent());
 			connection.setRequestProperty(NetworkUtilities.HTTP_ACCEPT_ENCODING, 
 					NetworkUtilities.HTTP_GZIP_ENCODING);
 			connection.setRequestProperty(NetworkUtilities.HTTP_ACCEPT_LANGUAGE, 
 					ClientProperties.getUserLocale());
-			connection.setConnectTimeout(NetworkUtilities.HTTP_CONNECTION_TIMEOUT);
-			connection.setReadTimeout(NetworkUtilities.HTTP_CONNECTION_TIMEOUT);			
-			
 			
 			final long contentLength = connection.getContentLengthLong();			
 			final int responseCode = connection.getResponseCode();
@@ -325,6 +331,24 @@ public final class UrlLoaderWindow {
 			super.failed();					
 			showErrorMessage("Failed to open torrent: " + 
 					super.exceptionProperty().getValue().toString());
+			
+			/*final Throwable throwable = super.exceptionProperty().get();
+			
+			if(throwable instanceof SSLException) {
+				final X509Certificate[] interceptedChain = NetworkUtilities.getInterceptedCertificates();
+				//final boolean userAcceptedCertificate = acceptCertificateChain(interceptedChain);
+				
+				if(true) {					
+					try {
+						NetworkUtilities.addTrustedCertificate(new URL(url.get()).getHost(), interceptedChain);
+					} 
+					catch (final KeyStoreException | NoSuchAlgorithmException
+							| CertificateException | IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}					
+				}			
+			}*/
 			
 			resourceType = ResourceType.INVALID;
 			window.close();			
