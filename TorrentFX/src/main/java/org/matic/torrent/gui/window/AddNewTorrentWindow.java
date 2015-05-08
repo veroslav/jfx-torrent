@@ -55,7 +55,8 @@ import javafx.scene.text.TextFlow;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Window;
 
-import org.controlsfx.tools.Borders;
+import org.matic.torrent.gui.GuiUtils;
+import org.matic.torrent.gui.GuiUtils.BorderType;
 import org.matic.torrent.gui.tree.TorrentContentTree;
 import org.matic.torrent.io.DiskUtilities;
 import org.matic.torrent.io.codec.BinaryEncodedDictionary;
@@ -278,8 +279,12 @@ public final class AddNewTorrentWindow {
 		mainPane.setPrefHeight(500);
 		mainPane.setPrefWidth(1100);
 		
+		final Node torrentContentsPane = buildTorrentContentsPane();
+		
+		BorderPane.setMargin(torrentContentsPane, new Insets(0, 0, 0, 10));
+		
 		mainPane.setLeft(buildLeftPane());
-		mainPane.setCenter(buildTorrentContentsPane());
+		mainPane.setCenter(torrentContentsPane);
 		
 		return mainPane;
 	}
@@ -292,11 +297,8 @@ public final class AddNewTorrentWindow {
 		advancedPane.setAlignment(Pos.BOTTOM_LEFT);
 		advancedPane.getChildren().addAll(advancedButton, dontShowAgainCheckbox);		
 		
-		final Node borderedAdvancedPane = Borders.wrap(
-				advancedPane).etchedBorder().buildAll();
-		
 		final BorderPane centerPane = new BorderPane();	
-		centerPane.setBottom(borderedAdvancedPane);
+		centerPane.setBottom(advancedPane);
 		
 		final BorderPane leftPane = new BorderPane();
 		leftPane.setTop(northPane);
@@ -352,9 +354,9 @@ public final class AddNewTorrentWindow {
 		
 		BorderPane.setMargin(northPane, new Insets(0, 0, 10, 0));
 		
-		final Node borderedTorrentContentsPane = Borders.wrap(
-				torrentContentsPane).etchedBorder().title("Torrent Contents").buildAll();
-		
+		final Node borderedTorrentContentsPane = GuiUtils.applyBorder(
+				torrentContentsPane, "Torrent Contents", BorderType.ADD_NEW_TORRENT_BORDER);
+				
 		return borderedTorrentContentsPane;
 	}
 	
@@ -367,18 +369,16 @@ public final class AddNewTorrentWindow {
 		
 		final VBox saveOptionsPane = new VBox(10);
 		saveOptionsPane.getChildren().addAll(saveLocationPane, createSubFolderCheckbox);
-		
-		final Node borderedSaveOptionsPane = Borders.wrap(
-				saveOptionsPane).etchedBorder().title("Save In").buildAll();
+				
+		final Node borderedSaveOptionsPane = GuiUtils.applyBorder(
+				saveOptionsPane, "Save In", BorderType.ADD_NEW_TORRENT_BORDER);
 		
 		return borderedSaveOptionsPane;
 	}
 	
 	private Node buildNamePane() {
-		final StackPane namePane = new StackPane(nameTextField);
-		
-		final Node borderedNamePane = Borders.wrap(
-				namePane).etchedBorder().title("Name").buildAll();
+		final StackPane namePane = new StackPane(nameTextField);		
+		final Node borderedNamePane = GuiUtils.applyBorder(namePane, "Name", BorderType.ADD_NEW_TORRENT_BORDER);
 		
 		return borderedNamePane;
 	}
@@ -409,8 +409,8 @@ public final class AddNewTorrentWindow {
 		
 		GridPane.setHgrow(labelPane, Priority.ALWAYS);
 		
-		final Node borderedTorrentOptionsPane = Borders.wrap(
-				torrentOptionsPane).etchedBorder().title("Torrent Options").buildAll();
+		final Node borderedTorrentOptionsPane = GuiUtils.applyBorder(
+				torrentOptionsPane, "Torrent Options", BorderType.ADD_NEW_TORRENT_BORDER);
 		
 		return borderedTorrentOptionsPane;
 	}

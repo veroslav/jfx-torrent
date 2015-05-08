@@ -22,6 +22,8 @@ package org.matic.torrent.gui.action;
 
 import java.util.Optional;
 
+import org.matic.torrent.gui.window.preferences.PreferencesWindow;
+
 import javafx.application.Platform;
 import javafx.event.Event;
 import javafx.scene.control.Alert;
@@ -30,6 +32,16 @@ import javafx.scene.control.ButtonType;
 import javafx.stage.Window;
 
 public final class WindowActionHandler {
+	
+	/**
+	 * Handle user opening the options dialog.
+	 * 
+	 * @param owner Owner window of the options dialog
+	 */
+	public final void onOptionsWindowShown(final Window owner) {
+		final PreferencesWindow optionsWindow = new PreferencesWindow(owner);
+		optionsWindow.showAndWait();
+	}
 
 	/**
 	 * Handle user choosing to close the application.

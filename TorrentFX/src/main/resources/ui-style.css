@@ -5,26 +5,170 @@
 	-fx-font-weight: bold;
 }
 
+.filter-list-child-cell {
+	-fx-font-size: 11;
+	-fx-padding: 0 0 0 25;
+	-fx-pref-height: 20;		
+}
+
+.filter-list-root-cell {	
+	-fx-font-size: 13;	
+	-fx-pref-height: 20;
+}
+
+.filter-list-root-cell-no-children {	
+	-fx-font-size: 13;	
+	-fx-pref-height: 20;
+	-fx-padding: 0;
+}
+
 .filter-list-view {
 	-fx-background-color: #343f44;
 	-fx-control-inner-background: #343f44; 	
 	-fx-min-width: 200;
 }
 
-.filter-list-child-cell {
-	-fx-font-size: 11;
-	-fx-padding: 0 0 0 30;
-	-fx-pref-height: 28;		
+.filter-list-view .tree-cell: {
+	-fx-pref-height: 20;	
 }
 
-.filter-list-root-cell {	
-	-fx-font-size: 13;	
-	-fx-pref-height: 28;
+.filter-list-view .tree-cell .text {
+    -fx-fill: #eaeaea;
+}
+
+.filter-list-view .tree-cell:empty:hover {
+	-fx-background-color: #343f44;
+}
+
+.filter-list-view .tree-cell:hover {
+	-fx-background-color: #222222;
+}
+
+.filter-list-view .tree-cell:selected {
+    -fx-background-color: #76b83e;       
+}
+
+.filter-list-view .tree-cell .tree-disclosure-node {
+	-fx-padding: 4 0 4 2;
+}
+
+.filter-list-view .tree-cell .tree-disclosure-node .arrow {
+	-fx-background-color: transparent;		             
+    -fx-background-image: url("images/appbar.section.expand.png");
+    -fx-background-position: center center;
+    -fx-background-repeat: stretch;
+  	-fx-background-size: 28.0 28.0;  	  	
+  	-fx-min-height: 12;   
+  	-fx-min-width: 12;   	
+  	-fx-shape: null;
+}
+
+.filter-list-view .tree-cell:expanded .tree-disclosure-node .arrow {
+    -fx-background-image: url("images/appbar.section.collapse.png");  	  	 
+  	-fx-rotate: 0;
+}
+
+.layout-horizontal-spacing {
+	-fx-spacing: 5;
+}
+
+.layout-vertical-spacing {
+	-fx-spacing: 5;
+}
+
+.menu-button:hover .label, .menu-button:showing .label,
+.menu-bar .menu-item:focused .label,
+.context-menu .menu-item:focused .label {
+	-fx-text-fill: white;
+}
+
+.menu-bar .label, .menu-bar .menu-item .label,
+.context-menu .menu-item .label {
+	-fx-text-fill: black;
+}
+
+.option-category-indentation {
+	-fx-padding: 0 0 0 25;
+}
+
+.option-category-label {	
+	-fx-background-color: #3399FF;
+	-fx-border-color: #888888 white #DDDDDD #999999;
+	-fx-border-width: 2; 
+	-fx-font-size: 14;
+	-fx-font-weight: bold;
+	-fx-label-padding: 4;
+	-fx-min-height: 30;
+	-fx-text-fill: white;	
+}
+
+.option-category-selection-list {
+	-fx-min-width: 130;	
+}
+
+.option-category-selection-list .tree-cell:selected .text {
+ 	-fx-fill: white;
+}
+
+.option-category-selection-list:focused .tree-cell .text {
+	-fx-fill: black;
+}
+
+.option-category-selection-list:focused .tree-cell:selected .text {
+	-fx-fill: white;
+}
+
+.option-category-selection-cell {
+	-fx-padding: 0 0 0 2;
+	-fx-pref-height: 12;	
+}
+
+.option-category-selection-root-cell {
+	-fx-padding: 0 0 0 6;
+	-fx-pref-height: 12;	
+}
+
+.option-category-selection-list .tree-cell:selected {
+    -fx-background-color: #3399FF;       
+}
+
+.option-category-selection-list .tree-cell .tree-disclosure-node {
+	-fx-padding: 2 0 4 2;
+}
+
+.option-category-selection-list .tree-cell:selected .tree-disclosure-node .arrow {
+	-fx-background-image: url("images/appbar.section.expand.png");
+}
+
+.option-category-selection-list .tree-cell:selected:expanded .tree-disclosure-node .arrow {
+	-fx-background-image: url("images/appbar.section.collapse.png");
+}
+
+.option-category-selection-list .tree-cell .tree-disclosure-node .arrow {
+	-fx-background-color: transparent;		             
+    -fx-background-image: url("images/appbar.section.expand.dark.png");
+    -fx-background-position: center center;
+    -fx-background-repeat: stretch;
+  	-fx-background-size: 28.0 28.0; 	  	
+  	-fx-min-height: 12;   
+  	-fx-min-width: 12;	
+  	-fx-shape: null;
+}
+
+.option-category-selection-list .tree-cell:expanded .tree-disclosure-node .arrow {
+    -fx-background-image: url("images/appbar.section.collapse.dark.png");	  	 
+  	-fx-rotate: 0;
 }
 
 .root {
+	-fx-accent: #3399FF;
 	-fx-faint-focus-color: transparent;
 	-fx-focus-color: transparent;
+	-fx-font-size: 12;
+}
+
+.scroll-pane {
+	-fx-background-color: transparent;
 }
 
 .split-pane > .split-pane-divider {  
@@ -40,47 +184,46 @@
   	-fx-border-width: 1;
 }
 
-.tree-cell: {
-	-fx-cell-size: 28;		
+.tree-table-row-cell:selected .text {
+    -fx-fill: white;
 }
 
-.tree-cell .text {
-       -fx-fill: #eaeaea;
+.tree-table-view .tree-cell {
+	-fx-pref-height: 8;
 }
 
-.tree-cell:empty:hover {
-	-fx-background-color: #343f44;
+.tree-table-view:focused .tree-cell .text {
+    -fx-fill: black;
 }
 
-.tree-cell:hover {
-	-fx-background-color: #222222;
+.tree-table-row-cell:selected {
+    -fx-background-color: #3399FF;       
 }
 
-.tree-cell:selected {
-    -fx-background-color: #76b83e;       
+.tree-table-view:focused .tree-cell:selected .text {
+    -fx-fill: white;
 }
 
-.tree-cell .tree-disclosure-node {
-	-fx-background-color: transparent;	
-	-fx-padding: 0 0 8 0;
+.tree-table-row-cell:selected .tree-disclosure-node .arrow {
+	-fx-background-image: url("images/appbar.section.expand.png");
 }
 
-.tree-cell .tree-disclosure-node .arrow {
+.tree-table-row-cell:selected:expanded .tree-disclosure-node .arrow {
+	-fx-background-image: url("images/appbar.section.collapse.png");
+}
+
+.tree-table-row-cell .tree-disclosure-node .arrow {
 	-fx-background-color: transparent;		             
-    -fx-background-image: url("images/appbar.section.expand.png");
+    -fx-background-image: url("images/appbar.section.expand.dark.png");
     -fx-background-position: center center;
     -fx-background-repeat: stretch;
-  	-fx-background-size: 28.0 28.0;  	  	
-  	-fx-min-height: 28;   
-  	-fx-min-width: 28;   	
+  	-fx-background-size: 28.0 28.0; 	  	
+  	-fx-min-height: 12;   
+  	-fx-min-width: 12;	
   	-fx-shape: null;
 }
-.tree-cell:expanded .tree-disclosure-node .arrow {
-	-fx-background-color: transparent;	    
-    -fx-background-image: url("images/appbar.section.collapse.png");
-    -fx-background-position: center center;   
-    -fx-background-repeat: stretch;
-  	-fx-background-size: 28.0 28.0;  	  	 
+
+.tree-table-row-cell:expanded .tree-disclosure-node .arrow {
+    -fx-background-image: url("images/appbar.section.collapse.dark.png");	  	 
   	-fx-rotate: 0;
-  	-fx-shape: null;
 }

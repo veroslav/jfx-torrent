@@ -107,6 +107,7 @@ public final class ApplicationWindow {
 		filterTreeView.setRoot(buildFilterTreeViewItems());
 		filterTreeView.setShowRoot(false);
 		filterTreeView.getSelectionModel().select(0);
+		//filterTreeView.requestFocus();
 		
 		final StackPane treeViewStack = new StackPane();
 		treeViewStack.getChildren().add(filterTreeView);		
@@ -143,7 +144,7 @@ public final class ApplicationWindow {
 		labelsRootNode.getChildren().addAll(labelsNodeElements);
 		
 		final Label rssFeedsRootLabel = new Label("Feeds (0)");
-		rssFeedsRootLabel.getStyleClass().add("filter-list-root-cell");
+		rssFeedsRootLabel.getStyleClass().add("filter-list-root-cell-no-children");
 		rssFeedsRootLabel.setGraphic(new ImageView(ImageUtils.RSS_IMAGE));
 		final TreeItem<Node> rssFeedsRootNode = new TreeItem<>(rssFeedsRootLabel);
 		rssFeedsRootNode.setExpanded(true);
@@ -212,6 +213,7 @@ public final class ApplicationWindow {
 		
 		toolbarButtons[0].setOnAction(event -> fileActionHandler.onFileOpen(stage));
 		toolbarButtons[1].setOnAction(event -> fileActionHandler.onLoadUrl(stage));
+		toolbarButtons[10].setOnAction(event -> windowActionHandler.onOptionsWindowShown(stage));
 
 		final List<Node> leftToolbarNodes = Arrays.asList(toolbarButtons[0], toolbarButtons[1],
 				buildToolbarSeparator(), toolbarButtons[2], buildToolbarSeparator(), 
@@ -236,8 +238,8 @@ public final class ApplicationWindow {
 	}
 	
 	private Button buildToolbarButton(final String imagePath, final String tooltip, final boolean disabled) {
-		final int requestedHeight = 26;
-		final int requestedWidth = 26;		
+		final int requestedHeight = 20;
+		final int requestedWidth = 20;		
 		final Button button = new Button(null, new ImageView(new Image(
 				getClass().getResourceAsStream(imagePath), requestedWidth, requestedHeight, true, true)));
 		button.getStyleClass().add("toolbar-button");
@@ -359,6 +361,7 @@ public final class ApplicationWindow {
 		optionsMenu.setMnemonicParsing(true);
 		
 		final MenuItem optionsMenuItem = new MenuItem("Preferences...");
+		optionsMenuItem.setOnAction(event -> windowActionHandler.onOptionsWindowShown(stage));
 		optionsMenuItem.setAccelerator(KeyCombination.keyCombination("Ctrl+P"));
 		
 		optionsMenu.getItems().addAll(optionsMenuItem);
