@@ -26,9 +26,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
+import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
@@ -94,6 +96,12 @@ public final class PreferencesWindow {
 		window.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL, ButtonType.APPLY);
 		window.setResizable(true);	
 		window.getDialogPane().setContent(contentLayout);
+		
+		final Button applyButton = (Button)window.getDialogPane().lookupButton(ButtonType.APPLY);
+		applyButton.addEventFilter(ActionEvent.ACTION, event -> {
+			//Prevent window from closing when 'Apply' button has been clicked
+			event.consume();
+		});
 	}
 	
 	private Node layoutContent() {					

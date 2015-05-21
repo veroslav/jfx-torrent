@@ -58,19 +58,20 @@ final class SelfSignedCertificateManager {
 	
 	private final char[] trustStorePassword;
 	
-	SelfSignedCertificateManager() throws CertificateManagerInitializationException {				
+	SelfSignedCertificateManager() throws CertificateManagerInitializationException {		
 		trustStorePassword = System.getProperty(TRUST_STORE_PASSWORD_PROPERTY, TRUST_STORE_PASSWORD).toCharArray();		
 		try {			
 			trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
 			
 			final File trustStoreFile = new File(System.getProperty(TRUST_STORE_PROPERTY, TRUST_STORE_PATH));
 			if(!trustStoreFile.exists()) {	
-				System.setProperty(TRUST_STORE_PROPERTY, TRUST_STORE_PATH);
-				trustStore.load(null, trustStorePassword);
+				//System.setProperty(TRUST_STORE_PROPERTY, TRUST_STORE_PATH);
+				//System.setProperty(TRUST_STORE_PASSWORD_PROPERTY, TRUST_STORE_PASSWORD);
+				trustStore.load(null, trustStorePassword);				
 			}
 			else {
 				try(final InputStream trustStoreInputStream = new FileInputStream(trustStoreFile)) {				
-					trustStore.load(trustStoreInputStream, trustStorePassword);				
+					trustStore.load(trustStoreInputStream, trustStorePassword);						
 				}
 			}
 			
@@ -93,7 +94,7 @@ final class SelfSignedCertificateManager {
 			throws CertificateManagerInitializationException {
 		for(int i = 0; i < certificates.length; i++) {
 			try {
-				trustStore.setCertificateEntry(alias + "[" + (i + 1) + "]", certificates[i]);
+				trustStore.setCertificateEntry(alias + "[" + (i + 1) + "]", certificates[i]);				
 			} 
 			catch(final KeyStoreException kse) {
 				throw new CertificateManagerInitializationException(kse.getMessage(), kse.getCause());
@@ -112,8 +113,10 @@ final class SelfSignedCertificateManager {
 	}
 	
 	private void updateKeyStore() throws CertificateManagerInitializationException {		
-		try(final OutputStream output = new FileOutputStream(TRUST_STORE_PATH)) {		
+		try(final OutputStream output = new FileOutputStream(TRUST_STORE_PATH)) {
 			trustStore.store(output, TRUST_STORE_PASSWORD.toCharArray());
+			trustManagerFactory.init(trustStore);
+			certificateInterceptor.setTrustManager((X509TrustManager)trustManagerFactory.getTrustManagers()[0]);
 		} catch (final KeyStoreException | NoSuchAlgorithmException
 				| CertificateException | IOException e) {
 			throw new CertificateManagerInitializationException(e.getMessage(), e.getCause());			

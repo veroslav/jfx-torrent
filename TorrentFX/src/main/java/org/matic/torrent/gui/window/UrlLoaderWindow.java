@@ -29,6 +29,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.security.cert.X509Certificate;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -46,8 +47,10 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
+import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.input.Clipboard;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
@@ -86,7 +89,7 @@ public final class UrlLoaderWindow {
 		
 	private ResourceType resourceType = ResourceType.INVALID;
 	private UrlDownloaderTask urlDownloaderTask = null;
-	private BinaryEncodedDictionary torrentMap = null;		
+	private BinaryEncodedDictionary torrentMap = null;			
 	
 	private final ExecutorService urlDownloadExecutor;
 	
@@ -101,7 +104,6 @@ public final class UrlLoaderWindow {
 		window.initOwner(owner);
 		
 		urlDownloadExecutor = Executors.newSingleThreadExecutor();
-		urlDownloaderTask = new UrlDownloaderTask();
 		
 		progressBar = new ProgressBar(0);
 		urlEntryField = new TextField();		
@@ -125,6 +127,36 @@ public final class UrlLoaderWindow {
 			urlEntryField.setText(clipBoardContents);
 		}
 		
+		window.setHeaderText(null);
+		window.setTitle(WINDOW_TITLE);
+		
+		window.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+		window.setOnCloseRequest(handler -> {
+			if(urlDownloaderTask != null) {
+				urlDownloaderTask.cancel();
+			}
+		});
+		
+		final Button okButton = (Button)window.getDialogPane().lookupButton(ButtonType.OK);
+		okButton.addEventFilter(ActionEvent.ACTION, event -> {
+			okButton.setDisable(true);
+			event.consume();	
+			final boolean urlValidated = requestUrlResource(urlEntryField.getText());
+			okButton.setDisable(urlValidated);
+		});
+		final Button cancelButton = (Button)window.getDialogPane().lookupButton(ButtonType.CANCEL);
+		cancelButton.addEventFilter(ActionEvent.ACTION, event -> {
+			window.setResult(ButtonType.CANCEL);
+			if(urlDownloaderTask != null) {
+				urlDownloaderTask.cancel();
+			}
+		});
+	
+		window.setResizable(true);		
+		window.getDialogPane().setContent(layoutContent());
+	}
+	
+	private void initUrlDownloader(final UrlDownloaderTask urlDownloaderTask) {
 		urlDownloaderTask.setOnSucceeded(handler -> {
 			progressBar.progressProperty().unbind();
 			torrentMap = (BinaryEncodedDictionary)handler.getSource().getValue();
@@ -137,11 +169,31 @@ public final class UrlLoaderWindow {
 			}			
 		});
 		urlDownloaderTask.setOnFailed(handler -> {
-			final Throwable throwable = handler.getSource().getException();
-			final String url = urlDownloaderTask.url.get();
+			progressBar.progressProperty().unbind();
+			final Throwable throwable = handler.getSource().getException();			
 			
-			System.err.println("Is SSLException? " + (throwable instanceof SSLException));
-			System.err.println("URL: " + url);
+			if(throwable instanceof SSLException) {						
+				final X509Certificate[] certificates = NetworkUtilities.getInterceptedCertificates();
+				final boolean acceptCertificateChain = confirmCertificateChainAddition(certificates);
+				if(acceptCertificateChain) {
+					final String url = urlDownloaderTask.url.get();
+					try {
+						NetworkUtilities.addTrustedCertificate(url, certificates);						
+					}
+					catch(final Exception e) {
+						e.printStackTrace();
+						//TODO: Alert that it was not possible to add certificate
+						resourceType = ResourceType.INVALID;
+						window.close();
+						return;
+					}						
+					requestUrlResource(url);
+				}
+				else {
+					resourceType = ResourceType.INVALID;
+					window.close();
+				}
+			}						
 		});
 		
 		urlDownloaderTask.messageProperty().addListener((obs, oldV, newV) -> progressLabel.setText(newV));		
@@ -154,28 +206,48 @@ public final class UrlLoaderWindow {
 				progressLabel.setText("Downloading torrent (" + percentDone + "% done)");
 			}
 		});
-		
-		window.setHeaderText(null);
-		window.setTitle(WINDOW_TITLE);
-		
-		window.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
-		window.setOnCloseRequest(handler -> urlDownloaderTask.cancel());
-		
-		final Button okButton = (Button)window.getDialogPane().lookupButton(ButtonType.OK);
-		okButton.addEventFilter(ActionEvent.ACTION, event -> {
-			okButton.setDisable(true);
-			event.consume();	
-			final boolean urlValidated = requestUrlResource(urlEntryField.getText());
-			okButton.setDisable(urlValidated);
-		});
-		final Button cancelButton = (Button)window.getDialogPane().lookupButton(ButtonType.CANCEL);
-		cancelButton.addEventFilter(ActionEvent.ACTION, event -> {
-			window.setResult(ButtonType.CANCEL);
-			urlDownloaderTask.cancel();
-		});
+	}
 	
-		window.setResizable(true);		
-		window.getDialogPane().setContent(layoutContent());
+	private boolean confirmCertificateChainAddition(final X509Certificate[] certificateChain) {
+		final StringBuilder userQuestion = new StringBuilder();
+		userQuestion.append("The remote server is using a self signed certificate.");
+		userQuestion.append("\n");
+		userQuestion.append("Would you like to add it to the trusted certificate list?");
+		
+		final StringBuilder certificateSummary = new StringBuilder();
+	    for(final X509Certificate certificate : certificateChain) {
+	    	certificateSummary.append(certificate.toString());
+	    }
+	    
+	    final Alert acceptAlert = new Alert(AlertType.WARNING, userQuestion.toString(), ButtonType.OK, ButtonType.CANCEL);
+	    acceptAlert.setHeaderText("Potential Security Risk");
+	    acceptAlert.setTitle("Accept self signed server certificate");
+	    acceptAlert.initOwner(window.getOwner());
+	    acceptAlert.setResizable(true);
+	    acceptAlert.setWidth(1000);
+	    acceptAlert.setHeight(400);
+	    
+	    final Label detailsLabel = new Label("Certificate details:");
+
+	    final TextArea detailstextArea = new TextArea(certificateSummary.toString());
+	    detailstextArea.setEditable(false);
+	    detailstextArea.setWrapText(true);
+	    detailstextArea.setMaxWidth(Double.MAX_VALUE);
+	    detailstextArea.setMaxHeight(Double.MAX_VALUE);
+	    
+	    GridPane.setVgrow(detailstextArea, Priority.ALWAYS);
+	    GridPane.setHgrow(detailstextArea, Priority.ALWAYS);
+
+	    final GridPane expandableContent = new GridPane();
+	    expandableContent.setMaxWidth(Double.MAX_VALUE);
+	    expandableContent.add(detailsLabel, 0, 0);
+	    expandableContent.add(detailstextArea, 0, 1);
+
+	    // Set expandable Exception into the dialog pane.
+	    acceptAlert.getDialogPane().setExpandableContent(expandableContent);
+	    
+	    final Optional<ButtonType> result = acceptAlert.showAndWait();
+	    return result.isPresent() && result.get() == ButtonType.OK;
 	}
 	
 	private Node layoutContent() {
@@ -217,6 +289,9 @@ public final class UrlLoaderWindow {
 			window.setResult(ButtonType.OK);
 			return true;
 		}		
+		urlDownloaderTask = new UrlDownloaderTask();
+		initUrlDownloader(urlDownloaderTask);
+		
 		urlDownloaderTask.setUrl(url);		
 		progressBar.progressProperty().bind(urlDownloaderTask.progressProperty());		
 		urlEntryField.setDisable(true);
@@ -324,34 +399,6 @@ public final class UrlLoaderWindow {
 				throw new IOException("Remote server returned an error (error code: " 
 						+ responseCode + ")");
 			}										
-		}
-		
-		@Override
-		protected final void failed() {
-			super.failed();					
-			showErrorMessage("Failed to open torrent: " + 
-					super.exceptionProperty().getValue().toString());
-			
-			/*final Throwable throwable = super.exceptionProperty().get();
-			
-			if(throwable instanceof SSLException) {
-				final X509Certificate[] interceptedChain = NetworkUtilities.getInterceptedCertificates();
-				//final boolean userAcceptedCertificate = acceptCertificateChain(interceptedChain);
-				
-				if(true) {					
-					try {
-						NetworkUtilities.addTrustedCertificate(new URL(url.get()).getHost(), interceptedChain);
-					} 
-					catch (final KeyStoreException | NoSuchAlgorithmException
-							| CertificateException | IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}					
-				}			
-			}*/
-			
-			resourceType = ResourceType.INVALID;
-			window.close();			
 		}		
 	}
 }

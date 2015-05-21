@@ -26,10 +26,14 @@ import java.security.cert.X509Certificate;
 import javax.net.ssl.X509TrustManager;
 
 public final class SelfSignedCertificateInterceptor implements X509TrustManager {
-	private final X509TrustManager trustManager;
+	private X509TrustManager trustManager;
 	private X509Certificate[] chain;
 
 	public SelfSignedCertificateInterceptor(final X509TrustManager trustManager) {
+		this.trustManager = trustManager;
+	}
+	
+	public final void setTrustManager(final X509TrustManager trustManager) {
 		this.trustManager = trustManager;
 	}
 
