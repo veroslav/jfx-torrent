@@ -80,7 +80,9 @@ public final class TrackerManager implements TrackerResponseListener, UdpConnect
 					existingTracker.setNextAnnounce(System.nanoTime());
 					shouldAnnounce = true;
 				}
-				shouldAnnounce = false;
+				else {
+					shouldAnnounce = false;
+				}
 			}
 			else {
 				//New tracker, simply add it
@@ -89,7 +91,7 @@ public final class TrackerManager implements TrackerResponseListener, UdpConnect
 			}			
 		}
 		if(shouldAnnounce) {			
-			scheduleAnnouncement();
+			scheduleAnnouncement(tracker);
 		}
 		return shouldAnnounce;
 	}
@@ -151,7 +153,7 @@ public final class TrackerManager implements TrackerResponseListener, UdpConnect
 		return new AnnounceRequest(torrent, trackerEvent, 0, 0, 0);
 	}
 	
-	private void scheduleAnnouncement() {
+	private void scheduleAnnouncement(final Tracker tracker) {
 		//TODO: Implement method
 	}
 	

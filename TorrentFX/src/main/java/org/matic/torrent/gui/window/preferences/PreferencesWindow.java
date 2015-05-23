@@ -26,6 +26,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.matic.torrent.gui.action.FileActionHandler;
+
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
@@ -48,21 +52,26 @@ import javafx.stage.Window;
  * @author vedran
  *
  */
-public final class PreferencesWindow {	
+public final class PreferencesWindow {
 	
 	//View for selecting available option categories
 	private final TreeView<Node> optionCategoriesTreeView = new TreeView<>();
 	private final Label categoryNameLabel = new Label();
 	
-	private final DirectoriesContentPane directoriesOptions = new DirectoriesContentPane();
+	//Whether any of the preferences has been changed by the user
+	private final BooleanProperty preferencesChanged = new SimpleBooleanProperty(false);
+	
+	private final DirectoriesContentPane directoriesOptions;
 	
 	private final Dialog<ButtonType> window;
 	
 	private final Map<String, Node> optionGroupMappings;
 	private final Pane optionsView = new StackPane();
 	
-	public PreferencesWindow(final Window owner) {
+	public PreferencesWindow(final Window owner, final FileActionHandler fileActionHandler) {
 		optionGroupMappings = new HashMap<>();
+		
+		directoriesOptions = new DirectoriesContentPane(owner, fileActionHandler, preferencesChanged);
 		
 		window = new Dialog<>();
 		window.initOwner(owner);		
@@ -94,14 +103,29 @@ public final class PreferencesWindow {
 		window.setHeaderText(null);
 		window.setTitle("Preferences");		
 		window.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL, ButtonType.APPLY);
+		
+		final Button okButton = (Button)window.getDialogPane().lookupButton(ButtonType.OK);	
+		okButton.addEventFilter(ActionEvent.ACTION, event -> {
+			if(preferencesChanged.get()) {
+				savePreferences();
+			}
+		});
+		
+		final Button applyButton = (Button)window.getDialogPane().lookupButton(ButtonType.APPLY);	
+		applyButton.disableProperty().bind(preferencesChanged.not());
+		
+		applyButton.addEventFilter(ActionEvent.ACTION, event -> {
+			event.consume();
+			savePreferences();
+			preferencesChanged.set(false);
+		});
+		
 		window.setResizable(true);	
 		window.getDialogPane().setContent(contentLayout);
-		
-		final Button applyButton = (Button)window.getDialogPane().lookupButton(ButtonType.APPLY);
-		applyButton.addEventFilter(ActionEvent.ACTION, event -> {
-			//Prevent window from closing when 'Apply' button has been clicked
-			event.consume();
-		});
+	}
+	
+	private void savePreferences() {		
+		directoriesOptions.onSaveContentChanges();
 	}
 	
 	private Node layoutContent() {					

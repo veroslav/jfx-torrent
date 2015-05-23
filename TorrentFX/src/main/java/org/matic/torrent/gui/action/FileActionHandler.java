@@ -74,7 +74,9 @@ public final class FileActionHandler {
 		final String torrentPath = getTorrentPath(owner);
 		if(torrentPath != null) {
 			final String targetFileName = Paths.get(torrentPath).getFileName().toString();
-			final String saveLocationPath = getSaveLocationPath(owner, targetFileName);
+			final String saveLocationPath = Paths.get(torrentPath).getFileName().toString();
+			getTargetDirectoryPath(owner, System.getProperty("user.home"), 
+					"Choose where to download '" + targetFileName + "' to:");
 			if(saveLocationPath != null) {
 				//TODO: Use selected target save location
 			}			
@@ -92,6 +94,18 @@ public final class FileActionHandler {
 		}				
 	}
 	
+	public final String getTargetDirectoryPath(final Window owner, final String initialDirectory, final String title) {
+		final File initialDirectoryFile = new File(initialDirectory);
+		final DirectoryChooser saveLocationChooser = new DirectoryChooser();
+		saveLocationChooser.setInitialDirectory(initialDirectoryFile.exists()? 
+				initialDirectoryFile : new File(System.getProperty("user.home")));
+		saveLocationChooser.setTitle(title);
+		
+		final File selectedLocation = saveLocationChooser.showDialog(owner);
+		
+		return selectedLocation != null? selectedLocation.getAbsolutePath() : null;
+	}
+	
 	private String getTorrentPath(final Window owner) {
 		final FileChooser fileChooser = new FileChooser();
 		fileChooser.setInitialDirectory(new File(System.getProperty("user.home")));
@@ -103,15 +117,5 @@ public final class FileActionHandler {
 		final File selectedFile = fileChooser.showOpenDialog(owner);
 		
 		return selectedFile != null? selectedFile.getAbsolutePath() : null;
-	}
-	
-	private String getSaveLocationPath(final Window owner, final String targetFileName) {
-		final DirectoryChooser saveLocationChooser = new DirectoryChooser();
-		saveLocationChooser.setInitialDirectory(new File(System.getProperty("user.home")));
-		saveLocationChooser.setTitle("Choose where to download '" + targetFileName + "' to:");
-		
-		final File selectedLocation = saveLocationChooser.showDialog(owner);
-		
-		return selectedLocation != null? selectedLocation.getAbsolutePath() : null;
 	}
 }

@@ -39,11 +39,12 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 
-final class SelfSignedCertificateManager {
+import org.matic.torrent.preferences.ApplicationPreferences;
+import org.matic.torrent.preferences.PathProperties;
+
+final class RetryableCertificateManager {
 	
-	private static final String TRUST_STORE_FILE_NAME = "jssecacerts";
-	private static final String TRUST_STORE_PATH = System.getProperty("user.dir") + 
-			File.separator + TRUST_STORE_FILE_NAME;
+	private static final String TRUST_STORE_FILE_NAME = "jssecacerts";	
 	private static final String TRUST_STORE_PASSWORD = "changeit"; 
 	
 	private static final String TRUST_STORE_PASSWORD_PROPERTY = "javax.net.ssl.trustStorePassword";
@@ -51,19 +52,19 @@ final class SelfSignedCertificateManager {
 	
 	private static final String PROTOCOL = "TLS";
 
-	private final SelfSignedCertificateInterceptor certificateInterceptor;
+	private final RetryableCertificateInterceptor certificateInterceptor;
 	private final TrustManagerFactory trustManagerFactory; 	
 	private final SSLSocketFactory sslSocketFactory;
 	private final KeyStore trustStore;
 	
 	private final char[] trustStorePassword;
 	
-	SelfSignedCertificateManager() throws CertificateManagerInitializationException {		
+	RetryableCertificateManager() throws CertificateManagerInitializationException {		
 		trustStorePassword = System.getProperty(TRUST_STORE_PASSWORD_PROPERTY, TRUST_STORE_PASSWORD).toCharArray();		
 		try {			
 			trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
 			
-			final File trustStoreFile = new File(System.getProperty(TRUST_STORE_PROPERTY, TRUST_STORE_PATH));
+			final File trustStoreFile = new File(System.getProperty(TRUST_STORE_PROPERTY, getKeyStorePath()));
 			if(!trustStoreFile.exists()) {	
 				//System.setProperty(TRUST_STORE_PROPERTY, TRUST_STORE_PATH);
 				//System.setProperty(TRUST_STORE_PASSWORD_PROPERTY, TRUST_STORE_PASSWORD);
@@ -79,7 +80,7 @@ final class SelfSignedCertificateManager {
 			trustManagerFactory.init(trustStore);
 			
 			final X509TrustManager trustManager = (X509TrustManager)trustManagerFactory.getTrustManagers()[0];
-			certificateInterceptor = new SelfSignedCertificateInterceptor(trustManager);
+			certificateInterceptor = new RetryableCertificateInterceptor(trustManager);
 			
 			final SSLContext sslContext = SSLContext.getInstance(PROTOCOL);
 			sslContext.init(null, new TrustManager[]{certificateInterceptor}, null);
@@ -112,8 +113,14 @@ final class SelfSignedCertificateManager {
 		return certificateInterceptor.getChain();
 	}
 	
+	private static String getKeyStorePath() {
+		return ApplicationPreferences.getProperty(PathProperties.KEY_STORE, 
+				System.getProperty("user.dir")) + 
+				File.separator + TRUST_STORE_FILE_NAME;
+	}
+	
 	private void updateKeyStore() throws CertificateManagerInitializationException {		
-		try(final OutputStream output = new FileOutputStream(TRUST_STORE_PATH)) {
+		try(final OutputStream output = new FileOutputStream(getKeyStorePath())) {
 			trustStore.store(output, TRUST_STORE_PASSWORD.toCharArray());
 			trustManagerFactory.init(trustStore);
 			certificateInterceptor.setTrustManager((X509TrustManager)trustManagerFactory.getTrustManagers()[0]);
@@ -123,6 +130,6 @@ final class SelfSignedCertificateManager {
 		}
 		
 		System.setProperty(TRUST_STORE_PASSWORD_PROPERTY, TRUST_STORE_PASSWORD);
-		System.setProperty(TRUST_STORE_PROPERTY, TRUST_STORE_PATH);	    
+		System.setProperty(TRUST_STORE_PROPERTY, getKeyStorePath());	    
 	}
 }

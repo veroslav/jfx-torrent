@@ -38,8 +38,9 @@ public final class WindowActionHandler {
 	 * 
 	 * @param owner Owner window of the options dialog
 	 */
-	public final void onOptionsWindowShown(final Window owner) {
-		final PreferencesWindow optionsWindow = new PreferencesWindow(owner);
+	public final void onOptionsWindowShown(final Window owner,
+			final FileActionHandler fileActionHandler) {
+		final PreferencesWindow optionsWindow = new PreferencesWindow(owner, fileActionHandler);
 		optionsWindow.showAndWait();
 	}
 

@@ -18,34 +18,10 @@
 *
 */
 
-package org.matic.torrent.gui.window.preferences;
+package org.matic.torrent.preferences;
 
-import javafx.scene.control.ScrollPane;
+public final class NetworkProperties {
 
-/**
- * Common pane for all category panes in the preferences window
- * 
- * @author vedran
- *
- */
-public interface CategoryContentPane {
-
-	/**
-	 * Save all changes made by user, if any, since last content save
-	 */
-	public void onSaveContentChanges();
-	
-	/**
-	 * Return a pane holding all of the option components for this category
-	 * 
-	 * @return
-	 */
-	public ScrollPane getContentPane();
-	
-	/**
-	 * Return this category name (used as the category title)
-	 * 
-	 * @return
-	 */
-	public String getName();
+	public static final String UDP_TRACKER_PORT = "network.udp.tracker.port";
+	public static final String UDP_DHT_PORT = "network.udp.dht.port";
 }

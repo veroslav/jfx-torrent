@@ -47,7 +47,7 @@ public final class NetworkUtilities {
 	public static final String HTTP_USER_AGENT_NAME = "User-Agent";	
 	public static final String HTTP_GZIP_ENCODING = "gzip";
 	
-	private static final SelfSignedCertificateManager CERTIFICATE_MANAGER = initCertificateManager();
+	private static final RetryableCertificateManager CERTIFICATE_MANAGER = initCertificateManager();
 	
 	public static String getHttpUserAgent() {
 		return HTTP_USER_AGENT_VALUE;
@@ -88,11 +88,11 @@ public final class NetworkUtilities {
 		return connection;
 	}
 	
-	private static SelfSignedCertificateManager initCertificateManager() {
+	private static RetryableCertificateManager initCertificateManager() {
 		//TODO: Always perform null check on returned certificate manager
-		SelfSignedCertificateManager manager;
+		RetryableCertificateManager manager;
 		try {
-			manager = new SelfSignedCertificateManager();
+			manager = new RetryableCertificateManager();
 		} 
 		catch(final CertificateManagerInitializationException cie) {
 			manager = null;

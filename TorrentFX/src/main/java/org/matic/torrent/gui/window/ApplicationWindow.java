@@ -213,7 +213,8 @@ public final class ApplicationWindow {
 		
 		toolbarButtons[0].setOnAction(event -> fileActionHandler.onFileOpen(stage));
 		toolbarButtons[1].setOnAction(event -> fileActionHandler.onLoadUrl(stage));
-		toolbarButtons[10].setOnAction(event -> windowActionHandler.onOptionsWindowShown(stage));
+		toolbarButtons[10].setOnAction(
+				event -> windowActionHandler.onOptionsWindowShown(stage, fileActionHandler));
 
 		final List<Node> leftToolbarNodes = Arrays.asList(toolbarButtons[0], toolbarButtons[1],
 				buildToolbarSeparator(), toolbarButtons[2], buildToolbarSeparator(), 
@@ -361,7 +362,8 @@ public final class ApplicationWindow {
 		optionsMenu.setMnemonicParsing(true);
 		
 		final MenuItem optionsMenuItem = new MenuItem("Preferences...");
-		optionsMenuItem.setOnAction(event -> windowActionHandler.onOptionsWindowShown(stage));
+		optionsMenuItem.setOnAction(
+				event -> windowActionHandler.onOptionsWindowShown(stage, fileActionHandler));
 		optionsMenuItem.setAccelerator(KeyCombination.keyCombination("Ctrl+P"));
 		
 		optionsMenu.getItems().addAll(optionsMenuItem);
