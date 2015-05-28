@@ -20,6 +20,27 @@
 
 package org.matic.torrent.gui.model;
 
-public final class TorrentJobStatus {
+import org.matic.torrent.gui.tree.TorrentContentTree;
 
+public final class TorrentJob {
+	
+	private final TorrentContentTree torrentContentTree;
+	private final String fileName;
+
+	public TorrentJob(final String fileName, final TorrentContentTree torrentContentTree) {
+		this.fileName = fileName;
+		this.torrentContentTree = torrentContentTree;
+	}
+	
+	public String getFileName() {
+		return fileName;
+	}
+	
+	public TorrentContentTree getTorrentContentTree() {
+		return torrentContentTree;
+	}
+	
+	public String getInfoHash() {
+		return "";
+	}
 }

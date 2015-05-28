@@ -61,7 +61,6 @@ import org.matic.torrent.gui.tree.TorrentContentTree;
 import org.matic.torrent.io.DiskUtilities;
 import org.matic.torrent.io.codec.BinaryEncodedDictionary;
 import org.matic.torrent.io.codec.BinaryEncodedInteger;
-import org.matic.torrent.io.codec.BinaryEncodedList;
 import org.matic.torrent.io.codec.BinaryEncodedString;
 import org.matic.torrent.io.codec.BinaryEncodingKeyNames;
 import org.matic.torrent.utils.UnitConverter;
@@ -108,7 +107,8 @@ public final class AddNewTorrentWindow {
 	private Optional<Long> availableDiskSpace;
 	private long fileSelectionLength;
 
-	public AddNewTorrentWindow(final Window owner, final BinaryEncodedDictionary torrentMetaData) {	
+	public AddNewTorrentWindow(final Window owner, final BinaryEncodedDictionary torrentMetaData,
+			final TorrentContentTree torrentContentTree) {	
 		
 		final BinaryEncodedInteger creationDateInSeconds = (BinaryEncodedInteger)torrentMetaData.get(
 				BinaryEncodingKeyNames.KEY_CREATION_DATE);
@@ -146,9 +146,7 @@ public final class AddNewTorrentWindow {
 		labelCombo = new ComboBox<String>();
 		advancedButton = new Button("Advanced...");
 		
-		torrentContentTree = new TorrentContentTree(fileName, 
-				(BinaryEncodedInteger)infoDictionary.get(BinaryEncodingKeyNames.KEY_LENGTH),
-				(BinaryEncodedList)infoDictionary.get(BinaryEncodingKeyNames.KEY_FILES));
+		this.torrentContentTree = torrentContentTree;
 		
 		fileSelectionLength = torrentContentTree.getRootFileEntry().getSize();
 		updateDiskUsageLabel();
@@ -171,16 +169,13 @@ public final class AddNewTorrentWindow {
 	
 	public final AddNewTorrentOptions showAndWait() {
 		final Optional<ButtonType> result = window.showAndWait();
-
+		
 		if(result.isPresent() && result.get() == ButtonType.OK) {
-			return new AddNewTorrentOptions(torrentContentTree,
-					nameTextField.getText(), savePathCombo.getValue(),
-					labelCombo.getValue(), startTorrentCheckbox.isSelected(),
-					createSubFolderCheckbox.isSelected(),
-					addToTopQueueCheckbox.isSelected(),
-					skipHashCheckbox.isSelected());
+			return new AddNewTorrentOptions(torrentContentTree, nameTextField.getText(), savePathCombo.getValue(), 
+					labelCombo.getValue(), startTorrentCheckbox.isSelected(), createSubFolderCheckbox.isSelected(), 
+					addToTopQueueCheckbox.isSelected(), skipHashCheckbox.isSelected());
 		}
-
+		
 		return null;
 	}
 	
@@ -353,7 +348,7 @@ public final class AddNewTorrentWindow {
 		northPane.getChildren().addAll(labelPane, buttonsPane);
 		
 		final ScrollPane torrentContentsScroll = new ScrollPane();
-		torrentContentTree.wrapWith(torrentContentsScroll);
+		torrentContentsScroll.setContent(torrentContentTree.getView());
 		torrentContentsScroll.setFitToWidth(true);
 		torrentContentsScroll.setFitToHeight(true);
 		

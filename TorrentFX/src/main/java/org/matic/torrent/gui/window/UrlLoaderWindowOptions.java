@@ -25,22 +25,22 @@ import org.matic.torrent.io.codec.BinaryEncodedDictionary;
 public final class UrlLoaderWindowOptions {
 	
 	private final UrlLoaderWindow.ResourceType urlType;
-	private final BinaryEncodedDictionary torrentMap;
+	private final BinaryEncodedDictionary torrentMetaData;
 	private final String url;
 
 	public UrlLoaderWindowOptions(final UrlLoaderWindow.ResourceType urlType,
 			final String url, final BinaryEncodedDictionary torrentMap) {
 		this.urlType = urlType;
 		this.url = url;
-		this.torrentMap = torrentMap;
+		this.torrentMetaData = torrentMap;
 	}
 
 	public final UrlLoaderWindow.ResourceType getUrlType() {
 		return urlType;
 	}
 
-	public final BinaryEncodedDictionary getTorrentMap() {
-		return torrentMap;
+	public final BinaryEncodedDictionary getTorrentMetaData() {
+		return torrentMetaData;
 	}
 
 	public final String getUrl() {
@@ -49,7 +49,7 @@ public final class UrlLoaderWindowOptions {
 
 	@Override
 	public final String toString() {
-		return "UrlLoaderWindowOptions [urlType=" + urlType + ", torrentMap="
-				+ torrentMap + ", url=" + url + "]";
+		return "UrlLoaderWindowOptions [urlType=" + urlType + ", torrentMetaData="
+				+ torrentMetaData + ", url=" + url + "]";
 	}		
 }

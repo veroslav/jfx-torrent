@@ -145,4 +145,13 @@ public final class AddNewTorrentOptions {
 			return false;
 		return true;
 	}
+
+	@Override
+	public String toString() {
+		return "AddNewTorrentOptions [torrentContentTree=" + torrentContentTree
+				+ ", createSubfolder=" + createSubfolder + ", skipHashCheck="
+				+ skipHashCheck + ", addToTopQueue=" + addToTopQueue
+				+ ", startTorrent=" + startTorrent + ", label=" + label
+				+ ", name=" + name + ", path=" + path + "]";
+	}
 }

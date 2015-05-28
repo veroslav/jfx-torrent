@@ -23,18 +23,17 @@ package org.matic.torrent.gui.tree;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javafx.beans.property.LongProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleLongProperty;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.CheckBoxTreeItem;
 import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
+import javafx.scene.control.ProgressBar;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeTableCell;
 import javafx.scene.control.TreeTableColumn;
@@ -63,40 +62,57 @@ public final class TorrentContentTree {
 
 	private final TreeTableView<TorrentFileEntry> fileEntryTree;
 	
-	private final ObservableList<TorrentFileEntry> torrentFileEntries = 
-			FXCollections.observableArrayList();
+	/*private final ObservableList<TorrentFileEntry> torrentFileEntries = 
+			FXCollections.observableArrayList();*/
 	
 	private final LongProperty selectedFilesSize;
 	
-	private final BinaryEncodedInteger fileLength;
-	private final BinaryEncodedList files;
-	private final String fileName;
-	
 	/**
-	 * Create and populate a file tree with a torrent's meta data
+	 * Create and populate a file tree with data from a  torrent's info dictionary
 	 * 
-	 * @param fileName Torrent's file (or directory) name 
-	 * @param fileLength Length of the torrent file (in single file mode)
-	 * @param files Files contained by the torrent (in multi file mode)
+	 * @param infoDictionary Torrent's info dictionary
+	 * @param addProgressDetailColumns Whether to display columns showing download progress 
 	 */
-	public TorrentContentTree(final String fileName, final BinaryEncodedInteger fileLength, 
-			final BinaryEncodedList files) {
-		this.fileName = fileName;
-		this.fileLength = fileLength;
-		this.files = files;
-		
+	public TorrentContentTree(final BinaryEncodedDictionary infoDictionary,
+			final boolean addProgressDetailColumns) {		
 		selectedFilesSize = new SimpleLongProperty();		 
 		fileEntryTree = new TreeTableView<TorrentFileEntry>();
-		initComponents();
+		initComponents(infoDictionary, addProgressDetailColumns);
 	}
 	
 	/**
-	 * Wrap the internal tree table in a scroll pane for easier navigation
+	 * Create an empty torrent content tree
 	 * 
-	 * @param wrapper Wrapping scroll pane
+	 * @param addProgressDetailColumns Whether to display columns showing download progress
 	 */
-	public final void wrapWith(final ScrollPane wrapper) {
-		wrapper.setContent(fileEntryTree);
+	public TorrentContentTree(final boolean addProgressDetailColumns) {
+		this(null, addProgressDetailColumns);
+	}
+	
+	@Override
+	public final int hashCode() {
+		return fileEntryTree.hashCode();
+	}
+
+	@Override
+	public final boolean equals(final Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		final TorrentContentTree other = (TorrentContentTree) obj;
+		return other.fileEntryTree.equals(fileEntryTree);
+	}
+	
+	/**
+	 * Expose wrapped TreeTableView
+	 * 
+	 * @return
+	 */
+	public TreeTableView<TorrentFileEntry> getView() {
+		return fileEntryTree;
 	}
 	
 	/**
@@ -105,7 +121,8 @@ public final class TorrentContentTree {
 	 * @return
 	 */
 	public final TorrentFileEntry getRootFileEntry() {
-		return fileEntryTree.getRoot().getValue();
+		final TreeItem<TorrentFileEntry> root = fileEntryTree.getRoot();
+		return root == null? null : root.getValue();
 	}
 	
 	/**
@@ -153,6 +170,16 @@ public final class TorrentContentTree {
 	 */
 	public final void expandAll() {
 		onExpandFolderTree(fileEntryTree.getRoot());
+	}
+	
+	/**
+	 * Update the content tree with new content
+	 * 
+	 * @param contentRoot The root of the new tree
+	 */
+	public void setContent(final TreeItem<TorrentFileEntry> contentRoot) {
+		fileEntryTree.setRoot(contentRoot);
+		selectedFilesSize.set(contentRoot.getValue().getSize());
 	}
 	
 	protected void onCollapseTreeItem(final TreeItem<TorrentFileEntry> targetItem) {
@@ -215,30 +242,46 @@ public final class TorrentContentTree {
 		treeItem.setExpanded(false);		
 	}
 	
-	private void initComponents() {
-		final TreeItem<TorrentFileEntry> rootNode = buildTorrentContentTree();		
-		fileEntryTree.setRoot(rootNode);
+	private void initComponents(final BinaryEncodedDictionary infoDictionary,
+			final boolean addProgressDetailColumns) {
+		if(infoDictionary != null) {
+			final TreeItem<TorrentFileEntry> rootNode = buildTorrentContentTree(infoDictionary);		
+			fileEntryTree.setRoot(rootNode);
+			selectedFilesSize.set(getRootFileEntry().getSize());
+		}
 		fileEntryTree.setTableMenuButtonVisible(true);
 		fileEntryTree.setShowRoot(false);
 		fileEntryTree.setEditable(true);					
 		
-		addColumns();
-		fileEntryTree.setRowFactory(table -> new TorrentContentTreeRow(this));
-		
-		selectedFilesSize.set(getRootFileEntry().getSize());
+		addColumns(addProgressDetailColumns);
+		fileEntryTree.setRowFactory(table -> new TorrentContentTreeRow(this));				
 	}
 	
-	private void addColumns() {
+	private void addColumns(final boolean addProgressDetailColumns) {
 		final TreeTableColumn<TorrentFileEntry, FileNameColumnModel> fileNameColumn = buildFileNameColumn();
 		fileEntryTree.getColumns().addAll(Arrays.asList(fileNameColumn, 
-				buildPathColumn(), buildSizeColumn(), buildPriorityColumn()));
+				buildPathColumn(), buildSimpleLongValueColumn("Size", "size", 
+						tfe -> UnitConverter.formatByteCount(tfe.sizeProperty().get())), buildPriorityColumn()));
+		
+		if(addProgressDetailColumns) {
+			fileEntryTree.getColumns().addAll(Arrays.asList(
+					buildSimpleLongValueColumn(
+							"Done", "done", tfe -> UnitConverter.formatByteCount(tfe.doneProperty().get())),
+					buildSimpleLongValueColumn(
+							"First Piece", "firstPiece", tfe -> String.valueOf(tfe.firstPieceProperty().get())),
+					buildSimpleLongValueColumn(
+							"#Pieces", "pieceCount", tfe -> String.valueOf(tfe.pieceCountProperty().get())),
+					buildProgressColumn()));
+		}
+		
 		fileEntryTree.getSortOrder().add(fileNameColumn);
 	}
 	
-	private TreeTableColumn<TorrentFileEntry, Long> buildSizeColumn() {
-		final TreeTableColumn<TorrentFileEntry, Long> sizeColumn = new TreeTableColumn<TorrentFileEntry, Long>("Size");
-		sizeColumn.setCellValueFactory(new TreeItemPropertyValueFactory<TorrentFileEntry, Long>("size"));
-		sizeColumn.setCellFactory(column -> new TreeTableCell<TorrentFileEntry, Long>() {
+	private TreeTableColumn<TorrentFileEntry, Long> buildSimpleLongValueColumn(
+			final String columnName, final String propertyName, final Function<TorrentFileEntry, String> valueGetter) {
+		final TreeTableColumn<TorrentFileEntry, Long> stringColumn = new TreeTableColumn<TorrentFileEntry, Long>(columnName);
+		stringColumn.setCellValueFactory(new TreeItemPropertyValueFactory<TorrentFileEntry, Long>(propertyName));
+		stringColumn.setCellFactory(column -> new TreeTableCell<TorrentFileEntry, Long>() {
 			final Label valueLabel = new Label();			
 			
 			@Override
@@ -255,14 +298,14 @@ public final class TorrentContentTree {
 						return;
 					}
 					
-					final String formattedValue = UnitConverter.formatByteCount(fileContent.sizeProperty().get());					
+					final String formattedValue = valueGetter.apply(fileContent);					
 					valueLabel.setText(formattedValue);
 	                this.setGraphic(valueLabel);
 	                this.setAlignment(Pos.CENTER_RIGHT);
 				}
 			}			
 		});
-		return sizeColumn;
+		return stringColumn;
 	}
 	
 	private TreeTableColumn<TorrentFileEntry, Integer> buildPriorityColumn() {
@@ -299,6 +342,36 @@ public final class TorrentContentTree {
 		pathColumn.setVisible(false);
 		
 		return pathColumn;
+	}
+	
+	private TreeTableColumn<TorrentFileEntry, Double> buildProgressColumn() {
+		final TreeTableColumn<TorrentFileEntry, Double> progressColumn = 
+				new TreeTableColumn<TorrentFileEntry, Double>("Progress");
+		progressColumn.setCellValueFactory(new TreeItemPropertyValueFactory<TorrentFileEntry, Double>("progress"));
+		progressColumn.setCellFactory(column -> new TreeTableCell<TorrentFileEntry, Double>() {
+			final ProgressBar progressValue = new ProgressBar();			
+			@Override
+			protected final void updateItem(final Double value, final boolean empty) {
+				super.updateItem(value, empty);
+				if(empty) {
+					setText(null);
+					setGraphic(null);
+				}
+				else {
+					final TorrentFileEntry fileContent = this.getTreeTableRow().getItem();
+					
+					if(fileContent == null) {
+						return;
+					}
+
+					progressValue.setProgress(fileContent.progressProperty().get());
+	                this.setGraphic(progressValue);
+	                this.setAlignment(Pos.CENTER);
+				}
+			}		
+		});
+		
+		return progressColumn;
 	}
 	
 	private TreeTableColumn<TorrentFileEntry, FileNameColumnModel> buildFileNameColumn() {
@@ -380,17 +453,23 @@ public final class TorrentContentTree {
 		return fileNameColumn;
 	}
 	
-	private TreeItem<TorrentFileEntry> buildTorrentContentTree() {			
-		TreeItem<TorrentFileEntry> root = null;						
+	private TreeItem<TorrentFileEntry> buildTorrentContentTree(
+			final BinaryEncodedDictionary infoDictionary) {			
+		TreeItem<TorrentFileEntry> root = null;		
+		final BinaryEncodedInteger fileLength = (BinaryEncodedInteger)infoDictionary.get(
+				BinaryEncodingKeyNames.KEY_LENGTH);
+		final BinaryEncodedList files = (BinaryEncodedList)infoDictionary.get(
+				BinaryEncodingKeyNames.KEY_FILES);
+		final String fileName = infoDictionary.get(BinaryEncodingKeyNames.KEY_NAME).toString();
 		
 		if(fileLength != null) {
 			//Handle single file torrent mode
-			root = buildSingleFileTree(fileLength.getValue());
+			root = buildSingleFileTree(fileName, fileLength.getValue());
 			
 		}
 		else if(files != null) {
 			//Handle multiple files torrent mode
-			root = buildMultiFileTree(files);
+			root = buildMultiFileTree(fileName, files);
 		}
 		else {
 			//TODO: Handle invalid torrent, no files found (show an error to the user)
@@ -401,7 +480,7 @@ public final class TorrentContentTree {
 		return root;
 	}
 	
-	private TreeItem<TorrentFileEntry> buildSingleFileTree(final long fileLength) {
+	private TreeItem<TorrentFileEntry> buildSingleFileTree(final String fileName, final long fileLength) {
 		final TorrentFileEntry fileEntry = new TorrentFileEntry(fileName, ". (current path)", 
 				fileLength, ImageUtils.getFileTypeImage(fileName));
 		final TreeItem<TorrentFileEntry> treeItem = initTreeItem(fileEntry);		
@@ -412,7 +491,7 @@ public final class TorrentContentTree {
 		return root;
 	}
 	
-	private TreeItem<TorrentFileEntry> buildMultiFileTree(final BinaryEncodedList files) {			
+	private TreeItem<TorrentFileEntry> buildMultiFileTree(final String fileName, final BinaryEncodedList files) {			
 		final TorrentFileEntry fileDirEntry = new TorrentFileEntry(fileName, ". (current path)", 0L, null);					
 		final CheckBoxTreeItem<TorrentFileEntry> fileDirTreeItem = new CheckBoxTreeItem<>(fileDirEntry);
 		final TorrentEntryNode<TreeItem<TorrentFileEntry>> fileDirNode = new TorrentEntryNode<>(fileName, fileDirTreeItem);
@@ -468,7 +547,7 @@ public final class TorrentContentTree {
 	}
 	
 	private TreeItem<TorrentFileEntry> initTreeItem(final TorrentFileEntry fileEntry) {		
-		torrentFileEntries.add(fileEntry);
+		//torrentFileEntries.add(fileEntry);
 		final CheckBoxTreeItem<TorrentFileEntry> treeItem = new CheckBoxTreeItem<>(fileEntry);
 		treeItem.selectedProperty().bindBidirectional(fileEntry.selectedProperty());
 		treeItem.setSelected(true);

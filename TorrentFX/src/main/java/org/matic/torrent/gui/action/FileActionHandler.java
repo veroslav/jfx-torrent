@@ -32,12 +32,16 @@ import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
 
+import org.matic.torrent.gui.model.TorrentJob;
+import org.matic.torrent.gui.tree.TorrentContentTree;
+import org.matic.torrent.gui.window.AddNewTorrentOptions;
 import org.matic.torrent.gui.window.AddNewTorrentWindow;
 import org.matic.torrent.gui.window.UrlLoaderWindow;
 import org.matic.torrent.gui.window.UrlLoaderWindowOptions;
 import org.matic.torrent.io.codec.BinaryDecoder;
 import org.matic.torrent.io.codec.BinaryDecoderException;
 import org.matic.torrent.io.codec.BinaryEncodedDictionary;
+import org.matic.torrent.io.codec.BinaryEncodingKeyNames;
 
 /**
  * Handle file related action events, such as opening and loading files.
@@ -46,7 +50,7 @@ import org.matic.torrent.io.codec.BinaryEncodedDictionary;
  */
 public final class FileActionHandler {
 
-	public final void onFileOpen(final Window owner) {
+	public final TorrentJob onFileOpen(final Window owner) {
 		final String torrentPath = getTorrentPath(owner);
 		if(torrentPath != null) {
 			final BinaryDecoder metaDataDecoder = new BinaryDecoder();
@@ -62,20 +66,18 @@ public final class FileActionHandler {
 						+ "The torrent file appears to be invalid.");
 				errorAlert.setHeaderText(null);
 				errorAlert.showAndWait();
-				return;
-			}
-			final AddNewTorrentWindow addNewTorrentWindow = new AddNewTorrentWindow(
-					owner, metaDataDictionary);
-			addNewTorrentWindow.showAndWait();
+				return null;
+			}			
+			return addNewTorrentJob(owner, metaDataDictionary);			
 		}
+		return null;
 	}
 	
 	public final void onFileOpenAndChooseSaveLocation(final Window owner) {
 		final String torrentPath = getTorrentPath(owner);
 		if(torrentPath != null) {
 			final String targetFileName = Paths.get(torrentPath).getFileName().toString();
-			final String saveLocationPath = Paths.get(torrentPath).getFileName().toString();
-			getTargetDirectoryPath(owner, System.getProperty("user.home"), 
+			final String saveLocationPath = getTargetDirectoryPath(owner, System.getProperty("user.home"), 
 					"Choose where to download '" + targetFileName + "' to:");
 			if(saveLocationPath != null) {
 				//TODO: Use selected target save location
@@ -87,23 +89,31 @@ public final class FileActionHandler {
 		final UrlLoaderWindow urlLoaderWindow = new UrlLoaderWindow(owner);
 		final UrlLoaderWindowOptions urlLoaderWindowOptions = urlLoaderWindow.showAndWait();
 		
-		if(urlLoaderWindowOptions.getUrlType() == UrlLoaderWindow.ResourceType.URL) {
-			final AddNewTorrentWindow addNewTorrentWindow = new AddNewTorrentWindow(
-					owner, urlLoaderWindowOptions.getTorrentMap());
-			addNewTorrentWindow.showAndWait();
+		if(urlLoaderWindowOptions.getUrlType() == UrlLoaderWindow.ResourceType.URL) {						
+			addNewTorrentJob(owner, urlLoaderWindowOptions.getTorrentMetaData());
 		}				
 	}
 	
 	public final String getTargetDirectoryPath(final Window owner, final String initialDirectory, final String title) {
-		final File initialDirectoryFile = new File(initialDirectory);
 		final DirectoryChooser saveLocationChooser = new DirectoryChooser();
-		saveLocationChooser.setInitialDirectory(initialDirectoryFile.exists()? 
-				initialDirectoryFile : new File(System.getProperty("user.home")));
+		saveLocationChooser.setInitialDirectory(new File(initialDirectory));
 		saveLocationChooser.setTitle(title);
 		
 		final File selectedLocation = saveLocationChooser.showDialog(owner);
 		
 		return selectedLocation != null? selectedLocation.getAbsolutePath() : null;
+	}
+	
+	private TorrentJob addNewTorrentJob(final Window owner, final BinaryEncodedDictionary metaData) {
+		final BinaryEncodedDictionary infoDictionary = ((BinaryEncodedDictionary)metaData.get(
+				BinaryEncodingKeyNames.KEY_INFO));
+		final AddNewTorrentWindow addNewTorrentWindow = new AddNewTorrentWindow(
+				owner, metaData, new TorrentContentTree(infoDictionary, false));
+		final AddNewTorrentOptions addNewTorrentOptions = addNewTorrentWindow.showAndWait();
+		if(addNewTorrentOptions == null) {
+			return null;
+		}
+		return new TorrentJob(addNewTorrentOptions.getName(), addNewTorrentOptions.getTorrentContentTree());
 	}
 	
 	private String getTorrentPath(final Window owner) {
