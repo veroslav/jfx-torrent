@@ -30,7 +30,7 @@ import javafx.scene.control.TableView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.text.Text;
 
-import org.matic.torrent.gui.model.TorrentJob;
+import org.matic.torrent.gui.model.TorrentJobDetails;
 
 /**
  * This is a graphical view (represented as a table) of current torrent jobs
@@ -40,23 +40,22 @@ import org.matic.torrent.gui.model.TorrentJob;
  */
 public final class TorrentJobTable {
 
-	private final TableView<TorrentJob> torrentJobTable = new TableView<>();
+	private final TableView<TorrentJobDetails> torrentJobTable = new TableView<>();
 	
 	public TorrentJobTable() {		
 		initComponents();
 	}
 	
-	public TableView<TorrentJob> getView() {
+	public TableView<TorrentJobDetails> getView() {
 		return torrentJobTable;
 	}
 	
 	public boolean contains(final String torrentInfoHash) {
-		return false;
-		/*return torrentJobTable.getItems().stream().filter(
-				tj -> torrentInfoHash.equals(tj.getInfoHash())).count() > 0;*/
+		return torrentJobTable.getItems().stream().filter(
+				tj -> torrentInfoHash.equals(tj.getInfoHash())).count() > 0;
 	}
 	
-	public void addJob(final TorrentJob torrentJob) {
+	public void addJob(final TorrentJobDetails torrentJob) {
 		torrentJobTable.getItems().add(torrentJob);
 		torrentJobTable.getSelectionModel().select(torrentJob);
 	}
@@ -79,8 +78,8 @@ public final class TorrentJobTable {
 		torrentJobTable.getColumns().addAll(Arrays.asList(buildFileNameColumn()));
 	}
 	
-	private TableColumn<TorrentJob, String> buildFileNameColumn() {
-		final TableColumn<TorrentJob, String> fileNameColumn = new TableColumn<>("Name");
+	private TableColumn<TorrentJobDetails, String> buildFileNameColumn() {
+		final TableColumn<TorrentJobDetails, String> fileNameColumn = new TableColumn<>("Name");
 		fileNameColumn.setPrefWidth(350);
 		fileNameColumn.setCellValueFactory(tj -> {
 			return new ReadOnlyObjectWrapper<String>(tj.getValue().getFileName());

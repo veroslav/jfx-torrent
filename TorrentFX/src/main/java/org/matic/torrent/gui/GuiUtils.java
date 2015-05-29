@@ -23,6 +23,7 @@ package org.matic.torrent.gui;
 import org.controlsfx.tools.Borders;
 import org.controlsfx.tools.Borders.EtchedBorders;
 
+import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.paint.Color;
 
@@ -45,7 +46,10 @@ public final class GuiUtils {
 		}
 		
 		
-		return border.buildAll();
-		
+		return border.buildAll();		
+	}
+	
+	public static Insets noPadding() {
+		return new Insets(0);
 	}
 }

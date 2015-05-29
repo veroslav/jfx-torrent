@@ -115,6 +115,9 @@ public final class UrlLoaderWindow {
 	public final UrlLoaderWindowOptions showAndWait() {
 		final Optional<ButtonType> result = window.showAndWait();
 		urlDownloadExecutor.shutdown();
+		
+		//TODO: FIX BUG: Result is always ButtonType.CANCEL
+		
 		if(result.isPresent()) {
 			return new UrlLoaderWindowOptions(resourceType, urlEntryField.getText(), torrentMap);
 		}		

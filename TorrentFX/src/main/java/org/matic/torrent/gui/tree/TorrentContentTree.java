@@ -33,16 +33,18 @@ import javafx.geometry.Pos;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.CheckBoxTreeItem;
 import javafx.scene.control.Label;
-import javafx.scene.control.ProgressBar;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeTableCell;
 import javafx.scene.control.TreeTableColumn;
 import javafx.scene.control.TreeTableView;
 import javafx.scene.control.cell.CheckBoxTreeTableCell;
+import javafx.scene.control.cell.ProgressBarTreeTableCell;
 import javafx.scene.control.cell.TreeItemPropertyValueFactory;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 
+import org.matic.torrent.gui.GuiUtils;
 import org.matic.torrent.gui.image.ImageUtils;
 import org.matic.torrent.gui.model.TorrentFileEntry;
 import org.matic.torrent.io.codec.BinaryEncodedDictionary;
@@ -61,10 +63,6 @@ import org.matic.torrent.utils.UnitConverter;
 public final class TorrentContentTree {
 
 	private final TreeTableView<TorrentFileEntry> fileEntryTree;
-	
-	/*private final ObservableList<TorrentFileEntry> torrentFileEntries = 
-			FXCollections.observableArrayList();*/
-	
 	private final LongProperty selectedFilesSize;
 	
 	/**
@@ -302,6 +300,7 @@ public final class TorrentContentTree {
 					valueLabel.setText(formattedValue);
 	                this.setGraphic(valueLabel);
 	                this.setAlignment(Pos.CENTER_RIGHT);
+	                super.setPadding(GuiUtils.noPadding());
 				}
 			}			
 		});
@@ -330,6 +329,7 @@ public final class TorrentContentTree {
 					valueLabel.setText(FilePriority.valueOf(fileContent.priorityProperty().get()));
 	                this.setGraphic(valueLabel);
 	                this.setAlignment(Pos.CENTER);
+	                super.setPadding(GuiUtils.noPadding());
 				}
 			}		
 		});
@@ -348,14 +348,14 @@ public final class TorrentContentTree {
 		final TreeTableColumn<TorrentFileEntry, Double> progressColumn = 
 				new TreeTableColumn<TorrentFileEntry, Double>("Progress");
 		progressColumn.setCellValueFactory(new TreeItemPropertyValueFactory<TorrentFileEntry, Double>("progress"));
-		progressColumn.setCellFactory(column -> new TreeTableCell<TorrentFileEntry, Double>() {
-			final ProgressBar progressValue = new ProgressBar();			
+		//progressColumn.setCellFactory(ProgressBarTreeTableCell.<TorrentFileEntry> forTreeTableColumn());
+		progressColumn.setCellFactory(column -> new ProgressBarTreeTableCell<TorrentFileEntry>() {			
 			@Override
-			protected final void updateItem(final Double value, final boolean empty) {
+			public final void updateItem(final Double value, final boolean empty) {
 				super.updateItem(value, empty);
 				if(empty) {
-					setText(null);
-					setGraphic(null);
+					super.setText(null);
+					super.setGraphic(null);
 				}
 				else {
 					final TorrentFileEntry fileContent = this.getTreeTableRow().getItem();
@@ -363,13 +363,15 @@ public final class TorrentContentTree {
 					if(fileContent == null) {
 						return;
 					}
-
-					progressValue.setProgress(fileContent.progressProperty().get());
-	                this.setGraphic(progressValue);
-	                this.setAlignment(Pos.CENTER);
+					
+					super.addEventFilter(MouseEvent.MOUSE_CLICKED, evt -> 
+						fileEntryTree.getSelectionModel().select(super.getTreeTableRow().getIndex()));
+					
+					super.setItem(fileContent.progressProperty().doubleValue());
+					super.setPadding(GuiUtils.noPadding());
 				}
 			}		
-		});
+		});	
 		
 		return progressColumn;
 	}
@@ -435,8 +437,9 @@ public final class TorrentContentTree {
 					fileNameLabel.setGraphic(imageView);
 					
 					final HBox checkBoxPane = new HBox();			
-					checkBoxPane.getChildren().addAll(selectionCheckBox, fileNameLabel);
-											                
+					checkBoxPane.getChildren().addAll(selectionCheckBox, fileNameLabel);					
+									
+					super.setPadding(GuiUtils.noPadding());
 	                setGraphic(checkBoxPane);
 				}
 			}			
@@ -547,7 +550,6 @@ public final class TorrentContentTree {
 	}
 	
 	private TreeItem<TorrentFileEntry> initTreeItem(final TorrentFileEntry fileEntry) {		
-		//torrentFileEntries.add(fileEntry);
 		final CheckBoxTreeItem<TorrentFileEntry> treeItem = new CheckBoxTreeItem<>(fileEntry);
 		treeItem.selectedProperty().bindBidirectional(fileEntry.selectedProperty());
 		treeItem.setSelected(true);

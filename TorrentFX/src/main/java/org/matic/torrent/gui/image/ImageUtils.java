@@ -27,12 +27,16 @@ import java.util.Map;
 import java.util.Set;
 
 import javafx.geometry.Rectangle2D;
+import javafx.scene.Node;
+import javafx.scene.control.Button;
+import javafx.scene.control.Tab;
 import javafx.scene.effect.Blend;
 import javafx.scene.effect.BlendMode;
 import javafx.scene.effect.ColorAdjust;
 import javafx.scene.effect.ColorInput;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 
 import org.matic.torrent.gui.window.ApplicationWindow;
@@ -169,5 +173,41 @@ public final class ImageUtils {
                         color));
     	monochromeImageView.setEffect(selectionColorBlend);
 		return monochromeImageView;
+	}
+	
+	/**
+	 * Apply a color to an enabled button's icon
+	 * 
+	 * @param button Target button
+	 * @param color Color to apply
+	 */
+	public static void applyColor(final Button button, final Color color) {
+		final ImageView imageView = (ImageView)button.getGraphic();
+		if(button.isDisabled()) {
+			imageView.setEffect(null);
+		}
+		else {
+			final Image image = imageView.getImage();
+			final Node colorizedImage = ImageUtils.colorizeImage(image, color);
+        	button.setGraphic(colorizedImage);
+		}
+	}
+	
+	/**
+	 * Apply a color to a selected tab's icon
+	 * 
+	 * @param tab Target tab
+	 * @param color Color to apply
+	 */
+	public static void applyColor(final Tab tab, final Color color) {
+		final ImageView imageView = (ImageView)tab.getGraphic();
+		if(tab.isSelected()) {
+			final Image image = imageView.getImage();
+			final Node colorizedImage = ImageUtils.colorizeImage(image, color);
+        	tab.setGraphic(colorizedImage);
+		}
+		else {
+			imageView.setEffect(null);
+		}
 	}
 }

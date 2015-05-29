@@ -20,7 +20,9 @@
 
 package org.matic.torrent.gui.window;
 
-import org.matic.torrent.gui.tree.TorrentContentTree;
+import javafx.scene.control.TreeItem;
+
+import org.matic.torrent.gui.model.TorrentFileEntry;
 
 /**
  * A bean containing all of the options selected by the user, during the addition of
@@ -31,7 +33,7 @@ import org.matic.torrent.gui.tree.TorrentContentTree;
  */
 public final class AddNewTorrentOptions {
 	
-	private final TorrentContentTree torrentContentTree;
+	private final TreeItem<TorrentFileEntry> torrentContents;
 			
 	private final boolean createSubfolder;
 	private final boolean skipHashCheck;
@@ -42,10 +44,10 @@ public final class AddNewTorrentOptions {
 	private final String name;
 	private final String path;
 
-	public AddNewTorrentOptions(final TorrentContentTree torrentContentTree, final String name, final String path,
+	public AddNewTorrentOptions(final TreeItem<TorrentFileEntry> torrentContents, final String name, final String path,
 			final String label, final boolean startTorrent, final boolean createSubfolder, final boolean addToTopQueue,
 			final boolean skipHashCheck) {
-		this.torrentContentTree = torrentContentTree;
+		this.torrentContents = torrentContents;
 		this.name = name;
 		this.path = path;
 		this.label = label;
@@ -56,8 +58,8 @@ public final class AddNewTorrentOptions {
 		this.skipHashCheck = skipHashCheck;
 	}
 
-	public final TorrentContentTree getTorrentContentTree() {
-		return torrentContentTree;
+	public final TreeItem<TorrentFileEntry> getTorrentContents() {
+		return torrentContents;
 	}
 
 	public final boolean isCreateSubfolder() {
@@ -101,7 +103,7 @@ public final class AddNewTorrentOptions {
 		result = prime * result + (startTorrent ? 1231 : 1237);
 		result = prime
 				* result
-				+ ((torrentContentTree == null) ? 0 : torrentContentTree
+				+ ((torrentContents == null) ? 0 : torrentContents
 						.hashCode());
 		return result;
 	}
@@ -138,17 +140,17 @@ public final class AddNewTorrentOptions {
 			return false;
 		if (startTorrent != other.startTorrent)
 			return false;
-		if (torrentContentTree == null) {
-			if (other.torrentContentTree != null)
+		if (torrentContents == null) {
+			if (other.torrentContents != null)
 				return false;
-		} else if (!torrentContentTree.equals(other.torrentContentTree))
+		} else if (!torrentContents.equals(other.torrentContents))
 			return false;
 		return true;
 	}
 
 	@Override
 	public String toString() {
-		return "AddNewTorrentOptions [torrentContentTree=" + torrentContentTree
+		return "AddNewTorrentOptions [torrentContentTree=" + torrentContents
 				+ ", createSubfolder=" + createSubfolder + ", skipHashCheck="
 				+ skipHashCheck + ", addToTopQueue=" + addToTopQueue
 				+ ", startTorrent=" + startTorrent + ", label=" + label

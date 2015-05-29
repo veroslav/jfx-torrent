@@ -62,7 +62,7 @@ import javafx.stage.Stage;
 import org.matic.torrent.gui.action.FileActionHandler;
 import org.matic.torrent.gui.action.WindowActionHandler;
 import org.matic.torrent.gui.image.ImageUtils;
-import org.matic.torrent.gui.model.TorrentJob;
+import org.matic.torrent.gui.model.TorrentJobDetails;
 import org.matic.torrent.gui.table.TorrentJobTable;
 import org.matic.torrent.gui.tree.TorrentContentTree;
 
@@ -74,7 +74,10 @@ import org.matic.torrent.gui.tree.TorrentContentTree;
  */
 public final class ApplicationWindow {
 	
-	private static final String TOOLBAR_BUTTON_REMOVE = "Remove";
+	private static final String TOOLBAR_BUTTON_ADD_FROM_URL = "Add Torrent from URL";
+	private static final String TOOLBAR_BUTTON_OPTIONS = "Preferences";
+	private static final String TOOLBAR_BUTTON_ADD = "Add Torrent";
+	private static final String TOOLBAR_BUTTON_REMOVE = "Remove";	
 	
 	private static final String DETAILS_TAB_FILES_NAME = "Files";
 		
@@ -112,7 +115,7 @@ public final class ApplicationWindow {
 		
 		final Scene scene = new Scene(mainPane, 900, 550);		
 		scene.getStylesheets().add("/ui-style.css");
-		stage.setScene(scene);
+		stage.setScene(scene);		
 		
 		initComponents();
 	}
@@ -121,7 +124,7 @@ public final class ApplicationWindow {
 		torrentJobTable.getView().getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) -> {
 			final Button removeButton = toolbarButtonsMap.get(TOOLBAR_BUTTON_REMOVE);
 			removeButton.setDisable(newV == null);
-			applyRemoveButtonColor(removeButton);
+			ImageUtils.applyColor(removeButton, REMOVE_BUTTON_COLOR);
 			if(newV != null) {				
 				handleTorrentJobSelection(newV);
 			}
@@ -132,7 +135,7 @@ public final class ApplicationWindow {
 		stage.setOnCloseRequest(event -> windowActionHandler.onWindowClose(event, stage));		
 		stage.setTitle("jfxTorrent");        
 		stage.centerOnScreen();
-        stage.show();
+		stage.show();
 	}
 	
 	private Pane initFilterTreeView() {
@@ -140,7 +143,7 @@ public final class ApplicationWindow {
 		filterTreeView.setRoot(buildFilterTreeViewItems());
 		filterTreeView.setShowRoot(false);
 		filterTreeView.getSelectionModel().select(0);
-		//filterTreeView.requestFocus();
+		filterTreeView.requestFocus();
 		
 		final StackPane treeViewStack = new StackPane();
 		treeViewStack.getChildren().add(filterTreeView);		
@@ -232,10 +235,10 @@ public final class ApplicationWindow {
 				"/images/appbar.chevron.down.png", "/images/appbar.unlock.keyhole.png",
 				"/images/appbar.monitor.png", "/images/appbar.settings.png"};
 		
-		final String[] buttonIds = {"Add Torrent", "Add Torrent from URL", "Create New Torrent", 
+		final String[] buttonIds = {TOOLBAR_BUTTON_ADD, TOOLBAR_BUTTON_ADD_FROM_URL, "Create New Torrent", 
 				TOOLBAR_BUTTON_REMOVE, "Start Torrent", "Stop Torrent", 
 				"Move Up Queue", "Move Down Queue", 
-				"Unlock Bundle", "Remote", "Preferences"};
+				"Unlock Bundle", "Remote", TOOLBAR_BUTTON_OPTIONS};
 		
 		final boolean[] buttonStates = {false, false, false, true, true, true, true, true, true, false, false};
 		
@@ -244,10 +247,14 @@ public final class ApplicationWindow {
 			toolbarButtons[i] = buildToolbarButton(buttonUrls[i], buttonIds[i], buttonStates[i]);
 		}
 		
-		toolbarButtons[0].setOnAction(event -> handleOpenTorrent());
-		toolbarButtons[1].setOnAction(event -> fileActionHandler.onLoadUrl(stage));
-		toolbarButtons[10].setOnAction(event -> windowActionHandler.onOptionsWindowShown(stage, fileActionHandler));
-		toolbarButtonsMap.get(TOOLBAR_BUTTON_REMOVE).setOnAction(event -> System.out.println("Removing Job"));
+		toolbarButtonsMap.get(TOOLBAR_BUTTON_ADD).setOnAction(
+				event -> addTorrentJob(fileActionHandler.onFileOpen(stage)));
+		toolbarButtonsMap.get(TOOLBAR_BUTTON_ADD_FROM_URL).setOnAction(
+				event -> addTorrentJob(fileActionHandler.onLoadUrl(stage)));
+		toolbarButtonsMap.get(TOOLBAR_BUTTON_OPTIONS).setOnAction(
+				event -> windowActionHandler.onOptionsWindowShown(stage, fileActionHandler));
+		toolbarButtonsMap.get(TOOLBAR_BUTTON_REMOVE).setOnAction(
+				event -> System.out.println("Removing Job"));
 
 		final List<Node> leftToolbarNodes = Arrays.asList(toolbarButtons[0], toolbarButtons[1],
 				buildToolbarSeparator(), toolbarButtons[2], buildToolbarSeparator(), 
@@ -324,7 +331,8 @@ public final class ApplicationWindow {
 					getClass().getResourceAsStream(imagePaths[i]), 
 					TAB_ICON_SIZE, TAB_ICON_SIZE, true, true)));
         	tab.setClosable(false);        	
-        	tab.setOnSelectionChanged(event -> applyTabSelectionColor((Tab)event.getSource()));        		        	
+        	tab.setOnSelectionChanged(event -> 
+        		ImageUtils.applyColor((Tab)event.getSource(), TAB_SELECTION_COLOR));        		        	
         	tabList.add(tab);
         	detailsTabMap.put(tabNames[i], tab);
         }
@@ -333,30 +341,6 @@ public final class ApplicationWindow {
         
         return tabList;
     }
-	
-	private void applyRemoveButtonColor(final Button button) {
-		final ImageView imageView = (ImageView)button.getGraphic();
-		if(button.isDisabled()) {
-			imageView.setEffect(null);
-		}
-		else {
-			final Image image = imageView.getImage();
-			final Node colorizedImage = ImageUtils.colorizeImage(image, REMOVE_BUTTON_COLOR);
-        	button.setGraphic(colorizedImage);
-		}
-	}
-	
-	private void applyTabSelectionColor(final Tab tab) {
-		final ImageView imageView = (ImageView)tab.getGraphic();
-		if(tab.isSelected()) {
-			final Image image = imageView.getImage();
-			final Node colorizedImage = ImageUtils.colorizeImage(image, TAB_SELECTION_COLOR);
-        	tab.setGraphic(colorizedImage);
-		}
-		else {
-			imageView.setEffect(null);
-		}
-	}
 	
 	private MenuBar buildMenuBar() {
 		final MenuBar menuBar = new MenuBar();
@@ -371,7 +355,7 @@ public final class ApplicationWindow {
 		fileMenu.setMnemonicParsing(true);
 		
 		final MenuItem addTorrentMenuItem = new MenuItem("Add Torrent...");
-		addTorrentMenuItem.setOnAction(event -> handleOpenTorrent());
+		addTorrentMenuItem.setOnAction(event -> addTorrentJob(fileActionHandler.onFileOpen(stage)));
 		addTorrentMenuItem.setAccelerator(KeyCombination.keyCombination("Ctrl+O"));
 		
 		final MenuItem addTorrentAndChooseDirMenuItem = new MenuItem("Add Torrent (choose save dir)...");
@@ -379,7 +363,7 @@ public final class ApplicationWindow {
 		addTorrentAndChooseDirMenuItem.setAccelerator(KeyCombination.keyCombination("Ctrl+D"));
 		
 		final MenuItem addTorrentFromUrlMenuItem = new MenuItem("Add Torrent from URL...");
-		addTorrentFromUrlMenuItem.setOnAction(event -> fileActionHandler.onLoadUrl(stage));
+		addTorrentFromUrlMenuItem.setOnAction(event -> addTorrentJob(fileActionHandler.onLoadUrl(stage)));
 		addTorrentFromUrlMenuItem.setAccelerator(KeyCombination.keyCombination("Ctrl+U"));
 		
 		final MenuItem addRssFeedMenuItem = new MenuItem("Add RSS Feed...");
@@ -417,10 +401,9 @@ public final class ApplicationWindow {
 		return helpMenu;
 	}
 	
-	private void handleOpenTorrent() {
-		final TorrentJob torrentJob = fileActionHandler.onFileOpen(stage);
+	private void addTorrentJob(final TorrentJobDetails torrentJob) {		
 		if(torrentJob != null) {
-			if(torrentJobTable.contains("")) {
+			if(torrentJobTable.contains(torrentJob.getInfoHash())) {
 				final Alert errorAlert = new Alert(AlertType.ERROR);
 				errorAlert.setTitle("Existing torrent file");
 				errorAlert.setContentText("The torrent already exists.\n" +
@@ -433,7 +416,7 @@ public final class ApplicationWindow {
 		}
 	}
 	
-	private void handleTorrentJobSelection(final TorrentJob selectedTorrentJob) {		
-		torrentContentTree.setContent(selectedTorrentJob.getTorrentContentTree().getView().getRoot());
+	private void handleTorrentJobSelection(final TorrentJobDetails selectedTorrentJob) {		
+		torrentContentTree.setContent(selectedTorrentJob.getTorrentContents());
 	}
 }

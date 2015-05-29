@@ -20,27 +20,29 @@
 
 package org.matic.torrent.gui.model;
 
-import org.matic.torrent.gui.tree.TorrentContentTree;
+import javafx.scene.control.TreeItem;
 
-public final class TorrentJob {
+public final class TorrentJobDetails {
 	
-	private final TorrentContentTree torrentContentTree;
+	private final TreeItem<TorrentFileEntry> torrentContentTree;
+	private final String infoHash;
 	private final String fileName;
 
-	public TorrentJob(final String fileName, final TorrentContentTree torrentContentTree) {
+	public TorrentJobDetails(final String fileName, final String infoHash, final TreeItem<TorrentFileEntry> torrentContents) {
 		this.fileName = fileName;
-		this.torrentContentTree = torrentContentTree;
+		this.infoHash = infoHash;
+		this.torrentContentTree = torrentContents;
 	}
 	
 	public String getFileName() {
 		return fileName;
 	}
 	
-	public TorrentContentTree getTorrentContentTree() {
+	public TreeItem<TorrentFileEntry> getTorrentContents() {
 		return torrentContentTree;
 	}
 	
 	public String getInfoHash() {
-		return "";
+		return infoHash;
 	}
 }

@@ -164,6 +164,24 @@
   	-fx-rotate: 0;
 }
 
+.progress-bar {
+	/* Bar color */
+	-fx-accent: #8D1C10;
+}
+
+.progress-bar > .bar {
+	/* Expand bar's width and height */
+	-fx-background-insets: 0;	
+}
+
+.progress-bar > .track {
+	/* Border color */
+  	-fx-text-box-border: transparent;
+  	
+  	/* Expand track's width and height */
+  	-fx-background-insets: 0;
+}
+
 .root {
 	-fx-accent: #3399FF;
 	-fx-faint-focus-color: transparent;
@@ -221,8 +239,12 @@
 }*/
 
 .tree-table-row-cell {
-    -fx-cell-size: 22px;
+    -fx-cell-size: 20px;
 }
+
+/*.tree-table-view .tree-table-column {
+	-fx-alignment: CENTER-RIGHT;
+}*/
 
 .tree-table-view:focused .tree-cell .text {
     -fx-fill: black;

@@ -171,9 +171,10 @@ public final class AddNewTorrentWindow {
 		final Optional<ButtonType> result = window.showAndWait();
 		
 		if(result.isPresent() && result.get() == ButtonType.OK) {
-			return new AddNewTorrentOptions(torrentContentTree, nameTextField.getText(), savePathCombo.getValue(), 
-					labelCombo.getValue(), startTorrentCheckbox.isSelected(), createSubFolderCheckbox.isSelected(), 
-					addToTopQueueCheckbox.isSelected(), skipHashCheckbox.isSelected());
+			return new AddNewTorrentOptions(torrentContentTree.getView().getRoot(), nameTextField.getText(), 
+					savePathCombo.getValue(), labelCombo.getValue(), startTorrentCheckbox.isSelected(), 
+					createSubFolderCheckbox.isSelected(), addToTopQueueCheckbox.isSelected(), 
+					skipHashCheckbox.isSelected());
 		}
 		
 		return null;

@@ -92,7 +92,7 @@ public final class BinaryEncodingKeyNames {
 	public static final BinaryEncodedString KEY_ANNOUNCE_LIST = new BinaryEncodedString(
 			"announce-list".getBytes(ClientProperties.STRING_ENCODING_CHARSET));
 		
-	protected static final BinaryEncodedString KEY_INFO_HASH = new BinaryEncodedString(
+	public static final BinaryEncodedString KEY_INFO_HASH = new BinaryEncodedString(
 			"jfxInfoHash".getBytes(ClientProperties.STRING_ENCODING_CHARSET));
 		
 }
