@@ -77,7 +77,7 @@ import org.matic.torrent.utils.UnitConverter;
 public final class UrlLoaderWindow {
 	
 	public enum ResourceType {
-		URL, MAGNET_LINK, INFO_HASH, INVALID
+		URL, MAGNET_LINK, INFO_HASH, NONE
 	}
 	
 	private static final int BUFFER_SIZE = 16384;
@@ -87,7 +87,7 @@ public final class UrlLoaderWindow {
 	
 	private static final String VALID_MAGNET_LINK_PREFIX = "magnet";
 		
-	private ResourceType resourceType = ResourceType.INVALID;
+	private ResourceType resourceType = ResourceType.NONE;
 	private UrlDownloaderTask urlDownloaderTask = null;
 	private BinaryEncodedDictionary torrentMap = null;			
 	
@@ -116,9 +116,7 @@ public final class UrlLoaderWindow {
 		final Optional<ButtonType> result = window.showAndWait();
 		urlDownloadExecutor.shutdown();
 		
-		//TODO: FIX BUG: Result is always ButtonType.CANCEL
-		
-		if(result.isPresent()) {
+		if(result.isPresent() && resourceType != ResourceType.NONE) {
 			return new UrlLoaderWindowOptions(resourceType, urlEntryField.getText(), torrentMap);
 		}		
 		return null;
@@ -126,7 +124,7 @@ public final class UrlLoaderWindow {
 	
 	private void initComponents() {
 		final String clipBoardContents = getClipboardContents();
-		if(validateUrlResource(clipBoardContents) != ResourceType.INVALID) {
+		if(validateUrlResource(clipBoardContents) != ResourceType.NONE) {
 			urlEntryField.setText(clipBoardContents);
 		}
 		
@@ -150,6 +148,7 @@ public final class UrlLoaderWindow {
 		final Button cancelButton = (Button)window.getDialogPane().lookupButton(ButtonType.CANCEL);
 		cancelButton.addEventFilter(ActionEvent.ACTION, event -> {
 			window.setResult(ButtonType.CANCEL);
+			resourceType = ResourceType.NONE;
 			if(urlDownloaderTask != null) {
 				urlDownloaderTask.cancel();
 			}
@@ -168,7 +167,7 @@ public final class UrlLoaderWindow {
 		urlDownloaderTask.setOnCancelled(handler -> {
 			progressBar.progressProperty().unbind();
 			if(window.getResult() != ButtonType.OK) {
-				resourceType = ResourceType.INVALID;
+				resourceType = ResourceType.NONE;
 			}			
 		});
 		urlDownloaderTask.setOnFailed(handler -> {
@@ -185,18 +184,26 @@ public final class UrlLoaderWindow {
 					}
 					catch(final Exception e) {
 						e.printStackTrace();
-						//TODO: Alert that it was not possible to add certificate
-						resourceType = ResourceType.INVALID;
+						resourceType = ResourceType.NONE;
 						window.close();
+						
+						showAlert(AlertType.ERROR, "The certificate could not be added.",
+								"Add certificate to trust store");
 						return;
 					}						
 					requestUrlResource(url);
 				}
 				else {
-					resourceType = ResourceType.INVALID;
+					resourceType = ResourceType.NONE;
 					window.close();
 				}
-			}						
+			}
+			else {
+				resourceType = ResourceType.NONE;
+				window.close();
+				
+				showAlert(AlertType.ERROR, "Invalid torrent contents.", "Invalid torrent");
+			}
 		});
 		
 		urlDownloaderTask.messageProperty().addListener((obs, oldV, newV) -> progressLabel.setText(newV));		
@@ -222,7 +229,8 @@ public final class UrlLoaderWindow {
 	    	certificateSummary.append(certificate.toString());
 	    }
 	    
-	    final Alert acceptAlert = new Alert(AlertType.WARNING, userQuestion.toString(), ButtonType.OK, ButtonType.CANCEL);
+	    final Alert acceptAlert = new Alert(AlertType.WARNING, userQuestion.toString(),
+	    		ButtonType.OK, ButtonType.CANCEL);
 	    acceptAlert.setHeaderText("Potential Security Risk");
 	    acceptAlert.setTitle("Accept self signed server certificate");
 	    acceptAlert.initOwner(window.getOwner());
@@ -275,6 +283,17 @@ public final class UrlLoaderWindow {
 		return entryLayout;
 	}
 	
+	private void showAlert(final AlertType alertType, final String message, final String title) {
+		final Alert alert = new Alert(alertType, message, ButtonType.OK);
+	    alert.setTitle(title);
+	    alert.setHeaderText(null);
+	    alert.initOwner(window.getOwner());
+	    alert.setResizable(true);
+	    alert.setWidth(1000);
+	    alert.setHeight(400);
+	    alert.show();
+	}
+	
 	private String getClipboardContents() {
 		final Clipboard clipboard = Clipboard.getSystemClipboard();	    
 		return clipboard.hasString()? clipboard.getString() : EMPTY_CLIPBOARD_CONTENT;		
@@ -282,7 +301,7 @@ public final class UrlLoaderWindow {
 	
 	private boolean requestUrlResource(final String url) {		
 		if(url.trim().equals(EMPTY_CLIPBOARD_CONTENT) || 
-				(resourceType = validateUrlResource(urlEntryField.getText())) == ResourceType.INVALID) {
+				(resourceType = validateUrlResource(urlEntryField.getText())) == ResourceType.NONE) {
 			showErrorMessage("Invalid or no path entered.");			
 			return false;
 		}
@@ -332,10 +351,10 @@ public final class UrlLoaderWindow {
 						return ResourceType.MAGNET_LINK;
 					}						
 				}
-				return ResourceType.INVALID;
+				return ResourceType.NONE;
 			}
 			catch(final URISyntaxException use) {
-				return ResourceType.INVALID;
+				return ResourceType.NONE;
 			}
 		}
 	}

@@ -367,6 +367,7 @@ public final class TorrentContentTree {
 					super.addEventFilter(MouseEvent.MOUSE_CLICKED, evt -> 
 						fileEntryTree.getSelectionModel().select(super.getTreeTableRow().getIndex()));
 					
+					super.getStyleClass().add("progress-bar-stopped");
 					super.setItem(fileContent.progressProperty().doubleValue());
 					super.setPadding(GuiUtils.noPadding());
 				}

@@ -164,7 +164,7 @@
   	-fx-rotate: 0;
 }
 
-.progress-bar {
+.progress-bar-stopped {
 	/* Bar color */
 	-fx-accent: #8D1C10;
 }
