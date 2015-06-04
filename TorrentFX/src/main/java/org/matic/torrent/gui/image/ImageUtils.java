@@ -27,21 +27,25 @@ import java.util.Map;
 import java.util.Set;
 
 import javafx.geometry.Rectangle2D;
-import javafx.scene.Node;
-import javafx.scene.control.Button;
-import javafx.scene.control.Tab;
 import javafx.scene.effect.Blend;
 import javafx.scene.effect.BlendMode;
 import javafx.scene.effect.ColorAdjust;
 import javafx.scene.effect.ColorInput;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
+import javafx.scene.shape.Rectangle;
 
 import org.matic.torrent.gui.window.ApplicationWindow;
 
 public final class ImageUtils {
+	
+	public static final int TOOLBAR_BUTTON_IMAGE_SIZE = 18;
+	public static final int CATEGORY_LIST_IMAGE_SIZE = 25;
+	public static final int FILE_TYPE_IMAGE_SIZE = 15;
+	
+	//Image area where the margins not containing the image itself have been cropped
+	public static final Rectangle2D CROPPED_MARGINS_IMAGE_VIEW = new Rectangle2D(16, 12, 44, 46);
 
 	//Folder opened/closed images
 	public static final Image FOLDER_CLOSED_IMAGE = new Image(
@@ -57,12 +61,6 @@ public final class ImageUtils {
 	public static final Image RSS_IMAGE = new Image(
 			ApplicationWindow.class.getResourceAsStream("/images/appbar.rss.png"), 25, 25, true, true);	
 	
-	//Tree controls images
-	public static final Image TREE_COLLAPSE_IMAGE = new Image(
-			ApplicationWindow.class.getResourceAsStream("/images/appbar.section.collapse.png"), 25, 25, true, true);	
-	public static final Image TREE_EXPAND_IMAGE = new Image(
-			ApplicationWindow.class.getResourceAsStream("/images/appbar.section.expand.png"), 25, 25, true, true);
-	
 	//File type mapping names
 	private static final String FILE_TYPE_IMAGE = "file_type_image";
 	private static final String FILE_TYPE_VIDEO = "file_type_video";
@@ -77,8 +75,6 @@ public final class ImageUtils {
 	//Image and file type mappings
 	private static final Map<String, Set<String>> FILE_EXTENSION_MAPPINGS = new HashMap<>();
 	private static final Map<String, Image> FILE_IMAGE_MAPPINGS = new HashMap<>();
-	
-	private static final Rectangle2D CROPPED_SMALL_IMAGE_PORTION = new Rectangle2D(17, 19, 42, 38);
 	
 	static {
 		FILE_EXTENSION_MAPPINGS.put(FILE_TYPE_IMAGE, new HashSet<String>(Arrays.asList(
@@ -140,74 +136,37 @@ public final class ImageUtils {
 	}
 	
 	/**
-	 * Crop an image so that it fits in smaller nodes, such as a tree view row
-	 * 
-	 * @param imageView
-	 */
-	public static void cropToSmallImage(final ImageView imageView) {		
-		imageView.setViewport(CROPPED_SMALL_IMAGE_PORTION);
-		imageView.setFitWidth(16);
-		imageView.setFitHeight(16);					
-		imageView.setSmooth(true);
-	}
-	
-	/**
 	 * Given a monochrome image, apply a color to it
 	 * 
 	 * @param image Target monochrome image
 	 * @param color Target new image color
-	 * @return
+	 * @param viewPort Part of the image to color
+	 * @param imageWidth Resulting image width
+	 * @param imageHeight Resulting image height
+	 * 
+	 * @return Colorized image
 	 */
-	public static ImageView colorizeImage(final Image image, final Paint color) {
+	public static ImageView colorImage(final Image image, final Paint color, 
+			final Rectangle2D viewPort, final int imageWidth, final int imageHeight) {		
 		final ImageView monochromeImageView = new ImageView(image);
-		monochromeImageView.setClip(new ImageView(image));
+		
+		monochromeImageView.setFitWidth(imageWidth);
+    	monochromeImageView.setFitHeight(imageHeight);
+		
+		final Rectangle clip = new Rectangle(0, 0, imageWidth, imageHeight);
+		monochromeImageView.setClip(clip);
     	
     	final ColorAdjust monochrome = new ColorAdjust();
         monochrome.setSaturation(-1.0);
         monochrome.setBrightness(0.75);
         
-    	final Blend selectionColorBlend = new Blend(BlendMode.MULTIPLY,
-                monochrome, new ColorInput(0, 0,
-                        monochromeImageView.getImage().getWidth(),
-                        monochromeImageView.getImage().getHeight(),
-                        color));
-    	monochromeImageView.setEffect(selectionColorBlend);
+        final Blend selectionColorBlend = new Blend(BlendMode.SRC_ATOP,
+                monochrome, new ColorInput(0, 0, imageWidth, imageHeight, color));
+        
+    	monochromeImageView.setEffect(selectionColorBlend);    	
+    	monochromeImageView.setViewport(viewPort);
+    	monochromeImageView.setSmooth(true);
+    	
 		return monochromeImageView;
-	}
-	
-	/**
-	 * Apply a color to an enabled button's icon
-	 * 
-	 * @param button Target button
-	 * @param color Color to apply
-	 */
-	public static void applyColor(final Button button, final Color color) {
-		final ImageView imageView = (ImageView)button.getGraphic();
-		if(button.isDisabled()) {
-			imageView.setEffect(null);
-		}
-		else {
-			final Image image = imageView.getImage();
-			final Node colorizedImage = ImageUtils.colorizeImage(image, color);
-        	button.setGraphic(colorizedImage);
-		}
-	}
-	
-	/**
-	 * Apply a color to a selected tab's icon
-	 * 
-	 * @param tab Target tab
-	 * @param color Color to apply
-	 */
-	public static void applyColor(final Tab tab, final Color color) {
-		final ImageView imageView = (ImageView)tab.getGraphic();
-		if(tab.isSelected()) {
-			final Image image = imageView.getImage();
-			final Node colorizedImage = ImageUtils.colorizeImage(image, color);
-        	tab.setGraphic(colorizedImage);
-		}
-		else {
-			imageView.setEffect(null);
-		}
 	}
 }

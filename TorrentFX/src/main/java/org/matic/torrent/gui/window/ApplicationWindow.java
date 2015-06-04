@@ -26,14 +26,17 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
+import javafx.collections.ObservableList;
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
@@ -44,6 +47,7 @@ import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
+import javafx.scene.control.ToolBar;
 import javafx.scene.control.Tooltip;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
@@ -53,6 +57,7 @@ import javafx.scene.input.KeyCombination;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
@@ -81,10 +86,13 @@ public final class ApplicationWindow {
 	
 	private static final String DETAILS_TAB_FILES_NAME = "Files";
 		
-	private static final Color TAB_SELECTION_COLOR = Color.rgb(102, 162, 54);
+	private static final Color TOOLBAR_BUTTON_COLOR = Color.rgb(46, 46, 46);
 	private static final Color REMOVE_BUTTON_COLOR = Color.rgb(165,57,57);
 	
-	private static final int TAB_ICON_SIZE = 22;
+	private static final Color TAB_SELECTED_IMAGE_COLOR = Color.rgb(102, 162, 54);
+	private static final Color TAB_DEFAULT_IMAGE_COLOR = Color.rgb(162, 170, 156);
+	
+	private static final int TAB_ICON_SIZE = 14;
 	
 	private final WindowActionHandler windowActionHandler = new WindowActionHandler();
 	private final FileActionHandler fileActionHandler = new FileActionHandler();
@@ -121,15 +129,7 @@ public final class ApplicationWindow {
 	}
 	
 	private void initComponents() {		
-		torrentJobTable.getView().getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) -> {
-			final Button removeButton = toolbarButtonsMap.get(TOOLBAR_BUTTON_REMOVE);
-			removeButton.setDisable(newV == null);
-			ImageUtils.applyColor(removeButton, REMOVE_BUTTON_COLOR);
-			if(newV != null) {				
-				handleTorrentJobSelection(newV);
-			}
-		});
-		
+		torrentJobTable.addSelectionListener(this::onTorrentJobSelection);		
 		torrentContentTree.getView().setPlaceholder(new Text());
 		
 		stage.setOnCloseRequest(event -> windowActionHandler.onWindowClose(event, stage));		
@@ -221,13 +221,13 @@ public final class ApplicationWindow {
 	
 	private Pane buildToolbarAndTorrentListPane() {				
 		final BorderPane centerPane = new BorderPane();
-		centerPane.setTop(buildToolbarPane());
+		centerPane.setTop(buildToolbar());
 		centerPane.setCenter(buildTorrentJobTable());
 		
 		return centerPane;
 	}
 	
-	private Pane buildToolbarPane() {				
+	private ToolBar buildToolbar() {				
 		final String[] buttonUrls = new String[]{"/images/appbar.add.png",
 				"/images/appbar.link.png", "/images/appbar.page.new.png", 
 				"/images/appbar.delete.png", "/images/appbar.download.png",
@@ -248,46 +248,41 @@ public final class ApplicationWindow {
 		}
 		
 		toolbarButtonsMap.get(TOOLBAR_BUTTON_ADD).setOnAction(
-				event -> addTorrentJob(fileActionHandler.onFileOpen(stage)));
+				event -> onAddTorrentJob(fileActionHandler.onFileOpen(stage)));
 		toolbarButtonsMap.get(TOOLBAR_BUTTON_ADD_FROM_URL).setOnAction(
-				event -> addTorrentJob(fileActionHandler.onLoadUrl(stage)));
+				event -> onAddTorrentJob(fileActionHandler.onLoadUrl(stage)));
 		toolbarButtonsMap.get(TOOLBAR_BUTTON_OPTIONS).setOnAction(
 				event -> windowActionHandler.onOptionsWindowShown(stage, fileActionHandler));
 		toolbarButtonsMap.get(TOOLBAR_BUTTON_REMOVE).setOnAction(
-				event -> System.out.println("Removing Job"));
+				event -> onTorrentRemoval());
 
-		final List<Node> leftToolbarNodes = Arrays.asList(toolbarButtons[0], toolbarButtons[1],
+		final HBox separatorBox = new HBox();		
+		HBox.setHgrow(separatorBox, Priority.ALWAYS);
+		
+		final Node[] toolbarContents = {toolbarButtons[0], toolbarButtons[1],
 				buildToolbarSeparator(), toolbarButtons[2], buildToolbarSeparator(), 
 				toolbarButtons[3], buildToolbarSeparator(), toolbarButtons[4], toolbarButtons[5],
 				buildToolbarSeparator(), toolbarButtons[6], toolbarButtons[7], buildToolbarSeparator(),
-				toolbarButtons[8], buildToolbarSeparator());
-
-		final List<Node> rightToolbarNodes = Arrays.asList(buildToolbarSeparator(), 
-				toolbarButtons[9], toolbarButtons[10]);
+				toolbarButtons[8], buildToolbarSeparator(), separatorBox, buildToolbarSeparator(), 
+				toolbarButtons[9], toolbarButtons[10]};
 		
-		final HBox leftToolbarPane = new HBox();
-		leftToolbarPane.getChildren().addAll(leftToolbarNodes);
 		
-		final HBox rightToolbarPane = new HBox();
-		rightToolbarPane.getChildren().addAll(rightToolbarNodes);
-		
-		final BorderPane toolbarPane = new BorderPane();
-		toolbarPane.setLeft(leftToolbarPane);
-		toolbarPane.setRight(rightToolbarPane);
-	
-		return toolbarPane;
+		final ToolBar toolBar = new ToolBar(toolbarContents);
+		return toolBar;
 	}
 	
 	private Button buildToolbarButton(final String imagePath, final String id, final boolean disabled) {
-		final int requestedHeight = 20;
-		final int requestedWidth = 20;		
-		final Button button = new Button(null, new ImageView(new Image(
-				getClass().getResourceAsStream(imagePath), requestedWidth, requestedHeight, true, true)));
-		button.getStyleClass().add("toolbar-button");
-		button.setTooltip(new Tooltip(id));		
-		button.setDisable(disabled);
+		final ImageView imageView = ImageUtils.colorImage(new Image(
+				getClass().getResourceAsStream(imagePath)), TOOLBAR_BUTTON_COLOR, 
+				ImageUtils.CROPPED_MARGINS_IMAGE_VIEW, 
+				ImageUtils.TOOLBAR_BUTTON_IMAGE_SIZE, ImageUtils.TOOLBAR_BUTTON_IMAGE_SIZE);
 		
-		toolbarButtonsMap.put(id, button);
+		final Button button = new Button(null, imageView);		
+		button.getStyleClass().add("toolbar-button");		
+		button.setTooltip(new Tooltip(id));		
+		button.setDisable(disabled);		
+
+		toolbarButtonsMap.put(id, button);		
 		
 		return button;
 	}
@@ -300,10 +295,10 @@ public final class ApplicationWindow {
 	}
 	
 	private ScrollPane buildTorrentJobTable() {				
-		final ScrollPane torrentJobTableScroll = new ScrollPane();		
-		torrentJobTableScroll.setContent(torrentJobTable.getView());
+		final ScrollPane torrentJobTableScroll = new ScrollPane();				
 		torrentJobTableScroll.setFitToWidth(true);
 		torrentJobTableScroll.setFitToHeight(true);
+		torrentJobTable.wrapWith(torrentJobTableScroll);
 		
 		return torrentJobTableScroll;
 	}
@@ -325,14 +320,17 @@ public final class ApplicationWindow {
         		"/images/appbar.location.circle.png", "/images/appbar.graph.line.png"};
         final List<Tab> tabList = new ArrayList<>(); 
         
-        for(int i = 0; i < tabNames.length; ++i) {        	
+        for(int i = 0; i < tabNames.length; ++i) {  
+        	final Image tabImage = new Image(getClass().getResourceAsStream(imagePaths[i]));
         	final Tab tab = new Tab(tabNames[i]);
-        	tab.setGraphic(new ImageView(new Image(
-					getClass().getResourceAsStream(imagePaths[i]), 
-					TAB_ICON_SIZE, TAB_ICON_SIZE, true, true)));
+        	tab.setGraphic(ImageUtils.colorImage(tabImage, Color.rgb(162, 170, 156), 
+					ImageUtils.CROPPED_MARGINS_IMAGE_VIEW, TAB_ICON_SIZE, TAB_ICON_SIZE));
         	tab.setClosable(false);        	
-        	tab.setOnSelectionChanged(event -> 
-        		ImageUtils.applyColor((Tab)event.getSource(), TAB_SELECTION_COLOR));        		        	
+        	tab.setOnSelectionChanged(event -> {
+        		final Color tabImageColor = tab.isSelected()? TAB_SELECTED_IMAGE_COLOR : TAB_DEFAULT_IMAGE_COLOR;
+        		tab.setGraphic(ImageUtils.colorImage(tabImage, tabImageColor, 
+        				ImageUtils.CROPPED_MARGINS_IMAGE_VIEW, TAB_ICON_SIZE, TAB_ICON_SIZE));
+        	});        		        	
         	tabList.add(tab);
         	detailsTabMap.put(tabNames[i], tab);
         }
@@ -355,7 +353,7 @@ public final class ApplicationWindow {
 		fileMenu.setMnemonicParsing(true);
 		
 		final MenuItem addTorrentMenuItem = new MenuItem("Add Torrent...");
-		addTorrentMenuItem.setOnAction(event -> addTorrentJob(fileActionHandler.onFileOpen(stage)));
+		addTorrentMenuItem.setOnAction(event -> onAddTorrentJob(fileActionHandler.onFileOpen(stage)));
 		addTorrentMenuItem.setAccelerator(KeyCombination.keyCombination("Ctrl+O"));
 		
 		final MenuItem addTorrentAndChooseDirMenuItem = new MenuItem("Add Torrent (choose save dir)...");
@@ -363,7 +361,7 @@ public final class ApplicationWindow {
 		addTorrentAndChooseDirMenuItem.setAccelerator(KeyCombination.keyCombination("Ctrl+D"));
 		
 		final MenuItem addTorrentFromUrlMenuItem = new MenuItem("Add Torrent from URL...");
-		addTorrentFromUrlMenuItem.setOnAction(event -> addTorrentJob(fileActionHandler.onLoadUrl(stage)));
+		addTorrentFromUrlMenuItem.setOnAction(event -> onAddTorrentJob(fileActionHandler.onLoadUrl(stage)));
 		addTorrentFromUrlMenuItem.setAccelerator(KeyCombination.keyCombination("Ctrl+U"));
 		
 		final MenuItem addRssFeedMenuItem = new MenuItem("Add RSS Feed...");
@@ -401,22 +399,59 @@ public final class ApplicationWindow {
 		return helpMenu;
 	}
 	
-	private void addTorrentJob(final TorrentJobDetails torrentJob) {		
+	private void onAddTorrentJob(final TorrentJobDetails torrentJob) {		
 		if(torrentJob != null) {
 			if(torrentJobTable.contains(torrentJob.getInfoHash())) {
-				final Alert errorAlert = new Alert(AlertType.ERROR);
-				errorAlert.setTitle("Existing torrent file");
-				errorAlert.setContentText("The torrent already exists.\n" +
-						"Would you like to load trackers from it?");
-				errorAlert.setHeaderText(null);
-				errorAlert.showAndWait();
+				final Alert existingTorrentAlert = new Alert(AlertType.ERROR,
+						"The torrent already exists.\n" +
+								"Would you like to load trackers from it?",
+								ButtonType.OK, ButtonType.CANCEL);
+				existingTorrentAlert.setTitle("Existing torrent file");
+				existingTorrentAlert.setHeaderText(null);
+				existingTorrentAlert.showAndWait();			
 				return;
 			}
 			torrentJobTable.addJob(torrentJob);
 		}
 	}
 	
-	private void handleTorrentJobSelection(final TorrentJobDetails selectedTorrentJob) {		
-		torrentContentTree.setContent(selectedTorrentJob.getTorrentContents());
+	private void onTorrentRemoval() {
+		final ObservableList<TorrentJobDetails> selectedTorrentJobs = torrentJobTable.getSelectedJobs();
+		
+		if(selectedTorrentJobs.size() > 0) {
+			final Alert confirmDeleteAlert = new Alert(AlertType.WARNING,
+					"Are you sure you want to delete selected torrent(s)?",
+							ButtonType.OK, ButtonType.CANCEL);
+			confirmDeleteAlert.setTitle("Delete torrent");
+			confirmDeleteAlert.setHeaderText(null);
+			final Optional<ButtonType> answer = confirmDeleteAlert.showAndWait();
+			if(answer.isPresent() && answer.get() == ButtonType.OK) {
+				torrentJobTable.deleteJobs(selectedTorrentJobs);
+				final ObservableList<TorrentJobDetails> newSelection = torrentJobTable.getSelectedJobs();
+				if(newSelection.isEmpty()) {
+					torrentContentTree.setContent(null);
+				}
+				else {
+					torrentJobTable.selectJob(newSelection.get(0));
+				}
+			}
+		}
+	}
+	
+	private void onTorrentJobSelection(final TorrentJobDetails selectedTorrentJob) {
+		if(selectedTorrentJob != null) {				
+			torrentContentTree.setContent(selectedTorrentJob.getTorrentContents());
+		}
+		
+		final Button removeButton = toolbarButtonsMap.get(TOOLBAR_BUTTON_REMOVE);	
+		final ImageView buttonImageView = (ImageView)removeButton.getGraphic();
+		
+		removeButton.setDisable(selectedTorrentJob == null);
+		final Color buttonImageColor = removeButton.isDisabled()? 
+				TOOLBAR_BUTTON_COLOR : REMOVE_BUTTON_COLOR; 
+		
+		removeButton.setGraphic(ImageUtils.colorImage(buttonImageView.getImage(), buttonImageColor, 
+				ImageUtils.CROPPED_MARGINS_IMAGE_VIEW, (int)buttonImageView.getFitWidth(), 
+				(int)buttonImageView.getFitHeight()));				
 	}
 }

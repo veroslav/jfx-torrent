@@ -123,11 +123,6 @@ public final class UrlLoaderWindow {
 	}
 	
 	private void initComponents() {
-		final String clipBoardContents = getClipboardContents();
-		if(validateUrlResource(clipBoardContents) != ResourceType.NONE) {
-			urlEntryField.setText(clipBoardContents);
-		}
-		
 		window.setHeaderText(null);
 		window.setTitle(WINDOW_TITLE);
 		
@@ -153,6 +148,20 @@ public final class UrlLoaderWindow {
 				urlDownloaderTask.cancel();
 			}
 		});
+		
+		urlEntryField.textProperty().addListener((obs, oldV, newV) -> okButton.setDisable(newV.isEmpty()));
+		
+		final String clipBoardContents = getClipboardContents();
+		if(validateUrlResource(clipBoardContents) != ResourceType.NONE) {
+			urlEntryField.setText(clipBoardContents);
+		}
+		
+		final boolean hasValidClipboardContents = validateUrlResource(clipBoardContents) != ResourceType.NONE;		
+		okButton.setDisable(!hasValidClipboardContents);
+		
+		if(hasValidClipboardContents) {
+			urlEntryField.setText(clipBoardContents);			
+		}
 	
 		window.setResizable(true);		
 		window.getDialogPane().setContent(layoutContent());
@@ -302,7 +311,7 @@ public final class UrlLoaderWindow {
 	private boolean requestUrlResource(final String url) {		
 		if(url.trim().equals(EMPTY_CLIPBOARD_CONTENT) || 
 				(resourceType = validateUrlResource(urlEntryField.getText())) == ResourceType.NONE) {
-			showErrorMessage("Invalid or no path entered.");			
+			showErrorMessage("Invalid path entered.");			
 			return false;
 		}
 		if(resourceType != ResourceType.URL) {

@@ -40,9 +40,11 @@ import javafx.scene.control.TreeTableView;
 import javafx.scene.control.cell.CheckBoxTreeTableCell;
 import javafx.scene.control.cell.ProgressBarTreeTableCell;
 import javafx.scene.control.cell.TreeItemPropertyValueFactory;
+import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
+import javafx.scene.paint.Color;
 
 import org.matic.torrent.gui.GuiUtils;
 import org.matic.torrent.gui.image.ImageUtils;
@@ -177,7 +179,7 @@ public final class TorrentContentTree {
 	 */
 	public void setContent(final TreeItem<TorrentFileEntry> contentRoot) {
 		fileEntryTree.setRoot(contentRoot);
-		selectedFilesSize.set(contentRoot.getValue().getSize());
+		selectedFilesSize.set(contentRoot != null? contentRoot.getValue().getSize() : 0);
 	}
 	
 	protected void onCollapseTreeItem(final TreeItem<TorrentFileEntry> targetItem) {
@@ -391,13 +393,8 @@ public final class TorrentContentTree {
 			return new ReadOnlyObjectWrapper<FileNameColumnModel>(columnModel);
 		});			
 		fileNameColumn.setCellFactory(column -> new CheckBoxTreeTableCell<
-				TorrentFileEntry, FileNameColumnModel>() {			
-			final ImageView imageView = new ImageView();	
+				TorrentFileEntry, FileNameColumnModel>() {	
 			final Label fileNameLabel = new Label();
-			
-			{
-				ImageUtils.cropToSmallImage(imageView);				
-			}
 			
 			@Override
 			public final void updateItem(final FileNameColumnModel item, final boolean empty) {				
@@ -417,13 +414,12 @@ public final class TorrentContentTree {
 					final CheckBoxTreeItem<TorrentFileEntry> treeItem = 
 							(CheckBoxTreeItem<TorrentFileEntry>)this.getTreeTableRow().getTreeItem();
 					
-					if(treeItem.isLeaf()) {
-						imageView.setImage(fileEntry.getImage());
-					}
-					else {
-						imageView.setImage(treeItem.isExpanded()? 
-								ImageUtils.FOLDER_OPENED_IMAGE: ImageUtils.FOLDER_CLOSED_IMAGE);
-					}
+					final Image image = treeItem.isLeaf()? fileEntry.getImage() : (treeItem.isExpanded()? 
+							ImageUtils.FOLDER_OPENED_IMAGE: ImageUtils.FOLDER_CLOSED_IMAGE);
+					
+					final ImageView imageView = ImageUtils.colorImage(image, Color.DARKOLIVEGREEN, 
+							ImageUtils.CROPPED_MARGINS_IMAGE_VIEW, 
+							ImageUtils.FILE_TYPE_IMAGE_SIZE, ImageUtils.FILE_TYPE_IMAGE_SIZE);
 					
 					final CheckBox selectionCheckBox = new CheckBox();					
 					selectionCheckBox.setFocusTraversable(false);

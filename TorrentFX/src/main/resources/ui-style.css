@@ -185,7 +185,10 @@
 .root {
 	-fx-accent: #3399FF;
 	-fx-faint-focus-color: transparent;
-	-fx-focus-color: transparent;
+	-fx-focus-color: linear-gradient(to bottom, derive(-fx-text-box-border, -10%), 
+			-fx-text-box-border),
+        linear-gradient(from 0px 0px to 0px 5px, derive(-fx-control-inner-background, -9%), 
+        	-fx-control-inner-background);	
 	-fx-font-size: 12;
 }
 
@@ -197,8 +200,23 @@
     -fx-padding: 0 0.15em 0 0.15em;  
 }
 
+.tab {	
+	-fx-background-color: 	
+        linear-gradient(#fcfcfc, #f3f3f3),
+        linear-gradient(#f2f2f2 0%, #ebebeb 29%, #dddddd 30%, #cfcfcf 100%);
+    -fx-border-color: #898C95;	
+}
+
+.tab:selected {
+	-fx-background-color: white;	
+}
+
+.tab:selected .focus-indicator {
+    -fx-border-color: transparent;
+}
+
 .table-cell {
-  -fx-table-cell-border-color: transparent;
+  	-fx-table-cell-border-color: transparent;
 }
 
 .table-view:focused .table-cell .table-row-cell:selected .text {
@@ -207,6 +225,7 @@
 
 .table-row-cell {
     -fx-cell-size: 20px;
+    -fx-background-color: transparent;
 }
 
 .table-row-cell:empty {
@@ -221,8 +240,36 @@
     -fx-background-color: #E2EDF9;
 }
 
+.tool-bar:horizontal {
+	-fx-alignment: CENTER_LEFT;
+    -fx-background-color: 
+    	linear-gradient(#fcfcfc, #f3f3f3),
+        linear-gradient(#f2f2f2 0%, #ebebeb 29%, #dddddd 30%, #cfcfcf 100%);
+    -fx-background-insets: 0;
+    -fx-background-radius: 0; 
+    -fx-border-width: 0;   
+    -fx-padding: 4 0 4 0;
+    -fx-spacing: 0;     
+}
+
 .toolbar-button {
 	-fx-background-insets: 0;
+	-fx-background-color: 
+        linear-gradient(#fcfcfc, #f3f3f3),
+        linear-gradient(#f2f2f2 0%, #ebebeb 29%, #dddddd 30%, #cfcfcf 100%);
+    -fx-background-radius: 0;
+    -fx-pref-height: 18;
+    -fx-pref-width: 18;
+}
+
+.toolbar-button:hover {
+    -fx-background-color: 
+    	linear-gradient(#f3f3f3, #fcfcfc),
+    	linear-gradient(#cfcfcf 0%, #dddddd 29%, #ebebeb 30%, #f2f2f2 100%);
+}
+
+.toolbar-button:pressed {
+	-fx-background-color: #cfcfcf;
 }
 
 .toolbar-separator .line {
@@ -234,24 +281,17 @@
     -fx-fill: black;
 }
 
-/*.tree-table-view .tree-cell {
-	-fx-pref-height: 8;
-}*/
-
 .tree-table-row-cell {
     -fx-cell-size: 20px;
+    -fx-background-color: transparent;
 }
-
-/*.tree-table-view .tree-table-column {
-	-fx-alignment: CENTER-RIGHT;
-}*/
 
 .tree-table-view:focused .tree-cell .text {
     -fx-fill: black;
 }
 
 .tree-table-cell {
-  -fx-table-cell-border-color: transparent;
+  	-fx-table-cell-border-color: transparent;
 }
 
 .tree-table-row-cell:selected {

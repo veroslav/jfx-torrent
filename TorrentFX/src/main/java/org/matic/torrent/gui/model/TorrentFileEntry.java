@@ -60,7 +60,7 @@ public final class TorrentFileEntry {
 	public TorrentFileEntry(final String name, final String path, 
 			final long size, final Image fileImage) {
 		this.priority = new SimpleIntegerProperty(FilePriority.NORMAL.getValue());
-		this.progress = new SimpleDoubleProperty(0.5);
+		this.progress = new SimpleDoubleProperty();
 		
 		this.selected = new SimpleBooleanProperty(false);
 		this.name = new SimpleStringProperty(name);

@@ -21,10 +21,14 @@
 package org.matic.torrent.gui.table;
 
 import java.util.Arrays;
+import java.util.function.Consumer;
 
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.layout.BorderPane;
@@ -46,8 +50,9 @@ public final class TorrentJobTable {
 		initComponents();
 	}
 	
-	public TableView<TorrentJobDetails> getView() {
-		return torrentJobTable;
+	public void addSelectionListener(final Consumer<TorrentJobDetails> handler) {
+		torrentJobTable.getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) ->
+			handler.accept(newV));
 	}
 	
 	public boolean contains(final String torrentInfoHash) {
@@ -57,10 +62,29 @@ public final class TorrentJobTable {
 	
 	public void addJob(final TorrentJobDetails torrentJob) {
 		torrentJobTable.getItems().add(torrentJob);
+		torrentJobTable.getSelectionModel().clearSelection();
 		torrentJobTable.getSelectionModel().select(torrentJob);
 	}
 	
+	public void deleteJobs(final ObservableList<TorrentJobDetails> torrentJobs) {
+		torrentJobTable.getItems().removeAll(torrentJobs);		
+	}
+	
+	public ObservableList<TorrentJobDetails> getSelectedJobs() {
+		return torrentJobTable.getSelectionModel().getSelectedItems();
+	}
+	
+	public void selectJob(final TorrentJobDetails torrentJob) {
+		torrentJobTable.getSelectionModel().select(torrentJob);
+	}
+	
+	public void wrapWith(final ScrollPane wrapper) {
+		wrapper.setContent(torrentJobTable);
+	}
+	
 	private void initComponents() {
+		torrentJobTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+		
 		final Text emptyTorrentListPlaceholder = new Text("Go to 'File->Add Torrent...' to add torrents.");
 		emptyTorrentListPlaceholder.getStyleClass().add("empty-torrent-list-text");
 		emptyTorrentListPlaceholder.visibleProperty().bind(Bindings.isEmpty(torrentJobTable.getItems()));
