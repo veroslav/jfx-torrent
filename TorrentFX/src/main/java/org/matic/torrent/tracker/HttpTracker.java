@@ -18,7 +18,7 @@
 *
 */
 
-package org.matic.torrent.peer.tracking.tracker;
+package org.matic.torrent.tracker;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -37,18 +37,19 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.matic.torrent.io.codec.BinaryDecoder;
-import org.matic.torrent.io.codec.BinaryDecoderException;
-import org.matic.torrent.io.codec.BinaryEncodable;
-import org.matic.torrent.io.codec.BinaryEncodedDictionary;
-import org.matic.torrent.io.codec.BinaryEncodedInteger;
-import org.matic.torrent.io.codec.BinaryEncodedList;
-import org.matic.torrent.io.codec.BinaryEncodedString;
-import org.matic.torrent.io.codec.BinaryEncodingKeyNames;
+import org.matic.torrent.codec.BinaryDecoder;
+import org.matic.torrent.codec.BinaryDecoderException;
+import org.matic.torrent.codec.BinaryEncodable;
+import org.matic.torrent.codec.BinaryEncodedDictionary;
+import org.matic.torrent.codec.BinaryEncodedInteger;
+import org.matic.torrent.codec.BinaryEncodedList;
+import org.matic.torrent.codec.BinaryEncodedString;
+import org.matic.torrent.codec.BinaryEncodingKeyNames;
+import org.matic.torrent.codec.InfoHash;
 import org.matic.torrent.net.NetworkUtilities;
 import org.matic.torrent.net.pwp.PwpPeer;
 import org.matic.torrent.peer.ClientProperties;
-import org.matic.torrent.peer.tracking.TrackableTorrent;
+import org.matic.torrent.tracker.listeners.TrackerResponseListener;
 
 public final class HttpTracker extends Tracker {
 	
@@ -119,7 +120,7 @@ public final class HttpTracker extends Tracker {
 		final StringBuilder result = new StringBuilder(url);
 				result.append("?");
 				result.append(String.format(urlTemplate, URLEncoder.encode(
-				torrent.getInfoHashHexValue(), StandardCharsets.UTF_8.name()),
+				torrent.getInfoHash().getHexValue(), StandardCharsets.UTF_8.name()),
 				URLEncoder.encode(ClientProperties.PEER_ID, StandardCharsets.UTF_8.name()),
 				announceRequest.getUploaded(), announceRequest.getDownloaded(),
 				announceRequest.getLeft(), ClientProperties.TCP_PORT));
@@ -162,7 +163,7 @@ public final class HttpTracker extends Tracker {
 					final BinaryEncodedDictionary responseMap = contentEncoding != null && 
 							NetworkUtilities.HTTP_GZIP_ENCODING.equals(contentEncoding)? decoder.decodeGzip(responseStream) :
 								decoder.decode(responseStream);
-					return buildResponse(responseMap, announceRequest.getTorrent().getInfoHashHexValue());
+					return buildResponse(responseMap, announceRequest.getTorrent().getInfoHash());
 				}				
 			}
 			else if(responseCode >= HttpURLConnection.HTTP_BAD_REQUEST &&
@@ -193,7 +194,7 @@ public final class HttpTracker extends Tracker {
 		return new TrackerResponse(TrackerResponse.Type.TRACKER_ERROR, errorMessage.toString());
 	}
 	
-	protected TrackerResponse buildResponse(final BinaryEncodedDictionary responseMap, final String infoHash) {
+	protected TrackerResponse buildResponse(final BinaryEncodedDictionary responseMap, final InfoHash infoHash) {
 		final BinaryEncodedString failureReason = (BinaryEncodedString)responseMap.get(
 				BinaryEncodingKeyNames.KEY_FAILURE_REASON);
 		
@@ -242,12 +243,12 @@ public final class HttpTracker extends Tracker {
 				completeValue, incompleteValue, peers);
 	}
 	
-	protected Set<PwpPeer> extractPeers(final BinaryEncodable peerList, final String infoHash) {				
+	protected Set<PwpPeer> extractPeers(final BinaryEncodable peerList, final InfoHash infoHash) {				
 		return peerList instanceof BinaryEncodedList? extractPeerList(
 				(BinaryEncodedList)peerList, infoHash) : extractPeerString((BinaryEncodedString)peerList, infoHash);
 	}
 	
-	protected Set<PwpPeer> extractPeerList(final BinaryEncodedList peerList, final String infoHash) {
+	protected Set<PwpPeer> extractPeerList(final BinaryEncodedList peerList, final InfoHash infoHash) {
 		return peerList.stream().map(p -> {
 			final BinaryEncodedDictionary peerInfo = (BinaryEncodedDictionary)p;
 			//TODO: Extract peer id, do we need it?
@@ -257,7 +258,7 @@ public final class HttpTracker extends Tracker {
 		}).collect(Collectors.toSet());
 	}
 	
-	protected Set<PwpPeer> extractPeerString(final BinaryEncodedString peerString, final String infoHash) {
+	protected Set<PwpPeer> extractPeerString(final BinaryEncodedString peerString, final InfoHash infoHash) {
 		final Set<PwpPeer> peers = new HashSet<>();
 		final byte[] peerInfo = peerString.getBytes();
 		for(int i = 0; i < peerInfo.length; i += 6) {

@@ -58,9 +58,9 @@ import javafx.stage.Window;
 
 import javax.net.ssl.SSLException;
 
-import org.matic.torrent.io.codec.BinaryDecoder;
-import org.matic.torrent.io.codec.BinaryDecoderException;
-import org.matic.torrent.io.codec.BinaryEncodedDictionary;
+import org.matic.torrent.codec.BinaryDecoder;
+import org.matic.torrent.codec.BinaryDecoderException;
+import org.matic.torrent.codec.BinaryEncodedDictionary;
 import org.matic.torrent.net.CertificateManagerInitializationException;
 import org.matic.torrent.net.NetworkUtilities;
 import org.matic.torrent.peer.ClientProperties;

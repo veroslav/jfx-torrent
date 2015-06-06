@@ -18,15 +18,24 @@
 *
 */
 
-package org.matic.torrent.peer.tracking;
+package org.matic.torrent.codec;
 
 /**
- * A peer discovery strategy implementing a Distributed Hash Table (DHT)
- * to find remote peers
+ * A class representing an exception thrown when binary encoded data decoder
+ * encounters an error when parsing an invalid torrent file.
  * 
  * @author vedran
  *
  */
-public final class DistributedHashTable implements PeerFinderStrategy {
+public final class BinaryDecoderException extends Exception {
 
+	private static final long serialVersionUID = 1L;
+
+	public BinaryDecoderException(final String msg) {
+		super(msg);
+	}
+	
+	public BinaryDecoderException(final String msg, final Throwable cause) {
+		super(msg, cause);
+	}
 }

@@ -18,7 +18,7 @@
 *
 */
 
-package org.matic.torrent.peer.tracking.tracker;
+package org.matic.torrent.tracker;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -32,7 +32,6 @@ import java.util.Set;
 import org.matic.torrent.net.udp.UdpConnectionManager;
 import org.matic.torrent.net.udp.UdpRequest;
 import org.matic.torrent.peer.ClientProperties;
-import org.matic.torrent.peer.tracking.TrackableTorrent;
 
 public final class UdpTracker extends Tracker {
 	
@@ -115,7 +114,7 @@ public final class UdpTracker extends Tracker {
 			dos.writeLong(connectionId);
 			dos.writeInt(ACTION_ANNOUNCE);
 			dos.writeInt(announceRequest.getTorrent().getTransactionId());
-			dos.write(announceRequest.getTorrent().getInfoHashBytes());
+			dos.write(announceRequest.getTorrent().getInfoHash().getBytes());
 			dos.write(ClientProperties.PEER_ID.getBytes(StandardCharsets.UTF_8.name()));
 			dos.writeLong(announceRequest.getDownloaded());
 			dos.writeLong(announceRequest.getLeft());

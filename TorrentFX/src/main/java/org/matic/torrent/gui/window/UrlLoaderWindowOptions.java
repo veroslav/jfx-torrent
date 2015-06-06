@@ -20,7 +20,7 @@
 
 package org.matic.torrent.gui.window;
 
-import org.matic.torrent.io.codec.BinaryEncodedDictionary;
+import org.matic.torrent.codec.BinaryEncodedDictionary;
 
 public final class UrlLoaderWindowOptions {
 	

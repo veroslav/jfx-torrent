@@ -23,12 +23,17 @@ package org.matic.torrent.net.udp;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import org.matic.torrent.preferences.ApplicationPreferences;
+import org.matic.torrent.preferences.NetworkProperties;
 
 /**
  * An UDP connection manager, handling receiving and sending of
@@ -40,33 +45,44 @@ import java.util.concurrent.Executors;
  */
 public class UdpConnectionManager {
 	
+	private static final int SO_SOCKET_TIMEOUT = 5000;	//5 s
+	
 	private static final int MAX_OUTGOING_MESSAGES = 30;
 	private static final int RECEIVER_BUFFER_SIZE = 10;
-	private static final int THREAD_POOL_SIZE = 2;
-	private static final int SERVER_PORT = 44893;
+	
+	private static final int DEFAULT_UDP_PORT = 44894;
 		
 	private final BlockingQueue<UdpRequest> outgoingMessages;
 	private final Set<UdpConnectionListener> listeners;	
-	private final DatagramSocket serverSocket;
 	private final ExecutorService threadPool;
 	
-	private final Runnable receiverWorker = () -> handleIncoming();
-	private final Runnable senderWorker = () -> handleOutgoing();	
+	private final int udpTrackerPort;
+	private final int dhtPort;	
 	
-	public UdpConnectionManager() throws IOException {
-		serverSocket = new DatagramSocket(SERVER_PORT);
+	public UdpConnectionManager() {
 		listeners = new CopyOnWriteArraySet<>();
 		outgoingMessages = new ArrayBlockingQueue<>(MAX_OUTGOING_MESSAGES);
-		threadPool = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
+		
+		udpTrackerPort = Integer.parseInt(ApplicationPreferences.getProperty(
+				NetworkProperties.UDP_TRACKER_PORT, String.valueOf(DEFAULT_UDP_PORT)));
+		dhtPort = Integer.parseInt(ApplicationPreferences.getProperty(
+				NetworkProperties.UDP_DHT_PORT, String.valueOf(DEFAULT_UDP_PORT)));
+		
+		threadPool = Executors.newFixedThreadPool(dhtPort != udpTrackerPort? 3 : 2);
 	}
 
-	public final void init() {
-		threadPool.execute(receiverWorker);
-		threadPool.execute(senderWorker);		
+	public final void init() {			
+		threadPool.execute(() -> handleOutgoing());
+		threadPool.execute(() -> handleIncoming(udpTrackerPort));		
+		
+		System.out.println("DHT and UDP ports are equal? " + (dhtPort == udpTrackerPort));
+		
+		if(dhtPort != udpTrackerPort) {
+			threadPool.execute(() -> handleIncoming(dhtPort));
+		}
 	}
 	
 	public final void stop() {
-		serverSocket.close();
 		threadPool.shutdownNow();
 	}
 	
@@ -106,26 +122,33 @@ public class UdpConnectionManager {
 		}
 	}
 	
-	private void handleIncoming() {		
-		System.out.println("UDP server listening on port " + SERVER_PORT);
-		final byte[] receiverBuffer = new byte[RECEIVER_BUFFER_SIZE];
+	private void handleIncoming(final int port) {		
+		System.out.println("UDP server listening on port " + port);
+		final byte[] receiverBuffer = new byte[RECEIVER_BUFFER_SIZE];		
 		final DatagramPacket receivedPacket = new DatagramPacket(receiverBuffer, receiverBuffer.length);
 		
-		while(true) {									
-			try {
-				serverSocket.receive(receivedPacket);	
-				//TODO: Process received packet and notify listeners
-				notifyListeners(new UdpResponse());
-			} catch (final IOException ioe) {
-				if(serverSocket.isClosed()) {
-					//We've been interrupted, connection manager is going down, exit
-					System.out.println("Interrupted, UDP server going down");
-					return;
+		try(final DatagramSocket serverSocket = new DatagramSocket(port)) {
+			serverSocket.setSoTimeout(SO_SOCKET_TIMEOUT);
+			while(true) {									
+				try {
+					serverSocket.receive(receivedPacket);	
+					//TODO: Process received packet and notify listeners
+					notifyListeners(new UdpResponse());
 				}
-				else {
-					System.err.println("An error occured while receiving an UDP message: " + ioe);
+				catch(final SocketTimeoutException ste) {
+					if(threadPool.isShutdown()) {
+						//We've been interrupted, connection manager is going down, exit
+						System.out.println("Interrupted, UDPServer going down");
+						return;
+					}
 				}
-			}
-		}		
+				catch(final IOException ioe) {
+					//TODO: Handle the exception, shutdown UDP server or ignore?
+					System.out.println("UDPServer: Exception occured while waiting for messages: " + ioe);
+				}
+			}		
+		} catch(final SocketException se) {
+			System.err.println("UDP server socket was closed unexpectadably: " + se);
+		}
 	}
 }

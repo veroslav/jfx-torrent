@@ -55,14 +55,14 @@ import javafx.scene.text.TextFlow;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Window;
 
+import org.matic.torrent.codec.BinaryEncodedDictionary;
+import org.matic.torrent.codec.BinaryEncodedInteger;
+import org.matic.torrent.codec.BinaryEncodedString;
+import org.matic.torrent.codec.BinaryEncodingKeyNames;
 import org.matic.torrent.gui.GuiUtils;
 import org.matic.torrent.gui.GuiUtils.BorderType;
 import org.matic.torrent.gui.tree.TorrentContentTree;
 import org.matic.torrent.io.DiskUtilities;
-import org.matic.torrent.io.codec.BinaryEncodedDictionary;
-import org.matic.torrent.io.codec.BinaryEncodedInteger;
-import org.matic.torrent.io.codec.BinaryEncodedString;
-import org.matic.torrent.io.codec.BinaryEncodingKeyNames;
 import org.matic.torrent.utils.UnitConverter;
 
 /**

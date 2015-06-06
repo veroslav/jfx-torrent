@@ -46,13 +46,13 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.paint.Color;
 
+import org.matic.torrent.codec.BinaryEncodedDictionary;
+import org.matic.torrent.codec.BinaryEncodedInteger;
+import org.matic.torrent.codec.BinaryEncodedList;
+import org.matic.torrent.codec.BinaryEncodingKeyNames;
 import org.matic.torrent.gui.GuiUtils;
 import org.matic.torrent.gui.image.ImageUtils;
 import org.matic.torrent.gui.model.TorrentFileEntry;
-import org.matic.torrent.io.codec.BinaryEncodedDictionary;
-import org.matic.torrent.io.codec.BinaryEncodedInteger;
-import org.matic.torrent.io.codec.BinaryEncodedList;
-import org.matic.torrent.io.codec.BinaryEncodingKeyNames;
 import org.matic.torrent.queue.FilePriority;
 import org.matic.torrent.utils.UnitConverter;
 

@@ -18,7 +18,7 @@
 *
 */
 
-package org.matic.torrent.io.codec;
+package org.matic.torrent.codec;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -36,7 +36,7 @@ import java.util.zip.GZIPInputStream;
  */
 public final class BinaryDecoder {
 	
-	protected static final String HASH_ALGORITHM = "SHA-1";
+	public static final String HASH_ALGORITHM = "SHA-1";
 		
 	private final MessageDigest messageDigest;
 	

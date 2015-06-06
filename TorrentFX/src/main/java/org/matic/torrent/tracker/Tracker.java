@@ -18,13 +18,14 @@
 *
 */
 
-package org.matic.torrent.peer.tracking.tracker;
+package org.matic.torrent.tracker;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.matic.torrent.peer.tracking.TrackableTorrent;
+import org.matic.torrent.codec.InfoHash;
 
 /**
  * An abstract representation of a peer tracker (either TCP or UDP).
@@ -59,6 +60,8 @@ public abstract class Tracker implements Comparable<Tracker> {
 		
 	protected final String url;
 	
+	//TODO: We might not need synchronization on this Set (methods are called only
+	//from JavaFX-thread)
 	protected final Set<TrackableTorrent> trackedTorrents;
 	
 	protected long lastResponse;
@@ -68,7 +71,6 @@ public abstract class Tracker implements Comparable<Tracker> {
 	 * Create a peer tracker 
 	 * 
 	 * @param url The tracker URL
-	 * @param responseListener Receiver of the tracker responses
 	 */
 	protected Tracker(final String url) {		
 		this.url = url;
@@ -111,21 +113,30 @@ public abstract class Tracker implements Comparable<Tracker> {
 		this.lastResponse = lastResponse;
 	}
 	
-	public final boolean addTorrent(final TrackableTorrent torrent) {
+	public final boolean addTorrent(final InfoHash infoHash) {
 		synchronized(trackedTorrents) {
-			return trackedTorrents.add(torrent);
+			return trackedTorrents.add(new TrackableTorrent(infoHash));
 		}
 	}
 	
-	public final boolean removeTorrent(final TrackableTorrent torrent) {
+	public TrackableTorrent getTorrent(final InfoHash infoHash) {
 		synchronized(trackedTorrents) {
-			return trackedTorrents.remove(torrent);
+			final List<TrackableTorrent> foundTorrent = trackedTorrents.stream().filter(
+					t -> t.getInfoHash().equals(infoHash)).collect(Collectors.toList());
+			
+			return foundTorrent.isEmpty()? null : foundTorrent.get(0);
 		}
 	}
 	
-	protected final boolean isTracking(final TrackableTorrent torrent) {
+	public boolean removeTorrent(final InfoHash torrentInfoHash) {
 		synchronized(trackedTorrents) {
-			return trackedTorrents.contains(torrent);
+			return trackedTorrents.removeIf(t -> t.getInfoHash().equals(torrentInfoHash));
+		}
+	}
+	
+	protected final boolean isTracking(final InfoHash torrentInfoHash) {
+		synchronized(trackedTorrents) {
+			return trackedTorrents.stream().anyMatch(t -> torrentInfoHash.equals(t.getInfoHash()));
 		}		
 	}
 	

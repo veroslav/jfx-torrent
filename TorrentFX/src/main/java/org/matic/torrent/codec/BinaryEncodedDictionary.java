@@ -18,51 +18,47 @@
 *
 */
 
-package org.matic.torrent.io.codec;
+package org.matic.torrent.codec;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Stream;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
- * A list of values is encoded as l<contents>e . The contents consist of
- * the bencoded elements of the list, in order, concatenated.
+ * A dictionary encoded as d<contents>e. The elements of the dictionary are
+ * encoded each key immediately followed by its value. All keys must be byte
+ * strings and must appear in lexicographical order.
  * 
  * @author vedran
  *
  */
-public final class BinaryEncodedList implements BinaryEncodable {
+public final class BinaryEncodedDictionary implements BinaryEncodable {
 	
-	protected static final char BEGIN_TOKEN = 'l';
+	protected static final char BEGIN_TOKEN = 'd';
 	protected static final char END_TOKEN = 'e';
+
+	private final Map<BinaryEncodedString, BinaryEncodable> map;
 	
-	private final List<BinaryEncodable> list;
-	
-	public BinaryEncodedList() {
-		list = new ArrayList<>();
+	public BinaryEncodedDictionary() {
+		map = new HashMap<>();
 	}
 	
-	public final void add(final BinaryEncodable element) {
-		list.add(element);
+	public final void put(final BinaryEncodedString key, final BinaryEncodable value) {
+		map.put(key, value);
 	}
 	
-	public final BinaryEncodable get(final int index) {
-		return list.get(index);
+	public final BinaryEncodable get(final BinaryEncodedString key) {
+		return map.get(key);
 	}
 	
 	public final int size() {
-		return list.size();
-	}
-	
-	public Stream<BinaryEncodable> stream() {
-		return list.stream();
+		return map.size();
 	}
 
 	@Override
 	public final int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((list == null) ? 0 : list.hashCode());
+		result = prime * result + ((map == null) ? 0 : map.hashCode());
 		return result;
 	}
 
@@ -74,17 +70,17 @@ public final class BinaryEncodedList implements BinaryEncodable {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		BinaryEncodedList other = (BinaryEncodedList) obj;
-		if (list == null) {
-			if (other.list != null)
+		BinaryEncodedDictionary other = (BinaryEncodedDictionary) obj;
+		if (map == null) {
+			if (other.map != null)
 				return false;
-		} else if (!list.equals(other.list))
+		} else if (!map.equals(other.map))
 			return false;
 		return true;
 	}
 
 	@Override
 	public final String toString() {
-		return "BinaryEncodedList [list=" + list + "]";
+		return "BinaryEncodedDictionary [map=" + map + "]";
 	}	
 }

@@ -18,25 +18,19 @@
 *
 */
 
-package org.matic.torrent.peer.tracking;
+package org.matic.torrent.tracker;
 
-import java.util.Arrays;
-
-import org.matic.torrent.peer.tracking.tracker.Tracker;
-import org.matic.torrent.utils.HashUtilities;
+import org.matic.torrent.codec.InfoHash;
 
 public final class TrackableTorrent {
 	
-	private final String hexInfoHash;
-	private final byte[] infoHash;	
+	private final InfoHash infoHash;	
 	
 	private Tracker.Event lastTrackerEvent;
 	private int transactionId = 0;	
 
-	public TrackableTorrent(final byte[] infoHash) {
-		hexInfoHash = HashUtilities.convertToHexValue(infoHash);
-		this.infoHash = new byte[infoHash.length];
-		System.arraycopy(infoHash, 0, this.infoHash, 0, infoHash.length);
+	public TrackableTorrent(final InfoHash infoHash) {
+		this.infoHash = infoHash;
 		lastTrackerEvent = Tracker.Event.STOPPED;
 	}
 	
@@ -57,14 +51,8 @@ public final class TrackableTorrent {
 		this.transactionId = transactionId;		
 	}	
 	
-	public final String getInfoHashHexValue() {
-		return hexInfoHash;
-	}
-	
-	public final byte[] getInfoHashBytes() {
-		final byte[] copyOfInfoHash = new byte[infoHash.length];
-		System.arraycopy(infoHash, 0, copyOfInfoHash, 0, copyOfInfoHash.length);
-		return copyOfInfoHash;
+	public final InfoHash getInfoHash() {
+		return infoHash;
 	}
 
 	@Override
@@ -72,8 +60,11 @@ public final class TrackableTorrent {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result
-				+ ((hexInfoHash == null) ? 0 : hexInfoHash.hashCode());
-		result = prime * result + Arrays.hashCode(infoHash);
+				+ ((infoHash == null) ? 0 : infoHash.hashCode());
+		result = prime
+				* result
+				+ ((lastTrackerEvent == null) ? 0 : lastTrackerEvent.hashCode());
+		result = prime * result + transactionId;
 		return result;
 	}
 
@@ -86,12 +77,14 @@ public final class TrackableTorrent {
 		if (getClass() != obj.getClass())
 			return false;
 		TrackableTorrent other = (TrackableTorrent) obj;
-		if (hexInfoHash == null) {
-			if (other.hexInfoHash != null)
+		if (infoHash == null) {
+			if (other.infoHash != null)
 				return false;
-		} else if (!hexInfoHash.equals(other.hexInfoHash))
+		} else if (!infoHash.equals(other.infoHash))
 			return false;
-		if (!Arrays.equals(infoHash, other.infoHash))
+		if (lastTrackerEvent != other.lastTrackerEvent)
+			return false;
+		if (transactionId != other.transactionId)
 			return false;
 		return true;
 	}

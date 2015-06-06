@@ -18,24 +18,14 @@
 *
 */
 
-package org.matic.torrent.io.codec;
+package org.matic.torrent.tracker.methods;
 
 /**
- * A class representing an exception thrown when binary encoded data decoder
- * encounters an error when parsing an invalid torrent file.
+ * A marker interface representing an implementation of a peer finding strategy 
  * 
  * @author vedran
  *
  */
-public final class BinaryDecoderException extends Exception {
+public interface PeerFinderStrategy {
 
-	private static final long serialVersionUID = 1L;
-
-	public BinaryDecoderException(final String msg) {
-		super(msg);
-	}
-	
-	public BinaryDecoderException(final String msg, final Throwable cause) {
-		super(msg, cause);
-	}
 }

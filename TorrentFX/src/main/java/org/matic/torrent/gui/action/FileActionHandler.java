@@ -32,17 +32,17 @@ import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
 
+import org.matic.torrent.codec.BinaryDecoder;
+import org.matic.torrent.codec.BinaryDecoderException;
+import org.matic.torrent.codec.BinaryEncodedDictionary;
+import org.matic.torrent.codec.BinaryEncodedString;
+import org.matic.torrent.codec.BinaryEncodingKeyNames;
 import org.matic.torrent.gui.model.TorrentJobDetails;
 import org.matic.torrent.gui.tree.TorrentContentTree;
 import org.matic.torrent.gui.window.AddNewTorrentOptions;
 import org.matic.torrent.gui.window.AddNewTorrentWindow;
 import org.matic.torrent.gui.window.UrlLoaderWindow;
 import org.matic.torrent.gui.window.UrlLoaderWindowOptions;
-import org.matic.torrent.io.codec.BinaryDecoder;
-import org.matic.torrent.io.codec.BinaryDecoderException;
-import org.matic.torrent.io.codec.BinaryEncodedDictionary;
-import org.matic.torrent.io.codec.BinaryEncodedString;
-import org.matic.torrent.io.codec.BinaryEncodingKeyNames;
 import org.matic.torrent.utils.HashUtilities;
 
 /**

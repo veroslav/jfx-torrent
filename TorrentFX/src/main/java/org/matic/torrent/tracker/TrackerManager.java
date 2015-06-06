@@ -18,23 +18,27 @@
 *
 */
 
-package org.matic.torrent.peer.tracking.tracker;
+package org.matic.torrent.tracker;
 
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import org.matic.torrent.codec.InfoHash;
+import org.matic.torrent.net.NetworkUtilities;
 import org.matic.torrent.net.pwp.PwpPeer;
 import org.matic.torrent.net.udp.UdpConnectionListener;
 import org.matic.torrent.net.udp.UdpConnectionManager;
 import org.matic.torrent.net.udp.UdpResponse;
-import org.matic.torrent.peer.tracking.PeerFoundListener;
-import org.matic.torrent.peer.tracking.TrackableTorrent;
+import org.matic.torrent.tracker.listeners.PeerFoundListener;
+import org.matic.torrent.tracker.listeners.TrackerResponseListener;
 
 public final class TrackerManager implements TrackerResponseListener, UdpConnectionListener {
 	
@@ -48,7 +52,6 @@ public final class TrackerManager implements TrackerResponseListener, UdpConnect
 	
 	public TrackerManager(final UdpConnectionManager udpConnectionManager) {
 		this.udpConnectionManager = udpConnectionManager;
-		this.udpConnectionManager.addListener(this);
 		peerListeners = new CopyOnWriteArraySet<>();
 		trackers = new ArrayList<>();
 	}
@@ -62,37 +65,44 @@ public final class TrackerManager implements TrackerResponseListener, UdpConnect
 	/**
 	 * Add a new tracker or update an existing with a new torrent
 	 * 
-	 * @param tracker Tracker to add
+	 * @param trackerUrl URL of the tracker being added
+	 * @param infoHash Info hash of the torrent being tracked
 	 * @return Whether either the tracker or a new torrent was added 
 	 */
-	public final boolean addTracker(final Tracker tracker) {	
+	public boolean addTracker(final String trackerUrl, final InfoHash infoHash) {
+		final Tracker tracker = initTracker(trackerUrl);
+		if(tracker == null) {
+			return false;
+		}
 		boolean shouldAnnounce = false;
 		synchronized(trackers) {
 			final int trackerIndex = trackers.indexOf(tracker);
 			if(trackerIndex != -1) {
+				System.out.println("Existing tracker: " + tracker.url);
+				
 				//Tracker exists, check for new info hashes
 				final Tracker existingTracker = trackers.get(trackerIndex);
-				final Predicate<TrackableTorrent> filterCriteria = tracker.getTorrents()::contains;				
-				final Set<TrackableTorrent> newTorrents = existingTracker.getTorrents().stream().filter(
-						filterCriteria.negate()).collect(Collectors.toSet()); 
-				if(newTorrents.size() > 0) {
-					newTorrents.stream().forEach(t -> existingTracker.addTorrent(t));
+				
+				if(!existingTracker.isTracking(infoHash)) {
+					existingTracker.addTorrent(infoHash);
 					existingTracker.setNextAnnounce(System.nanoTime());
 					shouldAnnounce = true;
 				}
-				else {
-					shouldAnnounce = false;
-				}
 			}
 			else {
-				//New tracker, simply add it
+				//New tracker, add it and let it track the new torrent
+				tracker.addTorrent(infoHash);
 				shouldAnnounce = trackers.add(tracker);
 				tracker.setNextAnnounce(System.nanoTime());
+				
+				System.out.println("Added new tracker: " + tracker.url + " size is: " + trackers.size());
 			}			
 		}
 		if(shouldAnnounce) {			
 			scheduleAnnouncement(tracker);
 		}
+		
+		System.out.println("Should announce? " + shouldAnnounce);
 		return shouldAnnounce;
 	}
 	
@@ -100,24 +110,44 @@ public final class TrackerManager implements TrackerResponseListener, UdpConnect
 	 * Stop tracking a torrent for all trackers that are serving it.
 	 * Also remove trackers that no longer serve any torrents.
 	 * 
-	 * @param torrent Torrent to stop tracking
+	 * @param torrent Info hash of the torrent to remove
 	 * @return Whether the torrent was successfully removed
 	 */
-	public final boolean removeTorrent(final TrackableTorrent torrent) {
+	public final boolean removeTorrent(final InfoHash torrentInfoHash) {
 		synchronized(trackers) {			
+			//Check if any tracked torrents match supplied info hash
+			final List<TrackableTorrent> matchList = trackers.stream().map(
+					t -> t.getTorrent(torrentInfoHash)).filter(Objects::nonNull).distinct()
+					.collect(Collectors.toList());
+			
+			if(matchList.isEmpty()) {
+				System.out.println("No matching torrents found to remove");
+				//No matching torrents found to remove
+				return false;
+			}
+			
+			System.out.println("Found " + matchList.size() + " matches for torrent to be removed: " + torrentInfoHash);
+			
 			//Collect trackers serving the target torrent
 			final Set<Tracker> affectedTrackers = trackers.stream().filter(
-					t -> t.removeTorrent(torrent)).collect(Collectors.toSet());
+					t -> t.removeTorrent(torrentInfoHash)).collect(Collectors.toSet());
+			
+			System.out.println("Removing from " + affectedTrackers.size() + " tracker(s)");
 			
 			//Remove trackers that no longer serve any torrents
 			affectedTrackers.stream().filter(t -> t.getTorrents().isEmpty())
-				.forEach(t -> trackers.remove(t));
+				.forEach(trackers::remove);
+			
+			final TrackableTorrent trackableTorrent = matchList.get(0);
 			
 			//Issue STOPPED announce to affected trackers, if not already STOPPED
-			if(torrent.getLastTrackerEvent() != Tracker.Event.STOPPED) {
+			if(trackableTorrent.getLastTrackerEvent() != Tracker.Event.STOPPED) {
 				affectedTrackers.stream().forEach(t -> announce(
-						t, buildAnnounceRequest(torrent, Tracker.Event.STOPPED)));
+						t, buildAnnounceRequest(trackableTorrent, Tracker.Event.STOPPED)));
 			}
+			
+			trackers.forEach(t -> System.out.println("Tracked torrents after removal: " + t.trackedTorrents.size()));
+			System.out.println("Trackers managed: " + trackers.size());
 			
 			return !affectedTrackers.isEmpty(); 
 		}
@@ -148,6 +178,25 @@ public final class TrackerManager implements TrackerResponseListener, UdpConnect
 		}
 		tracker.setLastResponse(System.nanoTime());
 	}	
+	
+	private Tracker initTracker(final String trackerUrl) {
+		if(trackerUrl.toLowerCase().startsWith(NetworkUtilities.HTTP_PROTOCOL) ||
+				trackerUrl.toLowerCase().startsWith(NetworkUtilities.HTTPS_PROTOCOL)) {
+			System.out.println("Initialized HTTP tracker");
+			return new HttpTracker(trackerUrl, this);
+		}
+		else if(trackerUrl.toLowerCase().startsWith(NetworkUtilities.UDP_PROTOCOL)) {
+			try {
+				System.out.println("Initializing UDP tracker");
+				return new UdpTracker(trackerUrl, udpConnectionManager);
+			} catch (final IOException | URISyntaxException e) {
+				//Invalid tracker url, simply ignore the tracker
+				return null;
+			} 
+		}
+		System.out.println("Invalid tracker url");
+		return null;
+	}
 	
 	private AnnounceRequest buildAnnounceRequest(final TrackableTorrent torrent, final Tracker.Event trackerEvent) {
 		return new AnnounceRequest(torrent, trackerEvent, 0, 0, 0);

@@ -18,7 +18,7 @@
 *
 */
 
-package org.matic.torrent.io.codec;
+package org.matic.torrent.codec;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -29,6 +29,13 @@ import java.security.MessageDigest;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.matic.torrent.codec.BinaryDecoder;
+import org.matic.torrent.codec.BinaryDecoderException;
+import org.matic.torrent.codec.BinaryEncodedDictionary;
+import org.matic.torrent.codec.BinaryEncodedInteger;
+import org.matic.torrent.codec.BinaryEncodedList;
+import org.matic.torrent.codec.BinaryEncodedString;
+import org.matic.torrent.codec.BinaryEncodingKeyNames;
 
 public final class BinaryDecoderTest {
 	

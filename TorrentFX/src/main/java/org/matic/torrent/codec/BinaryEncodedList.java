@@ -18,35 +18,51 @@
 *
 */
 
-package org.matic.torrent.io.codec;
+package org.matic.torrent.codec;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
 
 /**
- * An integer encoded as i<number in base 10 notation>e. Leading zeros are not allowed.
- * Negative values are encoded by prefixing the number with a minus sign.
+ * A list of values is encoded as l<contents>e . The contents consist of
+ * the bencoded elements of the list, in order, concatenated.
  * 
  * @author vedran
  *
  */
-public final class BinaryEncodedInteger implements BinaryEncodable {
+public final class BinaryEncodedList implements BinaryEncodable {
 	
-	protected static final char BEGIN_TOKEN = 'i';
+	protected static final char BEGIN_TOKEN = 'l';
 	protected static final char END_TOKEN = 'e';
-
-	private final long value;
 	
-	public BinaryEncodedInteger(final long value) {
-		this.value = value;
+	private final List<BinaryEncodable> list;
+	
+	public BinaryEncodedList() {
+		list = new ArrayList<>();
 	}
 	
-	public long getValue() {
-		return value;
+	public final void add(final BinaryEncodable element) {
+		list.add(element);
+	}
+	
+	public final BinaryEncodable get(final int index) {
+		return list.get(index);
+	}
+	
+	public final int size() {
+		return list.size();
+	}
+	
+	public Stream<BinaryEncodable> stream() {
+		return list.stream();
 	}
 
 	@Override
 	public final int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + (int) (value ^ (value >>> 32));
+		result = prime * result + ((list == null) ? 0 : list.hashCode());
 		return result;
 	}
 
@@ -58,14 +74,17 @@ public final class BinaryEncodedInteger implements BinaryEncodable {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		BinaryEncodedInteger other = (BinaryEncodedInteger) obj;
-		if (value != other.value)
+		BinaryEncodedList other = (BinaryEncodedList) obj;
+		if (list == null) {
+			if (other.list != null)
+				return false;
+		} else if (!list.equals(other.list))
 			return false;
 		return true;
 	}
 
 	@Override
 	public final String toString() {
-		return "BinaryEncodedInteger [value=" + value + "]";
+		return "BinaryEncodedList [list=" + list + "]";
 	}	
 }

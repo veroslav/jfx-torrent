@@ -18,14 +18,25 @@
 *
 */
 
-package org.matic.torrent.peer.tracking;
+package org.matic.torrent.tracker.listeners;
+
+import java.util.Set;
+
+import org.matic.torrent.net.pwp.PwpPeer;
 
 /**
- * A marker interface representing an implementation of a peer finding strategy 
+ * An interface for notifying implementing classes when a new peer is
+ * obtained by peer discovery strategies 
  * 
  * @author vedran
  *
  */
-public interface PeerFinderStrategy {
+public interface PeerFoundListener {
 
+	/**
+	 * Notify implementing classes when new peers are found
+	 * 
+	 * @param peer Newly obtained set of peers
+	 */
+	void onPeersFound(final Set<PwpPeer> peers);
 }

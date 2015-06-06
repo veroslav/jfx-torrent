@@ -18,38 +18,44 @@
 *
 */
 
-package org.matic.torrent.net.pwp;
+package org.matic.torrent.queue;
+
+import java.util.Arrays;
+import java.util.Set;
+import java.util.stream.Stream;
 
 import org.matic.torrent.codec.InfoHash;
 
-/**
- * A remote peer on a handshaken connection serving a unique torrent
- * 
- * @author vedran
- *
- */
-public final class PwpPeer {
+public final class QueuedTorrent implements Comparable<QueuedTorrent> {
 	
+	private final Set<String> trackers;
 	private final InfoHash infoHash;
-	private final String peerIp;	
-	private final int peerPort;
+	
+	private int priority;
 
-	public PwpPeer(final String peerIp, final int peerPort, final InfoHash infoHash) {
-		this.peerIp = peerIp;
-		this.peerPort = peerPort;
-		this.infoHash = infoHash;
+	public QueuedTorrent(final byte[] infoHashBytes, final Set<String> trackers, final int priority) {
+		this.infoHash = new InfoHash(Arrays.copyOf(infoHashBytes, infoHashBytes.length));
+		this.trackers = trackers;
+		this.priority = priority;
 	}
 	
-	public final InfoHash getInfoHash() {
+	public InfoHash getInfoHash() {
 		return infoHash;
 	}
-
-	public final String getPeerIp() {
-		return peerIp;
+	
+	public Stream<String> getTrackers() {
+		return trackers.stream();
 	}
-
-	public final int getPeerPort() {
-		return peerPort;
+	
+	@Override
+	public int compareTo(final QueuedTorrent other) {
+		if(priority < other.priority) {
+			return -1;
+		}
+		if(priority > other.priority) {
+			return 1;
+		}
+		return infoHash.getHexValue().compareTo(other.infoHash.getHexValue());
 	}
 
 	@Override
@@ -58,8 +64,9 @@ public final class PwpPeer {
 		int result = 1;
 		result = prime * result
 				+ ((infoHash == null) ? 0 : infoHash.hashCode());
-		result = prime * result + ((peerIp == null) ? 0 : peerIp.hashCode());
-		result = prime * result + peerPort;
+		result = prime * result + priority;
+		result = prime * result
+				+ ((trackers == null) ? 0 : trackers.hashCode());
 		return result;
 	}
 
@@ -71,25 +78,19 @@ public final class PwpPeer {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		PwpPeer other = (PwpPeer) obj;
+		QueuedTorrent other = (QueuedTorrent) obj;
 		if (infoHash == null) {
 			if (other.infoHash != null)
 				return false;
 		} else if (!infoHash.equals(other.infoHash))
 			return false;
-		if (peerIp == null) {
-			if (other.peerIp != null)
-				return false;
-		} else if (!peerIp.equals(other.peerIp))
+		if (priority != other.priority)
 			return false;
-		if (peerPort != other.peerPort)
+		if (trackers == null) {
+			if (other.trackers != null)
+				return false;
+		} else if (!trackers.equals(other.trackers))
 			return false;
 		return true;
-	}
-
-	@Override
-	public String toString() {
-		return "PwpPeer [infoHash=" + infoHash + ", peerIp=" + peerIp
-				+ ", peerPort=" + peerPort + "]";
 	}
 }

@@ -18,14 +18,24 @@
 *
 */
 
-package org.matic.torrent.io.codec;
+package org.matic.torrent.tracker.listeners;
+
+import org.matic.torrent.tracker.Tracker;
+import org.matic.torrent.tracker.TrackerResponse;
 
 /**
- * A marker interface for all of the binary encoded types. These types are:
- * strings, integers, lists and dictionaries. The torrent meta data files
- * are usually encoded using these data types.
+ * A listener for receiving and managing tracker responses
  * 
  * @author vedran
  *
  */
-public interface BinaryEncodable {}
+public interface TrackerResponseListener {
+
+	/**
+	 * Handle a tracker response when it has been received  
+	 * 
+	 * @param response Tracker response to handle
+	 * @param tracker Originating tracker
+	 */
+	void onResponseReceived(final TrackerResponse response, final Tracker tracker);
+}

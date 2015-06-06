@@ -18,9 +18,8 @@
 *
 */
 
-package org.matic.torrent.peer.tracking.tracker;
+package org.matic.torrent.tracker;
 
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -29,13 +28,15 @@ import java.util.TreeSet;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.matic.torrent.peer.tracking.TrackableTorrent;
+import org.matic.torrent.codec.InfoHash;
+import org.matic.torrent.tracker.HttpTracker;
+import org.matic.torrent.tracker.TrackableTorrent;
+import org.matic.torrent.tracker.Tracker;
+import org.matic.torrent.tracker.UdpTracker;
 
 public final class TrackerTest {	
 	
-	private final TrackableTorrent torrent = new TrackableTorrent(
-			"12345678901234567890".getBytes(Charset.forName("UTF-8")));	
-	
+	private final InfoHash torrentInfoHash = new InfoHash("12345678901234567890");	
 	private final String httpTrackerUrl = "http://localhost:44893/announce";
 
 	@Test
@@ -73,28 +74,28 @@ public final class TrackerTest {
 		final Tracker httpTracker = new HttpTracker(httpTrackerUrl, null);
 		final Tracker udpTracker = new UdpTracker(udpTrackerUrl, null);
 		
-		Assert.assertTrue(httpTracker.addTorrent(torrent));
-		Assert.assertTrue(udpTracker.addTorrent(torrent));
+		Assert.assertTrue(httpTracker.addTorrent(torrentInfoHash));
+		Assert.assertTrue(udpTracker.addTorrent(torrentInfoHash));
 		
 		Assert.assertEquals(1, httpTracker.trackedTorrents.size());
 		Assert.assertEquals(1, udpTracker.trackedTorrents.size());
 		
 		final TrackableTorrent httpTorrent = (TrackableTorrent)httpTracker.getTorrents().toArray()[0];
-		Assert.assertEquals("3132333435363738393031323334353637383930", 
-				httpTorrent.getInfoHashHexValue());
+		Assert.assertEquals(new InfoHash("12345678901234567890"), 
+				httpTorrent.getInfoHash());
 		final TrackableTorrent udpTorrent = (TrackableTorrent)udpTracker.getTorrents().toArray()[0];
-		Assert.assertEquals("3132333435363738393031323334353637383930", 
-				udpTorrent.getInfoHashHexValue());
+		Assert.assertEquals(new InfoHash("12345678901234567890"), 
+				udpTorrent.getInfoHash());
 	}
 	
 	@Test
 	public final void testAddExistingTorrent() {
 		final Tracker httpTracker = new HttpTracker(httpTrackerUrl, null);
 		
-		Assert.assertTrue(httpTracker.addTorrent(torrent));
+		Assert.assertTrue(httpTracker.addTorrent(torrentInfoHash));
 		Assert.assertEquals(1, httpTracker.trackedTorrents.size());
 		
-		Assert.assertFalse(httpTracker.addTorrent(torrent));
+		Assert.assertFalse(httpTracker.addTorrent(torrentInfoHash));
 		Assert.assertEquals(1, httpTracker.trackedTorrents.size());
 	}
 	
@@ -102,42 +103,31 @@ public final class TrackerTest {
 	public final void testRemoveTorrent() {
 		final Tracker httpTracker = new HttpTracker(httpTrackerUrl, null);
 		
-		Assert.assertTrue(httpTracker.addTorrent(torrent));
+		Assert.assertTrue(httpTracker.addTorrent(torrentInfoHash));
 		Assert.assertEquals(1, httpTracker.trackedTorrents.size());
 		
-		Assert.assertTrue(httpTracker.removeTorrent(torrent));
-		Assert.assertFalse(httpTracker.removeTorrent(torrent));
+		Assert.assertTrue(httpTracker.removeTorrent(torrentInfoHash));
+		Assert.assertFalse(httpTracker.removeTorrent(torrentInfoHash));
 	}
 	
 	@Test
 	public final void testRemoveNonExistingTorrent() {
-		final Tracker httpTracker = new HttpTracker(httpTrackerUrl, null);
-		
-		final TrackableTorrent nonExistingTorrent = new TrackableTorrent(
-				"ABABABABABABABABABAB".getBytes(Charset.forName("UTF-8")));
-		
-		Assert.assertFalse(httpTracker.removeTorrent(nonExistingTorrent));
+		final Tracker httpTracker = new HttpTracker(httpTrackerUrl, null);		
+		Assert.assertFalse(httpTracker.removeTorrent(new InfoHash("ABABABABABABABABABAB")));
 	}
 	
 	@Test
 	public final void testTorrentsTracked() {				
-		final TrackableTorrent anotherTorrent = new TrackableTorrent(
-				"ABABABABABABABABABAB".getBytes(Charset.forName("UTF-8")));
-		final TrackableTorrent notTrackedTorrent = new TrackableTorrent(
-				"ACACACACACACACACACAC".getBytes(Charset.forName("UTF-8")));
+		final InfoHash notTrackedTorrentInfoHash = new InfoHash("ACACACACACACACACACAC");
+		final InfoHash anotherTorrentInfoHash = new InfoHash("ABABABABABABABABABAB");
 		
 		final Tracker httpTracker = new HttpTracker(httpTrackerUrl, null);
-		httpTracker.addTorrent(torrent);
-		httpTracker.addTorrent(anotherTorrent);
-		
-		final TrackableTorrent expectedTorrent = 
-				new TrackableTorrent(torrent.getInfoHashBytes());
-		final TrackableTorrent expectedAnotherTorrent = 
-				new TrackableTorrent(anotherTorrent.getInfoHashBytes());
+		httpTracker.addTorrent(torrentInfoHash);
+		httpTracker.addTorrent(anotherTorrentInfoHash);
 		
 		Assert.assertEquals(2, httpTracker.getTorrents().size());
-		Assert.assertTrue(httpTracker.isTracking(expectedTorrent));
-		Assert.assertTrue(httpTracker.isTracking(expectedAnotherTorrent));
-		Assert.assertFalse(httpTracker.isTracking(notTrackedTorrent));
+		Assert.assertTrue(httpTracker.isTracking(torrentInfoHash));
+		Assert.assertTrue(httpTracker.isTracking(anotherTorrentInfoHash));
+		Assert.assertFalse(httpTracker.isTracking(notTrackedTorrentInfoHash));
 	}	
 }

@@ -18,25 +18,15 @@
 *
 */
 
-package org.matic.torrent.peer.tracking;
-
-import java.util.Set;
-
-import org.matic.torrent.net.pwp.PwpPeer;
+package org.matic.torrent.tracker.methods;
 
 /**
- * An interface for notifying implementing classes when a new peer is
- * obtained by peer discovery strategies 
+ * A peer discovery strategy implementing a Distributed Hash Table (DHT)
+ * to find remote peers
  * 
  * @author vedran
  *
  */
-public interface PeerFoundListener {
+public final class DistributedHashTable implements PeerFinderStrategy {
 
-	/**
-	 * Notify implementing classes when new peers are found
-	 * 
-	 * @param peer Newly obtained set of peers
-	 */
-	void onPeersFound(final Set<PwpPeer> peers);
 }

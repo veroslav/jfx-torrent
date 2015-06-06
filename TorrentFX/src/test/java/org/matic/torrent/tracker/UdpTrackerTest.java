@@ -18,14 +18,13 @@
 *
 */
 
-package org.matic.torrent.peer.tracking.tracker;
+package org.matic.torrent.tracker;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URISyntaxException;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
@@ -33,15 +32,19 @@ import org.easymock.EasyMock;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.matic.torrent.codec.InfoHash;
 import org.matic.torrent.net.udp.UdpConnectionManager;
 import org.matic.torrent.net.udp.UdpRequest;
 import org.matic.torrent.peer.ClientProperties;
-import org.matic.torrent.peer.tracking.TrackableTorrent;
+import org.matic.torrent.tracker.AnnounceRequest;
+import org.matic.torrent.tracker.TrackableTorrent;
+import org.matic.torrent.tracker.Tracker;
+import org.matic.torrent.tracker.UdpTracker;
 
 public final class UdpTrackerTest {
 	
 	private final TrackableTorrent torrent = new TrackableTorrent(
-			"12345678901234567890".getBytes(Charset.forName("UTF-8")));
+			new InfoHash("12345678901234567890"));
 	private final Tracker.Event trackerEvent = Tracker.Event.STARTED;
 	private final long downloaded = 321;
 	private final long uploaded = 123;	
@@ -99,7 +102,7 @@ public final class UdpTrackerTest {
 		Assert.assertEquals(1, inputStream.readInt());
 		Assert.assertEquals(transactionId, inputStream.readInt());
 		
-		final byte[] expectedInfoHash = torrent.getInfoHashBytes();
+		final byte[] expectedInfoHash = torrent.getInfoHash().getBytes();
 		final byte[] actualInfoHash = new byte[expectedInfoHash.length];
 		inputStream.read(actualInfoHash);
 		

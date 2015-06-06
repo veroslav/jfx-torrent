@@ -18,47 +18,35 @@
 *
 */
 
-package org.matic.torrent.io.codec;
-
-import java.util.HashMap;
-import java.util.Map;
+package org.matic.torrent.codec;
 
 /**
- * A dictionary encoded as d<contents>e. The elements of the dictionary are
- * encoded each key immediately followed by its value. All keys must be byte
- * strings and must appear in lexicographical order.
+ * An integer encoded as i<number in base 10 notation>e. Leading zeros are not allowed.
+ * Negative values are encoded by prefixing the number with a minus sign.
  * 
  * @author vedran
  *
  */
-public final class BinaryEncodedDictionary implements BinaryEncodable {
+public final class BinaryEncodedInteger implements BinaryEncodable {
 	
-	protected static final char BEGIN_TOKEN = 'd';
+	protected static final char BEGIN_TOKEN = 'i';
 	protected static final char END_TOKEN = 'e';
 
-	private final Map<BinaryEncodedString, BinaryEncodable> map;
+	private final long value;
 	
-	public BinaryEncodedDictionary() {
-		map = new HashMap<>();
+	public BinaryEncodedInteger(final long value) {
+		this.value = value;
 	}
 	
-	public final void put(final BinaryEncodedString key, final BinaryEncodable value) {
-		map.put(key, value);
-	}
-	
-	public final BinaryEncodable get(final BinaryEncodedString key) {
-		return map.get(key);
-	}
-	
-	public final int size() {
-		return map.size();
+	public long getValue() {
+		return value;
 	}
 
 	@Override
 	public final int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((map == null) ? 0 : map.hashCode());
+		result = prime * result + (int) (value ^ (value >>> 32));
 		return result;
 	}
 
@@ -70,17 +58,14 @@ public final class BinaryEncodedDictionary implements BinaryEncodable {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		BinaryEncodedDictionary other = (BinaryEncodedDictionary) obj;
-		if (map == null) {
-			if (other.map != null)
-				return false;
-		} else if (!map.equals(other.map))
+		BinaryEncodedInteger other = (BinaryEncodedInteger) obj;
+		if (value != other.value)
 			return false;
 		return true;
 	}
 
 	@Override
 	public final String toString() {
-		return "BinaryEncodedDictionary [map=" + map + "]";
+		return "BinaryEncodedInteger [value=" + value + "]";
 	}	
 }

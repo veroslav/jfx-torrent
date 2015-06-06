@@ -39,7 +39,11 @@ public final class NetworkUtilities {
 	public static final String HTTP_TEXT_PLAIN = "text/plain";
 	
 	public static final int HTTP_CONNECTION_TIMEOUT = 5000; //5 seconds
-	private static final String HTTPS_PROTOCOL = "https";
+	
+	//Protocol constants
+	public static final String HTTPS_PROTOCOL = "https";
+	public static final String HTTP_PROTOCOL = "http";
+	public static final String UDP_PROTOCOL = "udp";
 	
 	private static final String HTTP_USER_AGENT_VALUE = buildHttpUserAgentValue(); 
 			

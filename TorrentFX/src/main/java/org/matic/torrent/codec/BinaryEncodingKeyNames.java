@@ -18,7 +18,7 @@
 *
 */
 
-package org.matic.torrent.io.codec;
+package org.matic.torrent.codec;
 
 import org.matic.torrent.peer.ClientProperties;
 

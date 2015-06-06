@@ -18,21 +18,42 @@
 *
 */
 
-package org.matic.torrent.peer.tracking.tracker;
+package org.matic.torrent.tracker;
 
-/**
- * A listener for receiving and managing tracker responses
- * 
- * @author vedran
- *
- */
-public interface TrackerResponseListener {
+public final class AnnounceRequest {
 
-	/**
-	 * Handle a tracker response when it has been received  
-	 * 
-	 * @param response Tracker response to handle
-	 * @param tracker Originating tracker
-	 */
-	void onResponseReceived(final TrackerResponse response, final Tracker tracker);
+	private final Tracker.Event event;
+	private final TrackableTorrent torrent;
+	private final long downloaded;
+	private final long uploaded;
+	private final long left;
+
+	public AnnounceRequest(final TrackableTorrent torrent, final Tracker.Event event, 
+			final long uploaded, final long downloaded, final long left) {
+		this.downloaded = downloaded;
+		this.uploaded = uploaded;
+		this.torrent = torrent;
+		this.event = event;		
+		this.left = left;		
+	}
+	
+	public final Tracker.Event getEvent() {
+		return event;
+	}
+	
+	public final TrackableTorrent getTorrent() {
+		return torrent;
+	}
+	
+	public final long getUploaded() {
+		return uploaded;
+	}
+	
+	public final long getDownloaded() {
+		return downloaded;
+	}
+	
+	public final long getLeft() {
+		return left;
+	}
 }
