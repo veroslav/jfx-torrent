@@ -34,7 +34,8 @@ import javafx.scene.control.TableView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.text.Text;
 
-import org.matic.torrent.gui.model.TorrentJobDetails;
+import org.matic.torrent.codec.InfoHash;
+import org.matic.torrent.gui.model.TorrentJobView;
 
 /**
  * This is a graphical view (represented as a table) of current torrent jobs
@@ -44,37 +45,37 @@ import org.matic.torrent.gui.model.TorrentJobDetails;
  */
 public final class TorrentJobTable {
 
-	private final TableView<TorrentJobDetails> torrentJobTable = new TableView<>();
+	private final TableView<TorrentJobView> torrentJobTable = new TableView<>();
 	
 	public TorrentJobTable() {		
 		initComponents();
 	}
 	
-	public void addSelectionListener(final Consumer<TorrentJobDetails> handler) {
+	public void addSelectionListener(final Consumer<TorrentJobView> handler) {
 		torrentJobTable.getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) ->
 			handler.accept(newV));
 	}
 	
-	public boolean contains(final String torrentInfoHash) {
+	public boolean contains(final InfoHash torrentInfoHash) {
 		return torrentJobTable.getItems().stream().filter(
 				tj -> torrentInfoHash.equals(tj.getInfoHash())).count() > 0;
 	}
 	
-	public void addJob(final TorrentJobDetails torrentJob) {
+	public void addJob(final TorrentJobView torrentJob) {
 		torrentJobTable.getItems().add(torrentJob);
 		torrentJobTable.getSelectionModel().clearSelection();
 		torrentJobTable.getSelectionModel().select(torrentJob);
 	}
 	
-	public void deleteJobs(final ObservableList<TorrentJobDetails> torrentJobs) {
+	public void deleteJobs(final ObservableList<TorrentJobView> torrentJobs) {
 		torrentJobTable.getItems().removeAll(torrentJobs);		
 	}
 	
-	public ObservableList<TorrentJobDetails> getSelectedJobs() {
+	public ObservableList<TorrentJobView> getSelectedJobs() {
 		return torrentJobTable.getSelectionModel().getSelectedItems();
 	}
 	
-	public void selectJob(final TorrentJobDetails torrentJob) {
+	public void selectJob(final TorrentJobView torrentJob) {
 		torrentJobTable.getSelectionModel().select(torrentJob);
 	}
 	
@@ -102,8 +103,8 @@ public final class TorrentJobTable {
 		torrentJobTable.getColumns().addAll(Arrays.asList(buildFileNameColumn()));
 	}
 	
-	private TableColumn<TorrentJobDetails, String> buildFileNameColumn() {
-		final TableColumn<TorrentJobDetails, String> fileNameColumn = new TableColumn<>("Name");
+	private TableColumn<TorrentJobView, String> buildFileNameColumn() {
+		final TableColumn<TorrentJobView, String> fileNameColumn = new TableColumn<>("Name");
 		fileNameColumn.setPrefWidth(350);
 		fileNameColumn.setCellValueFactory(tj -> {
 			return new ReadOnlyObjectWrapper<String>(tj.getValue().getFileName());

@@ -22,6 +22,8 @@ package org.matic.torrent.gui.window;
 
 import javafx.scene.control.TreeItem;
 
+import org.matic.torrent.codec.BinaryEncodedDictionary;
+import org.matic.torrent.codec.InfoHash;
 import org.matic.torrent.gui.model.TorrentFileEntry;
 
 /**
@@ -34,6 +36,9 @@ import org.matic.torrent.gui.model.TorrentFileEntry;
 public final class AddNewTorrentOptions {
 	
 	private final TreeItem<TorrentFileEntry> torrentContents;
+	private final BinaryEncodedDictionary metaData;
+	
+	private final InfoHash infoHash;
 			
 	private final boolean createSubfolder;
 	private final boolean skipHashCheck;
@@ -44,9 +49,12 @@ public final class AddNewTorrentOptions {
 	private final String name;
 	private final String path;
 
-	public AddNewTorrentOptions(final TreeItem<TorrentFileEntry> torrentContents, final String name, final String path,
-			final String label, final boolean startTorrent, final boolean createSubfolder, final boolean addToTopQueue,
-			final boolean skipHashCheck) {
+	public AddNewTorrentOptions(final BinaryEncodedDictionary metaData, final InfoHash infoHash, 
+			final TreeItem<TorrentFileEntry> torrentContents, final String name, final String path,
+			final String label, final boolean startTorrent, final boolean createSubfolder, 
+			final boolean addToTopQueue, final boolean skipHashCheck) {
+		this.metaData = metaData;
+		this.infoHash = infoHash;
 		this.torrentContents = torrentContents;
 		this.name = name;
 		this.path = path;
@@ -56,6 +64,14 @@ public final class AddNewTorrentOptions {
 		this.createSubfolder = createSubfolder;
 		this.addToTopQueue = addToTopQueue;
 		this.skipHashCheck = skipHashCheck;
+	}
+	
+	public BinaryEncodedDictionary getMetaData() {
+		return metaData;
+	}
+	
+	public InfoHash getInfoHash() {
+		return infoHash;
 	}
 
 	public final TreeItem<TorrentFileEntry> getTorrentContents() {
@@ -91,25 +107,27 @@ public final class AddNewTorrentOptions {
 	}
 
 	@Override
-	public final int hashCode() {
+	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + (addToTopQueue ? 1231 : 1237);
 		result = prime * result + (createSubfolder ? 1231 : 1237);
+		result = prime * result
+				+ ((infoHash == null) ? 0 : infoHash.hashCode());
 		result = prime * result + ((label == null) ? 0 : label.hashCode());
+		result = prime * result
+				+ ((metaData == null) ? 0 : metaData.hashCode());
 		result = prime * result + ((name == null) ? 0 : name.hashCode());
 		result = prime * result + ((path == null) ? 0 : path.hashCode());
 		result = prime * result + (skipHashCheck ? 1231 : 1237);
 		result = prime * result + (startTorrent ? 1231 : 1237);
-		result = prime
-				* result
-				+ ((torrentContents == null) ? 0 : torrentContents
-						.hashCode());
+		result = prime * result
+				+ ((torrentContents == null) ? 0 : torrentContents.hashCode());
 		return result;
 	}
 
 	@Override
-	public final boolean equals(Object obj) {
+	public boolean equals(final Object obj) {
 		if (this == obj)
 			return true;
 		if (obj == null)
@@ -121,10 +139,20 @@ public final class AddNewTorrentOptions {
 			return false;
 		if (createSubfolder != other.createSubfolder)
 			return false;
+		if (infoHash == null) {
+			if (other.infoHash != null)
+				return false;
+		} else if (!infoHash.equals(other.infoHash))
+			return false;
 		if (label == null) {
 			if (other.label != null)
 				return false;
 		} else if (!label.equals(other.label))
+			return false;
+		if (metaData == null) {
+			if (other.metaData != null)
+				return false;
+		} else if (!metaData.equals(other.metaData))
 			return false;
 		if (name == null) {
 			if (other.name != null)
@@ -150,7 +178,8 @@ public final class AddNewTorrentOptions {
 
 	@Override
 	public String toString() {
-		return "AddNewTorrentOptions [torrentContentTree=" + torrentContents
+		return "AddNewTorrentOptions [torrentContents=" + torrentContents
+				+ ", metaData=" + metaData + ", infoHash=" + infoHash
 				+ ", createSubfolder=" + createSubfolder + ", skipHashCheck="
 				+ skipHashCheck + ", addToTopQueue=" + addToTopQueue
 				+ ", startTorrent=" + startTorrent + ", label=" + label

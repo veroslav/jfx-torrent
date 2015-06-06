@@ -32,15 +32,9 @@ import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
 
-import javax.xml.bind.DatatypeConverter;
-
 import org.matic.torrent.codec.BinaryDecoder;
 import org.matic.torrent.codec.BinaryDecoderException;
 import org.matic.torrent.codec.BinaryEncodedDictionary;
-import org.matic.torrent.codec.BinaryEncodedString;
-import org.matic.torrent.codec.BinaryEncodingKeyNames;
-import org.matic.torrent.gui.model.TorrentJobDetails;
-import org.matic.torrent.gui.tree.TorrentContentTree;
 import org.matic.torrent.gui.window.AddNewTorrentOptions;
 import org.matic.torrent.gui.window.AddNewTorrentWindow;
 import org.matic.torrent.gui.window.UrlLoaderWindow;
@@ -53,7 +47,7 @@ import org.matic.torrent.gui.window.UrlLoaderWindowOptions;
  */
 public final class FileActionHandler {
 
-	public final TorrentJobDetails onFileOpen(final Window owner) {
+	public AddNewTorrentOptions onFileOpen(final Window owner) {
 		final String torrentPath = getTorrentPath(owner);
 		if(torrentPath != null) {
 			final BinaryDecoder metaDataDecoder = new BinaryDecoder();
@@ -88,7 +82,7 @@ public final class FileActionHandler {
 		}
 	}
 	
-	public final TorrentJobDetails onLoadUrl(final Window owner) {
+	public final AddNewTorrentOptions onLoadUrl(final Window owner) {
 		final UrlLoaderWindow urlLoaderWindow = new UrlLoaderWindow(owner);
 		final UrlLoaderWindowOptions urlLoaderWindowOptions = urlLoaderWindow.showAndWait();
 		
@@ -109,18 +103,10 @@ public final class FileActionHandler {
 		return selectedLocation != null? selectedLocation.getAbsolutePath() : null;
 	}
 	
-	private TorrentJobDetails addNewTorrentJob(final Window owner, final BinaryEncodedDictionary metaData) {
-		final BinaryEncodedDictionary infoDictionary = ((BinaryEncodedDictionary)metaData.get(
-				BinaryEncodingKeyNames.KEY_INFO));
+	private AddNewTorrentOptions addNewTorrentJob(final Window owner, final BinaryEncodedDictionary metaData) {
 		final AddNewTorrentWindow addNewTorrentWindow = new AddNewTorrentWindow(
-				owner, metaData, new TorrentContentTree(infoDictionary, false));
-		final AddNewTorrentOptions addNewTorrentOptions = addNewTorrentWindow.showAndWait();
-		if(addNewTorrentOptions == null) {
-			return null;
-		}
-		final byte[] infoHash = ((BinaryEncodedString)metaData.get(BinaryEncodingKeyNames.KEY_INFO_HASH)).getBytes();		
-		return new TorrentJobDetails(addNewTorrentOptions.getName(), DatatypeConverter.printHexBinary(infoHash), 
-				addNewTorrentOptions.getTorrentContents());
+				owner, metaData, false);
+		return addNewTorrentWindow.showAndWait();
 	}
 	
 	private String getTorrentPath(final Window owner) {

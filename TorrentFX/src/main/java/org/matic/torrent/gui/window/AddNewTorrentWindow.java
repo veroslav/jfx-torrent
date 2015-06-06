@@ -59,6 +59,7 @@ import org.matic.torrent.codec.BinaryEncodedDictionary;
 import org.matic.torrent.codec.BinaryEncodedInteger;
 import org.matic.torrent.codec.BinaryEncodedString;
 import org.matic.torrent.codec.BinaryEncodingKeyNames;
+import org.matic.torrent.codec.InfoHash;
 import org.matic.torrent.gui.GuiUtils;
 import org.matic.torrent.gui.GuiUtils.BorderType;
 import org.matic.torrent.gui.tree.TorrentContentTree;
@@ -95,7 +96,7 @@ public final class AddNewTorrentWindow {
 	private final Text diskSpaceText;
 	private final Text fileSizeText;
 	
-	private final BinaryEncodedDictionary infoDictionary;
+	private final BinaryEncodedDictionary torrentMetaData;
 	private final TorrentContentTree torrentContentTree;
 	
 	private final Dialog<ButtonType> window;
@@ -108,13 +109,18 @@ public final class AddNewTorrentWindow {
 	private long fileSelectionLength;
 
 	public AddNewTorrentWindow(final Window owner, final BinaryEncodedDictionary torrentMetaData,
-			final TorrentContentTree torrentContentTree) {	
+			final boolean addProgressDetailColumns) {	
 		
 		final BinaryEncodedInteger creationDateInSeconds = (BinaryEncodedInteger)torrentMetaData.get(
 				BinaryEncodingKeyNames.KEY_CREATION_DATE);
 		creationDate = creationDateInSeconds != null? UnitConverter.formatTime(
 				creationDateInSeconds.getValue() * 1000, TimeZone.getDefault()) : "";
-		infoDictionary = ((BinaryEncodedDictionary)torrentMetaData.get(BinaryEncodingKeyNames.KEY_INFO));
+				
+		final BinaryEncodedDictionary infoDictionary = ((BinaryEncodedDictionary)torrentMetaData.get(
+						BinaryEncodingKeyNames.KEY_INFO));
+		
+		this.torrentMetaData = torrentMetaData;
+		this.torrentContentTree = new TorrentContentTree(infoDictionary, addProgressDetailColumns);
 		
 		final Path savePath = Paths.get(System.getProperty("user.home"));
 		availableDiskSpace = DiskUtilities.getAvailableDiskSpace(savePath);
@@ -146,8 +152,6 @@ public final class AddNewTorrentWindow {
 		labelCombo = new ComboBox<String>();
 		advancedButton = new Button("Advanced...");
 		
-		this.torrentContentTree = torrentContentTree;
-		
 		fileSelectionLength = torrentContentTree.getRootFileEntry().getSize();
 		updateDiskUsageLabel();
 						
@@ -171,10 +175,13 @@ public final class AddNewTorrentWindow {
 		final Optional<ButtonType> result = window.showAndWait();
 		
 		if(result.isPresent() && result.get() == ButtonType.OK) {
-			return new AddNewTorrentOptions(torrentContentTree.getView().getRoot(), nameTextField.getText(), 
-					savePathCombo.getValue(), labelCombo.getValue(), startTorrentCheckbox.isSelected(), 
-					createSubFolderCheckbox.isSelected(), addToTopQueueCheckbox.isSelected(), 
-					skipHashCheckbox.isSelected());
+			final byte[] infoHashBytes = ((BinaryEncodedString)torrentMetaData.get(
+					BinaryEncodingKeyNames.KEY_INFO_HASH)).getBytes();
+			final InfoHash infoHash = new InfoHash(infoHashBytes);
+			return new AddNewTorrentOptions(torrentMetaData, infoHash, torrentContentTree.getView().getRoot(), 
+					nameTextField.getText(), savePathCombo.getValue(), labelCombo.getValue(),
+					startTorrentCheckbox.isSelected(), createSubFolderCheckbox.isSelected(),
+					addToTopQueueCheckbox.isSelected(), skipHashCheckbox.isSelected());
 		}
 		
 		return null;

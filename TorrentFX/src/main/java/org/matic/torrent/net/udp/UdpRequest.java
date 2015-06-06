@@ -20,7 +20,6 @@
 
 package org.matic.torrent.net.udp;
 
-import java.net.InetAddress;
 
 /**
  * A request to be sent to a remote peer or a tracker supporting UDP protocol 
@@ -30,21 +29,21 @@ import java.net.InetAddress;
  */
 public final class UdpRequest {
 	
-	private final InetAddress receiverAddress;
+	private final String receiverHost;
 	private final byte[] requestData;
 	private final int receiverPort;
 
-	public UdpRequest(final byte[] requestData, final InetAddress receiverAddress,
+	public UdpRequest(final byte[] requestData, final String receiverHost,
 			final int receiverPort) {
 		this.requestData = new byte[requestData.length];
 		System.arraycopy(requestData, 0, this.requestData, 0, requestData.length);
 		
-		this.receiverAddress = receiverAddress;
 		this.receiverPort = receiverPort;
+		this.receiverHost = receiverHost;
 	}
 
-	public final InetAddress getReceiverAddress() {
-		return receiverAddress;
+	public final String getReceiverHost() {
+		return receiverHost;
 	}
 
 	public final byte[] getRequestData() {

@@ -22,14 +22,13 @@ package org.matic.torrent.gui.action;
 
 import java.util.Optional;
 
-import org.matic.torrent.gui.window.preferences.PreferencesWindow;
-
-import javafx.application.Platform;
 import javafx.event.Event;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.ButtonType;
 import javafx.stage.Window;
+
+import org.matic.torrent.gui.window.preferences.PreferencesWindow;
 
 public final class WindowActionHandler {
 	
@@ -49,17 +48,17 @@ public final class WindowActionHandler {
 	 * 
 	 * @param event Originating window event
 	 * @param owner Owner window of the close confirmation dialog
+	 * @return Whether the user chose to really quit
 	 */
-	public final void onWindowClose(final Event event, final Window owner) {
+	public boolean onWindowClose(final Event event, final Window owner) {
 		final boolean isClosed = handleWindowClosing(owner);
-        if(isClosed) {
-            //User chose to close the application, quit
-            Platform.exit();
-        }
-        else {
+        
+        if(!isClosed) {
             //User cancelled quit action, don't do anything
             event.consume();
         }
+        
+        return isClosed;
 	}
 	
 	private boolean handleWindowClosing(final Window owner) {

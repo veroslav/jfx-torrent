@@ -74,7 +74,7 @@ public final class UdpTrackerTest {
 		
 		Assert.assertNotNull(udpRequest);
 		
-		final InetAddress actualAddress = udpRequest.getReceiverAddress();
+		final InetAddress actualAddress = InetAddress.getByName(udpRequest.getReceiverHost());
 		final byte[] actualRequestData = udpRequest.getRequestData();
 		final int actualPort = udpRequest.getReceiverPort();
 		

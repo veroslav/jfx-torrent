@@ -20,7 +20,6 @@
 
 package org.matic.torrent.queue;
 
-import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -33,8 +32,9 @@ public final class QueuedTorrent implements Comparable<QueuedTorrent> {
 	
 	private int priority;
 
-	public QueuedTorrent(final byte[] infoHashBytes, final Set<String> trackers, final int priority) {
-		this.infoHash = new InfoHash(Arrays.copyOf(infoHashBytes, infoHashBytes.length));
+	public QueuedTorrent(final InfoHash infoHash, 
+			final Set<String> trackers, final int priority) {
+		this.infoHash = infoHash;
 		this.trackers = trackers;
 		this.priority = priority;
 	}

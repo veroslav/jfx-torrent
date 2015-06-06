@@ -23,7 +23,6 @@ package org.matic.torrent.tracker;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
@@ -46,20 +45,18 @@ public final class UdpTracker extends Tracker {
 	private static final int DEFAULT_PORT = 443;
 	
 	private final UdpConnectionManager connectionManager;	
+	private final URI trackerUri;
 	private long connectionId = 0;
 	
-	private final InetAddress trackerAddress;
 	private final int trackerPort;
 	
 	public UdpTracker(final String url, final UdpConnectionManager connectionManager) 
-			throws IOException, URISyntaxException {
+			throws URISyntaxException {
 		super(url);		
 		this.connectionManager = connectionManager;
+		this.trackerUri = new URI(url);
 		
-		final URI trackerUri = new URI(url);
 		final int urlPort = trackerUri.getPort();
-		
-		trackerAddress = InetAddress.getByName(trackerUri.getHost());
 		trackerPort = urlPort != -1? urlPort : DEFAULT_PORT;
 	}
 	
@@ -135,6 +132,6 @@ public final class UdpTracker extends Tracker {
 			return null;
 		}
 		
-		return new UdpRequest(baos.toByteArray(), trackerAddress, trackerPort);
+		return new UdpRequest(baos.toByteArray(), trackerUri.getHost(), trackerPort);
 	}
 }

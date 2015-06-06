@@ -20,15 +20,18 @@
 
 package org.matic.torrent.gui.model;
 
+import org.matic.torrent.codec.InfoHash;
+
 import javafx.scene.control.TreeItem;
 
-public final class TorrentJobDetails {
+public final class TorrentJobView {
 	
 	private final TreeItem<TorrentFileEntry> torrentContentTree;
-	private final String infoHash;
+	private final InfoHash infoHash;
 	private final String fileName;
 
-	public TorrentJobDetails(final String fileName, final String infoHash, final TreeItem<TorrentFileEntry> torrentContents) {
+	public TorrentJobView(final String fileName, final InfoHash infoHash, 
+			final TreeItem<TorrentFileEntry> torrentContents) {
 		this.fileName = fileName;
 		this.infoHash = infoHash;
 		this.torrentContentTree = torrentContents;
@@ -42,7 +45,7 @@ public final class TorrentJobDetails {
 		return torrentContentTree;
 	}
 	
-	public String getInfoHash() {
+	public InfoHash getInfoHash() {
 		return infoHash;
 	}
 }

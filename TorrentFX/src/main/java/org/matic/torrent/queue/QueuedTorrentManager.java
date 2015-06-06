@@ -49,8 +49,6 @@ public final class QueuedTorrentManager {
 	public void stop() {
 		trackerManager.stop();
 		udpConnectionManager.stop();
-		
-		System.out.println("QueuedTorrentManager has stopped!");
 	}
 	
 	/**
@@ -62,8 +60,6 @@ public final class QueuedTorrentManager {
 	public boolean add(final QueuedTorrent torrent) {
 		final boolean added = queuedTorrents.add(torrent);
 		
-		System.out.println("Torrent added for managing? " + added);
-		
 		if(added) {
 			torrent.getTrackers().forEach(t -> trackerManager.addTracker(t, torrent.getInfoHash()));
 		}
@@ -74,14 +70,13 @@ public final class QueuedTorrentManager {
 	/**
 	 * Remove and stop managing a torrent 
 	 * 
-	 * @param hexInfoHash Info hash (hexadecimal) of the target torrent
+	 * @param infoHash Info hash of the torrent to remove
 	 * @return Whether the target torrent was successfully removed
 	 */
-	public boolean remove(final String hexInfoHash) {
-		final boolean removed = queuedTorrents.removeIf(qt -> qt.getInfoHash().getHexValue().equals(hexInfoHash));
+	public boolean remove(final InfoHash infoHash) {
+		final boolean removed = queuedTorrents.removeIf(qt -> qt.getInfoHash().equals(infoHash));
 		
 		if(removed) {
-			final InfoHash infoHash = new InfoHash(hexInfoHash);
 			trackerManager.removeTorrent(infoHash);
 		}
 		

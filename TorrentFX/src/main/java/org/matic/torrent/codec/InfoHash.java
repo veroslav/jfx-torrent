@@ -48,7 +48,7 @@ public final class InfoHash {
 	}
 	
 	public byte[] getBytes() {
-		return Arrays.copyOf(infoHash, infoHash.length);
+		return infoHash;
 	}
 
 	@Override
@@ -78,5 +78,10 @@ public final class InfoHash {
 		if (!Arrays.equals(infoHash, other.infoHash))
 			return false;
 		return true;
+	}
+
+	@Override
+	public String toString() {
+		return "InfoHash [hexInfoHash=" + hexInfoHash + "]";
 	}
 }
