@@ -20,6 +20,8 @@
 
 package org.matic.torrent.utils;
 
+import javax.xml.bind.DatatypeConverter;
+
 import org.junit.Assert;
 import org.junit.Test;
 import org.matic.torrent.peer.ClientProperties;
@@ -31,7 +33,7 @@ public final class HashUtilitiesTest {
 		final byte[] inputBytes = "This is your message".getBytes(ClientProperties.STRING_ENCODING_CHARSET);
 		final String expectedHexValue = "5468697320697320796F7572206D657373616765";
 		
-		Assert.assertEquals(expectedHexValue, HashUtilities.convertToHexValue(inputBytes));
+		Assert.assertEquals(expectedHexValue, DatatypeConverter.printHexBinary(inputBytes));
 	}
 	
 	@Test

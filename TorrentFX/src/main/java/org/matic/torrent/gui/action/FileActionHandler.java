@@ -32,6 +32,8 @@ import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
 
+import javax.xml.bind.DatatypeConverter;
+
 import org.matic.torrent.codec.BinaryDecoder;
 import org.matic.torrent.codec.BinaryDecoderException;
 import org.matic.torrent.codec.BinaryEncodedDictionary;
@@ -43,7 +45,6 @@ import org.matic.torrent.gui.window.AddNewTorrentOptions;
 import org.matic.torrent.gui.window.AddNewTorrentWindow;
 import org.matic.torrent.gui.window.UrlLoaderWindow;
 import org.matic.torrent.gui.window.UrlLoaderWindowOptions;
-import org.matic.torrent.utils.HashUtilities;
 
 /**
  * Handle file related action events, such as opening and loading files.
@@ -118,7 +119,7 @@ public final class FileActionHandler {
 			return null;
 		}
 		final byte[] infoHash = ((BinaryEncodedString)metaData.get(BinaryEncodingKeyNames.KEY_INFO_HASH)).getBytes();		
-		return new TorrentJobDetails(addNewTorrentOptions.getName(), HashUtilities.convertToHexValue(infoHash), 
+		return new TorrentJobDetails(addNewTorrentOptions.getName(), DatatypeConverter.printHexBinary(infoHash), 
 				addNewTorrentOptions.getTorrentContents());
 	}
 	

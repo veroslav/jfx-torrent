@@ -28,24 +28,7 @@ public final class HashUtilities {
 	public static final int HEX_INFO_HASH_LENGTH = 40;	//160 bits / 4 bytes == 40 places
 	
 	private static final Pattern HEX_MATCH_PATTERN = Pattern.compile("[0-9a-fA-F]+");
-	private static final char[] HEX_VALUES = "0123456789ABCDEF".toCharArray();
 
-	/**
-	 * Convert (SHA-1) byte value to it's hexadecimal representation
-	 * 
-	 * @param bytes Bytes to be converted
-	 * @return Hexadecimal representation of input bytes
-	 */
-	public static String convertToHexValue(final byte[] bytes) {
-		final char[] hexChars = new char[bytes.length * 2];
-	    for(int j = 0; j < bytes.length; j++) {
-	        final int v = bytes[j] & 0xFF;
-	        hexChars[j*2] = HEX_VALUES[v >>> 4];
-	        hexChars[j*2+1] = HEX_VALUES[v & 0x0F];
-	    }
-	    return new String(hexChars);
-	}
-	
 	/**
 	 * Check whether a string contains a valid hexadecimal number
 	 * (valid values are 0123456789ABCDEF)
