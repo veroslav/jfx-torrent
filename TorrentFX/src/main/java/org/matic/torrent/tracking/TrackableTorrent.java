@@ -18,7 +18,7 @@
 *
 */
 
-package org.matic.torrent.tracker;
+package org.matic.torrent.tracking;
 
 import org.matic.torrent.codec.InfoHash;
 

@@ -18,7 +18,7 @@
 *
 */
 
-package org.matic.torrent.tracker;
+package org.matic.torrent.tracking;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,10 +29,10 @@ import java.util.TreeSet;
 import org.junit.Assert;
 import org.junit.Test;
 import org.matic.torrent.codec.InfoHash;
-import org.matic.torrent.tracker.HttpTracker;
-import org.matic.torrent.tracker.TrackableTorrent;
-import org.matic.torrent.tracker.Tracker;
-import org.matic.torrent.tracker.UdpTracker;
+import org.matic.torrent.tracking.HttpTracker;
+import org.matic.torrent.tracking.TrackableTorrent;
+import org.matic.torrent.tracking.Tracker;
+import org.matic.torrent.tracking.UdpTracker;
 
 public final class TrackerTest {	
 	

@@ -18,7 +18,7 @@
 *
 */
 
-package org.matic.torrent.tracker;
+package org.matic.torrent.tracking;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -38,12 +38,12 @@ import org.matic.torrent.codec.BinaryEncodingKeyNames;
 import org.matic.torrent.codec.InfoHash;
 import org.matic.torrent.net.pwp.PwpPeer;
 import org.matic.torrent.peer.ClientProperties;
-import org.matic.torrent.tracker.AnnounceRequest;
-import org.matic.torrent.tracker.HttpTracker;
-import org.matic.torrent.tracker.TrackableTorrent;
-import org.matic.torrent.tracker.Tracker;
-import org.matic.torrent.tracker.TrackerResponse;
-import org.matic.torrent.tracker.TrackerResponse.Type;
+import org.matic.torrent.tracking.AnnounceRequest;
+import org.matic.torrent.tracking.HttpTracker;
+import org.matic.torrent.tracking.TrackableTorrent;
+import org.matic.torrent.tracking.Tracker;
+import org.matic.torrent.tracking.TrackerResponse;
+import org.matic.torrent.tracking.TrackerResponse.Type;
 import org.matic.torrent.utils.UnitConverter;
 
 public final class HttpTrackerTest {

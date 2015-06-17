@@ -18,7 +18,7 @@
 *
 */
 
-package org.matic.torrent.tracker;
+package org.matic.torrent.tracking;
 
 import java.net.URISyntaxException;
 import java.util.ArrayList;

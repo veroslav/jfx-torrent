@@ -25,7 +25,7 @@ import java.util.TreeSet;
 
 import org.matic.torrent.codec.InfoHash;
 import org.matic.torrent.net.udp.UdpConnectionManager;
-import org.matic.torrent.tracker.TrackerManager;
+import org.matic.torrent.tracking.TrackerManager;
 
 public final class QueuedTorrentManager {
 
@@ -81,5 +81,9 @@ public final class QueuedTorrentManager {
 		}
 		
 		return removed;
+	}
+	
+	protected int getSize() {
+		return queuedTorrents.size();
 	}
 }

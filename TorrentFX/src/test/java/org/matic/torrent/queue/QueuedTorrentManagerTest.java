@@ -18,24 +18,21 @@
 *
 */
 
-package org.matic.torrent.tracker.listeners;
+package org.matic.torrent.queue;
 
-import org.matic.torrent.tracking.Tracker;
-import org.matic.torrent.tracking.TrackerResponse;
+import java.util.HashSet;
 
-/**
- * A listener for receiving and managing tracker responses
- * 
- * @author vedran
- *
- */
-public interface TrackerResponseListener {
+import org.junit.Test;
+import org.matic.torrent.codec.InfoHash;
 
-	/**
-	 * Handle a tracker response when it has been received  
-	 * 
-	 * @param response Tracker response to handle
-	 * @param tracker Originating tracker
-	 */
-	void onResponseReceived(final TrackerResponse response, final Tracker tracker);
+public class QueuedTorrentManagerTest {
+
+	private final QueuedTorrentManager unitUnderTest = new QueuedTorrentManager();
+	
+	@Test
+	public void testAddTorrent() {
+		final QueuedTorrent torrent = new QueuedTorrent(
+				new InfoHash(""), new HashSet<>(), 0);
+		unitUnderTest.add(torrent);
+	}
 }

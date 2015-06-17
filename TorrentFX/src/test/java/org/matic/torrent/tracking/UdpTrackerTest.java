@@ -18,7 +18,7 @@
 *
 */
 
-package org.matic.torrent.tracker;
+package org.matic.torrent.tracking;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
@@ -36,10 +36,10 @@ import org.matic.torrent.codec.InfoHash;
 import org.matic.torrent.net.udp.UdpConnectionManager;
 import org.matic.torrent.net.udp.UdpRequest;
 import org.matic.torrent.peer.ClientProperties;
-import org.matic.torrent.tracker.AnnounceRequest;
-import org.matic.torrent.tracker.TrackableTorrent;
-import org.matic.torrent.tracker.Tracker;
-import org.matic.torrent.tracker.UdpTracker;
+import org.matic.torrent.tracking.AnnounceRequest;
+import org.matic.torrent.tracking.TrackableTorrent;
+import org.matic.torrent.tracking.Tracker;
+import org.matic.torrent.tracking.UdpTracker;
 
 public final class UdpTrackerTest {
 	
