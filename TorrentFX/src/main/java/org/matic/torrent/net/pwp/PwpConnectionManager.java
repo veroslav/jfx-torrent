@@ -21,10 +21,7 @@
 package org.matic.torrent.net.pwp;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.NetworkInterface;
-import java.net.SocketException;
 import java.net.StandardSocketOptions;
 import java.nio.channels.NetworkChannel;
 import java.nio.channels.SelectionKey;
@@ -42,6 +39,8 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import org.matic.torrent.net.NetworkUtilities;
 
 /**
  * 
@@ -172,8 +171,13 @@ public final class PwpConnectionManager {
 						disconnectAll();
 						break;
 					}
-					//Wait for new selection events from active connections
-					processPendingSelections(lastKeepAliveTimeout);
+					try {
+						//Wait for new selection events from active connections
+						processPendingSelections(lastKeepAliveTimeout);
+					}
+					catch(final IOException ioe) {
+						System.err.println("Selection processing resulted in an error: " + ioe.getMessage());
+					}
 					
 					//Keep alive connections by sending KEEP_ALIVE, where needed
 					if(System.nanoTime() - lastKeepAliveTimeout > 
@@ -264,7 +268,7 @@ public final class PwpConnectionManager {
 		}
 		setChannelOptions(serverChannel);
 		
-		serverChannel.bind(getSocketAddressFromNetworkInterface(listenInterface), maxConnections);
+		serverChannel.bind(NetworkUtilities.getSocketAddressFromNetworkInterface(listenInterface, listenPort), maxConnections);
 		serverChannel.configureBlocking(false);
 		
 		serverChannel.register(connectionSelector, SelectionKey.OP_ACCEPT);
@@ -484,22 +488,5 @@ public final class PwpConnectionManager {
 	private void setChannelOptions(final NetworkChannel channel) throws IOException {
 		channel.setOption(StandardSocketOptions.SO_RCVBUF, PwpConnectionManager.SO_RCVBUF_VALUE);
 		channel.setOption(StandardSocketOptions.SO_REUSEADDR, PwpConnectionManager.SO_REUSEADDR);
-	}
-	
-	//TODO: Do NOT fallback to default interface unless user specifically requests it (VPN case)
-	//TODO: Extract network interface handling to a dedicated class
-	private InetSocketAddress getSocketAddressFromNetworkInterface(final String networkInterface) {
-		try {
-			final NetworkInterface listenInterface = NetworkInterface.getByName(networkInterface);
-			if(listenInterface == null) {
-				//Invalid/non-existing network interface specified, use default
-				return new InetSocketAddress(listenPort);
-			}
-			final InetAddress inetAddress = listenInterface.getInetAddresses().nextElement();
-			return new InetSocketAddress(inetAddress, listenPort);
-		} catch (final SocketException se) {
-			//Invalid/non-existing network interface specified, use default
-			return new InetSocketAddress(listenPort);
-		}		
 	}
 }

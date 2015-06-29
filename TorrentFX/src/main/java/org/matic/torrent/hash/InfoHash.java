@@ -14,7 +14,7 @@
 *
 */
 
-package org.matic.torrent.codec;
+package org.matic.torrent.hash;
 
 import java.util.Arrays;
 
@@ -30,21 +30,10 @@ import javax.xml.bind.DatatypeConverter;
  */
 public final class InfoHash {
 	
-	private final String hexInfoHash;
 	private final byte[] infoHash;
 
 	public InfoHash(final byte[] infoHashBytes) {
-		this.infoHash = Arrays.copyOf(infoHashBytes, infoHashBytes.length);
-		hexInfoHash = DatatypeConverter.printHexBinary(infoHashBytes);
-	}
-	
-	public InfoHash(final String hexInfoHash) {
-		this.hexInfoHash = hexInfoHash;
-		infoHash = DatatypeConverter.parseHexBinary(hexInfoHash);
-	}
-	
-	public String getHexValue() {
-		return hexInfoHash;
+		this.infoHash = Arrays.copyOf(infoHashBytes, infoHashBytes.length);		
 	}
 	
 	public byte[] getBytes() {
@@ -55,14 +44,12 @@ public final class InfoHash {
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result
-				+ ((hexInfoHash == null) ? 0 : hexInfoHash.hashCode());
 		result = prime * result + Arrays.hashCode(infoHash);
 		return result;
 	}
 
 	@Override
-	public boolean equals(final Object obj) {
+	public boolean equals(Object obj) {
 		if (this == obj)
 			return true;
 		if (obj == null)
@@ -70,11 +57,6 @@ public final class InfoHash {
 		if (getClass() != obj.getClass())
 			return false;
 		InfoHash other = (InfoHash) obj;
-		if (hexInfoHash == null) {
-			if (other.hexInfoHash != null)
-				return false;
-		} else if (!hexInfoHash.equals(other.hexInfoHash))
-			return false;
 		if (!Arrays.equals(infoHash, other.infoHash))
 			return false;
 		return true;
@@ -82,6 +64,6 @@ public final class InfoHash {
 
 	@Override
 	public String toString() {
-		return "InfoHash [hexInfoHash=" + hexInfoHash + "]";
-	}
+		return "InfoHash [infoHash=" + DatatypeConverter.printHexBinary(infoHash) + "]";
+	}	
 }

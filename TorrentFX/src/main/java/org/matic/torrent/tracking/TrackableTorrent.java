@@ -20,7 +20,7 @@
 
 package org.matic.torrent.tracking;
 
-import org.matic.torrent.codec.InfoHash;
+import org.matic.torrent.hash.InfoHash;
 
 public final class TrackableTorrent {
 	

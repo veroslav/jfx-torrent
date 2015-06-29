@@ -20,7 +20,7 @@
 
 package org.matic.torrent.net.pwp;
 
-import org.matic.torrent.codec.InfoHash;
+import org.matic.torrent.hash.InfoHash;
 
 /**
  * A remote peer on a handshaken connection serving a unique torrent

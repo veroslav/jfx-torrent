@@ -18,34 +18,15 @@
 *
 */
 
-package org.matic.torrent.gui.model;
+package org.matic.torrent.tracking.methods;
 
-import javafx.scene.control.TreeItem;
+/**
+ * A peer discovery strategy implementing a Distributed Hash Table (DHT)
+ * to find remote peers
+ * 
+ * @author vedran
+ *
+ */
+public final class DistributedHashTable implements PeerFinderStrategy {
 
-import org.matic.torrent.hash.InfoHash;
-
-public final class TorrentJobView {
-	
-	private final TreeItem<TorrentFileEntry> torrentContentTree;
-	private final InfoHash infoHash;
-	private final String fileName;
-
-	public TorrentJobView(final String fileName, final InfoHash infoHash, 
-			final TreeItem<TorrentFileEntry> torrentContents) {
-		this.fileName = fileName;
-		this.infoHash = infoHash;
-		this.torrentContentTree = torrentContents;
-	}
-	
-	public String getFileName() {
-		return fileName;
-	}
-	
-	public TreeItem<TorrentFileEntry> getTorrentContents() {
-		return torrentContentTree;
-	}
-	
-	public InfoHash getInfoHash() {
-		return infoHash;
-	}
 }

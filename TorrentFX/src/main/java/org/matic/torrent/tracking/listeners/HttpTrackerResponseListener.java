@@ -18,34 +18,24 @@
 *
 */
 
-package org.matic.torrent.gui.model;
+package org.matic.torrent.tracking.listeners;
 
-import javafx.scene.control.TreeItem;
+import org.matic.torrent.tracking.TorrentTracker;
+import org.matic.torrent.tracking.TrackerResponse;
 
-import org.matic.torrent.hash.InfoHash;
+/**
+ * A listener for receiving and managing HTTP tracker responses
+ * 
+ * @author vedran
+ *
+ */
+public interface HttpTrackerResponseListener {
 
-public final class TorrentJobView {
-	
-	private final TreeItem<TorrentFileEntry> torrentContentTree;
-	private final InfoHash infoHash;
-	private final String fileName;
-
-	public TorrentJobView(final String fileName, final InfoHash infoHash, 
-			final TreeItem<TorrentFileEntry> torrentContents) {
-		this.fileName = fileName;
-		this.infoHash = infoHash;
-		this.torrentContentTree = torrentContents;
-	}
-	
-	public String getFileName() {
-		return fileName;
-	}
-	
-	public TreeItem<TorrentFileEntry> getTorrentContents() {
-		return torrentContentTree;
-	}
-	
-	public InfoHash getInfoHash() {
-		return infoHash;
-	}
+	/**
+	 * Handle a tracker response when it has been received  
+	 * 
+	 * @param response Tracker response to handle
+	 * @param trackedTorrent Tracker request submitter
+	 */
+	void onResponseReceived(final TrackerResponse response, final TorrentTracker trackedTorrent);
 }

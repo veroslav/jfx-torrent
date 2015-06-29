@@ -20,6 +20,8 @@
 
 package org.matic.torrent.net.udp;
 
+import java.util.Set;
+
 /**
  * An interface for notifying implementing classes when a UDP packet is
  * received from a remote peer or an UDP tracker
@@ -35,4 +37,11 @@ public interface UdpConnectionListener {
 	 * @param response Response containing UDP packet data
 	 */
 	void onUdpResponseReceived(final UdpResponse response);
+	
+	/**
+	 * Target message types for which to notify listeners
+	 * 
+	 * @return Message types for which to notify listeners 
+	 */
+	Set<UdpResponse.Type> messageNotificationMask();
 }

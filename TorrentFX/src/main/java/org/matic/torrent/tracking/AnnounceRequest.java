@@ -20,40 +20,21 @@
 
 package org.matic.torrent.tracking;
 
-public final class AnnounceRequest {
+public final class AnnounceRequest extends TrackerRequest {
+	
+	private final AnnounceParameters announceParameters;
 
-	private final Tracker.Event event;
-	private final TrackableTorrent torrent;
-	private final long downloaded;
-	private final long uploaded;
-	private final long left;
-
-	public AnnounceRequest(final TrackableTorrent torrent, final Tracker.Event event, 
-			final long uploaded, final long downloaded, final long left) {
-		this.downloaded = downloaded;
-		this.uploaded = uploaded;
-		this.torrent = torrent;
-		this.event = event;		
-		this.left = left;		
+	public AnnounceRequest(final TorrentTracker trackedTorrent, final AnnounceParameters announceParameters) {
+		super(trackedTorrent);
+		this.announceParameters = announceParameters;
 	}
 	
-	public final Tracker.Event getEvent() {
-		return event;
+	public AnnounceParameters getAnnounceParameters() {
+		return announceParameters;
 	}
 	
-	public final TrackableTorrent getTorrent() {
-		return torrent;
-	}
-	
-	public final long getUploaded() {
-		return uploaded;
-	}
-	
-	public final long getDownloaded() {
-		return downloaded;
-	}
-	
-	public final long getLeft() {
-		return left;
+	@Override
+	protected void execute() {		
+		super.trackedTorrent.getTracker().announce(announceParameters, super.trackedTorrent);
 	}
 }

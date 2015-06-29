@@ -18,7 +18,7 @@
 *
 */
 
-package org.matic.torrent.tracker.listeners;
+package org.matic.torrent.tracking.listeners;
 
 import java.util.Set;
 

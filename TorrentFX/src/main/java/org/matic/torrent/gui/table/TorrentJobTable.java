@@ -34,8 +34,8 @@ import javafx.scene.control.TableView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.text.Text;
 
-import org.matic.torrent.codec.InfoHash;
 import org.matic.torrent.gui.model.TorrentJobView;
+import org.matic.torrent.hash.InfoHash;
 
 /**
  * This is a graphical view (represented as a table) of current torrent jobs
@@ -57,8 +57,7 @@ public final class TorrentJobTable {
 	}
 	
 	public boolean contains(final InfoHash torrentInfoHash) {
-		return torrentJobTable.getItems().stream().filter(
-				tj -> torrentInfoHash.equals(tj.getInfoHash())).count() > 0;
+		return torrentJobTable.getItems().contains(torrentInfoHash);
 	}
 	
 	public void addJob(final TorrentJobView torrentJob) {

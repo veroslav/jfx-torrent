@@ -21,12 +21,15 @@
 package org.matic.torrent.net.udp;
 
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
-import java.net.UnknownHostException;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.channels.DatagramChannel;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.UnresolvedAddressException;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -34,56 +37,41 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.matic.torrent.preferences.ApplicationPreferences;
-import org.matic.torrent.preferences.NetworkProperties;
+import org.matic.torrent.net.NetworkUtilities;
 
 /**
- * An UDP connection manager, handling receiving and sending of
- * UDP packets from and to remote peers and trackers that support
- * UDP protocol
+ * An UDP connection manager, based on non-blocking IO.
+ * It is responsible for sending of the UDP data packets
+ * and notifying interested listeners when a UDP packet
+ * has arrived.
  * 
  * @author vedran
  *
  */
-public class UdpConnectionManager {
+public final class UdpConnectionManager {
 	
-	private static final int SO_SOCKET_TIMEOUT = 5000;	//5 s
-	
-	private static final int MAX_OUTGOING_MESSAGES = 30;
-	private static final int RECEIVER_BUFFER_SIZE = 10;
-	
-	private static final int DEFAULT_UDP_PORT = 44894;
+	public static final int DEFAULT_UDP_PORT = 45895;
 		
-	private final BlockingQueue<UdpRequest> outgoingMessages;
-	private final Set<UdpConnectionListener> listeners;	
-	private final ExecutorService threadPool;
+	private static final int MAX_INPUT_PACKET_SIZE = 1024;
+	private static final int MAX_OUTPUT_PACKET_SIZE = 1024;
+	private static final int MAX_OUTGOING_MESSAGES = 30;
 	
-	private final int udpTrackerPort;
-	private final int dhtPort;	
+	private final BlockingQueue<UdpRequest> outgoingMessages;
+	private final Set<UdpConnectionListener> listeners;
+	
+	private final ByteBuffer outputBuffer = ByteBuffer.allocate(MAX_OUTPUT_PACKET_SIZE);
+	private final ByteBuffer inputBuffer = ByteBuffer.allocate(MAX_INPUT_PACKET_SIZE);
+	
+	private final ExecutorService connectionManagerExecutor;
+	private Selector connectionSelector = null;
 	
 	public UdpConnectionManager() {
-		listeners = new CopyOnWriteArraySet<>();
+		this.connectionManagerExecutor = Executors.newSingleThreadExecutor();		
+		
 		outgoingMessages = new ArrayBlockingQueue<>(MAX_OUTGOING_MESSAGES);
+		listeners = new CopyOnWriteArraySet<>();
 		
-		udpTrackerPort = Integer.parseInt(ApplicationPreferences.getProperty(
-				NetworkProperties.UDP_TRACKER_PORT, String.valueOf(DEFAULT_UDP_PORT)));
-		dhtPort = Integer.parseInt(ApplicationPreferences.getProperty(
-				NetworkProperties.UDP_DHT_PORT, String.valueOf(DEFAULT_UDP_PORT)));
-		
-		threadPool = Executors.newFixedThreadPool(dhtPort != udpTrackerPort? 3 : 2);
-	}
-
-	public final void init() {			
-		threadPool.execute(() -> handleOutgoing());
-		threadPool.execute(() -> handleIncoming(udpTrackerPort));		
-		
-		if(dhtPort != udpTrackerPort) {
-			threadPool.execute(() -> handleIncoming(dhtPort));
-		}
-	}
-	
-	public final void stop() {
-		threadPool.shutdownNow();
+		outputBuffer.order(ByteOrder.BIG_ENDIAN);
 	}
 	
 	public final void addListener(final UdpConnectionListener listener) {		
@@ -94,65 +82,124 @@ public class UdpConnectionManager {
 		listeners.remove(listener);
 	}
 	
-	public boolean send(final UdpRequest request) {		
-		return outgoingMessages.offer(request);
+	/**
+	 * Send an UDP packet request to a remote host 
+	 * 
+	 * @param request UDP packet request to send
+	 * @return Whether the request was scheduled
+	 */
+	public boolean send(final UdpRequest request) {	
+		final boolean requestAdded = outgoingMessages.offer(request);
+		if(connectionSelector != null) {
+			connectionSelector.wakeup();
+		}
+		return requestAdded;
 	}
-	
-	private void notifyListeners(final UdpResponse response) {		
-		listeners.stream().forEach(l -> l.onUdpResponseReceived(response));
-	}
-	
-	private void handleOutgoing() {
-		while(true) {
-			UdpRequest outgoingRequest = null;
-			try (final DatagramSocket clientSocket = new DatagramSocket()){
-				outgoingRequest = outgoingMessages.take();				
+
+	/**
+	 * Start UDP connection manager
+	 * 
+	 * @param networkInterface Network interface on which to listen
+	 * @param listenPort Target port for received UDP packets
+	 */
+	public void manage(final String networkInterface, final int listenPort) {
+		connectionManagerExecutor.execute(() -> {
+			try(final DatagramChannel channel = DatagramChannel.open()) {
+				connectionSelector = Selector.open();								
+				setChannelOptions(channel, connectionSelector, networkInterface, listenPort);
 				
-				final InetAddress serverAddress = InetAddress.getByName(outgoingRequest.getReceiverHost());
-				final byte[] packetData = outgoingRequest.getRequestData();
-				final DatagramPacket outgoingPacket = new DatagramPacket(packetData, 
-						packetData.length, serverAddress,
-						outgoingRequest.getReceiverPort());
-				clientSocket.send(outgoingPacket);								
-			} catch(final InterruptedException e) {
-				System.out.println("Interrupted, UDP client going down");
-				return;
-			} catch(final UnknownHostException uhe) {
-				System.err.println("Couldn't resolve ip for UDP server: " + (outgoingRequest != null? 
-						outgoingRequest.getReceiverHost() : "Unknown"));
-				//TODO: Reschedule UDP announce, server might become available then
-			} catch(final IOException ioe) {
-				System.err.println("Failed to open outgoing UDP socket: " + ioe);
-				return;
+				while(true) {
+					if(Thread.currentThread().isInterrupted()) {
+						Thread.interrupted();
+						break;
+					}
+					try {
+						processPendingReadOperations(channel);
+					}
+					catch(final IOException ioe) {
+						System.err.println("Selection processing resulted in an error: " + ioe.getMessage());
+					}
+					//Check for any pending packets to be sent
+					while(!outgoingMessages.isEmpty()) {
+						writeToChannel(channel, outgoingMessages.poll());
+					}
+				}
+			}
+			catch(final IOException ioe) {
+				System.err.println("UDP server was shutdown unexpectedly: " + ioe.getMessage());
+			}			
+			connectionManagerExecutor.shutdown();
+		});
+	}
+	
+	/**
+	 * Stop UDP connection manager
+	 */
+	public final void unmanage() {		
+		connectionManagerExecutor.shutdownNow();
+		if(connectionSelector != null) {
+			connectionSelector.wakeup();
+		}
+	}
+	
+	private void processPendingReadOperations(final DatagramChannel channel) throws IOException {
+		final int keysSelected = connectionSelector.select();
+		if(keysSelected > 0) {
+			final Set<SelectionKey> selectedKeys = connectionSelector.selectedKeys();
+			final Iterator<SelectionKey> selectedKeysIterator = selectedKeys.iterator();
+			
+			while(selectedKeysIterator.hasNext()) {
+				final SelectionKey selectedKey = selectedKeysIterator.next();
+				selectedKeysIterator.remove();
+				
+				if(selectedKey.isValid() && selectedKey.isReadable()) {
+					//Handle a read attempt from the channel
+					readFromChannel(channel);
+				}
 			}
 		}
 	}
 	
-	private void handleIncoming(final int port) {		
-		final byte[] receiverBuffer = new byte[RECEIVER_BUFFER_SIZE];		
-		final DatagramPacket receivedPacket = new DatagramPacket(receiverBuffer, receiverBuffer.length);
+	private void readFromChannel(final DatagramChannel channel) throws IOException {
+		inputBuffer.clear();
+		final SocketAddress senderAddress = channel.receive(inputBuffer);	
 		
-		try(final DatagramSocket serverSocket = new DatagramSocket(port)) {
-			serverSocket.setSoTimeout(SO_SOCKET_TIMEOUT);
-			while(true) {									
-				try {
-					serverSocket.receive(receivedPacket);	
-					//TODO: Process received packet and notify listeners
-					notifyListeners(new UdpResponse());
-				}
-				catch(final SocketTimeoutException ste) {
-					if(threadPool.isShutdown()) {
-						//We've been interrupted, connection manager is going down, exit
-						return;
-					}
-				}
-				catch(final IOException ioe) {
-					//TODO: Handle the exception, shutdown UDP server or ignore?
-					System.err.println("UDPServer: Exception occured while waiting for messages: " + ioe);
-				}
-			}		
-		} catch(final SocketException se) {
-			System.err.println("UDP server socket was closed unexpectadably: " + se);
+		if(senderAddress == null) {
+			return;
 		}
+		
+		final byte[] receivedPacket = new byte[inputBuffer.position()];		
+		inputBuffer.flip();
+		inputBuffer.get(receivedPacket);
+				
+		notifyListeners(UdpDataPackageParser.parse(receivedPacket, senderAddress));
+	}
+	
+	private void writeToChannel(final DatagramChannel channel, final UdpRequest udpRequest) {
+		outputBuffer.clear();
+		outputBuffer.put(udpRequest.getRequestData());
+		outputBuffer.flip();
+		
+		try {
+			channel.send(outputBuffer, new InetSocketAddress(
+					udpRequest.getReceiverHost(), udpRequest.getReceiverPort()));			
+		} catch (final IOException | UnresolvedAddressException e) {
+			System.err.println("An error occurred while sending UDP packet [" + udpRequest.getReceiverHost() + "]");
+		}
+	}
+	
+	private void notifyListeners(final UdpResponse response) {		
+		listeners.stream().forEach(l -> {
+			if(l.messageNotificationMask().contains(response.getType())) {
+				l.onUdpResponseReceived(response);
+			}
+		});
+	}
+	
+	private void setChannelOptions(final DatagramChannel channel, final Selector connectionSelector,
+			final String networkInterface, final int listenPort) throws IOException {
+		channel.configureBlocking(false);
+		channel.bind(NetworkUtilities.getSocketAddressFromNetworkInterface(networkInterface, listenPort));
+		channel.register(connectionSelector, SelectionKey.OP_READ);
 	}
 }

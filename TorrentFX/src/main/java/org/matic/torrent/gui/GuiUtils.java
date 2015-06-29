@@ -26,12 +26,19 @@ import org.controlsfx.tools.Borders.EtchedBorders;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.paint.Color;
+import javafx.scene.text.Text;
 
 public final class GuiUtils {
 	
 	public enum BorderType {
 		OPTIONS_WINDOW_BORDER, ADD_NEW_TORRENT_BORDER
 	}
+	
+	private static Node EMPTY_TABLE_PLACEHOLDER = new Text();
+	
+	private static Insets RIGHT_PADDING_INSETS = new Insets(0, 5, 0, 0);
+	private static Insets LEFT_PADDING_INSETS = new Insets(0, 0, 0, 5);
+	private static Insets NO_PADDING_INSETS = new Insets(0);
 
 	public static Node applyBorder(final Node targetNode, final String title, BorderType borderType) {		
 		EtchedBorders border = Borders.wrap(targetNode).etchedBorder().title(title).highlight(Color.LIGHTGRAY);
@@ -50,6 +57,18 @@ public final class GuiUtils {
 	}
 	
 	public static Insets noPadding() {
-		return new Insets(0);
+		return NO_PADDING_INSETS;
+	}
+	
+	public static Node getEmptyTablePlaceholder() {
+		return EMPTY_TABLE_PLACEHOLDER;
+	}
+	
+	public static Insets leftPadding() {
+		return LEFT_PADDING_INSETS;
+	}
+	
+	public static Insets rightPadding() {
+		return RIGHT_PADDING_INSETS;
 	}
 }

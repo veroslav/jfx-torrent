@@ -24,6 +24,7 @@ import javax.xml.bind.DatatypeConverter;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.matic.torrent.hash.HashUtilities;
 import org.matic.torrent.peer.ClientProperties;
 
 public final class HashUtilitiesTest {

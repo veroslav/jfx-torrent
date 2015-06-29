@@ -65,22 +65,24 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
-import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
 import org.matic.torrent.codec.BinaryEncodedDictionary;
 import org.matic.torrent.codec.BinaryEncodedList;
 import org.matic.torrent.codec.BinaryEncodedString;
 import org.matic.torrent.codec.BinaryEncodingKeyNames;
-import org.matic.torrent.codec.InfoHash;
+import org.matic.torrent.gui.GuiUtils;
 import org.matic.torrent.gui.action.FileActionHandler;
 import org.matic.torrent.gui.action.WindowActionHandler;
 import org.matic.torrent.gui.image.ImageUtils;
 import org.matic.torrent.gui.model.TorrentJobView;
 import org.matic.torrent.gui.table.TorrentJobTable;
+import org.matic.torrent.gui.table.TrackerTable;
 import org.matic.torrent.gui.tree.TorrentContentTree;
+import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.queue.QueuedTorrent;
 import org.matic.torrent.queue.QueuedTorrentManager;
+import org.matic.torrent.utils.ResourceManager;
 
 /**
  * A main application window, showing all of the GUI components.
@@ -95,6 +97,7 @@ public final class ApplicationWindow {
 	private static final String TOOLBAR_BUTTON_ADD = "Add Torrent";
 	private static final String TOOLBAR_BUTTON_REMOVE = "Remove";	
 	
+	private static final String TRACKERS_TAB_FILES_NAME = "Trackers";
 	private static final String DETAILS_TAB_FILES_NAME = "Files";
 		
 	private static final Color TOOLBAR_BUTTON_COLOR = Color.rgb(46, 46, 46);
@@ -120,6 +123,9 @@ public final class ApplicationWindow {
 	//View for displaying currently selected torrent's contents
 	private final TorrentContentTree torrentContentTree = new TorrentContentTree(true);
 	
+	//View for displaying selected torrent's trackers
+	private final TrackerTable trackerTable = new TrackerTable();
+	
 	//Mapping between toolbar's buttons and their names
 	private final Map<String, Button> toolbarButtonsMap = new HashMap<>();
 	
@@ -144,11 +150,11 @@ public final class ApplicationWindow {
 	
 	private void initComponents() {		
 		torrentJobTable.addSelectionListener(this::onTorrentJobSelection);		
-		torrentContentTree.getView().setPlaceholder(new Text());
+		torrentContentTree.getView().setPlaceholder(GuiUtils.getEmptyTablePlaceholder());
 		
 		stage.setOnCloseRequest(this::onShutdown);		
 		stage.setTitle("jfxTorrent");        
-		stage.centerOnScreen();
+		stage.centerOnScreen();		
 		stage.show();
 	}
 	
@@ -328,7 +334,7 @@ public final class ApplicationWindow {
 	}
 	
 	private Collection<Tab> buildTorrentDetailsTabs() {
-		final String[] tabNames = {DETAILS_TAB_FILES_NAME, "Info", "Peers", "Trackers", "Speed"};        
+		final String[] tabNames = {DETAILS_TAB_FILES_NAME, "Info", "Peers", TRACKERS_TAB_FILES_NAME, "Speed"};        
         final String[] imagePaths = {"/images/appbar.folder.open.png",
         		"/images/appbar.information.circle.png", "/images/appbar.group.png",
         		"/images/appbar.location.circle.png", "/images/appbar.graph.line.png"};
@@ -350,6 +356,7 @@ public final class ApplicationWindow {
         }
         
         detailsTabMap.get(DETAILS_TAB_FILES_NAME).setContent(torrentContentTree.getView());
+        detailsTabMap.get(TRACKERS_TAB_FILES_NAME).setContent(trackerTable.getView());
         
         return tabList;
     }
@@ -449,9 +456,10 @@ public final class ApplicationWindow {
 				.forEach(url -> trackerUrls.add(url.toString()));
 		}
 		
-		final QueuedTorrent queuedTorrent = new QueuedTorrent(
-				torrentOptions.getInfoHash(), trackerUrls, 0);
+		final InfoHash infoHash = torrentOptions.getInfoHash();
+		final QueuedTorrent queuedTorrent = new QueuedTorrent(infoHash, trackerUrls, 0);
 		queuedTorrentManager.add(queuedTorrent);
+		//queuedTorrentManager.updateTrackerStatistics(infoHash, trackerViews);
 	}
 	
 	private void onRemoveTorrent() {
@@ -501,7 +509,7 @@ public final class ApplicationWindow {
 		
 		if(isShuttingDown) {
 			//Perform resource cleanup before shutdown
-			queuedTorrentManager.stop();
+			ResourceManager.INSTANCE.cleanup();
 			
 			//User chose to close the application, quit
 	        Platform.exit();

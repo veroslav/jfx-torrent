@@ -22,6 +22,10 @@ package org.matic.torrent.net;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.net.URL;
 import java.security.cert.X509Certificate;
 
@@ -79,6 +83,22 @@ public final class NetworkUtilities {
 	
 	public static X509Certificate[] getInterceptedCertificates() {		
 		return CERTIFICATE_MANAGER == null? new X509Certificate[0] : CERTIFICATE_MANAGER.getCertificateChain();
+	}
+	
+	//TODO: Do NOT fallback to default interface unless user specifically requests it (VPN case)	
+	public static InetSocketAddress getSocketAddressFromNetworkInterface(final String networkInterface, final int port) {
+		try {
+			final NetworkInterface listenInterface = NetworkInterface.getByName(networkInterface);
+			if(listenInterface == null) {
+				//Invalid/non-existing network interface specified, use default
+				return new InetSocketAddress(port);
+			}
+			final InetAddress inetAddress = listenInterface.getInetAddresses().nextElement();
+			return new InetSocketAddress(inetAddress, port);
+		} catch (final SocketException se) {
+			//Invalid/non-existing network interface specified, use default
+			return new InetSocketAddress(port);
+		}		
 	}
 	
 	private static HttpURLConnection initSecureConnection(final URL url) throws IOException, 

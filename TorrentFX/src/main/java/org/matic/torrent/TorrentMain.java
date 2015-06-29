@@ -38,7 +38,7 @@ public final class TorrentMain extends Application {
 	}
 
 	@Override
-	public final void start(final Stage stage) throws Exception {
+	public final void start(final Stage stage) throws Exception {		
 		new ApplicationWindow(stage);
 	}
 }

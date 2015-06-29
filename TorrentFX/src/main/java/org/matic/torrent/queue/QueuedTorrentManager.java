@@ -20,35 +20,25 @@
 
 package org.matic.torrent.queue;
 
+import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.matic.torrent.codec.InfoHash;
-import org.matic.torrent.net.udp.UdpConnectionManager;
+import org.matic.torrent.gui.model.TrackerView;
+import org.matic.torrent.hash.InfoHash;
+import org.matic.torrent.tracking.TorrentTracker;
 import org.matic.torrent.tracking.TrackerManager;
+import org.matic.torrent.utils.ResourceManager;
 
 public final class QueuedTorrentManager {
 
-	private final UdpConnectionManager udpConnectionManager;
 	private final Set<QueuedTorrent> queuedTorrents;
-	private final TrackerManager trackerManager;
 	
-	public QueuedTorrentManager() {
-		udpConnectionManager = new UdpConnectionManager();
-		
-		trackerManager = new TrackerManager(udpConnectionManager);
-		udpConnectionManager.addListener(trackerManager);
-		queuedTorrents = new TreeSet<>();
-		
-		udpConnectionManager.init();
-	}
+	private List<TorrentTracker> activeTorrentTrackers = null;
+	private InfoHash activeInfoHash = null; 
 	
-	/**
-	 * Unmanage all resources and perform cleanup
-	 */
-	public void stop() {
-		trackerManager.stop();
-		udpConnectionManager.stop();
+	public QueuedTorrentManager() {		 
+		queuedTorrents = new TreeSet<>();		
 	}
 	
 	/**
@@ -61,7 +51,11 @@ public final class QueuedTorrentManager {
 		final boolean added = queuedTorrents.add(torrent);
 		
 		if(added) {
-			torrent.getTrackers().forEach(t -> trackerManager.addTracker(t, torrent.getInfoHash()));
+			final InfoHash infoHash = torrent.getInfoHash();
+			final TrackerManager trackerManager = ResourceManager.INSTANCE.getTrackerManager();
+			torrent.getTrackers().forEach(t -> trackerManager.addForTracking(t, infoHash));
+			activeTorrentTrackers = trackerManager.getTrackers(infoHash);
+			activeInfoHash = infoHash;
 		}
 		
 		return added;
@@ -77,13 +71,38 @@ public final class QueuedTorrentManager {
 		final boolean removed = queuedTorrents.removeIf(qt -> qt.getInfoHash().equals(infoHash));
 		
 		if(removed) {
-			trackerManager.removeTorrent(infoHash);
+			ResourceManager.INSTANCE.getTrackerManager().removeTorrent(infoHash);
 		}
 		
 		return removed;
 	}
 	
-	protected int getSize() {
+	/**
+	 * Update tracker view beans with the latest tracker statistics for a torrent
+	 * 
+	 * @param infoHash Target torrent's info hash
+	 * @param trackerViews List of tracker views to update
+	 */
+	public void updateTrackerStatistics(final InfoHash infoHash, final List<TrackerView> trackerViews) {
+		if(activeInfoHash != infoHash) {
+			activeInfoHash = infoHash;
+			activeTorrentTrackers = ResourceManager.INSTANCE.getTrackerManager().getTrackers(infoHash);
+		}
+		trackerViews.forEach(tv -> activeTorrentTrackers.stream().filter(
+			tt -> tt.getTracker().getUrl().equalsIgnoreCase(tv.getTrackerName())).forEach(m -> {
+				//Update view with values from matching torrent tracker
+				tv.leechersProperty().set(m.getLeechers());
+				tv.seedsProperty().set(m.getSeeders());
+				tv.nextUpdateProperty().set((System.nanoTime() - m.getLastTrackerResponse()) - m.getInterval()); 
+			}
+		));
+	}
+	
+	protected boolean contains(final QueuedTorrent torrent) {
+		return queuedTorrents.contains(torrent);
+	}
+	
+	protected int getQueueSize() {
 		return queuedTorrents.size();
 	}
 }

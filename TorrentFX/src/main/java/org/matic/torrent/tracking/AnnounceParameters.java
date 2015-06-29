@@ -18,15 +18,36 @@
 *
 */
 
-package org.matic.torrent.tracker.methods;
+package org.matic.torrent.tracking;
 
-/**
- * A peer discovery strategy implementing a Distributed Hash Table (DHT)
- * to find remote peers
- * 
- * @author vedran
- *
- */
-public final class DistributedHashTable implements PeerFinderStrategy {
+public final class AnnounceParameters {
+	
+	private final Tracker.Event trackerEvent;		
+	private final long downloaded;
+	private final long uploaded;
+	private final long left;
 
+	public AnnounceParameters(final Tracker.Event trackerEvent, final long uploaded,
+			final long downloaded, final long left) {
+		this.trackerEvent = trackerEvent;				
+		this.downloaded = downloaded;
+		this.uploaded = uploaded;
+		this.left = left;
+	}
+
+	public final Tracker.Event getTrackerEvent() {
+		return trackerEvent;
+	}
+
+	public final long getDownloaded() {
+		return downloaded;
+	}
+
+	public final long getUploaded() {
+		return uploaded;
+	}
+
+	public final long getLeft() {
+		return left;
+	}	
 }

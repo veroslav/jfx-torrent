@@ -18,14 +18,21 @@
 *
 */
 
-package org.matic.torrent.tracker.methods;
+package org.matic.torrent.net.udp;
+
+import java.net.SocketAddress;
 
 /**
- * A marker interface representing an implementation of a peer finding strategy 
+ * 
+ * This parser checks and parses incoming UDP data packets and
+ * assigns them a message type (if they are valid)
  * 
  * @author vedran
  *
  */
-public interface PeerFinderStrategy {
+public final class UdpDataPackageParser {
 
+	public static UdpResponse parse(final byte[] packetData, final SocketAddress socketAddress) {
+		return new UdpResponse(packetData, UdpResponse.Type.UNKNOWN, socketAddress);
+	}
 }

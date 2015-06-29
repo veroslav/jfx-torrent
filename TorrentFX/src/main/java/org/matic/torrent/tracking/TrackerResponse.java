@@ -28,7 +28,7 @@ import org.matic.torrent.net.pwp.PwpPeer;
 public final class TrackerResponse {
 	
 	public enum Type {
-		INVALID_URL, READ_WRITE_ERROR, NORMAL, TRACKER_ERROR, INVALID_RESPONSE, WARNING
+		INVALID_URL, READ_WRITE_ERROR, OK, TRACKER_ERROR, INVALID_RESPONSE, WARNING
 	}
 
 	private final String trackerId;

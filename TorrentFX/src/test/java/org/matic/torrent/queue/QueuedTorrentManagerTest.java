@@ -20,19 +20,77 @@
 
 package org.matic.torrent.queue;
 
-import java.util.HashSet;
+import java.util.Collections;
 
+import javax.xml.bind.DatatypeConverter;
+
+import org.junit.Assert;
 import org.junit.Test;
-import org.matic.torrent.codec.InfoHash;
+import org.matic.torrent.hash.InfoHash;
 
-public class QueuedTorrentManagerTest {
+public final class QueuedTorrentManagerTest {
 
-	private final QueuedTorrentManager unitUnderTest = new QueuedTorrentManager();
+	private final InfoHash infoHash = new InfoHash(DatatypeConverter.parseHexBinary("12345678901234567890"));
+	private final QueuedTorrent torrent = new QueuedTorrent(infoHash, Collections.emptySet(), 1);
+	private final QueuedTorrentManager unitUnderTest = new QueuedTorrentManager();	
 	
 	@Test
-	public void testAddTorrent() {
-		final QueuedTorrent torrent = new QueuedTorrent(
-				new InfoHash(""), new HashSet<>(), 0);
-		unitUnderTest.add(torrent);
+	public void testAddSingleTorrent() {
+		final boolean added = unitUnderTest.add(torrent);
+		Assert.assertTrue(added);
+		Assert.assertEquals(1, unitUnderTest.getQueueSize());
 	}
+	
+	/*@Test
+	public void testAddMultipleTorrents() {
+		final QueuedTorrent otherTorrent = new QueuedTorrent(new InfoHash(
+				DatatypeConverter.parseHexBinary("12345678901234567890")), Collections.emptySet(), 1);
+		final boolean addedFirst = unitUnderTest.add(torrent);
+		final boolean addedOther = unitUnderTest.add(otherTorrent);
+		
+		Assert.assertTrue(addedFirst && addedOther);
+		Assert.assertEquals(2, unitUnderTest.getQueueSize());
+	}*/
+	
+	@Test
+	public void testAddExistingTorrent() {
+		final boolean firstAddition = unitUnderTest.add(torrent);
+		final boolean secondAddition = unitUnderTest.add(torrent);
+		
+		Assert.assertTrue(firstAddition);
+		Assert.assertFalse(secondAddition);
+		
+		Assert.assertEquals(1, unitUnderTest.getQueueSize());
+	}
+	
+	@Test
+	public void testRemoveNonexistingTorrent() {
+		final boolean removed = unitUnderTest.remove(infoHash);
+		Assert.assertFalse(removed);
+		Assert.assertEquals(0, unitUnderTest.getQueueSize());		
+	}
+	
+	@Test
+	public void testRemoveOnlyTorrent() {
+		unitUnderTest.add(torrent);
+		Assert.assertEquals(1, unitUnderTest.getQueueSize());
+		
+		final boolean removed = unitUnderTest.remove(infoHash);
+		
+		Assert.assertTrue(removed);
+		Assert.assertEquals(0, unitUnderTest.getQueueSize());
+	}
+	
+	/*@Test
+	public void testRemoveOneFromMultipleTorrents() {
+		final QueuedTorrent otherTorrent = new QueuedTorrent(new InfoHash(
+				DatatypeConverter.parseHexBinary("12345678901234567890")), Collections.emptySet(), 1);
+		unitUnderTest.add(torrent);
+		unitUnderTest.add(otherTorrent);
+		
+		final boolean removed = unitUnderTest.remove(otherTorrent.getInfoHash());
+		Assert.assertTrue(removed);
+		Assert.assertEquals(1, unitUnderTest.getQueueSize());
+		Assert.assertTrue(unitUnderTest.contains(torrent));
+	}*/
 }

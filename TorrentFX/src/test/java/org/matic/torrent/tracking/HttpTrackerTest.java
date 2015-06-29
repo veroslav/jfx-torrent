@@ -20,35 +20,10 @@
 
 package org.matic.torrent.tracking;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.InetAddress;
-import java.util.HashSet;
-import java.util.Set;
-
-import org.junit.Assert;
-import org.junit.Test;
-import org.matic.torrent.codec.BinaryEncodedDictionary;
-import org.matic.torrent.codec.BinaryEncodedInteger;
-import org.matic.torrent.codec.BinaryEncodedList;
-import org.matic.torrent.codec.BinaryEncodedString;
-import org.matic.torrent.codec.BinaryEncodingKeyNames;
-import org.matic.torrent.codec.InfoHash;
-import org.matic.torrent.net.pwp.PwpPeer;
-import org.matic.torrent.peer.ClientProperties;
-import org.matic.torrent.tracking.AnnounceRequest;
-import org.matic.torrent.tracking.HttpTracker;
-import org.matic.torrent.tracking.TrackableTorrent;
-import org.matic.torrent.tracking.Tracker;
-import org.matic.torrent.tracking.TrackerResponse;
-import org.matic.torrent.tracking.TrackerResponse.Type;
-import org.matic.torrent.utils.UnitConverter;
 
 public final class HttpTrackerTest {
 	
-	private final TrackableTorrent torrent = new TrackableTorrent(
+	/*private final TrackableTorrent torrent = new TrackableTorrent(
 			new InfoHash("12345678901234567890"));	
 	
 	//Mandatory response fields
@@ -277,5 +252,5 @@ public final class HttpTrackerTest {
 		response.put(BinaryEncodingKeyNames.KEY_PEERS, peersInAList? createPeerList(peers) : createPeerString(peers));
 		
 		return response;
-	}
+	}*/
 }

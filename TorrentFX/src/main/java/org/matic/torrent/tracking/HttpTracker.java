@@ -45,11 +45,12 @@ import org.matic.torrent.codec.BinaryEncodedInteger;
 import org.matic.torrent.codec.BinaryEncodedList;
 import org.matic.torrent.codec.BinaryEncodedString;
 import org.matic.torrent.codec.BinaryEncodingKeyNames;
-import org.matic.torrent.codec.InfoHash;
+import org.matic.torrent.hash.HashUtilities;
+import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.net.NetworkUtilities;
 import org.matic.torrent.net.pwp.PwpPeer;
 import org.matic.torrent.peer.ClientProperties;
-import org.matic.torrent.tracker.listeners.TrackerResponseListener;
+import org.matic.torrent.tracking.listeners.HttpTrackerResponseListener;
 
 public final class HttpTracker extends Tracker {
 	
@@ -60,11 +61,11 @@ public final class HttpTracker extends Tracker {
 	private static final String REQUEST_TYPE_ANNOUNCE = "announce";
 	private static final String REQUEST_TYPE_SCRAPE = "scrape";
 	
-	private final TrackerResponseListener responseListener;
+	private final HttpTrackerResponseListener responseListener;
 	private final BinaryDecoder decoder;
 	private final String scrapeUrl;
 	
-	public HttpTracker(final String url, final TrackerResponseListener responseListener) {
+	public HttpTracker(final String url, final HttpTrackerResponseListener responseListener) {
 		super(url);				
 		this.responseListener = responseListener;
 		decoder = new BinaryDecoder();
@@ -81,7 +82,7 @@ public final class HttpTracker extends Tracker {
 	}
 	
 	@Override
-	protected final void scrape(final Set<TrackableTorrent> torrents) {
+	protected final void scrape(final Set<InfoHash> torrentInfoHashes) {
 		 //TODO: Implement method
 	};
 	
@@ -91,9 +92,9 @@ public final class HttpTracker extends Tracker {
 	}
 
 	@Override
-	protected final void announce(final AnnounceRequest announceRequest) {				
-		final TrackerResponse trackerResponse = sendRequest(announceRequest);
-		responseListener.onResponseReceived(trackerResponse, this);				
+	protected final void announce(final AnnounceParameters announceParameters, final TorrentTracker trackedTorrent) {				
+		final TrackerResponse trackerResponse = sendRequest(announceParameters, trackedTorrent);
+		responseListener.onResponseReceived(trackerResponse, trackedTorrent);				
 	}
 	
 	protected String getScrapeUrl() {
@@ -113,33 +114,48 @@ public final class HttpTracker extends Tracker {
 		}
 	}
 	
-	protected String buildRequestUrl(final AnnounceRequest announceRequest) 
-			throws UnsupportedEncodingException {		
-		final TrackableTorrent torrent = announceRequest.getTorrent();
-		final String urlTemplate = "info_hash=%s&peer_id=%s&uploaded=%d&downloaded=%d&left=%d&port=%d&compact=1";		
-		final StringBuilder result = new StringBuilder(url);
-				result.append("?");
-				result.append(String.format(urlTemplate, URLEncoder.encode(
-				torrent.getInfoHash().getHexValue(), StandardCharsets.UTF_8.name()),
-				URLEncoder.encode(ClientProperties.PEER_ID, StandardCharsets.UTF_8.name()),
-				announceRequest.getUploaded(), announceRequest.getDownloaded(),
-				announceRequest.getLeft(), ClientProperties.TCP_PORT));
+	protected String buildRequestUrl(final AnnounceParameters announceParameters, final InfoHash infoHash) 
+			throws UnsupportedEncodingException {
+				
+		final StringBuilder result = new StringBuilder(super.getUrl());
+		result.append("?info_hash=");
+		result.append(HashUtilities.urlEncodeBytes(infoHash.getBytes()));
+		result.append("&peer_id=");
+		result.append(URLEncoder.encode(
+				ClientProperties.PEER_ID, 
+				StandardCharsets.UTF_8.name()));
 		
-		final String eventName = getEventName(announceRequest.getEvent());
+		result.append("&port=");
+		result.append(ClientProperties.TCP_PORT);
+		result.append("&uploaded=");
+		result.append(announceParameters.getUploaded());
+		result.append("&downloaded=");
+		result.append(announceParameters.getDownloaded());
+		result.append("&left=");
+		result.append(announceParameters.getLeft());
+		result.append("&corrupt=0&key=6F187D4A");
+		
+		final Event trackerEvent = announceParameters.getTrackerEvent();
+		final String eventName = getEventName(trackerEvent);
 		if(eventName != null) {
-			result.append("?event=");
+			result.append("&event=");
 			result.append(eventName);
 		}
+		
+		result.append("&numwant=");
+		result.append(trackerEvent != Event.STOPPED? 200 : 0);
+		result.append("&compact=1&no_peer_id=1"); //&supportcrypto=1&redundant=0");
 		
 		return result.toString();
 	}
 	
 	//TODO: Add proxy support for the request
-	private TrackerResponse sendRequest(final AnnounceRequest announceRequest) {			
+	private TrackerResponse sendRequest(final AnnounceParameters announceParameters,
+			final TorrentTracker trackedTorrent) {			
 		URL targetUrl = null;
 		
 		try {
-			targetUrl = new URL(buildRequestUrl(announceRequest));			
+			targetUrl = new URL(buildRequestUrl(announceParameters, trackedTorrent.getInfoHash()));			
 			
 			HttpURLConnection.setFollowRedirects(false);
 			final HttpURLConnection connection = (HttpURLConnection)targetUrl.openConnection();			
@@ -152,10 +168,10 @@ public final class HttpTracker extends Tracker {
 			
 			if(responseCode == HttpURLConnection.HTTP_OK) {
 				try(final InputStream responseStream = connection.getInputStream()) {					
-					final String contentType = connection.getHeaderField(NetworkUtilities.HTTP_CONTENT_TYPE);
-					if(contentType == null || !NetworkUtilities.HTTP_TEXT_PLAIN.equals(contentType)) {
-						return new TrackerResponse(TrackerResponse.Type.INVALID_RESPONSE, "Not a text/plain response");
-					}
+					/*final String contentType = connection.getHeaderField(NetworkUtilities.HTTP_CONTENT_TYPE);
+					if(contentType == null) {
+						return new TrackerResponse(TrackerResponse.Type.INVALID_RESPONSE, "Response content type not set");
+					}*/
 					
 					//Check whether the response stream is gzip encoded
 					final String contentEncoding = connection.getHeaderField(NetworkUtilities.HTTP_CONTENT_ENCODING);
@@ -163,7 +179,10 @@ public final class HttpTracker extends Tracker {
 					final BinaryEncodedDictionary responseMap = contentEncoding != null && 
 							NetworkUtilities.HTTP_GZIP_ENCODING.equals(contentEncoding)? decoder.decodeGzip(responseStream) :
 								decoder.decode(responseStream);
-					return buildResponse(responseMap, announceRequest.getTorrent().getInfoHash());
+					final TrackerResponse trackerResponse = buildResponse(
+							responseMap, trackedTorrent.getInfoHash());
+					trackedTorrent.setLastTrackerEvent(announceParameters.getTrackerEvent());
+					return trackerResponse;
 				}				
 			}
 			else if(responseCode >= HttpURLConnection.HTTP_BAD_REQUEST &&
@@ -213,7 +232,7 @@ public final class HttpTracker extends Tracker {
 		final BinaryEncodedInteger incomplete = ((BinaryEncodedInteger)responseMap.get(
 				BinaryEncodingKeyNames.KEY_INCOMPLETE));
 		
-		if(!validateMandatoryResponseValues(peerList, interval, complete, incomplete)) {
+		if(!validateMandatoryResponseValues(peerList, interval, complete, incomplete)) {			
 			return new TrackerResponse(TrackerResponse.Type.INVALID_RESPONSE, 
 					"Missing mandatory response value");
 		}
@@ -226,7 +245,7 @@ public final class HttpTracker extends Tracker {
 				BinaryEncodingKeyNames.KEY_WARNING_MESSAGE);
 		
 		final TrackerResponse.Type responseType = warningMessage != null? 
-				TrackerResponse.Type.WARNING : TrackerResponse.Type.NORMAL;
+				TrackerResponse.Type.WARNING : TrackerResponse.Type.OK;
 		final String trackerMessage = warningMessage != null? warningMessage.toString() : null;
 		
 		final BinaryEncodedInteger minInterval = (BinaryEncodedInteger)responseMap.get(

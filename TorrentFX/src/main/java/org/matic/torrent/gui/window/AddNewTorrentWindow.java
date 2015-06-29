@@ -59,10 +59,10 @@ import org.matic.torrent.codec.BinaryEncodedDictionary;
 import org.matic.torrent.codec.BinaryEncodedInteger;
 import org.matic.torrent.codec.BinaryEncodedString;
 import org.matic.torrent.codec.BinaryEncodingKeyNames;
-import org.matic.torrent.codec.InfoHash;
 import org.matic.torrent.gui.GuiUtils;
 import org.matic.torrent.gui.GuiUtils.BorderType;
 import org.matic.torrent.gui.tree.TorrentContentTree;
+import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.io.DiskUtilities;
 import org.matic.torrent.utils.UnitConverter;
 

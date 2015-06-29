@@ -18,26 +18,15 @@
 *
 */
 
-package org.matic.torrent.utils;
+package org.matic.torrent.tracking;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-public final class HashUtilities {
+public abstract class TrackerRequest {
 	
-	public static final int HEX_INFO_HASH_LENGTH = 40;	//160 bits / 4 bytes == 40 places
+	protected final TorrentTracker trackedTorrent;
 	
-	private static final Pattern HEX_MATCH_PATTERN = Pattern.compile("[0-9a-fA-F]+");
-
-	/**
-	 * Check whether a string contains a valid hexadecimal number
-	 * (valid values are 0123456789ABCDEF)
-	 * 
-	 * @param value String value to check
-	 * @return Whether value is a valid hexadecimal number
-	 */
-	public static boolean isValidHexNumber(final String value) {
-		final Matcher hexPatternMatch = HEX_MATCH_PATTERN.matcher(value);
-		return hexPatternMatch.matches();
+	protected TrackerRequest(final TorrentTracker trackedTorrent) {
+		this.trackedTorrent = trackedTorrent;
 	}
+
+	protected abstract void execute();
 }

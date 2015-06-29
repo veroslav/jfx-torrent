@@ -18,24 +18,14 @@
 *
 */
 
-package org.matic.torrent.tracker.listeners;
-
-import org.matic.torrent.tracking.Tracker;
-import org.matic.torrent.tracking.TrackerResponse;
+package org.matic.torrent.tracking.methods;
 
 /**
- * A listener for receiving and managing tracker responses
+ * A marker interface representing an implementation of a peer finding strategy 
  * 
  * @author vedran
  *
  */
-public interface TrackerResponseListener {
+public interface PeerFinderStrategy {
 
-	/**
-	 * Handle a tracker response when it has been received  
-	 * 
-	 * @param response Tracker response to handle
-	 * @param tracker Originating tracker
-	 */
-	void onResponseReceived(final TrackerResponse response, final Tracker tracker);
 }

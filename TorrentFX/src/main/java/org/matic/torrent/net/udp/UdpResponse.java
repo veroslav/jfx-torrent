@@ -20,6 +20,9 @@
 
 package org.matic.torrent.net.udp;
 
+import java.net.SocketAddress;
+import java.util.Arrays;
+
 /**
  * A response received from a remote peer or a tracker supporting UDP protocol
  * 
@@ -27,5 +30,30 @@ package org.matic.torrent.net.udp;
  *
  */
 public final class UdpResponse {
+	
+	public enum Type {
+		CONNECTION_ACCEPTED, ANNOUNCE, UNKNOWN
+	}
+	
+	private final SocketAddress senderAddress;
+	private final byte[] data;
+	private final Type type;
 
+	public UdpResponse(final byte[] data, final Type type, final SocketAddress senderAddress) {		
+		this.data = Arrays.copyOf(data, data.length);
+		this.senderAddress = senderAddress;
+		this.type = type;
+	}
+	
+	public final SocketAddress getSenderAddress() {
+		return senderAddress;
+	}
+	
+	public final Type getType() {
+		return type;
+	}
+	
+	public final byte[] getData() {
+		return data;
+	}
 }

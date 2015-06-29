@@ -20,23 +20,10 @@
 
 package org.matic.torrent.tracking;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
-
-import org.junit.Assert;
-import org.junit.Test;
-import org.matic.torrent.codec.InfoHash;
-import org.matic.torrent.tracking.HttpTracker;
-import org.matic.torrent.tracking.TrackableTorrent;
-import org.matic.torrent.tracking.Tracker;
-import org.matic.torrent.tracking.UdpTracker;
 
 public final class TrackerTest {	
 	
-	private final InfoHash torrentInfoHash = new InfoHash("12345678901234567890");	
+	/*private final InfoHash torrentInfoHash = new InfoHash("12345678901234567890");	
 	private final String httpTrackerUrl = "http://localhost:44893/announce";
 
 	@Test
@@ -129,5 +116,5 @@ public final class TrackerTest {
 		Assert.assertTrue(httpTracker.isTracking(torrentInfoHash));
 		Assert.assertTrue(httpTracker.isTracking(anotherTorrentInfoHash));
 		Assert.assertFalse(httpTracker.isTracking(notTrackedTorrentInfoHash));
-	}	
+	}	*/
 }

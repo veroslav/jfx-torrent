@@ -20,12 +20,9 @@
 
 package org.matic.torrent.tracking;
 
-import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
-import org.matic.torrent.codec.InfoHash;
+import org.matic.torrent.hash.InfoHash;
 
 /**
  * An abstract representation of a peer tracker (either TCP or UDP).
@@ -36,36 +33,18 @@ import org.matic.torrent.codec.InfoHash;
  * @author vedran
  *
  */
-public abstract class Tracker implements Comparable<Tracker> {
+public abstract class Tracker {
 	
-	/* Possible states a tracker can be in:
-	 * 	WAITING - Tracker is active and waiting for next announce
-	 * 	ANNOUNCING - Waiting for a response to an announcement
-	 *  ERROR - Last response was error or the tracker isn't reachable
-	 */
-	public enum State {
-		WAITING, ANNOUNCING, ERROR
-	}
-	
-	/*
-	 * Possible states that can be sent on a tracker update
-	 */
-	public enum Event {				
-		STARTED, COMPLETED, STOPPED, NONE		
+	public enum Event {
+		STOPPED, STARTED, COMPLETED, UPDATE
 	}
 	
 	public enum Type {
 		TCP, UDP
 	}
-		
-	protected final String url;
 	
-	//TODO: We might not need synchronization on this Set (methods are called only
-	//from JavaFX-thread)
-	protected final Set<TrackableTorrent> trackedTorrents;
-	
-	protected long lastResponse;
-	protected long nextAnnounce;
+	protected volatile long lastResponse;
+	private final String url;
 	
 	/**
 	 * Create a peer tracker 
@@ -73,10 +52,7 @@ public abstract class Tracker implements Comparable<Tracker> {
 	 * @param url The tracker URL
 	 */
 	protected Tracker(final String url) {		
-		this.url = url;
-						
-		trackedTorrents = new HashSet<>();
-		nextAnnounce = System.nanoTime();		
+		this.url = url;	
 		lastResponse = 0;
 	}
 
@@ -84,70 +60,28 @@ public abstract class Tracker implements Comparable<Tracker> {
 	
 	public abstract Type getType();
 	
+	public String getUrl() {
+		return url;
+	}
+	
 	/**
 	 * Make an announce request against the tracker
 	 * 
-	 * @param announceRequest Announcement request
+	 * @param announceParameters Announcement parameters
+	 * @param trackedTorrent Tracked torrent
 	 */
-	protected abstract void announce(final AnnounceRequest announceRequest);
+	protected abstract void announce(final AnnounceParameters announceParameters,
+			final TorrentTracker trackedTorrent);
 	
 	/**
 	 * Make a scrape request against the tracker (only if supported)
 	 * 
 	 * @param torrents Torrents to be scraped
 	 */
-	protected abstract void scrape(final Set<TrackableTorrent> torrents);
+	protected abstract void scrape(final Set<InfoHash> torrentInfoHashes);
 
-	@Override
-	public final int compareTo(final Tracker other) {
-		if(this.nextAnnounce < other.nextAnnounce) {
-			return -1;
-		}
-		if(this.nextAnnounce > other.nextAnnounce) {
-			return 1;
-		}
-		return 0;
-	}
-	
 	public void setLastResponse(final long lastResponse) {
 		this.lastResponse = lastResponse;
-	}
-	
-	public final boolean addTorrent(final InfoHash infoHash) {
-		synchronized(trackedTorrents) {
-			return trackedTorrents.add(new TrackableTorrent(infoHash));
-		}
-	}
-	
-	public TrackableTorrent getTorrent(final InfoHash infoHash) {
-		synchronized(trackedTorrents) {
-			final List<TrackableTorrent> foundTorrent = trackedTorrents.stream().filter(
-					t -> t.getInfoHash().equals(infoHash)).collect(Collectors.toList());
-			
-			return foundTorrent.isEmpty()? null : foundTorrent.get(0);
-		}
-	}
-	
-	public boolean removeTorrent(final InfoHash torrentInfoHash) {
-		synchronized(trackedTorrents) {
-			return trackedTorrents.removeIf(t -> t.getInfoHash().equals(torrentInfoHash));
-		}
-	}
-	
-	protected final boolean isTracking(final InfoHash torrentInfoHash) {
-		synchronized(trackedTorrents) {
-			return trackedTorrents.stream().anyMatch(t -> torrentInfoHash.equals(t.getInfoHash()));
-		}		
-	}
-	
-	protected Set<TrackableTorrent> getTorrents() {
-		synchronized(trackedTorrents) {
-			return trackedTorrents.stream().collect(Collectors.toSet());
-		}
-	}
-	
-	protected final void setNextAnnounce(final long nextAnnounce) {
-		this.nextAnnounce = nextAnnounce;
 	}
 
 	@Override
@@ -174,6 +108,4 @@ public abstract class Tracker implements Comparable<Tracker> {
 			return false;
 		return true;
 	}
-	
-	
 }

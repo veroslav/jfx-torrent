@@ -23,8 +23,8 @@ package org.matic.torrent.gui.window;
 import javafx.scene.control.TreeItem;
 
 import org.matic.torrent.codec.BinaryEncodedDictionary;
-import org.matic.torrent.codec.InfoHash;
 import org.matic.torrent.gui.model.TorrentFileEntry;
+import org.matic.torrent.hash.InfoHash;
 
 /**
  * A bean containing all of the options selected by the user, during the addition of

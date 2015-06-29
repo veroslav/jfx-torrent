@@ -20,30 +20,10 @@
 
 package org.matic.torrent.tracking;
 
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-
-import org.easymock.EasyMock;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.matic.torrent.codec.InfoHash;
-import org.matic.torrent.net.udp.UdpConnectionManager;
-import org.matic.torrent.net.udp.UdpRequest;
-import org.matic.torrent.peer.ClientProperties;
-import org.matic.torrent.tracking.AnnounceRequest;
-import org.matic.torrent.tracking.TrackableTorrent;
-import org.matic.torrent.tracking.Tracker;
-import org.matic.torrent.tracking.UdpTracker;
 
 public final class UdpTrackerTest {
 	
-	private final TrackableTorrent torrent = new TrackableTorrent(
+	/*private final TrackableTorrent torrent = new TrackableTorrent(
 			new InfoHash("12345678901234567890"));
 	private final Tracker.Event trackerEvent = Tracker.Event.STARTED;
 	private final long downloaded = 321;
@@ -127,5 +107,5 @@ public final class UdpTrackerTest {
 	
 	private AnnounceRequest buildAnnounceRequest() {				 	
 		return new AnnounceRequest(torrent, trackerEvent, uploaded, downloaded, left);
-	}
+	}*/
 }

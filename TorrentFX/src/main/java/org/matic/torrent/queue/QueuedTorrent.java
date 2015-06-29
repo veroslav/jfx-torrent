@@ -23,7 +23,9 @@ package org.matic.torrent.queue;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import org.matic.torrent.codec.InfoHash;
+import javax.xml.bind.DatatypeConverter;
+
+import org.matic.torrent.hash.InfoHash;
 
 public final class QueuedTorrent implements Comparable<QueuedTorrent> {
 	
@@ -55,7 +57,8 @@ public final class QueuedTorrent implements Comparable<QueuedTorrent> {
 		if(priority > other.priority) {
 			return 1;
 		}
-		return infoHash.getHexValue().compareTo(other.infoHash.getHexValue());
+		return DatatypeConverter.printHexBinary(infoHash.getBytes())
+				.compareTo(DatatypeConverter.printHexBinary(other.infoHash.getBytes()));
 	}
 
 	@Override
