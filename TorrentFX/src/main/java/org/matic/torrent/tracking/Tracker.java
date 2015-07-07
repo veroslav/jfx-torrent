@@ -22,8 +22,6 @@ package org.matic.torrent.tracking;
 
 import java.util.Set;
 
-import org.matic.torrent.hash.InfoHash;
-
 /**
  * An abstract representation of a peer tracker (either TCP or UDP).
  * Comparison is made based on next announce time, so that we can
@@ -39,9 +37,15 @@ public abstract class Tracker {
 		STOPPED, STARTED, COMPLETED, UPDATE
 	}
 	
+	public enum Status {
+		ANNOUNCING, CONNECTING
+	}
+	
 	public enum Type {
 		TCP, UDP
 	}
+	
+	protected static final int NUM_WANTED_PEERS = 200;
 	
 	protected volatile long lastResponse;
 	private final String url;
@@ -71,15 +75,26 @@ public abstract class Tracker {
 	 * @param trackedTorrent Tracked torrent
 	 */
 	protected abstract void announce(final AnnounceParameters announceParameters,
-			final TorrentTracker trackedTorrent);
+			final TrackedTorrent trackedTorrent);
 	
 	/**
 	 * Make a scrape request against the tracker (only if supported)
 	 * 
 	 * @param torrents Torrents to be scraped
 	 */
-	protected abstract void scrape(final Set<InfoHash> torrentInfoHashes);
+	protected abstract void scrape(final Set<TrackedTorrent> torrents);
 
+	/**
+	 * Send a connection request to this tracker (only supported by UDP trackers)
+	 * 
+	 * @param transactionId Caller's transaction id
+	 */
+	protected abstract void connect(final int transactionId);
+	
+	protected abstract long getId();
+	
+	protected abstract void setId(final long id);
+	
 	public void setLastResponse(final long lastResponse) {
 		this.lastResponse = lastResponse;
 	}

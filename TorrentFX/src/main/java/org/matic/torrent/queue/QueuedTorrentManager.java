@@ -26,7 +26,7 @@ import java.util.TreeSet;
 
 import org.matic.torrent.gui.model.TrackerView;
 import org.matic.torrent.hash.InfoHash;
-import org.matic.torrent.tracking.TorrentTracker;
+import org.matic.torrent.tracking.TrackedTorrent;
 import org.matic.torrent.tracking.TrackerManager;
 import org.matic.torrent.utils.ResourceManager;
 
@@ -34,7 +34,7 @@ public final class QueuedTorrentManager {
 
 	private final Set<QueuedTorrent> queuedTorrents;
 	
-	private List<TorrentTracker> activeTorrentTrackers = null;
+	private List<TrackedTorrent> activeTorrentTrackers = null;
 	private InfoHash activeInfoHash = null; 
 	
 	public QueuedTorrentManager() {		 

@@ -82,19 +82,35 @@ public final class HttpTracker extends Tracker {
 	}
 	
 	@Override
-	protected final void scrape(final Set<InfoHash> torrentInfoHashes) {
+	protected final void scrape(final Set<TrackedTorrent> torrents) {
 		 //TODO: Implement method
 	};
+	
+	@Override
+	protected void connect(final int transactionId) {
+		//Connection establishment is not supported by HTTP trackers
+	}
 	
 	@Override
 	public final Type getType() {
 		return Type.TCP;
 	}
+	
+	@Override
+	protected long getId() {
+		//Not supported by HTTP trackers
+		return 0;
+	}
+	
+	@Override
+	protected void setId(final long id) {
+		//Not supported by HTTP trackers
+	}
 
 	@Override
-	protected final void announce(final AnnounceParameters announceParameters, final TorrentTracker trackedTorrent) {				
-		final TrackerResponse trackerResponse = sendRequest(announceParameters, trackedTorrent);
-		responseListener.onResponseReceived(trackerResponse, trackedTorrent);				
+	protected final void announce(final AnnounceParameters announceParameters, final TrackedTorrent trackedTorrent) {				
+		final AnnounceResponse trackerResponse = sendRequest(announceParameters, trackedTorrent);
+		responseListener.onAnnounceResponseReceived(trackerResponse, trackedTorrent);				
 	}
 	
 	protected String getScrapeUrl() {
@@ -143,15 +159,15 @@ public final class HttpTracker extends Tracker {
 		}
 		
 		result.append("&numwant=");
-		result.append(trackerEvent != Event.STOPPED? 200 : 0);
+		result.append(trackerEvent != Event.STOPPED? NUM_WANTED_PEERS : 0);
 		result.append("&compact=1&no_peer_id=1"); //&supportcrypto=1&redundant=0");
 		
 		return result.toString();
 	}
 	
 	//TODO: Add proxy support for the request
-	private TrackerResponse sendRequest(final AnnounceParameters announceParameters,
-			final TorrentTracker trackedTorrent) {			
+	private AnnounceResponse sendRequest(final AnnounceParameters announceParameters,
+			final TrackedTorrent trackedTorrent) {			
 		URL targetUrl = null;
 		
 		try {
@@ -179,7 +195,7 @@ public final class HttpTracker extends Tracker {
 					final BinaryEncodedDictionary responseMap = contentEncoding != null && 
 							NetworkUtilities.HTTP_GZIP_ENCODING.equals(contentEncoding)? decoder.decodeGzip(responseStream) :
 								decoder.decode(responseStream);
-					final TrackerResponse trackerResponse = buildResponse(
+					final AnnounceResponse trackerResponse = buildResponse(
 							responseMap, trackedTorrent.getInfoHash());
 					trackedTorrent.setLastTrackerEvent(announceParameters.getTrackerEvent());
 					return trackerResponse;
@@ -189,20 +205,20 @@ public final class HttpTracker extends Tracker {
 					responseCode <= HttpURLConnection.HTTP_GATEWAY_TIMEOUT){
 				return buildErrorResponse(connection.getErrorStream());
 			}
-			return new TrackerResponse(TrackerResponse.Type.READ_WRITE_ERROR, "Error response: code " + responseCode);
+			return new AnnounceResponse(AnnounceResponse.Type.READ_WRITE_ERROR, "Error response: code " + responseCode);
 		}
 		catch(final BinaryDecoderException bde) {
-			return new TrackerResponse(TrackerResponse.Type.INVALID_RESPONSE, bde.getMessage());
+			return new AnnounceResponse(AnnounceResponse.Type.INVALID_RESPONSE, bde.getMessage());
 		}
 		catch(final MalformedURLException mue) {
-			return new TrackerResponse(TrackerResponse.Type.INVALID_URL, mue.getMessage());
+			return new AnnounceResponse(AnnounceResponse.Type.INVALID_URL, mue.getMessage());
 		}
 		catch(final IOException ioe) {
-			return new TrackerResponse(TrackerResponse.Type.READ_WRITE_ERROR, ioe.getMessage());
+			return new AnnounceResponse(AnnounceResponse.Type.READ_WRITE_ERROR, ioe.getMessage());
 		}
 	}
 	
-	protected TrackerResponse buildErrorResponse(final InputStream errorStream) throws IOException {
+	protected AnnounceResponse buildErrorResponse(final InputStream errorStream) throws IOException {
 		final StringBuilder errorMessage = new StringBuilder();
 		
 		try(final BufferedReader reader = new BufferedReader(new InputStreamReader(
@@ -210,15 +226,15 @@ public final class HttpTracker extends Tracker {
 			errorMessage.append(reader.readLine());
 		}
 		
-		return new TrackerResponse(TrackerResponse.Type.TRACKER_ERROR, errorMessage.toString());
+		return new AnnounceResponse(AnnounceResponse.Type.TRACKER_ERROR, errorMessage.toString());
 	}
 	
-	protected TrackerResponse buildResponse(final BinaryEncodedDictionary responseMap, final InfoHash infoHash) {
+	protected AnnounceResponse buildResponse(final BinaryEncodedDictionary responseMap, final InfoHash infoHash) {
 		final BinaryEncodedString failureReason = (BinaryEncodedString)responseMap.get(
 				BinaryEncodingKeyNames.KEY_FAILURE_REASON);
 		
 		if(failureReason != null) {
-			return new TrackerResponse(TrackerResponse.Type.TRACKER_ERROR, failureReason.toString());
+			return new AnnounceResponse(AnnounceResponse.Type.TRACKER_ERROR, failureReason.toString());
 		}
 		
 		final BinaryEncodable peerList = responseMap.get(BinaryEncodingKeyNames.KEY_PEERS);
@@ -233,7 +249,7 @@ public final class HttpTracker extends Tracker {
 				BinaryEncodingKeyNames.KEY_INCOMPLETE));
 		
 		if(!validateMandatoryResponseValues(peerList, interval, complete, incomplete)) {			
-			return new TrackerResponse(TrackerResponse.Type.INVALID_RESPONSE, 
+			return new AnnounceResponse(AnnounceResponse.Type.INVALID_RESPONSE, 
 					"Missing mandatory response value");
 		}
 		
@@ -244,8 +260,8 @@ public final class HttpTracker extends Tracker {
 		final BinaryEncodedString warningMessage = (BinaryEncodedString)responseMap.get(
 				BinaryEncodingKeyNames.KEY_WARNING_MESSAGE);
 		
-		final TrackerResponse.Type responseType = warningMessage != null? 
-				TrackerResponse.Type.WARNING : TrackerResponse.Type.OK;
+		final AnnounceResponse.Type responseType = warningMessage != null? 
+				AnnounceResponse.Type.WARNING : AnnounceResponse.Type.OK;
 		final String trackerMessage = warningMessage != null? warningMessage.toString() : null;
 		
 		final BinaryEncodedInteger minInterval = (BinaryEncodedInteger)responseMap.get(
@@ -258,7 +274,7 @@ public final class HttpTracker extends Tracker {
 		
 		final Set<PwpPeer> peers = extractPeers(peerList, infoHash);
 		
-		return new TrackerResponse(responseType, trackerMessage, intervalValue, minIntervalValue, trackerIdValue,
+		return new AnnounceResponse(responseType, trackerMessage, intervalValue, minIntervalValue, trackerIdValue,
 				completeValue, incompleteValue, peers);
 	}
 	

@@ -18,15 +18,31 @@
 *
 */
 
-package org.matic.torrent.tracking;
+package org.matic.torrent.net.udp;
 
-public abstract class TrackerRequest {
+import java.util.Arrays;
+
+/**
+ * A response received from a tracker supporting UDP protocol
+ * 
+ * @author vedran
+ *
+ */
+public final class UdpTrackerResponse {
 	
-	protected final TrackedTorrent trackedTorrent;
-	
-	protected TrackerRequest(final TrackedTorrent trackedTorrent) {
-		this.trackedTorrent = trackedTorrent;
+	private final byte[] data;
+	private final int action;
+
+	public UdpTrackerResponse(final byte[] data, final int type) {		
+		this.data = Arrays.copyOf(data, data.length);
+		this.action = type;
 	}
-
-	protected abstract void execute();
+	
+	public final int getAction() {
+		return action;
+	}
+	
+	public final byte[] getData() {
+		return data;
+	}
 }

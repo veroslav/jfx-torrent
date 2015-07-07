@@ -23,11 +23,10 @@ package org.matic.torrent.tracking;
 import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.peer.ClientProperties;
 
-public final class TorrentTracker {
+public final class TrackedTorrent {
 
 	private volatile Tracker.Event lastTrackerEvent;
 	
-	private final int transactionId = ClientProperties.generateUniqueId();
 	private final InfoHash infoHash;	
 	private final Tracker tracker;
 	
@@ -37,12 +36,25 @@ public final class TorrentTracker {
 	private volatile long lastTrackerResponse = 0;
 	private volatile long interval = 0;
 	private Long minInterval = null;	
+	
+	private int transactionId = ClientProperties.generateUniqueId();
+	
+	//TODO: Move connectionAttempts to UdpTracker?
+	private int connectionAttempts = 0;
 
-	public TorrentTracker(final InfoHash infoHash, final Tracker tracker) {
+	public TrackedTorrent(final InfoHash infoHash, final Tracker tracker) {
 		this.infoHash = infoHash;
 		this.tracker = tracker;
 		
 		lastTrackerEvent = Tracker.Event.STOPPED;
+	}
+	
+	public final int updateConnectionAttempts() {
+		return ++connectionAttempts;
+	}
+
+	public final void setTransactionId(final int transactionId) {
+		this.transactionId = transactionId;
 	}
 	
 	public final int getLeechers() {
@@ -83,6 +95,7 @@ public final class TorrentTracker {
 
 	public void setLastTrackerResponse(final long lastTrackerResponse) {
 		this.lastTrackerResponse = lastTrackerResponse;
+		connectionAttempts = 0;
 	}
 	
 	public final int getTransactionId() {
@@ -123,7 +136,7 @@ public final class TorrentTracker {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		TorrentTracker other = (TorrentTracker) obj;
+		TrackedTorrent other = (TrackedTorrent) obj;
 		if (infoHash == null) {
 			if (other.infoHash != null)
 				return false;

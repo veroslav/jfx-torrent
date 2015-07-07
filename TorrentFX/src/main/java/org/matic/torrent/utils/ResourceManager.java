@@ -52,7 +52,7 @@ public final class ResourceManager {
 				NetworkProperties.UDP_DHT_PORT, String.valueOf(UdpConnectionManager.DEFAULT_UDP_PORT)));		
 		
 		udpTrackerConnectionManager = new UdpConnectionManager();
-		udpTrackerConnectionManager.addListener(trackerManager);		
+		udpTrackerConnectionManager.addTrackerListener(trackerManager);		
 		
 		dhtConnectionManager = udpTrackerPort == dhtPort? 
 				udpTrackerConnectionManager : new UdpConnectionManager();
@@ -65,7 +65,7 @@ public final class ResourceManager {
 	
 	public void cleanup() {
 		//Remove all listeners before shutting down
-		udpTrackerConnectionManager.removeListener(trackerManager);
+		udpTrackerConnectionManager.removeTrackerListener(trackerManager);
 		
 		if(dhtConnectionManager != udpTrackerConnectionManager) {
 			dhtConnectionManager.unmanage();
@@ -75,6 +75,14 @@ public final class ResourceManager {
 		trackerManager.stop();
 		udpTrackerConnectionManager.unmanage();
 		dhtConnectionManager.unmanage();
+	}
+	
+	public final int getDhtPort() {
+		return dhtPort;
+	}
+	
+	public final int getUdpTrackerPort() {
+		return udpTrackerPort;
 	}
 
 	public final UdpConnectionManager getUdpTrackerConnectionManager() {

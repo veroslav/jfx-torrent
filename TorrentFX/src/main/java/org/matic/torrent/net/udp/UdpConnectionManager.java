@@ -38,6 +38,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.matic.torrent.net.NetworkUtilities;
+import org.matic.torrent.tracking.listeners.DhtResponseListener;
+import org.matic.torrent.tracking.listeners.UdpTrackerResponseListener;
+import org.matic.torrent.tracking.methods.dht.DhtResponse;
 
 /**
  * An UDP connection manager, based on non-blocking IO.
@@ -57,7 +60,8 @@ public final class UdpConnectionManager {
 	private static final int MAX_OUTGOING_MESSAGES = 30;
 	
 	private final BlockingQueue<UdpRequest> outgoingMessages;
-	private final Set<UdpConnectionListener> listeners;
+	private final Set<UdpTrackerResponseListener> trackerListeners;
+	private final Set<DhtResponseListener> dhtListeners;
 	
 	private final ByteBuffer outputBuffer = ByteBuffer.allocate(MAX_OUTPUT_PACKET_SIZE);
 	private final ByteBuffer inputBuffer = ByteBuffer.allocate(MAX_INPUT_PACKET_SIZE);
@@ -69,17 +73,26 @@ public final class UdpConnectionManager {
 		this.connectionManagerExecutor = Executors.newSingleThreadExecutor();		
 		
 		outgoingMessages = new ArrayBlockingQueue<>(MAX_OUTGOING_MESSAGES);
-		listeners = new CopyOnWriteArraySet<>();
+		trackerListeners = new CopyOnWriteArraySet<>();
+		dhtListeners = new CopyOnWriteArraySet<>();
 		
 		outputBuffer.order(ByteOrder.BIG_ENDIAN);
 	}
 	
-	public final void addListener(final UdpConnectionListener listener) {		
-		listeners.add(listener);
+	public final void addTrackerListener(final UdpTrackerResponseListener listener) {		
+		trackerListeners.add(listener);
 	}
 	
-	public final void removeListener(final UdpConnectionListener listener) {		
-		listeners.remove(listener);
+	public final void removeTrackerListener(final UdpTrackerResponseListener listener) {		
+		trackerListeners.remove(listener);
+	}
+	
+	public final void addDHTListener(final DhtResponseListener listener) {		
+		dhtListeners.add(listener);
+	}
+	
+	public final void removeDHTListener(final DhtResponseListener listener) {		
+		dhtListeners.remove(listener);
 	}
 	
 	/**
@@ -172,7 +185,18 @@ public final class UdpConnectionManager {
 		inputBuffer.flip();
 		inputBuffer.get(receivedPacket);
 				
-		notifyListeners(UdpDataPackageParser.parse(receivedPacket, senderAddress));
+		//First try to parse a DHT message
+		final DhtResponse dhtResponse = UdpDataPacketParser.parseDHTResponse(receivedPacket);
+		if(dhtResponse != null) {
+			notifyDHTListeners(dhtResponse);
+		}
+		else {
+			//Try parsing as a regular UDP tracker response message
+			final UdpTrackerResponse trackerResponse = UdpDataPacketParser.parseTrackerResponse(receivedPacket);
+			if(trackerResponse != null) {
+				notifyTrackerListeners(trackerResponse);
+			}
+		}
 	}
 	
 	private void writeToChannel(final DatagramChannel channel, final UdpRequest udpRequest) {
@@ -188,12 +212,12 @@ public final class UdpConnectionManager {
 		}
 	}
 	
-	private void notifyListeners(final UdpResponse response) {		
-		listeners.stream().forEach(l -> {
-			if(l.messageNotificationMask().contains(response.getType())) {
-				l.onUdpResponseReceived(response);
-			}
-		});
+	private void notifyDHTListeners(final DhtResponse dhtResponse) {
+		dhtListeners.stream().forEach(l -> l.onDhtResponseReceived(dhtResponse));
+	}
+	
+	private void notifyTrackerListeners(final UdpTrackerResponse response) {		
+		trackerListeners.stream().forEach(l -> l.onUdpTrackerResponseReceived(response));
 	}
 	
 	private void setChannelOptions(final DatagramChannel channel, final Selector connectionSelector,

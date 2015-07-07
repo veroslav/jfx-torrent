@@ -18,15 +18,23 @@
 *
 */
 
-package org.matic.torrent.tracking;
+package org.matic.torrent.tracking.listeners;
 
-public abstract class TrackerRequest {
-	
-	protected final TrackedTorrent trackedTorrent;
-	
-	protected TrackerRequest(final TrackedTorrent trackedTorrent) {
-		this.trackedTorrent = trackedTorrent;
-	}
+import org.matic.torrent.tracking.methods.dht.DhtResponse;
 
-	protected abstract void execute();
+/**
+ * An interface for notifying implementing classes
+ * when a response is received from a DHT network
+ * 
+ * @author vedran
+ *
+ */
+public interface DhtResponseListener {
+
+	/**
+	 * Notify implementing classes when a DHT UDP packet is received
+	 * 
+	 * @param response Response containing DHT packet data
+	 */
+	void onDhtResponseReceived(final DhtResponse response);
 }

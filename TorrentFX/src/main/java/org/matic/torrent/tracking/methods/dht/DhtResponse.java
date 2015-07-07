@@ -18,30 +18,19 @@
 *
 */
 
-package org.matic.torrent.net.udp;
+package org.matic.torrent.tracking.methods.dht;
 
-import java.util.Set;
+import org.matic.torrent.codec.BinaryEncodedDictionary;
 
-/**
- * An interface for notifying implementing classes when a UDP packet is
- * received from a remote peer or an UDP tracker
- * 
- * @author vedran
- *
- */
-public interface UdpConnectionListener {
-
-	/**
-	 * Notify implementing class when a UDP packet is received
-	 * 
-	 * @param response Response containing UDP packet data
-	 */
-	void onUdpResponseReceived(final UdpResponse response);
+public final class DhtResponse {
 	
-	/**
-	 * Target message types for which to notify listeners
-	 * 
-	 * @return Message types for which to notify listeners 
-	 */
-	Set<UdpResponse.Type> messageNotificationMask();
+	private final BinaryEncodedDictionary responseContents;
+
+	public DhtResponse(final BinaryEncodedDictionary responseContents) {
+		this.responseContents = responseContents;
+	}
+
+	public final BinaryEncodedDictionary getResponseContents() {
+		return responseContents;
+	}	
 }

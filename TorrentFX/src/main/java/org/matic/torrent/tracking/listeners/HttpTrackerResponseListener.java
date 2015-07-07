@@ -20,8 +20,8 @@
 
 package org.matic.torrent.tracking.listeners;
 
-import org.matic.torrent.tracking.TorrentTracker;
-import org.matic.torrent.tracking.TrackerResponse;
+import org.matic.torrent.tracking.TrackedTorrent;
+import org.matic.torrent.tracking.AnnounceResponse;
 
 /**
  * A listener for receiving and managing HTTP tracker responses
@@ -35,7 +35,8 @@ public interface HttpTrackerResponseListener {
 	 * Handle a tracker response when it has been received  
 	 * 
 	 * @param response Tracker response to handle
-	 * @param trackedTorrent Tracker request submitter
+	 * @param trackedTorrent Tracker sending the response
 	 */
-	void onResponseReceived(final TrackerResponse response, final TorrentTracker trackedTorrent);
+	void onAnnounceResponseReceived(final AnnounceResponse response,
+			final TrackedTorrent trackedTorrent);
 }

@@ -24,7 +24,7 @@ public final class AnnounceRequest extends TrackerRequest {
 	
 	private final AnnounceParameters announceParameters;
 
-	public AnnounceRequest(final TorrentTracker trackedTorrent, final AnnounceParameters announceParameters) {
+	public AnnounceRequest(final TrackedTorrent trackedTorrent, final AnnounceParameters announceParameters) {
 		super(trackedTorrent);
 		this.announceParameters = announceParameters;
 	}

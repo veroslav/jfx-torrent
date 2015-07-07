@@ -25,7 +25,7 @@ import java.util.Set;
 
 import org.matic.torrent.net.pwp.PwpPeer;
 
-public final class TrackerResponse {
+public final class AnnounceResponse {
 	
 	public enum Type {
 		INVALID_URL, READ_WRITE_ERROR, OK, TRACKER_ERROR, INVALID_RESPONSE, WARNING
@@ -48,7 +48,7 @@ public final class TrackerResponse {
 	 * @param type Type of tracker error
 	 * @param errorMessage Error message detailing the error
 	 */
-	public TrackerResponse(final Type type, final String errorMessage) {
+	public AnnounceResponse(final Type type, final String errorMessage) {
 		this(type, errorMessage, 0, null, null, 0, 0, Collections.emptySet());
 	}
 	
@@ -58,7 +58,7 @@ public final class TrackerResponse {
 	 * @param type Type of response (either NORMAL or WARNING)
 	 * @param warningMessage null if NORMAL, warning message otherwise
 	 */
-	public TrackerResponse(final Type type, final String warningMessage, final long interval,
+	public AnnounceResponse(final Type type, final String warningMessage, final long interval,
 			final Long minInterval, final String trackerId, final long complete,
 			final long incomplete, final Set<PwpPeer> peers) {
 		this.type = type;
@@ -128,7 +128,7 @@ public final class TrackerResponse {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		TrackerResponse other = (TrackerResponse) obj;
+		AnnounceResponse other = (AnnounceResponse) obj;
 		if (complete != other.complete)
 			return false;
 		if (incomplete != other.incomplete)

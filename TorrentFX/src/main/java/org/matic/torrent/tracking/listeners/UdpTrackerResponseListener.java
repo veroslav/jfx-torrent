@@ -18,15 +18,23 @@
 *
 */
 
-package org.matic.torrent.tracking;
+package org.matic.torrent.tracking.listeners;
 
-public abstract class TrackerRequest {
-	
-	protected final TrackedTorrent trackedTorrent;
-	
-	protected TrackerRequest(final TrackedTorrent trackedTorrent) {
-		this.trackedTorrent = trackedTorrent;
-	}
+import org.matic.torrent.net.udp.UdpTrackerResponse;
 
-	protected abstract void execute();
+/**
+ * An interface for notifying implementing classes
+ * when a response is received from an UDP tracker
+ * 
+ * @author vedran
+ *
+ */
+public interface UdpTrackerResponseListener {
+
+	/**
+	 * Notify implementing class when a response is received from an UDP tracker
+	 * 
+	 * @param response UDP tracker response
+	 */
+	void onUdpTrackerResponseReceived(final UdpTrackerResponse response);
 }
