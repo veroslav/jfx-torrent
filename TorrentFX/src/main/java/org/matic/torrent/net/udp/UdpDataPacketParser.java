@@ -31,9 +31,9 @@ import org.matic.torrent.tracking.methods.dht.DhtResponse;
 
 public final class UdpDataPacketParser {
 	
-	private static final int ANNOUNCE_RESPONSE_MIN_MESSAGE_LENGTH = 160;	
-	private static final int CONNECTION_RESPONSE_MESSAGE_LENGTH = 128;	
-	private static final int SCRAPE_RESPONSE_MIN_MESSAGE_LENGTH = 64;
+	private static final int MIN_CONNECTION_RESPONSE_MESSAGE_LENGTH = 16;	
+	private static final int MIN_ANNOUNCE_RESPONSE_MESSAGE_LENGTH = 20;	
+	private static final int MIN_SCRAPE_RESPONSE_MESSAGE_LENGTH = 8;
 
 	public static DhtResponse parseDHTResponse(final byte[] packetData) {
 		final BinaryDecoder decoder = new BinaryDecoder();
@@ -45,39 +45,47 @@ public final class UdpDataPacketParser {
 		}
 	}
 	
-	public static UdpTrackerResponse parseTrackerResponse(final byte[] responseData) {
-		
-		System.out.println("responseData[].length: " + responseData.length);
-		
+	public static UdpTrackerResponse parseTrackerResponse(final byte[] responseData) {		
 		try(final DataInputStream dis = new DataInputStream(new ByteArrayInputStream(responseData))) {	
-			/*if(responseData.length < Integer.BYTES) {
-				return new UdpTrackerResponse(responseData, UdpTracker.ACTION_ERROR);
-			}*/
 			
+			final int responseLength = responseData.length;
 			final int actionId = dis.readInt();
 			
-			System.out.println("PARSER: parsed message with id: " + actionId);
-			
 			//Check whether it is a response to a connection request			
-			if(//responseData.length == CONNECTION_RESPONSE_MESSAGE_LENGTH &&
-					actionId == UdpTracker.ACTION_CONNECT) {
-				return new UdpTrackerResponse(responseData, UdpTracker.ACTION_CONNECT);
+			if(actionId == UdpTracker.ACTION_CONNECT) {
+				if(responseLength >= MIN_CONNECTION_RESPONSE_MESSAGE_LENGTH) {
+					return new UdpTrackerResponse(responseData, UdpTracker.ACTION_CONNECT, null);
+				}
+				else {
+					return new UdpTrackerResponse(responseData, UdpTracker.ACTION_ERROR,
+							"Connection response too short: " + responseLength);
+				}
 			}
 			//Check whether it is a response to an announce request			
-			else if(//responseData.length >= ANNOUNCE_RESPONSE_MIN_MESSAGE_LENGTH &&
-					actionId == UdpTracker.ACTION_ANNOUNCE) {
-				return new UdpTrackerResponse(responseData, UdpTracker.ACTION_ANNOUNCE);
+			else if(actionId == UdpTracker.ACTION_ANNOUNCE) {
+				if(responseLength >= MIN_ANNOUNCE_RESPONSE_MESSAGE_LENGTH) {
+					return new UdpTrackerResponse(responseData, UdpTracker.ACTION_ANNOUNCE, null);
+				}
+				else {
+					return new UdpTrackerResponse(responseData, UdpTracker.ACTION_ERROR,
+							"Announce response too short: " + responseLength);
+				}
 			}
 			//Check whether it is a response to a scrape request 
-			else if(//responseData.length >= SCRAPE_RESPONSE_MIN_MESSAGE_LENGTH &&
-					actionId == UdpTracker.ACTION_SCRAPE) {
-				return new UdpTrackerResponse(responseData, UdpTracker.ACTION_SCRAPE);
+			else if(actionId == UdpTracker.ACTION_SCRAPE) {
+				if(responseLength >= MIN_SCRAPE_RESPONSE_MESSAGE_LENGTH) {
+					return new UdpTrackerResponse(responseData, UdpTracker.ACTION_SCRAPE, null);
+				}
+				else {
+					return new UdpTrackerResponse(responseData, UdpTracker.ACTION_ERROR,
+							"Scrape response too short: " + responseLength);
+				}
 			}
 			
-			return new UdpTrackerResponse(responseData, UdpTracker.ACTION_ERROR);
+			return new UdpTrackerResponse(responseData, UdpTracker.ACTION_ERROR, null);
 			
 		} catch (final IOException ioe) {
-			return new UdpTrackerResponse(responseData, UdpTracker.ACTION_ERROR);
+			return new UdpTrackerResponse(responseData, UdpTracker.ACTION_ERROR, ioe.getMessage());
 		}
 	}
 }

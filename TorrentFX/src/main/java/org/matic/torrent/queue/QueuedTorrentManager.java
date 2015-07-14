@@ -26,7 +26,7 @@ import java.util.TreeSet;
 
 import org.matic.torrent.gui.model.TrackerView;
 import org.matic.torrent.hash.InfoHash;
-import org.matic.torrent.tracking.TrackedTorrent;
+import org.matic.torrent.tracking.TrackerSession;
 import org.matic.torrent.tracking.TrackerManager;
 import org.matic.torrent.utils.ResourceManager;
 
@@ -34,7 +34,7 @@ public final class QueuedTorrentManager {
 
 	private final Set<QueuedTorrent> queuedTorrents;
 	
-	private List<TrackedTorrent> activeTorrentTrackers = null;
+	private List<TrackerSession> activeTorrentTrackerSessions = null;
 	private InfoHash activeInfoHash = null; 
 	
 	public QueuedTorrentManager() {		 
@@ -54,7 +54,7 @@ public final class QueuedTorrentManager {
 			final InfoHash infoHash = torrent.getInfoHash();
 			final TrackerManager trackerManager = ResourceManager.INSTANCE.getTrackerManager();
 			torrent.getTrackers().forEach(t -> trackerManager.addForTracking(t, infoHash));
-			activeTorrentTrackers = trackerManager.getTrackers(infoHash);
+			activeTorrentTrackerSessions = trackerManager.getTrackers(infoHash);
 			activeInfoHash = infoHash;
 		}
 		
@@ -86,9 +86,9 @@ public final class QueuedTorrentManager {
 	public void updateTrackerStatistics(final InfoHash infoHash, final List<TrackerView> trackerViews) {
 		if(activeInfoHash != infoHash) {
 			activeInfoHash = infoHash;
-			activeTorrentTrackers = ResourceManager.INSTANCE.getTrackerManager().getTrackers(infoHash);
+			activeTorrentTrackerSessions = ResourceManager.INSTANCE.getTrackerManager().getTrackers(infoHash);
 		}
-		trackerViews.forEach(tv -> activeTorrentTrackers.stream().filter(
+		trackerViews.forEach(tv -> activeTorrentTrackerSessions.stream().filter(
 			tt -> tt.getTracker().getUrl().equalsIgnoreCase(tv.getTrackerName())).forEach(m -> {
 				//Update view with values from matching torrent tracker
 				tv.leechersProperty().set(m.getLeechers());

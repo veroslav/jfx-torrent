@@ -77,11 +77,11 @@ public final class UdpTracker extends Tracker {
 	}
 	
 	@Override
-	protected void scrape(final Set<TrackedTorrent> torrents) {
-		if(torrents.isEmpty() || connectionId == DEFAULT_CONNECTION_ID) {
+	protected void scrape(final Set<TrackerSession> trackerSessions) {
+		if(trackerSessions.isEmpty() || connectionId == DEFAULT_CONNECTION_ID) {
 			return;
 		}
-		final Set<TrackedTorrent> matchingTorrents = torrents.stream().filter(
+		final Set<TrackerSession> matchingTorrents = trackerSessions.stream().filter(
 				t -> t.getTracker().equals(this)).collect(Collectors.toSet());
 		final UdpRequest scrapeRequest = buildScrapeRequest(matchingTorrents);
 		
@@ -92,12 +92,12 @@ public final class UdpTracker extends Tracker {
 
 	@Override
 	protected void announce(final AnnounceParameters announceParameters,
-			final TrackedTorrent trackedTorrent) {
-		final UdpRequest announceRequest = buildAnnounceRequest(announceParameters, trackedTorrent.getInfoHash(),
-				trackedTorrent.getTransactionId());
+			final TrackerSession trackerSession) {
+		final UdpRequest announceRequest = buildAnnounceRequest(announceParameters, trackerSession.getInfoHash(),
+				trackerSession.getTransactionId());
 		
 		if(announceRequest != null) {
-			trackedTorrent.setLastTrackerEvent(announceParameters.getTrackerEvent());
+			trackerSession.setLastTrackerEvent(announceParameters.getTrackerEvent());
 			ResourceManager.INSTANCE.getUdpTrackerConnectionManager().send(announceRequest);
 		}
 	}
@@ -112,12 +112,12 @@ public final class UdpTracker extends Tracker {
 	}
 	
 	@Override
-	protected synchronized long getId() {
+	public synchronized long getId() {
 		return connectionId;
 	}
 	
 	@Override
-	protected synchronized void setId(final long connectionId) {
+	public synchronized void setId(final long connectionId) {
 		this.connectionId = connectionId;
 	}
 	
@@ -154,12 +154,7 @@ public final class UdpTracker extends Tracker {
 			
 			final byte[] clientId = ClientProperties.PEER_ID.getBytes(StandardCharsets.UTF_8.name());
 			final int requestEvent = toRequestEvent(announceParameters.getTrackerEvent());
-			
-			System.out.println("buildAnnounce(): trackerUrl: " + this.getUrl() + ", connectionId: " + 
-					connectionId + ", transactionId: " + transactionId + ", infoHash.length: " +
-					infoHash.getBytes().length + ", clientId.length: " +
-					clientId.length + ", requestEvent: " + requestEvent);
-			
+		
 			dos.writeLong(connectionId);
 			dos.writeInt(ACTION_ANNOUNCE);			
 			dos.writeInt(transactionId);			
@@ -175,7 +170,7 @@ public final class UdpTracker extends Tracker {
 			//key (TODO: should be calculated and sent)
 			dos.writeInt(42);
 			//num_want (-1 = default)
-			dos.writeInt(-1);
+			dos.writeInt(requestEvent != EVENT_STOPPED? NUM_WANTED_PEERS : 0);
 			
 			dos.writeShort(ResourceManager.INSTANCE.getUdpTrackerPort());			
 			dos.flush();
@@ -186,22 +181,28 @@ public final class UdpTracker extends Tracker {
 		return new UdpRequest(baos.toByteArray(), trackerUri.getHost(), trackerPort);
 	}
 	
-	protected UdpRequest buildScrapeRequest(final Set<TrackedTorrent> torrents) {	
-		final ByteArrayOutputStream baos = new ByteArrayOutputStream(MESSAGE_LENGTH + (torrents.size() * 20));
+	protected UdpRequest buildScrapeRequest(final Set<TrackerSession> trackerSessions) {	
+		final ByteArrayOutputStream baos = new ByteArrayOutputStream(MESSAGE_LENGTH + (trackerSessions.size() * 20));
 		try(final DataOutputStream dos = new DataOutputStream(baos)) {
 			dos.writeLong(connectionId);
 			dos.writeInt(ACTION_SCRAPE);
 			
-			//TODO: Randomize transactionId (either in TrackerManager or here)
+			//TODO: Populate with correct transactionId value
 			dos.writeInt(0);
 			
-			for(final TrackedTorrent torrent : torrents) {
-				dos.write(torrent.getInfoHash().getBytes());
+			for(final TrackerSession trackerSession : trackerSessions) {
+				dos.write(trackerSession.getInfoHash().getBytes());
 			}
 		}
 		catch(final IOException ioe) {
 			return null;
 		}
 		return new UdpRequest(baos.toByteArray(), trackerUri.getHost(), trackerPort);
+	}
+
+	@Override
+	public String toString() {
+		return "UdpTracker [connectionId=" + connectionId + ", url=" + url
+				+ "]";
 	}
 }

@@ -30,12 +30,14 @@ import java.util.Arrays;
  */
 public final class UdpTrackerResponse {
 	
+	private final String message;
 	private final byte[] data;
 	private final int action;
 
-	public UdpTrackerResponse(final byte[] data, final int type) {		
+	public UdpTrackerResponse(final byte[] data, final int type, final String message) {		
 		this.data = Arrays.copyOf(data, data.length);
 		this.action = type;
+		this.message = message;
 	}
 	
 	public final int getAction() {
@@ -44,5 +46,9 @@ public final class UdpTrackerResponse {
 	
 	public final byte[] getData() {
 		return data;
+	}
+	
+	public final String getMessage() {
+		return message;
 	}
 }

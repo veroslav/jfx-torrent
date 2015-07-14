@@ -24,8 +24,8 @@ public final class AnnounceRequest extends TrackerRequest {
 	
 	private final AnnounceParameters announceParameters;
 
-	public AnnounceRequest(final TrackedTorrent trackedTorrent, final AnnounceParameters announceParameters) {
-		super(trackedTorrent);
+	public AnnounceRequest(final TrackerSession trackerSession, final AnnounceParameters announceParameters) {
+		super(trackerSession);
 		this.announceParameters = announceParameters;
 	}
 	
@@ -35,6 +35,6 @@ public final class AnnounceRequest extends TrackerRequest {
 	
 	@Override
 	protected void execute() {		
-		super.trackedTorrent.getTracker().announce(announceParameters, super.trackedTorrent);
+		super.trackerSession.getTracker().announce(announceParameters, super.trackerSession);
 	}
 }

@@ -23,7 +23,7 @@ package org.matic.torrent.tracking;
 import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.peer.ClientProperties;
 
-public final class TrackedTorrent {
+public final class TrackerSession {
 
 	private volatile Tracker.Event lastTrackerEvent;
 	
@@ -42,7 +42,7 @@ public final class TrackedTorrent {
 	//TODO: Move connectionAttempts to UdpTracker?
 	private int connectionAttempts = 0;
 
-	public TrackedTorrent(final InfoHash infoHash, final Tracker tracker) {
+	public TrackerSession(final InfoHash infoHash, final Tracker tracker) {
 		this.infoHash = infoHash;
 		this.tracker = tracker;
 		
@@ -136,7 +136,7 @@ public final class TrackedTorrent {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		TrackedTorrent other = (TrackedTorrent) obj;
+		TrackerSession other = (TrackerSession) obj;
 		if (infoHash == null) {
 			if (other.infoHash != null)
 				return false;

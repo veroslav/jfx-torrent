@@ -48,7 +48,7 @@ public abstract class Tracker {
 	protected static final int NUM_WANTED_PEERS = 200;
 	
 	protected volatile long lastResponse;
-	private final String url;
+	protected final String url;
 	
 	/**
 	 * Create a peer tracker 
@@ -64,6 +64,10 @@ public abstract class Tracker {
 	
 	public abstract Type getType();
 	
+	public abstract long getId();
+	
+	public abstract void setId(final long id);
+	
 	public String getUrl() {
 		return url;
 	}
@@ -72,17 +76,17 @@ public abstract class Tracker {
 	 * Make an announce request against the tracker
 	 * 
 	 * @param announceParameters Announcement parameters
-	 * @param trackedTorrent Tracked torrent
+	 * @param trackerSession Tracked torrent's session
 	 */
 	protected abstract void announce(final AnnounceParameters announceParameters,
-			final TrackedTorrent trackedTorrent);
+			final TrackerSession trackerSession);
 	
 	/**
 	 * Make a scrape request against the tracker (only if supported)
 	 * 
-	 * @param torrents Torrents to be scraped
+	 * @param trackerSessions Torrent sessions to be scraped
 	 */
-	protected abstract void scrape(final Set<TrackedTorrent> torrents);
+	protected abstract void scrape(final Set<TrackerSession> trackerSessions);
 
 	/**
 	 * Send a connection request to this tracker (only supported by UDP trackers)
@@ -90,10 +94,6 @@ public abstract class Tracker {
 	 * @param transactionId Caller's transaction id
 	 */
 	protected abstract void connect(final int transactionId);
-	
-	protected abstract long getId();
-	
-	protected abstract void setId(final long id);
 	
 	public void setLastResponse(final long lastResponse) {
 		this.lastResponse = lastResponse;

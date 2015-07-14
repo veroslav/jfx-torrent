@@ -22,10 +22,10 @@ package org.matic.torrent.tracking;
 
 public abstract class TrackerRequest {
 	
-	protected final TrackedTorrent trackedTorrent;
+	protected final TrackerSession trackerSession;
 	
-	protected TrackerRequest(final TrackedTorrent trackedTorrent) {
-		this.trackedTorrent = trackedTorrent;
+	protected TrackerRequest(final TrackerSession trackerSession) {
+		this.trackerSession = trackerSession;
 	}
 
 	protected abstract void execute();

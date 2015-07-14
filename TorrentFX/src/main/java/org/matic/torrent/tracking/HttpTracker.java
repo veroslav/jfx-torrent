@@ -82,7 +82,7 @@ public final class HttpTracker extends Tracker {
 	}
 	
 	@Override
-	protected final void scrape(final Set<TrackedTorrent> torrents) {
+	protected final void scrape(final Set<TrackerSession> trackerSessions) {
 		 //TODO: Implement method
 	};
 	
@@ -97,20 +97,20 @@ public final class HttpTracker extends Tracker {
 	}
 	
 	@Override
-	protected long getId() {
+	public long getId() {
 		//Not supported by HTTP trackers
 		return 0;
 	}
 	
 	@Override
-	protected void setId(final long id) {
+	public void setId(final long id) {
 		//Not supported by HTTP trackers
 	}
 
 	@Override
-	protected final void announce(final AnnounceParameters announceParameters, final TrackedTorrent trackedTorrent) {				
-		final AnnounceResponse trackerResponse = sendRequest(announceParameters, trackedTorrent);
-		responseListener.onAnnounceResponseReceived(trackerResponse, trackedTorrent);				
+	protected final void announce(final AnnounceParameters announceParameters, final TrackerSession trackerSession) {				
+		final AnnounceResponse trackerResponse = sendRequest(announceParameters, trackerSession);
+		responseListener.onAnnounceResponseReceived(trackerResponse, trackerSession);				
 	}
 	
 	protected String getScrapeUrl() {
@@ -167,11 +167,11 @@ public final class HttpTracker extends Tracker {
 	
 	//TODO: Add proxy support for the request
 	private AnnounceResponse sendRequest(final AnnounceParameters announceParameters,
-			final TrackedTorrent trackedTorrent) {			
+			final TrackerSession trackerSession) {			
 		URL targetUrl = null;
 		
 		try {
-			targetUrl = new URL(buildRequestUrl(announceParameters, trackedTorrent.getInfoHash()));			
+			targetUrl = new URL(buildRequestUrl(announceParameters, trackerSession.getInfoHash()));			
 			
 			HttpURLConnection.setFollowRedirects(false);
 			final HttpURLConnection connection = (HttpURLConnection)targetUrl.openConnection();			
@@ -196,8 +196,8 @@ public final class HttpTracker extends Tracker {
 							NetworkUtilities.HTTP_GZIP_ENCODING.equals(contentEncoding)? decoder.decodeGzip(responseStream) :
 								decoder.decode(responseStream);
 					final AnnounceResponse trackerResponse = buildResponse(
-							responseMap, trackedTorrent.getInfoHash());
-					trackedTorrent.setLastTrackerEvent(announceParameters.getTrackerEvent());
+							responseMap, trackerSession.getInfoHash());
+					trackerSession.setLastTrackerEvent(announceParameters.getTrackerEvent());
 					return trackerResponse;
 				}				
 			}
@@ -317,5 +317,10 @@ public final class HttpTracker extends Tracker {
 	
 	private boolean validateMandatoryResponseValues(final BinaryEncodable... values) {
 		return !Arrays.stream(values).anyMatch(v -> v == null);		
+	}
+
+	@Override
+	public String toString() {
+		return "HttpTracker [url=" + url + "]";
 	}
 }

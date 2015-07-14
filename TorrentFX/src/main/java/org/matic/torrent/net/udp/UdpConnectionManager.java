@@ -208,7 +208,8 @@ public final class UdpConnectionManager {
 			channel.send(outputBuffer, new InetSocketAddress(
 					udpRequest.getReceiverHost(), udpRequest.getReceiverPort()));			
 		} catch (final IOException | UnresolvedAddressException e) {
-			System.err.println("An error occurred while sending UDP packet [" + udpRequest.getReceiverHost() + "]");
+			System.err.println("An error occurred while sending UDP packet [" + udpRequest.getReceiverHost() + "]: " +
+					e.toString());
 		}
 	}
 	
