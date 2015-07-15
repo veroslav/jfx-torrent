@@ -62,7 +62,7 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 			Executors.newScheduledThreadPool(SCHEDULER_POOL_COUNT);
 	private final ExecutorService tcpRequestExecutor = Executors.newCachedThreadPool();
 	
-	private final Map<TrackerSession, Future<?>> scheduledRequests = new ConcurrentHashMap<>();
+	private final Map<TrackerSession, ScheduledAnnouncement> scheduledRequests = new ConcurrentHashMap<>();
 	private final Set<PeerFoundListener> peerListeners = new CopyOnWriteArraySet<>();
 	private final Set<TrackerSession> trackerSessions = new HashSet<>();	
 	
@@ -76,7 +76,7 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 		synchronized(trackerSession) {
 			final long responseTime = System.currentTimeMillis();
 			trackerSession.getTracker().setLastResponse(responseTime);
-			trackerSession.setLastTrackerResponse(responseTime);
+			trackerSession.setLastTrackerResponse(responseTime);			
 		}
 		
 		synchronized(trackerSessions) {				
@@ -97,6 +97,16 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 							Tracker.Event.UPDATE, 0, 0, 0);
 					scheduleAnnouncement(trackerSession, announceParameters, response.getInterval());
 				}
+			}
+			else {
+				//Cancelling any scheduled requests as we have STOPPED
+				System.out.println("onAnnounceResponseReceived(" + trackerSession.getTracker().getUrl() + 
+				": Cancelling due to STOPPED");
+				scheduledRequests.compute(trackerSession, (session, announcement) -> {
+					final Future<?> future = announcement.getFuture(); 
+					future.cancel(false);
+					return null;
+				});
 			}
 		}			
 	}
@@ -174,17 +184,16 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 		synchronized(trackerSessions) {			
 			if(!trackerSessions.add(trackerSession)) {
 				return false;
-			}			
+			}		
+			final AnnounceParameters announceParameters = new AnnounceParameters( 
+					Tracker.Event.STARTED, 0, 0, 0);
+			scheduleAnnouncement(trackerSession, announceParameters, 0);
 		}
-		
-		final AnnounceParameters announceParameters = new AnnounceParameters( 
-				Tracker.Event.STARTED, 0, 0, 0);
-		scheduleAnnouncement(trackerSession, announceParameters, 0);
 		
 		return true;
 	}
 	
-	public final boolean removeTorrentTracker(final Tracker tracker, final InfoHash infoHash) {
+	public final boolean removeTracker(final Tracker tracker, final InfoHash infoHash) {
 		synchronized(trackerSessions) {
 			final Optional<TrackerSession> match = trackerSessions.stream().filter(
 					t -> t.getInfoHash().equals(infoHash) && t.getTracker().equals(tracker)).findFirst();
@@ -272,11 +281,11 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 				return;
 			}
 			
-			System.out.println("onUdpTrackerConnect(transaction_id = " + transactionId +
-					", connection_id = " + connectionId + ")"); 
-			
 			match = scheduledRequests.keySet().stream().filter(
 					t -> t.getTransactionId() == transactionId).findFirst();
+			
+			System.out.println("onUdpTrackerConnect(transaction_id = " + transactionId +
+					", connection_id = " + connectionId + ", match = " + match + ")");
 		}
 		catch(final IOException ioe) {
 			System.err.println("onUdpTrackerConnect() Error: " + ioe.getMessage());
@@ -286,10 +295,16 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 		if(match != null && match.isPresent()) {				
 			final TrackerSession trackerSession = match.get();
 			synchronized(trackerSession) {
+				final long responseTime = System.currentTimeMillis();
 				trackerSession.getTracker().setId(connectionId);
-				trackerSession.getTracker().setLastResponse(System.currentTimeMillis());
-			}			
-		}					
+				trackerSession.getTracker().setLastResponse(responseTime);
+				trackerSession.setLastTrackerResponse(responseTime);
+			}	
+			synchronized(trackerSessions) {
+				final AnnounceParameters params = scheduledRequests.get(trackerSession).getAnnounceParameters();				
+				scheduleAnnouncement(trackerSession, params, 0);
+			}
+		}		
 	}
 	
 	private void onUdpTrackerAnnounce(final UdpTrackerResponse trackerResponse) {		
@@ -323,7 +338,14 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 	}
 	
 	private void onUdpTrackerScrape(final UdpTrackerResponse trackerResponse) {
-		//TODO: Implement method
+		/*TODO: Implement method
+		synchronized(trackerSession) {
+				final long responseTime = System.currentTimeMillis();
+				trackerSession.getTracker().setId(connectionId);
+				trackerSession.getTracker().setLastResponse(responseTime);
+				trackerSession.setLastTrackerResponse(responseTime);
+			}
+		*/
 	}
 	
 	private void onUdpTrackerError(final UdpTrackerResponse trackerResponse) {
@@ -351,6 +373,15 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 			
 			final byte[] messageBytes = new byte[messageLength];
 			dis.read(messageBytes);
+			
+			/*TODO:
+			 * synchronized(trackerSession) {
+				final long responseTime = System.currentTimeMillis();
+				trackerSession.getTracker().setId(connectionId);
+				trackerSession.getTracker().setLastResponse(responseTime);
+				trackerSession.setLastTrackerResponse(responseTime);
+			}
+			 */
 			
 			System.err.println("message: " + new String(messageBytes));
 		}
@@ -426,7 +457,10 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 		
 		System.out.println("scheduleAnnouncement(" + announceParameters.getTrackerEvent() + ", delay = " + delay + ")");
 		
-		scheduledRequests.compute(trackerSession, (key, future) -> {
+		scheduledRequests.compute(trackerSession, (session, announcement) -> {
+			if(trackerSession == null) {
+				return null;
+			}
 			if(!isValidTrackerEvent(trackerSession.getLastTrackerEvent(),
 					announceParameters.getTrackerEvent())) {
 				
@@ -434,22 +468,24 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 						+ trackerSession.getLastTrackerEvent() +
 						", current: " + announceParameters.getTrackerEvent());
 				
-				return future;
+				return announcement;
 			}
-			if(future != null) {
-				future.cancel(false);
+			if(announcement != null) {
+				announcement.getFuture().cancel(false);
 			}
 			
 			if(trackerSession.getTracker().getType() == Tracker.Type.TCP) {
-				return delay == 0? requestScheduler.submit(() ->
+				final Future<?> future = delay == 0? requestScheduler.submit(() ->
 						announce(trackerSession, announceParameters)) :
 					requestScheduler.schedule(() -> announce(trackerSession, 
-							announceParameters), delay, TimeUnit.SECONDS);		
+							announceParameters), delay, TimeUnit.SECONDS);
+				return new ScheduledAnnouncement(announceParameters, future);
 			}
 			else {
-				return requestScheduler.scheduleAtFixedRate(
+				final Future<?> future = requestScheduler.scheduleAtFixedRate(
 						() -> announce(trackerSession, announceParameters), 
 						delay, UDP_TRACKER_CONNECTION_ATTEMPT_DELAY, TimeUnit.SECONDS);
+				return new ScheduledAnnouncement(announceParameters, future);
 			}
 		});
 	}
@@ -486,9 +522,9 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 					
 					System.out.println("announce(): Connection timed out, cancelling this tracker job");
 					
-					scheduledRequests.compute(trackerSession, (key, future) -> {
-						future.cancel(false);
-						return future;
+					scheduledRequests.compute(trackerSession, (session, announcement) -> {
+						announcement.getFuture().cancel(false);
+						return announcement;
 					});
 				}
 				else {
@@ -499,9 +535,10 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 	}
 	
 	private boolean isValidConnection(final TrackerSession trackerSession) {
-		synchronized(trackerSession) {
-			return (trackerSession.getTracker().getId() != UdpTracker.DEFAULT_CONNECTION_ID) &&
-				((System.currentTimeMillis() - trackerSession.getLastTrackerResponse()) <= 
+		final Tracker tracker = trackerSession.getTracker();
+		synchronized(trackerSession) {			
+			return (tracker.getId() != UdpTracker.DEFAULT_CONNECTION_ID) &&
+				((System.currentTimeMillis() - tracker.getLastResponse()) <= 
 				UDP_TRACKER_CONNECTION_ID_TIMEOUT);
 		}
 	}

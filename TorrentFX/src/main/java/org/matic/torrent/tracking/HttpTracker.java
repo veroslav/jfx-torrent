@@ -110,6 +110,7 @@ public final class HttpTracker extends Tracker {
 	@Override
 	protected final void announce(final AnnounceParameters announceParameters, final TrackerSession trackerSession) {				
 		final AnnounceResponse trackerResponse = sendRequest(announceParameters, trackerSession);
+		trackerSession.setLastTrackerEvent(announceParameters.getTrackerEvent());
 		responseListener.onAnnounceResponseReceived(trackerResponse, trackerSession);				
 	}
 	
@@ -196,8 +197,7 @@ public final class HttpTracker extends Tracker {
 							NetworkUtilities.HTTP_GZIP_ENCODING.equals(contentEncoding)? decoder.decodeGzip(responseStream) :
 								decoder.decode(responseStream);
 					final AnnounceResponse trackerResponse = buildResponse(
-							responseMap, trackerSession.getInfoHash());
-					trackerSession.setLastTrackerEvent(announceParameters.getTrackerEvent());
+							responseMap, trackerSession.getInfoHash());					
 					return trackerResponse;
 				}				
 			}
@@ -321,6 +321,6 @@ public final class HttpTracker extends Tracker {
 
 	@Override
 	public String toString() {
-		return "HttpTracker [url=" + url + "]";
+		return "HttpTracker [url=" + getUrl() + "]";
 	}
 }

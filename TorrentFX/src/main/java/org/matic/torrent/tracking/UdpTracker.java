@@ -202,7 +202,7 @@ public final class UdpTracker extends Tracker {
 
 	@Override
 	public String toString() {
-		return "UdpTracker [connectionId=" + connectionId + ", url=" + url
+		return "UdpTracker [connectionId=" + connectionId + ", url=" + getUrl()
 				+ "]";
 	}
 }

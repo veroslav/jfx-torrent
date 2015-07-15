@@ -47,8 +47,8 @@ public abstract class Tracker {
 	
 	protected static final int NUM_WANTED_PEERS = 200;
 	
-	protected volatile long lastResponse;
-	protected final String url;
+	private volatile long lastResponse;
+	private final String url;
 	
 	/**
 	 * Create a peer tracker 
@@ -67,6 +67,14 @@ public abstract class Tracker {
 	public abstract long getId();
 	
 	public abstract void setId(final long id);
+	
+	public long getLastResponse() {
+		return lastResponse;
+	}
+	
+	public void setLastResponse(final long lastResponse) {
+		this.lastResponse = lastResponse;
+	}
 	
 	public String getUrl() {
 		return url;
@@ -94,10 +102,6 @@ public abstract class Tracker {
 	 * @param transactionId Caller's transaction id
 	 */
 	protected abstract void connect(final int transactionId);
-	
-	public void setLastResponse(final long lastResponse) {
-		this.lastResponse = lastResponse;
-	}
 
 	@Override
 	public int hashCode() {
