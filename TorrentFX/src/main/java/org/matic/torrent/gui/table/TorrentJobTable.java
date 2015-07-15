@@ -29,11 +29,11 @@ import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.SelectionMode;
-import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.text.Text;
 
+import org.matic.torrent.gui.GuiUtils;
 import org.matic.torrent.gui.model.TorrentJobView;
 import org.matic.torrent.hash.InfoHash;
 
@@ -84,6 +84,7 @@ public final class TorrentJobTable {
 	
 	private void initComponents() {
 		torrentJobTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+		torrentJobTable.setTableMenuButtonVisible(true);
 		
 		final Text emptyTorrentListPlaceholder = new Text("Go to 'File->Add Torrent...' to add torrents.");
 		emptyTorrentListPlaceholder.getStyleClass().add("empty-torrent-list-text");
@@ -99,15 +100,11 @@ public final class TorrentJobTable {
 	}
 	
 	private void addColumns() {
-		torrentJobTable.getColumns().addAll(Arrays.asList(buildFileNameColumn()));
-	}
-	
-	private TableColumn<TorrentJobView, String> buildFileNameColumn() {
-		final TableColumn<TorrentJobView, String> fileNameColumn = new TableColumn<>("Name");
-		fileNameColumn.setPrefWidth(350);
-		fileNameColumn.setCellValueFactory(tj -> {
-			return new ReadOnlyObjectWrapper<String>(tj.getValue().getFileName());
-		});
-		return fileNameColumn;
+		torrentJobTable.getColumns().addAll(Arrays.asList(
+				TableFactory.buildSimpleLongValueColumn(
+						tj -> new ReadOnlyObjectWrapper<Long>((long)tj.getValue().priorityProperty().getValue()), 
+						val -> String.valueOf(val), 30, GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "#"),
+				TableFactory.buildSimpleStringColumn(tj -> new ReadOnlyObjectWrapper<String>(tj.getValue().getFileName()),
+				GuiUtils.NAME_COLUMN_PREFERRED_SIZE, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "Name")));
 	}
 }

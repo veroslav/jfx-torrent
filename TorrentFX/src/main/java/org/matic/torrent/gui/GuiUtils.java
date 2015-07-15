@@ -34,11 +34,17 @@ public final class GuiUtils {
 		OPTIONS_WINDOW_BORDER, ADD_NEW_TORRENT_BORDER
 	}
 	
-	private static Node EMPTY_TABLE_PLACEHOLDER = new Text();
+	//Table column options
+	public static final String LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME = "left-aligned-column-header";
+	public static final String RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME = "right-aligned-column-header";
 	
-	private static Insets RIGHT_PADDING_INSETS = new Insets(0, 5, 0, 0);
-	private static Insets LEFT_PADDING_INSETS = new Insets(0, 0, 0, 5);
-	private static Insets NO_PADDING_INSETS = new Insets(0);
+	public static final int NAME_COLUMN_PREFERRED_SIZE = 230;
+	private static final Node EMPTY_TABLE_PLACEHOLDER = new Text();
+	
+	//Padding options
+	private static final Insets RIGHT_PADDING_INSETS = new Insets(0, 5, 0, 0);
+	private static final Insets LEFT_PADDING_INSETS = new Insets(0, 0, 0, 5);
+	private static final Insets NO_PADDING_INSETS = new Insets(0);
 
 	public static Node applyBorder(final Node targetNode, final String title, BorderType borderType) {		
 		EtchedBorders border = Borders.wrap(targetNode).etchedBorder().title(title).highlight(Color.LIGHTGRAY);
@@ -51,7 +57,6 @@ public final class GuiUtils {
 			border = border.outerPadding(10, 0, 10, 0).innerPadding(13, 10, 5, 8);
 			break;
 		}
-		
 		
 		return border.buildAll();		
 	}

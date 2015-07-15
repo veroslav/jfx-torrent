@@ -32,18 +32,28 @@ public final class TrackerView {
 	private final StringProperty trackerName;
 	private final StringProperty status;
 	
+	private final IntegerProperty downloaded;
 	private final IntegerProperty leechers;
 	private final IntegerProperty seeds;
 	
 	private final LongProperty nextUpdate;
 
-	public TrackerView(final String trackerName, final String status,
-			final int seeds, final int leechers, final long nextUpdate) {
+	public TrackerView(final String trackerName, final String status, final int seeds,
+			final int leechers, final long nextUpdate, final int downloaded) {
 		this.trackerName = new SimpleStringProperty(trackerName);
+		this.downloaded = new SimpleIntegerProperty(downloaded);
 		this.nextUpdate = new SimpleLongProperty(nextUpdate);
 		this.leechers = new SimpleIntegerProperty(leechers);
 		this.status = new SimpleStringProperty(status);
 		this.seeds = new SimpleIntegerProperty(seeds);				
+	}
+	
+	public final int getDownloaded() {
+		return downloaded.get();
+	}
+	
+	public final IntegerProperty downloadedProperty() {
+		return downloaded;
 	}
 	
 	public long getNextUpdate() {

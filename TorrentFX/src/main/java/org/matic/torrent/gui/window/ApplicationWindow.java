@@ -66,6 +66,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
 import org.matic.torrent.codec.BinaryEncodedDictionary;
 import org.matic.torrent.codec.BinaryEncodedList;
@@ -80,8 +81,12 @@ import org.matic.torrent.gui.table.TorrentJobTable;
 import org.matic.torrent.gui.table.TrackerTable;
 import org.matic.torrent.gui.tree.TorrentContentTree;
 import org.matic.torrent.hash.InfoHash;
+import org.matic.torrent.preferences.ApplicationPreferences;
+import org.matic.torrent.preferences.GuiProperties;
 import org.matic.torrent.queue.QueuedTorrent;
 import org.matic.torrent.queue.QueuedTorrentManager;
+import org.matic.torrent.utils.PeriodicTask;
+import org.matic.torrent.utils.PeriodicTaskRunner;
 import org.matic.torrent.utils.ResourceManager;
 
 /**
@@ -131,6 +136,9 @@ public final class ApplicationWindow {
 	
 	//Mapping between details tabs and their names
 	private final Map<String, Tab> detailsTabMap = new HashMap<>();
+	
+	//A service that periodically executes actions (such as GUI update)
+	private final PeriodicTaskRunner periodicTaskRunner = new PeriodicTaskRunner();
 		
 	private final Stage stage;
 
@@ -143,7 +151,7 @@ public final class ApplicationWindow {
 		
 		final Scene scene = new Scene(mainPane, 900, 550);		
 		scene.getStylesheets().add("/ui-style.css");
-		stage.setScene(scene);		
+		stage.setScene(scene);
 		
 		initComponents();
 	}
@@ -156,6 +164,35 @@ public final class ApplicationWindow {
 		stage.setTitle("jfxTorrent");        
 		stage.centerOnScreen();		
 		stage.show();
+		
+		periodicTaskRunner.addTask(createGuiUpdateTask());		
+		periodicTaskRunner.setPeriod(Duration.seconds(1));		
+		periodicTaskRunner.start();
+	}
+	
+	private PeriodicTask createGuiUpdateTask() {
+		long guiUpdateInterval = GuiProperties.DEFAULT_GUI_UPDATE_INTERVAL;
+		final String updateIntervalProperty = ApplicationPreferences.getProperty(
+    			GuiProperties.GUI_UPDATE_INTERVAL, String.valueOf(GuiProperties.DEFAULT_GUI_UPDATE_INTERVAL));
+				          
+    	try {
+    		guiUpdateInterval = Long.parseLong(updateIntervalProperty);
+    	} 
+    	catch(final NumberFormatException nfe) {}		
+		
+		return new PeriodicTask(this::updateGui, guiUpdateInterval);
+	}
+	
+	private void updateGui() {		
+		final List<TorrentJobView> selectedTorrents = torrentJobTable.getSelectedJobs();
+
+		if(!selectedTorrents.isEmpty()) {
+			//Render tracker statistics only if Trackers tab is selected
+			if(detailsTabMap.get(TRACKERS_TAB_FILES_NAME).isSelected()) {
+				queuedTorrentManager.updateTrackerStatistics(
+						selectedTorrents.get(0).getInfoHash(), trackerTable.getTrackerViews());
+			}
+		}
 	}
 	
 	private Pane initFilterTreeView() {
@@ -268,9 +305,9 @@ public final class ApplicationWindow {
 		}
 		
 		toolbarButtonsMap.get(TOOLBAR_BUTTON_ADD).setOnAction(
-				event -> onAddTorrentJob(fileActionHandler.onFileOpen(stage)));
+				event -> onAddTorrent(fileActionHandler.onFileOpen(stage)));
 		toolbarButtonsMap.get(TOOLBAR_BUTTON_ADD_FROM_URL).setOnAction(
-				event -> onAddTorrentJob(fileActionHandler.onLoadUrl(stage)));
+				event -> onAddTorrent(fileActionHandler.onLoadUrl(stage)));
 		toolbarButtonsMap.get(TOOLBAR_BUTTON_OPTIONS).setOnAction(
 				event -> windowActionHandler.onOptionsWindowShown(stage, fileActionHandler));
 		toolbarButtonsMap.get(TOOLBAR_BUTTON_REMOVE).setOnAction(
@@ -350,6 +387,7 @@ public final class ApplicationWindow {
         		final Color tabImageColor = tab.isSelected()? TAB_SELECTED_IMAGE_COLOR : TAB_DEFAULT_IMAGE_COLOR;
         		tab.setGraphic(ImageUtils.colorImage(tabImage, tabImageColor, 
         				ImageUtils.CROPPED_MARGINS_IMAGE_VIEW, TAB_ICON_SIZE, TAB_ICON_SIZE));
+        		updateGui();
         	});        		        	
         	tabList.add(tab);
         	detailsTabMap.put(tabNames[i], tab);
@@ -374,7 +412,7 @@ public final class ApplicationWindow {
 		fileMenu.setMnemonicParsing(true);
 		
 		final MenuItem addTorrentMenuItem = new MenuItem("Add Torrent...");
-		addTorrentMenuItem.setOnAction(event -> onAddTorrentJob(fileActionHandler.onFileOpen(stage)));
+		addTorrentMenuItem.setOnAction(event -> onAddTorrent(fileActionHandler.onFileOpen(stage)));
 		addTorrentMenuItem.setAccelerator(KeyCombination.keyCombination("Ctrl+O"));
 		
 		final MenuItem addTorrentAndChooseDirMenuItem = new MenuItem("Add Torrent (choose save dir)...");
@@ -382,7 +420,7 @@ public final class ApplicationWindow {
 		addTorrentAndChooseDirMenuItem.setAccelerator(KeyCombination.keyCombination("Ctrl+D"));
 		
 		final MenuItem addTorrentFromUrlMenuItem = new MenuItem("Add Torrent from URL...");
-		addTorrentFromUrlMenuItem.setOnAction(event -> onAddTorrentJob(fileActionHandler.onLoadUrl(stage)));
+		addTorrentFromUrlMenuItem.setOnAction(event -> onAddTorrent(fileActionHandler.onLoadUrl(stage)));
 		addTorrentFromUrlMenuItem.setAccelerator(KeyCombination.keyCombination("Ctrl+U"));
 		
 		final MenuItem addRssFeedMenuItem = new MenuItem("Add RSS Feed...");
@@ -420,9 +458,9 @@ public final class ApplicationWindow {
 		return helpMenu;
 	}
 	
-	private void onAddTorrentJob(final AddNewTorrentOptions jobOptions) {		
-		if(jobOptions != null) {
-			final InfoHash torrentInfoHash = jobOptions.getInfoHash();
+	private void onAddTorrent(final TorrentOptions torrentOptions) {		
+		if(torrentOptions != null) {
+			final InfoHash torrentInfoHash = torrentOptions.getInfoHash();
 			if(torrentJobTable.contains(torrentInfoHash)) {
 				final Alert existingTorrentAlert = new Alert(AlertType.ERROR,
 						"The torrent already exists.\n" +
@@ -433,33 +471,36 @@ public final class ApplicationWindow {
 				existingTorrentAlert.showAndWait();			
 				return;
 			}
-			final TorrentJobView jobView = new TorrentJobView(jobOptions.getName(), 
-					torrentInfoHash, jobOptions.getTorrentContents());
+			
+			final BinaryEncodedDictionary metaData = torrentOptions.getMetaData();
+			final BinaryEncodedString announceUrl = (BinaryEncodedString)metaData.get(
+					BinaryEncodingKeyNames.KEY_ANNOUNCE);
+			final BinaryEncodedList announceList = (BinaryEncodedList)metaData.get(
+					BinaryEncodingKeyNames.KEY_ANNOUNCE_LIST);
+			
+			final Set<String> trackerUrls = new HashSet<>();
+			
+			if(announceUrl != null) {
+				final String trackerUrl = announceUrl.toString(); 
+				trackerUrls.add(trackerUrl);
+			}
+			if(announceList != null) {
+				announceList.stream().flatMap(l -> ((BinaryEncodedList)l).stream())
+					.forEach(url -> trackerUrls.add(url.toString()));
+			}
+			
+			final InfoHash infoHash = torrentOptions.getInfoHash();
+			final QueuedTorrent.Status torrentStatus = torrentOptions.isStartTorrent()? 
+					QueuedTorrent.Status.ACTIVE : QueuedTorrent.Status.STOPPED;
+			final QueuedTorrent queuedTorrent = new QueuedTorrent(infoHash, trackerUrls, 0, torrentStatus);
+			
+			final TorrentJobView jobView = new TorrentJobView(queuedTorrent, torrentOptions.getName(), 
+					torrentInfoHash, torrentOptions.getTorrentContents());
+			
 			torrentJobTable.addJob(jobView);
-			addTorrentToQueue(jobOptions);
+			queuedTorrentManager.add(queuedTorrent);
+			updateGui();
 		}
-	}
-	
-	private void addTorrentToQueue(final AddNewTorrentOptions torrentOptions) {
-		final BinaryEncodedDictionary metaData = torrentOptions.getMetaData();
-		final BinaryEncodedString announceUrl = (BinaryEncodedString)metaData.get(
-				BinaryEncodingKeyNames.KEY_ANNOUNCE);
-		final BinaryEncodedList announceList = (BinaryEncodedList)metaData.get(
-				BinaryEncodingKeyNames.KEY_ANNOUNCE_LIST);
-		
-		final Set<String> trackerUrls = new HashSet<>();
-		if(announceUrl != null) {
-			trackerUrls.add(announceUrl.toString());
-		}
-		if(announceList != null) {
-			announceList.stream().flatMap(l -> ((BinaryEncodedList)l).stream())
-				.forEach(url -> trackerUrls.add(url.toString()));
-		}
-		
-		final InfoHash infoHash = torrentOptions.getInfoHash();
-		final QueuedTorrent queuedTorrent = new QueuedTorrent(infoHash, trackerUrls, 0);
-		queuedTorrentManager.add(queuedTorrent);
-		//queuedTorrentManager.updateTrackerStatistics(infoHash, trackerViews);
 	}
 	
 	private void onRemoveTorrent() {
@@ -501,13 +542,16 @@ public final class ApplicationWindow {
 		
 		removeButton.setGraphic(ImageUtils.colorImage(buttonImageView.getImage(), buttonImageColor, 
 				ImageUtils.CROPPED_MARGINS_IMAGE_VIEW, (int)buttonImageView.getFitWidth(), 
-				(int)buttonImageView.getFitHeight()));				
+				(int)buttonImageView.getFitHeight()));
 	}
 	
 	private void onShutdown(final Event event) {
 		final boolean isShuttingDown = windowActionHandler.onWindowClose(event, stage);
 		
 		if(isShuttingDown) {
+			//Stop updating periodic tasks
+			periodicTaskRunner.cancel();
+			
 			//Perform resource cleanup before shutdown
 			ResourceManager.INSTANCE.cleanup();
 			

@@ -21,13 +21,16 @@
 package org.matic.torrent.gui.table;
 
 import java.util.Arrays;
+import java.util.List;
+import java.util.TimeZone;
 
+import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.scene.Node;
-import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 
 import org.matic.torrent.gui.GuiUtils;
 import org.matic.torrent.gui.model.TrackerView;
+import org.matic.torrent.utils.UnitConverter;
 
 public class TrackerTable {
 
@@ -41,21 +44,35 @@ public class TrackerTable {
 		return trackerTable;
 	}
 	
+	public final List<TrackerView> getTrackerViews() {
+		return trackerTable.getItems();
+	}
+	
 	private void initComponents() {
 		trackerTable.setPlaceholder(GuiUtils.getEmptyTablePlaceholder());
+		trackerTable.setTableMenuButtonVisible(true);
 		
 		addColumns();
 	}
 	
-	private void addColumns() {
-		trackerTable.getColumns().addAll(Arrays.asList(buildTrackerUrlColumn()));
-	}
-	
-	private TableColumn<TrackerView, String> buildTrackerUrlColumn() {
-		final TableColumn<TrackerView, String> trackerNameColumn = new TableColumn<>("URL");		
-		trackerNameColumn.setPrefWidth(350);
-		trackerNameColumn.getStyleClass().add("left-aligned-column-header");
-		trackerNameColumn.setCellValueFactory(tv -> tv.getValue().trackerNameProperty());
-		return trackerNameColumn;
+	private void addColumns() {		
+		trackerTable.getColumns().addAll(Arrays.asList(
+			TableFactory.buildSimpleStringColumn(tv -> tv.getValue().trackerNameProperty(), GuiUtils.NAME_COLUMN_PREFERRED_SIZE,
+					GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "Name"),
+			TableFactory.buildSimpleStringColumn(tv -> tv.getValue().statusProperty(), 140, 
+					GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "Status"),
+			TableFactory.buildSimpleLongValueColumn(
+					tv -> new ReadOnlyObjectWrapper<Long>(tv.getValue().nextUpdateProperty().getValue()), 
+					val -> UnitConverter.formatTime(val, TimeZone.getDefault()), 140, 
+					GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "Update In"),
+			TableFactory.buildSimpleLongValueColumn(
+					tv -> new ReadOnlyObjectWrapper<Long>((long)tv.getValue().seedsProperty().getValue()), 
+					val -> String.valueOf(val), 70, GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "Seeds"),
+			TableFactory.buildSimpleLongValueColumn(
+					tv -> new ReadOnlyObjectWrapper<Long>((long)tv.getValue().leechersProperty().getValue()),
+					val -> String.valueOf(val), 70, GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "Peers"),
+			TableFactory.buildSimpleLongValueColumn(
+					tv -> new ReadOnlyObjectWrapper<Long>((long)tv.getValue().downloadedProperty().getValue()),
+					val -> String.valueOf(val), 70, GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "Downloaded")));
 	}
 }

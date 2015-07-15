@@ -20,6 +20,9 @@
 
 package org.matic.torrent.tracking;
 
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.peer.ClientProperties;
 
@@ -30,11 +33,11 @@ public final class TrackerSession {
 	private final InfoHash infoHash;	
 	private final Tracker tracker;
 	
-	private volatile int leechers = 0;
-	private volatile int seeders = 0;	
+	private AtomicInteger leechers = new AtomicInteger(0);
+	private AtomicInteger seeders = new AtomicInteger(0);	
 			
-	private volatile long lastTrackerResponse = 0;
-	private volatile long interval = 0;
+	private AtomicLong lastTrackerResponse = new AtomicLong(0);
+	private AtomicLong interval = new AtomicLong(0);
 	private Long minInterval = null;	
 	
 	private int transactionId = ClientProperties.generateUniqueId();
@@ -58,19 +61,19 @@ public final class TrackerSession {
 	}
 	
 	public final int getLeechers() {
-		return leechers;
+		return leechers.get();
 	}
 
 	public final void setLeechers(final int leechers) {
-		this.leechers = leechers;
+		this.leechers.set(leechers);
 	}
 
 	public final int getSeeders() {
-		return seeders;
+		return seeders.get();
 	}
 
 	public final void setSeeders(final int seeders) {
-		this.seeders = seeders;
+		this.seeders.set(seeders);
 	}
 
 	public final Long getMinInterval() {
@@ -82,19 +85,19 @@ public final class TrackerSession {
 	}
 
 	public final long getInterval() {
-		return interval;
+		return interval.get();
 	}
 
 	public final void setInterval(final long interval) {
-		this.interval = interval;
+		this.interval.set(interval);
 	}
 
 	public long getLastTrackerResponse() {
-		return lastTrackerResponse;
+		return lastTrackerResponse.get();
 	}
 
 	public void setLastTrackerResponse(final long lastTrackerResponse) {
-		this.lastTrackerResponse = lastTrackerResponse;
+		this.lastTrackerResponse.set(lastTrackerResponse);
 		connectionAttempts = 0;
 	}
 	

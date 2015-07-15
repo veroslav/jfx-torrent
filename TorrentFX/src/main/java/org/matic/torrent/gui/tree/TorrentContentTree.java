@@ -31,7 +31,6 @@ import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleLongProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.CheckBoxTreeItem;
 import javafx.scene.control.Label;
@@ -46,7 +45,6 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 
 import org.matic.torrent.codec.BinaryEncodedDictionary;
@@ -56,6 +54,7 @@ import org.matic.torrent.codec.BinaryEncodingKeyNames;
 import org.matic.torrent.gui.GuiUtils;
 import org.matic.torrent.gui.image.ImageUtils;
 import org.matic.torrent.gui.model.TorrentFileEntry;
+import org.matic.torrent.gui.table.TableFactory;
 import org.matic.torrent.queue.FilePriority;
 import org.matic.torrent.utils.UnitConverter;
 
@@ -263,20 +262,20 @@ public final class TorrentContentTree {
 	private void addColumns(final boolean addProgressDetailColumns) {
 		final TreeTableColumn<TorrentFileEntry, FileNameColumnModel> fileNameColumn = buildFileNameColumn();
 		fileEntryTree.getColumns().addAll(Arrays.asList(fileNameColumn, 
-				buildPathColumn(), buildSimpleLongValueColumn("Size", "size", "right-aligned-column-header", 
+				buildPathColumn(), buildSimpleLongValueColumn("Size", "size", GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, 
 						GuiUtils.rightPadding(), tfe -> UnitConverter.formatByteCount(
 								tfe.sizeProperty().get())), buildPriorityColumn()));
 		
 		if(addProgressDetailColumns) {
 			fileEntryTree.getColumns().addAll(Arrays.asList(
 					buildSimpleLongValueColumn(
-							"Done", "done", "right-aligned-column-header", GuiUtils.rightPadding(),
+							"Done", "done", GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, GuiUtils.rightPadding(),
 							tfe -> UnitConverter.formatByteCount(tfe.doneProperty().get())),
 					buildSimpleLongValueColumn(
-							"First Piece", "firstPiece", "right-aligned-column-header", GuiUtils.rightPadding(),
+							"First Piece", "firstPiece", GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, GuiUtils.rightPadding(),
 							tfe -> String.valueOf(tfe.firstPieceProperty().get())),
 					buildSimpleLongValueColumn(
-							"#Pieces", "pieceCount", "right-aligned-column-header", GuiUtils.rightPadding(),
+							"#Pieces", "pieceCount", GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, GuiUtils.rightPadding(),
 							tfe -> String.valueOf(tfe.pieceCountProperty().get())),
 					buildProgressColumn()));
 		}
@@ -287,11 +286,11 @@ public final class TorrentContentTree {
 	private TreeTableColumn<TorrentFileEntry, Long> buildSimpleLongValueColumn(
 			final String columnName, final String propertyName, final String style, final Insets padding,
 			final Function<TorrentFileEntry, String> valueGetter) {
-		final TreeTableColumn<TorrentFileEntry, Long> stringColumn = new TreeTableColumn<TorrentFileEntry, Long>(columnName);
+		final TreeTableColumn<TorrentFileEntry, Long> longValueColumn = new TreeTableColumn<TorrentFileEntry, Long>(columnName);
 		
-		stringColumn.setGraphic(buildColumnHeader(stringColumn, style));
-		stringColumn.setCellValueFactory(new TreeItemPropertyValueFactory<TorrentFileEntry, Long>(propertyName));
-		stringColumn.setCellFactory(column -> new TreeTableCell<TorrentFileEntry, Long>() {
+		longValueColumn.setGraphic(TableFactory.buildColumnHeader(longValueColumn, style));
+		longValueColumn.setCellValueFactory(new TreeItemPropertyValueFactory<TorrentFileEntry, Long>(propertyName));
+		longValueColumn.setCellFactory(column -> new TreeTableCell<TorrentFileEntry, Long>() {
 			final Label valueLabel = new Label();			
 			
 			@Override
@@ -316,12 +315,12 @@ public final class TorrentContentTree {
 				}
 			}			
 		});
-		return stringColumn;
+		return longValueColumn;
 	}
 	
 	private TreeTableColumn<TorrentFileEntry, Integer> buildPriorityColumn() {
 		final TreeTableColumn<TorrentFileEntry, Integer> priorityColumn = new TreeTableColumn<TorrentFileEntry, Integer>("Priority");
-		priorityColumn.setGraphic(buildColumnHeader(priorityColumn, "left-aligned-column-header"));
+		priorityColumn.setGraphic(TableFactory.buildColumnHeader(priorityColumn, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME));
 		priorityColumn.setCellValueFactory(new TreeItemPropertyValueFactory<TorrentFileEntry, Integer>("priority"));
 		priorityColumn.setCellFactory(column -> new TreeTableCell<TorrentFileEntry, Integer>() {
 			final Label valueLabel = new Label();			
@@ -351,7 +350,7 @@ public final class TorrentContentTree {
 	
 	private TreeTableColumn<TorrentFileEntry, String> buildPathColumn() {
 		final TreeTableColumn<TorrentFileEntry, String> pathColumn = new TreeTableColumn<TorrentFileEntry, String>("Path");
-		pathColumn.setGraphic(buildColumnHeader(pathColumn, "left-aligned-column-header"));
+		pathColumn.setGraphic(TableFactory.buildColumnHeader(pathColumn, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME));
 		pathColumn.setCellValueFactory(new TreeItemPropertyValueFactory<TorrentFileEntry, String>("path"));
 		pathColumn.setVisible(false);
 		
@@ -362,7 +361,7 @@ public final class TorrentContentTree {
 		final TreeTableColumn<TorrentFileEntry, Double> progressColumn = 
 				new TreeTableColumn<TorrentFileEntry, Double>("Progress");
 		progressColumn.setCellValueFactory(new TreeItemPropertyValueFactory<TorrentFileEntry, Double>("progress"));
-		progressColumn.setGraphic(buildColumnHeader(progressColumn, "left-aligned-column-header"));
+		progressColumn.setGraphic(TableFactory.buildColumnHeader(progressColumn, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME));
 		progressColumn.setCellFactory(column -> new ProgressBarTreeTableCell<TorrentFileEntry>() {			
 			@Override
 			public final void updateItem(final Double value, final boolean empty) {
@@ -394,10 +393,10 @@ public final class TorrentContentTree {
 	private TreeTableColumn<TorrentFileEntry, FileNameColumnModel> buildFileNameColumn() {
 		final TreeTableColumn<TorrentFileEntry, FileNameColumnModel> fileNameColumn = 
 				new TreeTableColumn<TorrentFileEntry, FileNameColumnModel>("Name");	
-		fileNameColumn.setGraphic(buildColumnHeader(fileNameColumn, "left-aligned-column-header"));
+		fileNameColumn.setGraphic(TableFactory.buildColumnHeader(fileNameColumn, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME));
 		fileNameColumn.setSortType(TreeTableColumn.SortType.DESCENDING);
 		fileNameColumn.setEditable(true);
-		fileNameColumn.setPrefWidth(350);
+		fileNameColumn.setPrefWidth(GuiUtils.NAME_COLUMN_PREFERRED_SIZE);
 		fileNameColumn.setCellValueFactory(p -> {
 			final TreeItem<TorrentFileEntry> treeItem = p.getValue();
 			final TorrentFileEntry fileEntry = p.getValue().getValue();
@@ -462,18 +461,6 @@ public final class TorrentContentTree {
 			return o.getName().compareTo(m.getName());
 		});
 		return fileNameColumn;
-	}
-	
-	private Node buildColumnHeader(final TreeTableColumn<TorrentFileEntry, ?> column, final String style) {
-	    final Label columnNameLabel = new Label(column.getText());
-	    columnNameLabel.getStyleClass().add(style);
-	  
-	    final StackPane columnHeaderNode = new StackPane();
-	    columnHeaderNode.getChildren().add(columnNameLabel);
-	    columnHeaderNode.prefWidthProperty().bind(column.widthProperty().subtract(5));
-	    columnNameLabel.prefWidthProperty().bind(columnHeaderNode.prefWidthProperty());
-	    
-	    return columnHeaderNode;
 	}
 	
 	private TreeItem<TorrentFileEntry> buildTorrentContentTree(

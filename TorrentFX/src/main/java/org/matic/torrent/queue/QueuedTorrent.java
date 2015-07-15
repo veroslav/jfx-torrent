@@ -28,21 +28,35 @@ import javax.xml.bind.DatatypeConverter;
 import org.matic.torrent.hash.InfoHash;
 
 public final class QueuedTorrent implements Comparable<QueuedTorrent> {
+
+	public enum Status {
+		ACTIVE, STOPPED, ERROR
+	}
 	
 	private final Set<String> trackers;
 	private final InfoHash infoHash;
 	
+	private Status status;	
 	private int priority;
 
 	public QueuedTorrent(final InfoHash infoHash, 
-			final Set<String> trackers, final int priority) {
+			final Set<String> trackers, final int priority, final Status status) {
 		this.infoHash = infoHash;
 		this.trackers = trackers;
 		this.priority = priority;
+		this.status = status;
+	}
+	
+	public Status getStatus() {
+		return status;
 	}
 	
 	public InfoHash getInfoHash() {
 		return infoHash;
+	}
+	
+	public final int getPriority() {
+		return priority;
 	}
 	
 	public Stream<String> getTrackers() {

@@ -25,6 +25,7 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URISyntaxException;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -66,6 +67,9 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 	private final Set<PeerFoundListener> peerListeners = new CopyOnWriteArraySet<>();
 	private final Set<TrackerSession> trackerSessions = new HashSet<>();	
 	
+	/**
+	 * @see HttpTrackerResponseListener#onAnnounceResponseReceived(AnnounceResponse, TrackedTorrent)
+	 */
 	@Override
 	public final void onAnnounceResponseReceived(final AnnounceResponse response, final TrackerSession trackerSession) {
 		final Set<PwpPeer> peers = response.getPeers();
@@ -111,6 +115,9 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 		}			
 	}
 	
+	/**
+	 * @see UdpTrackerResponseListener#onUdpTrackerResponseReceived(UdpTrackerResponse)
+	 */
 	@Override
 	public final void onUdpTrackerResponseReceived(final UdpTrackerResponse response) {
 		switch(response.getAction()) {
@@ -160,7 +167,7 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 	 * Get a list of all trackers that are tracking a torrent
 	 * 
 	 * @param infoHash Info hash of the tracked torrent
-	 * @return Torrent trackers
+	 * @return Torrent tracker sessions
 	 */
 	public List<TrackerSession> getTrackers(final InfoHash infoHash) {
 		return trackerSessions.stream().filter(t -> t.getInfoHash().equals(infoHash)).collect(Collectors.toList());
@@ -171,9 +178,11 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 	 * 
 	 * @param trackerUrl URL of the tracker being added
 	 * @param infoHash Info hash of the torrent being tracked
+	 * @param shouldAnnounce Whether to announce to the tracker
 	 * @return Whether either the tracker or a new torrent was added 
 	 */
-	public boolean addForTracking(final String trackerUrl, final InfoHash infoHash) {
+	public boolean addTorrentTracker(final String trackerUrl, final InfoHash infoHash,
+			final boolean shouldAnnounce) {
 		final Tracker tracker = initTracker(trackerUrl);
 		if(tracker == null) {
 			return false;
@@ -184,10 +193,16 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 		synchronized(trackerSessions) {			
 			if(!trackerSessions.add(trackerSession)) {
 				return false;
-			}		
-			final AnnounceParameters announceParameters = new AnnounceParameters( 
-					Tracker.Event.STARTED, 0, 0, 0);
-			scheduleAnnouncement(trackerSession, announceParameters, 0);
+			}
+			if(shouldAnnounce) {
+				final AnnounceParameters announceParameters = new AnnounceParameters( 
+						Tracker.Event.STARTED, 0, 0, 0);
+				scheduleAnnouncement(trackerSession, announceParameters, 0);
+			}
+			else {
+				//Torrent is stopped, we'll only scrape tracker statistics for now
+				scheduleScrape(tracker, new HashSet<TrackerSession>(Arrays.asList(trackerSession)));
+			}
 		}
 		
 		return true;
@@ -252,10 +267,22 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 		}
 	}
 	
+	/**
+	 * Add a listener to be notified when a new peer has been obtained
+	 * 
+	 * @param peerListener The listener to add
+	 * @return Whether the listener was successfully added
+	 */
 	public final boolean addPeerListener(final PeerFoundListener peerListener) {
 		return peerListeners.add(peerListener);
 	}
 	
+	/**
+	 * Remove a listener that was notified when a new peer has been obtained
+	 * 
+	 * @param peerListener The listener to remove
+	 * @return Whether the listener was successfully removed
+	 */
 	public final boolean removePeerListener(final PeerFoundListener peerListener) {
 		return peerListeners.remove(peerListener);
 	}
@@ -488,6 +515,32 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 				return new ScheduledAnnouncement(announceParameters, future);
 			}
 		});
+	}
+	
+	private void scheduleScrape(final Tracker tracker, final Set<TrackerSession> torrents) {
+		synchronized(trackerSessions) {
+			if(tracker.isScrapeSupported()) {
+				requestScheduler.submit(() -> sendRequest(tracker.getType(), () -> {
+					
+					System.out.println("scheduleScrape(tracker = " + tracker.getUrl() + ")");
+					
+					tracker.scrape(torrents);
+					tracker.setLastScrape(System.currentTimeMillis());
+				}));				
+			}
+		}
+	}
+	
+	//TODO: Remove announce() and always use sendRequest instead
+	private void sendRequest(final Tracker.Type trackerType, final Runnable request) {		
+		/* Send TCP requests in their own thread, because sending a TCP request
+		   blocks until a response is received */	
+		if(trackerType == Tracker.Type.TCP) {
+			tcpRequestExecutor.execute(request);
+		}
+		else {
+			request.run();
+		}
 	}
 	
 	private void announce(final TrackerSession trackerSession, final AnnounceParameters announceParameters) {	

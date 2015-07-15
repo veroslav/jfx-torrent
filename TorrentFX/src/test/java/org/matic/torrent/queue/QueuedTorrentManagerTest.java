@@ -31,7 +31,7 @@ import org.matic.torrent.hash.InfoHash;
 public final class QueuedTorrentManagerTest {
 
 	private final InfoHash infoHash = new InfoHash(DatatypeConverter.parseHexBinary("12345678901234567890"));
-	private final QueuedTorrent torrent = new QueuedTorrent(infoHash, Collections.emptySet(), 1);
+	private final QueuedTorrent torrent = new QueuedTorrent(infoHash, Collections.emptySet(), 1, QueuedTorrent.Status.ACTIVE);
 	private final QueuedTorrentManager unitUnderTest = new QueuedTorrentManager();	
 	
 	@Test

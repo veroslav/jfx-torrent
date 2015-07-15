@@ -21,6 +21,7 @@
 package org.matic.torrent.queue;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -53,7 +54,8 @@ public final class QueuedTorrentManager {
 		if(added) {
 			final InfoHash infoHash = torrent.getInfoHash();
 			final TrackerManager trackerManager = ResourceManager.INSTANCE.getTrackerManager();
-			torrent.getTrackers().forEach(t -> trackerManager.addForTracking(t, infoHash));
+			torrent.getTrackers().forEach(t -> trackerManager.addTorrentTracker(
+					t, infoHash, torrent.getStatus() != QueuedTorrent.Status.STOPPED));
 			activeTorrentTrackerSessions = trackerManager.getTrackers(infoHash);
 			activeInfoHash = infoHash;
 		}
@@ -93,13 +95,27 @@ public final class QueuedTorrentManager {
 				//Update view with values from matching torrent tracker
 				tv.leechersProperty().set(m.getLeechers());
 				tv.seedsProperty().set(m.getSeeders());
-				tv.nextUpdateProperty().set((System.nanoTime() - m.getLastTrackerResponse()) - m.getInterval()); 
+				tv.nextUpdateProperty().set((System.currentTimeMillis() - m.getLastTrackerResponse()) - m.getInterval());
 			}
 		));
 	}
 	
-	protected boolean contains(final QueuedTorrent torrent) {
-		return queuedTorrents.contains(torrent);
+	//TODO: Remove updateTrackerStatistics(), use View.update(QueuedTorrent) and updateGui(QueuedTorrent) instead
+	//TODO: In ApplicationWindow, keep track of selected QueuedTorrent for more efficient view updates 
+	
+	public final void snapshotTrackerStatistics(final QueuedTorrent queuedTorrent,
+			final List<TrackerView> trackerViews) {
+		//TODO: Implement method
+	}
+	
+	/**
+	 * Find a queued torrent matching the target info hash (if any)
+	 * 
+	 * @param infoHash Info hash of the torrent to find
+	 * @return Optionally found torrent
+	 */
+	public Optional<QueuedTorrent> find(final InfoHash infoHash) {
+		return queuedTorrents.stream().filter(t -> t.getInfoHash().equals(infoHash)).findFirst();
 	}
 	
 	protected int getQueueSize() {

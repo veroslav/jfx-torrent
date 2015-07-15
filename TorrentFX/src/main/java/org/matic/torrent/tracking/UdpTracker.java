@@ -27,6 +27,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import org.matic.torrent.hash.InfoHash;
@@ -52,10 +53,10 @@ public final class UdpTracker extends Tracker {
 	
 	private static final int DEFAULT_PORT = 443;
 		
+	private final AtomicLong connectionId = new AtomicLong(DEFAULT_CONNECTION_ID);
+	
 	private final URI trackerUri;
 	private final int trackerPort;
-	
-	private long connectionId = DEFAULT_CONNECTION_ID;
 	
 	public UdpTracker(final String url) 
 			throws URISyntaxException {
@@ -78,7 +79,7 @@ public final class UdpTracker extends Tracker {
 	
 	@Override
 	protected void scrape(final Set<TrackerSession> trackerSessions) {
-		if(trackerSessions.isEmpty() || connectionId == DEFAULT_CONNECTION_ID) {
+		if(trackerSessions.isEmpty() || connectionId.get() == DEFAULT_CONNECTION_ID) {
 			return;
 		}
 		final Set<TrackerSession> matchingTorrents = trackerSessions.stream().filter(
@@ -112,13 +113,13 @@ public final class UdpTracker extends Tracker {
 	}
 	
 	@Override
-	public synchronized long getId() {
-		return connectionId;
+	public long getId() {
+		return connectionId.get();
 	}
 	
 	@Override
-	public synchronized void setId(final long connectionId) {
-		this.connectionId = connectionId;
+	public void setId(final long connectionId) {
+		this.connectionId.set(connectionId);
 	}
 	
 	private int toRequestEvent(final Tracker.Event event) {
@@ -155,7 +156,7 @@ public final class UdpTracker extends Tracker {
 			final byte[] clientId = ClientProperties.PEER_ID.getBytes(StandardCharsets.UTF_8.name());
 			final int requestEvent = toRequestEvent(announceParameters.getTrackerEvent());
 		
-			dos.writeLong(connectionId);
+			dos.writeLong(connectionId.get());
 			dos.writeInt(ACTION_ANNOUNCE);			
 			dos.writeInt(transactionId);			
 			dos.write(infoHash.getBytes());
@@ -184,11 +185,11 @@ public final class UdpTracker extends Tracker {
 	protected UdpRequest buildScrapeRequest(final Set<TrackerSession> trackerSessions) {	
 		final ByteArrayOutputStream baos = new ByteArrayOutputStream(MESSAGE_LENGTH + (trackerSessions.size() * 20));
 		try(final DataOutputStream dos = new DataOutputStream(baos)) {
-			dos.writeLong(connectionId);
+			dos.writeLong(connectionId.get());
 			dos.writeInt(ACTION_SCRAPE);
 			
 			//TODO: Populate with correct transactionId value
-			dos.writeInt(0);
+			dos.writeInt(ClientProperties.generateUniqueId());
 			
 			for(final TrackerSession trackerSession : trackerSessions) {
 				dos.write(trackerSession.getInfoHash().getBytes());

@@ -76,37 +76,58 @@ public final class HttpTracker extends Tracker {
 		scrapeUrl = scrapeSupported? url.replace(REQUEST_TYPE_ANNOUNCE, REQUEST_TYPE_SCRAPE) : null;
 	}
 	
+	/**
+	 * @see Tracker#isScrapeSupported()
+	 */
 	@Override
 	public boolean isScrapeSupported() {
 		return scrapeUrl != null;
 	}
 	
+	/**
+	 * @see Tracker#scrape(Set)
+	 */
 	@Override
 	protected final void scrape(final Set<TrackerSession> trackerSessions) {
 		 //TODO: Implement method
 	};
 	
+	/**
+	 * @see Tracker#connect(int)
+	 */
 	@Override
 	protected void connect(final int transactionId) {
 		//Connection establishment is not supported by HTTP trackers
 	}
 	
+	/**
+	 * @see Tracker#getType()
+	 */
 	@Override
 	public final Type getType() {
 		return Type.TCP;
 	}
 	
+	/**
+	 * @see Tracker#getId()
+	 */
 	@Override
 	public long getId() {
 		//Not supported by HTTP trackers
 		return 0;
 	}
 	
+	/**
+	 * @see Tracker#setId(long)
+	 */
 	@Override
 	public void setId(final long id) {
 		//Not supported by HTTP trackers
 	}
 
+	/**
+	 * @see Tracker#announce(AnnounceParameters, TrackedTorrent)
+	 */
 	@Override
 	protected final void announce(final AnnounceParameters announceParameters, final TrackerSession trackerSession) {				
 		final AnnounceResponse trackerResponse = sendRequest(announceParameters, trackerSession);

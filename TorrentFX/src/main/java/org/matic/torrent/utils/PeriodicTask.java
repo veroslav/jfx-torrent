@@ -18,24 +18,47 @@
 *
 */
 
-package org.matic.torrent.tracking.listeners;
-
-import org.matic.torrent.tracking.AnnounceResponse;
-import org.matic.torrent.tracking.TrackerSession;
+package org.matic.torrent.utils;
 
 /**
- * A listener for receiving and managing HTTP tracker responses
+ * A task that can scheduled to run multiple times
  * 
  * @author vedran
  *
  */
-public interface HttpTrackerResponseListener {
+public final class PeriodicTask {
 
+	private final Runnable task;
+	private final long period;
+	
+	private long lastRunTime;
+	
 	/**
-	 * Handle a tracker response when it has been received  
+	 * Create a new periodic task
 	 * 
-	 * @param response Tracker response to handle
-	 * @param trackerSession Tracker request submitter session
+	 * @param task Task to be executed
+	 * @param period How often to run the task
 	 */
-	void onAnnounceResponseReceived(final AnnounceResponse response, final TrackerSession trackerSession);
+	public PeriodicTask(final Runnable task, final long period) {
+		this.task = task;
+		this.period = period;
+		
+		lastRunTime = 0;
+	}
+	
+	public final long getPeriod() {
+		return period;
+	}
+	
+	public final Runnable getTask() {
+		return task;
+	}
+	
+	public final void setLastRunTime(final long lastRunTime) {
+		this.lastRunTime = lastRunTime;
+	}
+	
+	public final long getLastRunTime() {
+		return lastRunTime;
+	}
 }

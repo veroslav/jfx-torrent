@@ -171,14 +171,14 @@ public final class AddNewTorrentWindow {
 		initComponents();
 	}
 	
-	public final AddNewTorrentOptions showAndWait() {
+	public final TorrentOptions showAndWait() {
 		final Optional<ButtonType> result = window.showAndWait();
 		
 		if(result.isPresent() && result.get() == ButtonType.OK) {
 			final byte[] infoHashBytes = ((BinaryEncodedString)torrentMetaData.get(
 					BinaryEncodingKeyNames.KEY_INFO_HASH)).getBytes();
 			final InfoHash infoHash = new InfoHash(infoHashBytes);
-			return new AddNewTorrentOptions(torrentMetaData, infoHash, torrentContentTree.getView().getRoot(), 
+			return new TorrentOptions(torrentMetaData, infoHash, torrentContentTree.getView().getRoot(), 
 					nameTextField.getText(), savePathCombo.getValue(), labelCombo.getValue(),
 					startTorrentCheckbox.isSelected(), createSubFolderCheckbox.isSelected(),
 					addToTopQueueCheckbox.isSelected(), skipHashCheckbox.isSelected());

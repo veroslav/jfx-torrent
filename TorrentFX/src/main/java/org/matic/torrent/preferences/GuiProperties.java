@@ -18,24 +18,11 @@
 *
 */
 
-package org.matic.torrent.tracking.listeners;
+package org.matic.torrent.preferences;
 
-import org.matic.torrent.tracking.AnnounceResponse;
-import org.matic.torrent.tracking.TrackerSession;
+public final class GuiProperties {
 
-/**
- * A listener for receiving and managing HTTP tracker responses
- * 
- * @author vedran
- *
- */
-public interface HttpTrackerResponseListener {
-
-	/**
-	 * Handle a tracker response when it has been received  
-	 * 
-	 * @param response Tracker response to handle
-	 * @param trackerSession Tracker request submitter session
-	 */
-	void onAnnounceResponseReceived(final AnnounceResponse response, final TrackerSession trackerSession);
+	public final static String GUI_UPDATE_INTERVAL = "gui.update.interval";
+	
+	public static final long DEFAULT_GUI_UPDATE_INTERVAL = 1000;	//1 second
 }

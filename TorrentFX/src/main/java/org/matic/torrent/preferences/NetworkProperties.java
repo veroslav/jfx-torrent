@@ -21,7 +21,8 @@
 package org.matic.torrent.preferences;
 
 public final class NetworkProperties {
-
+	public static final String NETWORK_INTERFACE_NAME = "network.interface.name";
+	
 	public static final String UDP_TRACKER_PORT = "network.udp.tracker.port";
 	public static final String UDP_DHT_PORT = "network.udp.dht.port";
 }

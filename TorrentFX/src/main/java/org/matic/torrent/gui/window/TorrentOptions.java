@@ -33,7 +33,7 @@ import org.matic.torrent.hash.InfoHash;
  * @author vedran
  *
  */
-public final class AddNewTorrentOptions {
+public final class TorrentOptions {
 	
 	private final TreeItem<TorrentFileEntry> torrentContents;
 	private final BinaryEncodedDictionary metaData;
@@ -49,7 +49,7 @@ public final class AddNewTorrentOptions {
 	private final String name;
 	private final String path;
 
-	public AddNewTorrentOptions(final BinaryEncodedDictionary metaData, final InfoHash infoHash, 
+	public TorrentOptions(final BinaryEncodedDictionary metaData, final InfoHash infoHash, 
 			final TreeItem<TorrentFileEntry> torrentContents, final String name, final String path,
 			final String label, final boolean startTorrent, final boolean createSubfolder, 
 			final boolean addToTopQueue, final boolean skipHashCheck) {
@@ -134,7 +134,7 @@ public final class AddNewTorrentOptions {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		AddNewTorrentOptions other = (AddNewTorrentOptions) obj;
+		TorrentOptions other = (TorrentOptions) obj;
 		if (addToTopQueue != other.addToTopQueue)
 			return false;
 		if (createSubfolder != other.createSubfolder)

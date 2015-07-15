@@ -21,12 +21,10 @@
 package org.matic.torrent.tracking;
 
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * An abstract representation of a peer tracker (either TCP or UDP).
- * Comparison is made based on next announce time, so that we can
- * correctly schedule next tracker announcement depending on the
- * shortest next announce time.  
  * 
  * @author vedran
  *
@@ -47,7 +45,8 @@ public abstract class Tracker {
 	
 	protected static final int NUM_WANTED_PEERS = 200;
 	
-	private volatile long lastResponse;
+	private final AtomicLong lastResponse = new AtomicLong(0);
+	private final AtomicLong lastScrape = new AtomicLong(0);
 	private final String url;
 	
 	/**
@@ -57,7 +56,6 @@ public abstract class Tracker {
 	 */
 	protected Tracker(final String url) {		
 		this.url = url;	
-		lastResponse = 0;
 	}
 
 	public abstract boolean isScrapeSupported();
@@ -68,16 +66,24 @@ public abstract class Tracker {
 	
 	public abstract void setId(final long id);
 	
+	public String getUrl() {
+		return url;
+	}
+	
 	public long getLastResponse() {
-		return lastResponse;
+		return lastResponse.get();
 	}
 	
 	public void setLastResponse(final long lastResponse) {
-		this.lastResponse = lastResponse;
+		this.lastResponse.set(lastResponse);
 	}
 	
-	public String getUrl() {
-		return url;
+	public final long getLastScrape() {
+		return lastScrape.get();
+	}
+
+	public final void setLastScrape(final long lastScrape) {
+		this.lastScrape.set(lastScrape);
 	}
 	
 	/**
