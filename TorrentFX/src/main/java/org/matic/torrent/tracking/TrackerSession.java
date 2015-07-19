@@ -40,20 +40,13 @@ public final class TrackerSession {
 	private AtomicLong interval = new AtomicLong(0);
 	private Long minInterval = null;	
 	
-	private int transactionId = ClientProperties.generateUniqueId();
-	
-	//TODO: Move connectionAttempts to UdpTracker?
-	private int connectionAttempts = 0;
+	private int transactionId = ClientProperties.generateUniqueId();	
 
 	public TrackerSession(final InfoHash infoHash, final Tracker tracker) {
 		this.infoHash = infoHash;
 		this.tracker = tracker;
 		
 		lastTrackerEvent = Tracker.Event.STOPPED;
-	}
-	
-	public final int updateConnectionAttempts() {
-		return ++connectionAttempts;
 	}
 
 	public final void setTransactionId(final int transactionId) {
@@ -97,8 +90,7 @@ public final class TrackerSession {
 	}
 
 	public void setLastTrackerResponse(final long lastTrackerResponse) {
-		this.lastTrackerResponse.set(lastTrackerResponse);
-		connectionAttempts = 0;
+		this.lastTrackerResponse.set(lastTrackerResponse);		
 	}
 	
 	public final int getTransactionId() {

@@ -20,7 +20,7 @@
 
 package org.matic.torrent.tracking;
 
-import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -45,8 +45,9 @@ public abstract class Tracker {
 	
 	protected static final int NUM_WANTED_PEERS = 200;
 	
+	private final AtomicInteger scrapeTransactionId = new AtomicInteger(0);
 	private final AtomicLong lastResponse = new AtomicLong(0);
-	private final AtomicLong lastScrape = new AtomicLong(0);
+	private final AtomicLong lastScrape = new AtomicLong(0);	
 	private final String url;
 	
 	/**
@@ -82,10 +83,19 @@ public abstract class Tracker {
 		return lastScrape.get();
 	}
 
-	public final void setLastScrape(final long lastScrape) {
+	public void setLastScrape(final long lastScrape) {
 		this.lastScrape.set(lastScrape);
+		
 	}
 	
+	public final int getScrapeTransactionId() {
+		return scrapeTransactionId.get();
+	}
+	
+	public final void setScrapeTransactionId(final int scrapeTransactionId) {
+		this.scrapeTransactionId.set(scrapeTransactionId);
+	}
+
 	/**
 	 * Make an announce request against the tracker
 	 * 
@@ -100,14 +110,15 @@ public abstract class Tracker {
 	 * 
 	 * @param trackerSessions Torrent sessions to be scraped
 	 */
-	protected abstract void scrape(final Set<TrackerSession> trackerSessions);
+	protected abstract void scrape(final TrackerSession... trackerSessions);
 
 	/**
 	 * Send a connection request to this tracker (only supported by UDP trackers)
 	 * 
 	 * @param transactionId Caller's transaction id
+	 * @return Connection attempt count
 	 */
-	protected abstract void connect(final int transactionId);
+	protected abstract int connect(final int transactionId);
 
 	@Override
 	public int hashCode() {

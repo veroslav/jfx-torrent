@@ -24,12 +24,9 @@ import java.util.Collections;
 import java.util.Set;
 
 import org.matic.torrent.net.pwp.PwpPeer;
+import org.matic.torrent.tracking.TrackerResponse.Type;
 
 public final class AnnounceResponse {
-	
-	public enum Type {
-		INVALID_URL, READ_WRITE_ERROR, OK, TRACKER_ERROR, INVALID_RESPONSE, WARNING
-	}
 
 	private final String trackerId;
 	private final Long minInterval;
@@ -53,7 +50,7 @@ public final class AnnounceResponse {
 	}
 	
 	/**
-	 * Constructor for building a normal response
+	 * Constructor for building a normal announce response
 	 * 
 	 * @param type Type of response (either NORMAL or WARNING)
 	 * @param warningMessage null if NORMAL, warning message otherwise
@@ -162,7 +159,7 @@ public final class AnnounceResponse {
 
 	@Override
 	public String toString() {
-		return "TrackerResponse [trackerId=" + trackerId + ", minInterval="
+		return "AnnounceResponse [trackerId=" + trackerId + ", minInterval="
 				+ minInterval + ", message=" + message + ", peers=" + peers
 				+ ", incomplete=" + incomplete + ", interval=" + interval
 				+ ", complete=" + complete + ", type=" + type + "]";

@@ -44,6 +44,7 @@ import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.net.NetworkUtilities;
 import org.matic.torrent.net.pwp.PwpPeer;
 import org.matic.torrent.net.udp.UdpTrackerResponse;
+import org.matic.torrent.peer.ClientProperties;
 import org.matic.torrent.tracking.Tracker.Event;
 import org.matic.torrent.tracking.listeners.HttpTrackerResponseListener;
 import org.matic.torrent.tracking.listeners.PeerFoundListener;
@@ -52,16 +53,14 @@ import org.matic.torrent.utils.UnitConverter;
 
 public final class TrackerManager implements HttpTrackerResponseListener, UdpTrackerResponseListener {
 	
-	private static final long UDP_TRACKER_CONNECTION_ID_TIMEOUT = 60000; //60 s
-	private static final int UDP_TRACKER_CONNECTION_ATTEMPT_DELAY = 15;	//15 seconds
-	private static final int MAX_UDP_TRACKER_CONNECTION_ATTEMPTS = 4;
+	private static final long UDP_TRACKER_CONNECTION_ID_TIMEOUT = 60000; //60 s		
 	private static final int UDP_TRACKER_RESPONSE_PEER_LENGTH = 6; //6 bytes [IP (4) + PORT (2)]
 	private static final long ANNOUNCE_DELAY_ON_TRACKER_ERROR = 1800;  //Seconds to wait on tracker error
 	
 	private static final int SCHEDULER_POOL_COUNT = 1;
 	private final ScheduledExecutorService requestScheduler = 
 			Executors.newScheduledThreadPool(SCHEDULER_POOL_COUNT);
-	private final ExecutorService tcpRequestExecutor = Executors.newCachedThreadPool();
+	private final ExecutorService requestExecutor = Executors.newCachedThreadPool();
 	
 	private final Map<TrackerSession, ScheduledAnnouncement> scheduledRequests = new ConcurrentHashMap<>();
 	private final Set<PeerFoundListener> peerListeners = new CopyOnWriteArraySet<>();
@@ -83,14 +82,18 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 			trackerSession.setLastTrackerResponse(responseTime);			
 		}
 		
+		//START TEST
+		final long start = System.currentTimeMillis();
+		//END TEST
+		
 		synchronized(trackerSessions) {				
 			if(trackerSessions.contains(trackerSession) && 
 					trackerSession.getLastTrackerEvent() != Tracker.Event.STOPPED) {
 				//Check whether it was an error response before scheduling
-				if(response.getType() != AnnounceResponse.Type.OK) {
+				if(response.getType() != TrackerResponse.Type.OK) {
 					
 					System.err.println("Announce returned an error ( " + response.getType() + "): "
-							+ trackerSession.getTracker());
+							+ trackerSession.getTracker() + ", msg = " + response.getMessage());
 					
 					final AnnounceParameters announceParameters = new AnnounceParameters( 
 							trackerSession.getLastTrackerEvent(), 0, 0, 0);
@@ -112,9 +115,22 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 					return null;
 				});
 			}
-		}			
-	}
+		}
+		
+		System.out.println("SYNCHRONIZED.onAnnounceResponseReceived(): Released lock after " 
+				+ (System.currentTimeMillis() - start) + " ms.");
+	}	
 	
+	/**
+	 * @see HttpTrackerResponseListener#onScrapeResponseReceived(Tracker, ScrapeResponse)
+	 */
+	@Override
+	public void onScrapeResponseReceived(final Tracker tracker, final ScrapeResponse trackerResponse) {
+		//TODO: Implement method
+		
+		System.out.println("onScrapeResponseReceived(" + tracker.getUrl() + ")");
+	}
+
 	/**
 	 * @see UdpTrackerResponseListener#onUdpTrackerResponseReceived(UdpTrackerResponse)
 	 */
@@ -148,6 +164,11 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 	 */
 	public boolean issueAnnounce(final Tracker tracker, final InfoHash infoHash, 
 			final AnnounceParameters announceParameters) {
+		
+		//START TEST
+		final long start = System.currentTimeMillis();
+		//END TEST
+		
 		synchronized(trackerSessions) {
 			final Optional<TrackerSession> match = trackerSessions.stream().filter(
 					t -> t.getInfoHash().equals(infoHash) && t.getTracker().equals(tracker)).findFirst();
@@ -159,8 +180,12 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 			if(announceAllowed) {
 				scheduleAnnouncement(trackerSession, announceParameters, 0);
 			}
+			
+			System.out.println("SYNCHRONIZED.issueAnnounce(): Released lock after " 
+					+ (System.currentTimeMillis() - start) + " ms.");
+			
 			return announceAllowed;
-		}		
+		}
 	}
 	
 	/**
@@ -190,6 +215,10 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 		
 		final TrackerSession trackerSession = new TrackerSession(infoHash, tracker); 
 		
+		//START TEST
+		final long start = System.currentTimeMillis();
+		//END TEST
+		
 		synchronized(trackerSessions) {			
 			if(!trackerSessions.add(trackerSession)) {
 				return false;
@@ -201,14 +230,22 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 			}
 			else {
 				//Torrent is stopped, we'll only scrape tracker statistics for now
-				scheduleScrape(tracker, new HashSet<TrackerSession>(Arrays.asList(trackerSession)));
+				scheduleScrape(tracker, trackerSession);
 			}
 		}
+		
+		System.out.println("SYNCHRONIZED.addTorrentTracker(): Released lock after " 
+				+ (System.currentTimeMillis() - start) + " ms.");
 		
 		return true;
 	}
 	
 	public final boolean removeTracker(final Tracker tracker, final InfoHash infoHash) {
+		
+		//START TEST
+		final long start = System.currentTimeMillis();
+		//END TEST
+		
 		synchronized(trackerSessions) {
 			final Optional<TrackerSession> match = trackerSessions.stream().filter(
 					t -> t.getInfoHash().equals(infoHash) && t.getTracker().equals(tracker)).findFirst();
@@ -227,6 +264,9 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 				scheduleAnnouncement(trackerSession, announceParameters, 0);
 			}
 			
+			System.out.println("SYNCHRONIZED.removeTracker(): Released lock after " 
+					+ (System.currentTimeMillis() - start) + " ms.");
+			
 			return removed;
 		}		
 	}
@@ -239,6 +279,11 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 	 * @return Whether the torrent was successfully removed
 	 */
 	public final boolean removeTorrent(final InfoHash torrentInfoHash) {
+		
+		//START TEST
+		final long start = System.currentTimeMillis();
+		//END TEST
+		
 		synchronized(trackerSessions) {		
 			//Check if any tracked torrents match supplied info hash
 			final List<TrackerSession> matchList = trackerSessions.stream().filter(
@@ -263,6 +308,10 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 					scheduleAnnouncement(trackerSession, announceParameters, 0);
 				}				
 			}
+			
+			System.out.println("SYNCHRONIZED.removeTorrent(): Released lock after " 
+					+ (System.currentTimeMillis() - start) + " ms.");
+			
 			return true;
 		}
 	}
@@ -292,12 +341,12 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 	 */
 	public final void stop() {
 		requestScheduler.shutdownNow();
-		tcpRequestExecutor.shutdownNow();
+		requestExecutor.shutdownNow();
 	}
 	
 	private void onUdpTrackerConnect(final UdpTrackerResponse trackerResponse) {		
 		Optional<TrackerSession> match = null;
-		long connectionId = -1;
+		long connectionId = -1;		
 		
 		try(final DataInputStream dis = new DataInputStream(new ByteArrayInputStream(trackerResponse.getData()))) {
 			final int actionId = dis.readInt();
@@ -311,27 +360,45 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 			match = scheduledRequests.keySet().stream().filter(
 					t -> t.getTransactionId() == transactionId).findFirst();
 			
-			System.out.println("onUdpTrackerConnect(transaction_id = " + transactionId +
-					", connection_id = " + connectionId + ", match = " + match + ")");
+			if(match != null && match.isPresent()) {
+				//This was a response to a previous announce request
+				
+				System.out.println("onUdpTrackerConnectAnnounce(transaction_id = " + transactionId +
+						", connection_id = " + connectionId + ", match = " + match + ")");
+				
+				final TrackerSession trackerSession = match.get();
+				synchronized(trackerSession) {
+					final long responseTime = System.currentTimeMillis();
+					trackerSession.getTracker().setId(connectionId);
+					trackerSession.getTracker().setLastResponse(responseTime);
+					trackerSession.setLastTrackerResponse(responseTime);
+				}	
+				
+				//START TEST
+				final long start = System.currentTimeMillis();
+				//END TEST
+				
+				synchronized(trackerSessions) {
+					final AnnounceParameters params = scheduledRequests.get(trackerSession).getAnnounceParameters();				
+					scheduleAnnouncement(trackerSession, params, 0);
+				}
+				
+				System.out.println("SYNCHRONIZED.onUdpTrackerConnect(): Released lock after " 
+						+ (System.currentTimeMillis() - start) + " ms.");
+			}		
+			else {
+				//This was a response to a previous scrape request
+				
+				System.out.println("onUdpTrackerConnectScrape(transaction_id = " + transactionId +
+						", connection_id = " + connectionId + ")");
+				
+				//TODO: Find matching transaction_id in Map<transaction_id, ScrapeRequest> where ScrapeRequest(Tracker, TrackerSession...)				
+			}
 		}
 		catch(final IOException ioe) {
 			System.err.println("onUdpTrackerConnect() Error: " + ioe.getMessage());
 			return;
 		}
-		
-		if(match != null && match.isPresent()) {				
-			final TrackerSession trackerSession = match.get();
-			synchronized(trackerSession) {
-				final long responseTime = System.currentTimeMillis();
-				trackerSession.getTracker().setId(connectionId);
-				trackerSession.getTracker().setLastResponse(responseTime);
-				trackerSession.setLastTrackerResponse(responseTime);
-			}	
-			synchronized(trackerSessions) {
-				final AnnounceParameters params = scheduledRequests.get(trackerSession).getAnnounceParameters();				
-				scheduleAnnouncement(trackerSession, params, 0);
-			}
-		}		
 	}
 	
 	private void onUdpTrackerAnnounce(final UdpTrackerResponse trackerResponse) {		
@@ -354,7 +421,7 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 						"): " + leechers + " leechers and " + seeders + " seeders. " +
 						"Announce interval: " + interval);
 				
-				final AnnounceResponse announceResponse = new AnnounceResponse(AnnounceResponse.Type.OK,
+				final AnnounceResponse announceResponse = new AnnounceResponse(TrackerResponse.Type.OK,
 						null, interval, null, null, seeders, leechers, extractUdpTrackerPeers(dis, trackerSession.getInfoHash()));		
 				onAnnounceResponseReceived(announceResponse, trackerSession);
 			}
@@ -365,6 +432,10 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 	}
 	
 	private void onUdpTrackerScrape(final UdpTrackerResponse trackerResponse) {
+		
+		System.out.println("onUdpTrackerScrape()...");
+		
+		
 		/*TODO: Implement method
 		synchronized(trackerSession) {
 				final long responseTime = System.currentTimeMillis();
@@ -482,12 +553,14 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 	private void scheduleAnnouncement(final TrackerSession trackerSession,
 			final AnnounceParameters announceParameters, final long delay) {
 		
-		System.out.println("scheduleAnnouncement(" + announceParameters.getTrackerEvent() + ", delay = " + delay + ")");
+		/*System.out.println("scheduleAnnouncement(url = " + trackerSession.getTracker().getUrl() + ", " +
+				announceParameters.getTrackerEvent() + ", delay = " + delay + ")");*/
+		
+		//START TEST
+		final long start = System.currentTimeMillis();
+		//END TEST
 		
 		scheduledRequests.compute(trackerSession, (session, announcement) -> {
-			if(trackerSession == null) {
-				return null;
-			}
 			if(!isValidTrackerEvent(trackerSession.getLastTrackerEvent(),
 					announceParameters.getTrackerEvent())) {
 				
@@ -501,95 +574,86 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 				announcement.getFuture().cancel(false);
 			}
 			
-			if(trackerSession.getTracker().getType() == Tracker.Type.TCP) {
+			final Tracker tracker = trackerSession.getTracker();			
+			final Runnable request = () -> tracker.announce(announceParameters, trackerSession);
+			
+			if(tracker.getType() == Tracker.Type.TCP) {
 				final Future<?> future = delay == 0? requestScheduler.submit(() ->
-						announce(trackerSession, announceParameters)) :
-					requestScheduler.schedule(() -> announce(trackerSession, 
-							announceParameters), delay, TimeUnit.SECONDS);
+						sendRequest(tracker, trackerSession.getTransactionId(), request, trackerSession)) :
+					requestScheduler.schedule(() -> sendRequest(tracker, trackerSession.getTransactionId(), 
+							request, trackerSession), delay, TimeUnit.SECONDS);
 				return new ScheduledAnnouncement(announceParameters, future);
 			}
 			else {
 				final Future<?> future = requestScheduler.scheduleAtFixedRate(
-						() -> announce(trackerSession, announceParameters), 
-						delay, UDP_TRACKER_CONNECTION_ATTEMPT_DELAY, TimeUnit.SECONDS);
+						() -> sendRequest(tracker, trackerSession.getTransactionId(), request, trackerSession), 
+						delay * 1000, UdpTracker.CONNECTION_ATTEMPT_DELAY, TimeUnit.MILLISECONDS);
 				return new ScheduledAnnouncement(announceParameters, future);
 			}
 		});
+		
+		System.out.println("SYNCHRONIZED.scheduleRequests.compute(): Released lock after " +
+				(System.currentTimeMillis() -start) + " ms.");
 	}
 	
-	private void scheduleScrape(final Tracker tracker, final Set<TrackerSession> torrents) {
+	private void scheduleScrape(final Tracker tracker, final TrackerSession... torrents) {
+		
+		//START TEST
+		final long start = System.currentTimeMillis();
+		//END TEST
+		
 		synchronized(trackerSessions) {
-			if(tracker.isScrapeSupported()) {
-				requestScheduler.submit(() -> sendRequest(tracker.getType(), () -> {
-					
-					System.out.println("scheduleScrape(tracker = " + tracker.getUrl() + ")");
-					
+			if(tracker.isScrapeSupported()) {				
+				tracker.setScrapeTransactionId(ClientProperties.generateUniqueId());
+				
+				System.out.println("scheduleScrape(tracker = " + tracker.getUrl() + 
+						", transaction_id = " + tracker.getScrapeTransactionId() + ")");
+				
+				final Runnable request = () -> {					
 					tracker.scrape(torrents);
 					tracker.setLastScrape(System.currentTimeMillis());
-				}));				
+				};
+				requestExecutor.submit(() -> sendRequest(tracker, tracker.getScrapeTransactionId(), request , torrents));				
 			}
 		}
-	}
-	
-	//TODO: Remove announce() and always use sendRequest instead
-	private void sendRequest(final Tracker.Type trackerType, final Runnable request) {		
-		/* Send TCP requests in their own thread, because sending a TCP request
-		   blocks until a response is received */	
-		if(trackerType == Tracker.Type.TCP) {
-			tcpRequestExecutor.execute(request);
-		}
-		else {
-			request.run();
-		}
-	}
-	
-	private void announce(final TrackerSession trackerSession, final AnnounceParameters announceParameters) {	
-		/* Send TCP requests in their own thread, because sending a TCP request
-		   blocks until a response is received */
-		final Tracker tracker = trackerSession.getTracker();
 		
+		System.out.println("SYNCHRONIZED.scheduleScrape(): Released lock after " 
+				+ (System.currentTimeMillis() - start) + " ms.");
+	}
+	
+	private void sendRequest(final Tracker tracker, final int transactionId,
+			final Runnable request, final TrackerSession... trackerSessions) {
+		
+		/* Send TCP requests in their own thread, because sending a TCP request
+		   blocks until a response is received */		
 		if(tracker.getType() == Tracker.Type.TCP) {
-			tcpRequestExecutor.execute(() -> tracker.announce(announceParameters, trackerSession));
+			requestExecutor.execute(request);
 		}
 		else {
-			if(isValidConnection(trackerSession)) {
-				
-				System.out.println("announce(event = " + announceParameters.getTrackerEvent() +
-						", connection_id = " + tracker.getId() + 
-						", transaction_id = " + trackerSession.getTransactionId() +
-						"): valid connection_id , announcing " + announceParameters.getTrackerEvent());
-				
-				tracker.announce(announceParameters, trackerSession);
+			if(isValidConnection(tracker)) {
+				request.run();
 			}
 			else {
-				
-				System.out.println("announce(connection_id = " + tracker.getId() + 
-						", transaction_id = " + trackerSession.getTransactionId() +
-						"): connection_id invalid, re-connecting...");
-				
-				final int connectionAttempt = trackerSession.updateConnectionAttempts();
-				
-				System.out.println("announce(): connectionAttempt = " + connectionAttempt);
-				
-				if(connectionAttempt > MAX_UDP_TRACKER_CONNECTION_ATTEMPTS) {
+				final int connectionAttempt = tracker.connect(transactionId);
+				if(connectionAttempt > UdpTracker.MAX_CONNECTION_ATTEMPTS) {
 					
-					System.out.println("announce(): Connection timed out, cancelling this tracker job");
+					System.out.println("sendRequest(): Connection timed out, cancelling...");
 					
-					scheduledRequests.compute(trackerSession, (session, announcement) -> {
-						announcement.getFuture().cancel(false);
-						return announcement;
+					Arrays.stream(trackerSessions).forEach(ts -> {
+						scheduledRequests.compute(ts, (session, announcement) -> {
+							if(announcement != null) {
+								announcement.getFuture().cancel(false);
+							}
+							return announcement;
+						});
 					});
-				}
-				else {
-					tracker.connect(trackerSession.getTransactionId());
 				}
 			}
 		}
 	}
 	
-	private boolean isValidConnection(final TrackerSession trackerSession) {
-		final Tracker tracker = trackerSession.getTracker();
-		synchronized(trackerSession) {			
+	private boolean isValidConnection(final Tracker tracker) {
+		synchronized(trackerSessions) {			
 			return (tracker.getId() != UdpTracker.DEFAULT_CONNECTION_ID) &&
 				((System.currentTimeMillis() - tracker.getLastResponse()) <= 
 				UDP_TRACKER_CONNECTION_ID_TIMEOUT);

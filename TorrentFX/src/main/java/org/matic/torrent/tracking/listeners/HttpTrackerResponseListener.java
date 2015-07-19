@@ -21,6 +21,8 @@
 package org.matic.torrent.tracking.listeners;
 
 import org.matic.torrent.tracking.AnnounceResponse;
+import org.matic.torrent.tracking.ScrapeResponse;
+import org.matic.torrent.tracking.Tracker;
 import org.matic.torrent.tracking.TrackerSession;
 
 /**
@@ -32,10 +34,18 @@ import org.matic.torrent.tracking.TrackerSession;
 public interface HttpTrackerResponseListener {
 
 	/**
-	 * Handle a tracker response when it has been received  
+	 * Handle a tracker announce response  
 	 * 
-	 * @param response Tracker response to handle
+	 * @param announceResponse Tracker announce response
 	 * @param trackerSession Tracker request submitter session
 	 */
-	void onAnnounceResponseReceived(final AnnounceResponse response, final TrackerSession trackerSession);
+	void onAnnounceResponseReceived(final AnnounceResponse announceResponse, final TrackerSession trackerSession);
+	
+	/**
+	 * Handle a tracker scrape response
+	 * 
+	 * @param tracker Responding tracker
+	 * @param scrapeResponse Tracker scrape response
+	 */
+	void onScrapeResponseReceived(final Tracker tracker, final ScrapeResponse scrapeResponse);
 }

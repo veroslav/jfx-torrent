@@ -26,7 +26,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
@@ -36,6 +38,9 @@ import org.matic.torrent.peer.ClientProperties;
 import org.matic.torrent.utils.ResourceManager;
 
 public final class UdpTracker extends Tracker {
+		
+	public static final int CONNECTION_ATTEMPT_DELAY = 15000;	//15 seconds
+	public static final int MAX_CONNECTION_ATTEMPTS = 4;
 	
 	//Default UDP connectionId
 	public static final long DEFAULT_CONNECTION_ID = 0x41727101980L;
@@ -54,6 +59,8 @@ public final class UdpTracker extends Tracker {
 	private static final int DEFAULT_PORT = 443;
 		
 	private final AtomicLong connectionId = new AtomicLong(DEFAULT_CONNECTION_ID);
+	private final AtomicInteger connectionAttempts = new AtomicInteger(0);
+	private final AtomicLong lastConnectionAttempt = new AtomicLong(0);
 	
 	private final URI trackerUri;
 	private final int trackerPort;
@@ -78,11 +85,11 @@ public final class UdpTracker extends Tracker {
 	}
 	
 	@Override
-	protected void scrape(final Set<TrackerSession> trackerSessions) {
-		if(trackerSessions.isEmpty() || connectionId.get() == DEFAULT_CONNECTION_ID) {
+	protected void scrape(final TrackerSession... trackerSessions) {
+		if(trackerSessions.length == 0 || connectionId.get() == DEFAULT_CONNECTION_ID) {
 			return;
 		}
-		final Set<TrackerSession> matchingTorrents = trackerSessions.stream().filter(
+		final Set<TrackerSession> matchingTorrents = Arrays.stream(trackerSessions).filter(
 				t -> t.getTracker().equals(this)).collect(Collectors.toSet());
 		final UdpRequest scrapeRequest = buildScrapeRequest(matchingTorrents);
 		
@@ -104,14 +111,39 @@ public final class UdpTracker extends Tracker {
 	}
 	
 	@Override
-	protected void connect(final int transactionId) {
-		final UdpRequest udpRequest = buildConnectionRequest(transactionId);
-		
-		if(udpRequest != null) {
-			ResourceManager.INSTANCE.getUdpTrackerConnectionManager().send(udpRequest);						
+	protected int connect(final int transactionId) {
+		final int connectionAttempt = connectionAttempts.updateAndGet((value) -> {			
+			if(System.currentTimeMillis() - lastConnectionAttempt.get() < 
+					CONNECTION_ATTEMPT_DELAY) {
+				return value;
+			}
+			else {
+				lastConnectionAttempt.set(System.currentTimeMillis());
+				return ++value;
+			}
+		});
+		if(connectionAttempt <= MAX_CONNECTION_ATTEMPTS) {
+			final UdpRequest udpRequest = buildConnectionRequest(transactionId);
+			
+			if(udpRequest != null) {
+				ResourceManager.INSTANCE.getUdpTrackerConnectionManager().send(udpRequest);		
+			}
 		}
+		return connectionAttempt;
 	}
 	
+	@Override
+	public void setLastResponse(final long lastResponse) {
+		super.setLastResponse(lastResponse);
+		connectionAttempts.set(0);
+	}
+	
+	@Override
+	public void setLastScrape(final long lastScrape) {	
+		super.setLastScrape(lastScrape);
+		connectionAttempts.set(0);
+	}
+
 	@Override
 	public long getId() {
 		return connectionId.get();

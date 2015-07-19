@@ -85,19 +85,36 @@ public final class HttpTracker extends Tracker {
 	}
 	
 	/**
-	 * @see Tracker#scrape(Set)
+	 * @see Tracker#scrape(TrackerSession...)
 	 */
 	@Override
-	protected final void scrape(final Set<TrackerSession> trackerSessions) {
-		 //TODO: Implement method
+	protected final void scrape(final TrackerSession... trackerSessions) {
+		
+		//START TEST
+		final long start = System.currentTimeMillis();
+		//END TEST
+		
+		final String requestUrl = buildScrapeRequestUrl(trackerSessions);
+		
+		final TrackerResponse trackerResponse = requestUrl == null? new TrackerResponse(
+				TrackerResponse.Type.INVALID_URL, "Unsupported encoding") : sendRequest(requestUrl);
+				
+		final ScrapeResponse scrapeResponse = trackerResponse.getType() == TrackerResponse.Type.OK?
+				buildScrapeResponse(trackerResponse.getResponseData()) :
+				new ScrapeResponse(trackerResponse.getType(), trackerResponse.getMessage());
+		setLastScrape(System.currentTimeMillis());
+		responseListener.onScrapeResponseReceived(this, scrapeResponse);
+		
+		System.out.println("HttpTracker.scrape(" + getUrl() + ") took " + (System.currentTimeMillis() - start) + " ms.");
 	};
 	
 	/**
 	 * @see Tracker#connect(int)
 	 */
 	@Override
-	protected void connect(final int transactionId) {
+	protected int connect(final int transactionId) {
 		//Connection establishment is not supported by HTTP trackers
+		return 0;
 	}
 	
 	/**
@@ -126,13 +143,27 @@ public final class HttpTracker extends Tracker {
 	}
 
 	/**
-	 * @see Tracker#announce(AnnounceParameters, TrackedTorrent)
+	 * @see Tracker#announce(AnnounceParameters, TrackerSession)
 	 */
 	@Override
-	protected final void announce(final AnnounceParameters announceParameters, final TrackerSession trackerSession) {				
-		final AnnounceResponse trackerResponse = sendRequest(announceParameters, trackerSession);
+	protected final void announce(final AnnounceParameters announceParameters, final TrackerSession trackerSession) {
+		
+		//START TEST
+		final long start = System.currentTimeMillis();
+		//END TEST
+		
+		final String requestUrl = buildAnnounceRequestUrl(announceParameters, trackerSession.getInfoHash());
+		final TrackerResponse trackerResponse = requestUrl == null? new TrackerResponse(
+				TrackerResponse.Type.INVALID_URL, "Unsupported encoding") : sendRequest(requestUrl);
+				
+		final AnnounceResponse announceResponse = trackerResponse.getType() == TrackerResponse.Type.OK?
+				buildAnnounceResponse(trackerResponse.getResponseData(), trackerSession.getInfoHash()) :
+					new AnnounceResponse(trackerResponse.getType(), trackerResponse.getMessage());
+		
 		trackerSession.setLastTrackerEvent(announceParameters.getTrackerEvent());
-		responseListener.onAnnounceResponseReceived(trackerResponse, trackerSession);				
+		responseListener.onAnnounceResponseReceived(announceResponse, trackerSession);
+		
+		System.out.println("HttpTracker.announce(" + getUrl() + ") took " + (System.currentTimeMillis() - start) + " ms.");
 	}
 	
 	protected String getScrapeUrl() {
@@ -152,16 +183,29 @@ public final class HttpTracker extends Tracker {
 		}
 	}
 	
-	protected String buildRequestUrl(final AnnounceParameters announceParameters, final InfoHash infoHash) 
-			throws UnsupportedEncodingException {
+	protected String buildScrapeRequestUrl(final TrackerSession... trackerSessions) {
+		//TODO: Implement method
+		return null;
+	}
+	
+	protected String buildAnnounceRequestUrl(final AnnounceParameters announceParameters, final InfoHash infoHash) {
 				
 		final StringBuilder result = new StringBuilder(super.getUrl());
 		result.append("?info_hash=");
 		result.append(HashUtilities.urlEncodeBytes(infoHash.getBytes()));
 		result.append("&peer_id=");
-		result.append(URLEncoder.encode(
-				ClientProperties.PEER_ID, 
-				StandardCharsets.UTF_8.name()));
+		
+		
+		try {
+			result.append(URLEncoder.encode(
+					ClientProperties.PEER_ID, 
+					StandardCharsets.UTF_8.name()));
+		} 
+		catch (final UnsupportedEncodingException uee) {
+			//This will never happen because UTF-8 is always supported
+			System.err.println("Unsupported encoding: " + uee.toString());
+			return null;
+		}
 		
 		result.append("&port=");
 		result.append(ClientProperties.TCP_PORT);
@@ -171,6 +215,8 @@ public final class HttpTracker extends Tracker {
 		result.append(announceParameters.getDownloaded());
 		result.append("&left=");
 		result.append(announceParameters.getLeft());
+		
+		//TODO: Send correct key value
 		result.append("&corrupt=0&key=6F187D4A");
 		
 		final Event trackerEvent = announceParameters.getTrackerEvent();
@@ -188,12 +234,9 @@ public final class HttpTracker extends Tracker {
 	}
 	
 	//TODO: Add proxy support for the request
-	private AnnounceResponse sendRequest(final AnnounceParameters announceParameters,
-			final TrackerSession trackerSession) {			
-		URL targetUrl = null;
-		
+	private TrackerResponse sendRequest(final String url) {							
 		try {
-			targetUrl = new URL(buildRequestUrl(announceParameters, trackerSession.getInfoHash()));			
+			final URL targetUrl = new URL(url);			
 			
 			HttpURLConnection.setFollowRedirects(false);
 			final HttpURLConnection connection = (HttpURLConnection)targetUrl.openConnection();			
@@ -205,41 +248,34 @@ public final class HttpTracker extends Tracker {
 			final int responseCode = connection.getResponseCode();
 			
 			if(responseCode == HttpURLConnection.HTTP_OK) {
-				try(final InputStream responseStream = connection.getInputStream()) {					
-					/*final String contentType = connection.getHeaderField(NetworkUtilities.HTTP_CONTENT_TYPE);
-					if(contentType == null) {
-						return new TrackerResponse(TrackerResponse.Type.INVALID_RESPONSE, "Response content type not set");
-					}*/
-					
+				try(final InputStream responseStream = connection.getInputStream()) {															
 					//Check whether the response stream is gzip encoded
 					final String contentEncoding = connection.getHeaderField(NetworkUtilities.HTTP_CONTENT_ENCODING);
 					
 					final BinaryEncodedDictionary responseMap = contentEncoding != null && 
 							NetworkUtilities.HTTP_GZIP_ENCODING.equals(contentEncoding)? decoder.decodeGzip(responseStream) :
-								decoder.decode(responseStream);
-					final AnnounceResponse trackerResponse = buildResponse(
-							responseMap, trackerSession.getInfoHash());					
-					return trackerResponse;
+								decoder.decode(responseStream);							
+					return new TrackerResponse(TrackerResponse.Type.OK, null, responseMap);
 				}				
 			}
 			else if(responseCode >= HttpURLConnection.HTTP_BAD_REQUEST &&
 					responseCode <= HttpURLConnection.HTTP_GATEWAY_TIMEOUT){
 				return buildErrorResponse(connection.getErrorStream());
 			}
-			return new AnnounceResponse(AnnounceResponse.Type.READ_WRITE_ERROR, "Error response: code " + responseCode);
+			return new TrackerResponse(TrackerResponse.Type.READ_WRITE_ERROR, "Error response: code " + responseCode);
 		}
 		catch(final BinaryDecoderException bde) {
-			return new AnnounceResponse(AnnounceResponse.Type.INVALID_RESPONSE, bde.getMessage());
+			return new TrackerResponse(TrackerResponse.Type.INVALID_RESPONSE, bde.getMessage());
 		}
 		catch(final MalformedURLException mue) {
-			return new AnnounceResponse(AnnounceResponse.Type.INVALID_URL, mue.getMessage());
+			return new TrackerResponse(TrackerResponse.Type.INVALID_URL, mue.getMessage());
 		}
 		catch(final IOException ioe) {
-			return new AnnounceResponse(AnnounceResponse.Type.READ_WRITE_ERROR, ioe.getMessage());
+			return new TrackerResponse(TrackerResponse.Type.READ_WRITE_ERROR, ioe.getMessage());
 		}
 	}
 	
-	protected AnnounceResponse buildErrorResponse(final InputStream errorStream) throws IOException {
+	protected TrackerResponse buildErrorResponse(final InputStream errorStream) throws IOException {
 		final StringBuilder errorMessage = new StringBuilder();
 		
 		try(final BufferedReader reader = new BufferedReader(new InputStreamReader(
@@ -247,15 +283,20 @@ public final class HttpTracker extends Tracker {
 			errorMessage.append(reader.readLine());
 		}
 		
-		return new AnnounceResponse(AnnounceResponse.Type.TRACKER_ERROR, errorMessage.toString());
+		return new TrackerResponse(TrackerResponse.Type.TRACKER_ERROR, errorMessage.toString());
 	}
 	
-	protected AnnounceResponse buildResponse(final BinaryEncodedDictionary responseMap, final InfoHash infoHash) {
+	protected ScrapeResponse buildScrapeResponse(final BinaryEncodedDictionary responseMap) {
+		//TODO: Implement method
+		return null;
+	}
+	
+	protected AnnounceResponse buildAnnounceResponse(final BinaryEncodedDictionary responseMap, final InfoHash infoHash) {
 		final BinaryEncodedString failureReason = (BinaryEncodedString)responseMap.get(
 				BinaryEncodingKeyNames.KEY_FAILURE_REASON);
 		
 		if(failureReason != null) {
-			return new AnnounceResponse(AnnounceResponse.Type.TRACKER_ERROR, failureReason.toString());
+			return new AnnounceResponse(TrackerResponse.Type.TRACKER_ERROR, failureReason.toString());
 		}
 		
 		final BinaryEncodable peerList = responseMap.get(BinaryEncodingKeyNames.KEY_PEERS);
@@ -270,7 +311,7 @@ public final class HttpTracker extends Tracker {
 				BinaryEncodingKeyNames.KEY_INCOMPLETE));
 		
 		if(!validateMandatoryResponseValues(peerList, interval, complete, incomplete)) {			
-			return new AnnounceResponse(AnnounceResponse.Type.INVALID_RESPONSE, 
+			return new AnnounceResponse(TrackerResponse.Type.INVALID_RESPONSE, 
 					"Missing mandatory response value");
 		}
 		
@@ -281,8 +322,8 @@ public final class HttpTracker extends Tracker {
 		final BinaryEncodedString warningMessage = (BinaryEncodedString)responseMap.get(
 				BinaryEncodingKeyNames.KEY_WARNING_MESSAGE);
 		
-		final AnnounceResponse.Type responseType = warningMessage != null? 
-				AnnounceResponse.Type.WARNING : AnnounceResponse.Type.OK;
+		final TrackerResponse.Type responseType = warningMessage != null? 
+				TrackerResponse.Type.WARNING : TrackerResponse.Type.OK;
 		final String trackerMessage = warningMessage != null? warningMessage.toString() : null;
 		
 		final BinaryEncodedInteger minInterval = (BinaryEncodedInteger)responseMap.get(

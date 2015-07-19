@@ -461,7 +461,7 @@ public final class ApplicationWindow {
 	private void onAddTorrent(final TorrentOptions torrentOptions) {		
 		if(torrentOptions != null) {
 			final InfoHash torrentInfoHash = torrentOptions.getInfoHash();
-			if(torrentJobTable.contains(torrentInfoHash)) {
+			if(queuedTorrentManager.find(torrentInfoHash).isPresent()) {
 				final Alert existingTorrentAlert = new Alert(AlertType.ERROR,
 						"The torrent already exists.\n" +
 								"Would you like to load trackers from it?",
@@ -492,7 +492,7 @@ public final class ApplicationWindow {
 			final InfoHash infoHash = torrentOptions.getInfoHash();
 			final QueuedTorrent.Status torrentStatus = torrentOptions.isStartTorrent()? 
 					QueuedTorrent.Status.ACTIVE : QueuedTorrent.Status.STOPPED;
-			final QueuedTorrent queuedTorrent = new QueuedTorrent(infoHash, trackerUrls, 0, torrentStatus);
+			final QueuedTorrent queuedTorrent = new QueuedTorrent(infoHash, trackerUrls, 1, torrentStatus);
 			
 			final TorrentJobView jobView = new TorrentJobView(queuedTorrent, torrentOptions.getName(), 
 					torrentInfoHash, torrentOptions.getTorrentContents());
