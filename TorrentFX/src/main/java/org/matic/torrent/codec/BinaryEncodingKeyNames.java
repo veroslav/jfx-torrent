@@ -24,6 +24,13 @@ import org.matic.torrent.peer.ClientProperties;
 
 public final class BinaryEncodingKeyNames {
 	
+	//TRACKER SCRAPE RESPONSE KEYS
+	public static final BinaryEncodedString KEY_DOWNLOADED =  new BinaryEncodedString(
+			"downloaded".getBytes(ClientProperties.STRING_ENCODING_CHARSET));
+	
+	public static final BinaryEncodedString KEY_FLAGS =  new BinaryEncodedString(
+			"flags".getBytes(ClientProperties.STRING_ENCODING_CHARSET));
+	
 	//TRACKER RESPONSE KEYS
 	public static final BinaryEncodedString KEY_FAILURE_REASON =  new BinaryEncodedString(
 			"failure reason".getBytes(ClientProperties.STRING_ENCODING_CHARSET));

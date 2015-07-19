@@ -70,8 +70,9 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 	 * @see HttpTrackerResponseListener#onAnnounceResponseReceived(AnnounceResponse, TrackedTorrent)
 	 */
 	@Override
-	public final void onAnnounceResponseReceived(final AnnounceResponse response, final TrackerSession trackerSession) {
-		final Set<PwpPeer> peers = response.getPeers();
+	public final void onAnnounceResponseReceived(final AnnounceResponse announceResponse, 
+			final TrackerSession trackerSession) {
+		final Set<PwpPeer> peers = announceResponse.getPeers();
 		if(!peers.isEmpty()) {
 			//peerListeners.stream().forEach(l -> l.onPeersFound(peers));
 		}
@@ -90,10 +91,10 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 			if(trackerSessions.contains(trackerSession) && 
 					trackerSession.getLastTrackerEvent() != Tracker.Event.STOPPED) {
 				//Check whether it was an error response before scheduling
-				if(response.getType() != TrackerResponse.Type.OK) {
+				if(announceResponse.getType() != TrackerResponse.Type.OK) {
 					
-					System.err.println("Announce returned an error ( " + response.getType() + "): "
-							+ trackerSession.getTracker() + ", msg = " + response.getMessage());
+					System.err.println("Announce returned an error ( " + announceResponse.getType() + "): "
+							+ trackerSession.getTracker() + ", msg = " + announceResponse.getMessage());
 					
 					final AnnounceParameters announceParameters = new AnnounceParameters( 
 							trackerSession.getLastTrackerEvent(), 0, 0, 0);
@@ -102,7 +103,7 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 				else {
 					final AnnounceParameters announceParameters = new AnnounceParameters( 
 							Tracker.Event.UPDATE, 0, 0, 0);
-					scheduleAnnouncement(trackerSession, announceParameters, response.getInterval());
+					scheduleAnnouncement(trackerSession, announceParameters, announceResponse.getInterval());
 				}
 			}
 			else {
@@ -125,10 +126,10 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 	 * @see HttpTrackerResponseListener#onScrapeResponseReceived(Tracker, ScrapeResponse)
 	 */
 	@Override
-	public void onScrapeResponseReceived(final Tracker tracker, final ScrapeResponse trackerResponse) {
+	public void onScrapeResponseReceived(final Tracker tracker, final ScrapeResponse scrapeResponse) {
 		//TODO: Implement method
 		
-		System.out.println("onScrapeResponseReceived(" + tracker.getUrl() + ")");
+		System.out.println("onScrapeResponseReceived(): " + scrapeResponse.getScrapeStatistics());
 	}
 
 	/**

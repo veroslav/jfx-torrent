@@ -33,7 +33,9 @@ import java.net.URLEncoder;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -89,6 +91,9 @@ public final class HttpTracker extends Tracker {
 	 */
 	@Override
 	protected final void scrape(final TrackerSession... trackerSessions) {
+		if(trackerSessions.length == 0) {
+			return;
+		}
 		
 		//START TEST
 		final long start = System.currentTimeMillis();
@@ -100,7 +105,7 @@ public final class HttpTracker extends Tracker {
 				TrackerResponse.Type.INVALID_URL, "Unsupported encoding") : sendRequest(requestUrl);
 				
 		final ScrapeResponse scrapeResponse = trackerResponse.getType() == TrackerResponse.Type.OK?
-				buildScrapeResponse(trackerResponse.getResponseData()) :
+				buildScrapeResponse(trackerResponse.getResponseData(), trackerSessions) :
 				new ScrapeResponse(trackerResponse.getType(), trackerResponse.getMessage());
 		setLastScrape(System.currentTimeMillis());
 		responseListener.onScrapeResponseReceived(this, scrapeResponse);
@@ -184,17 +189,20 @@ public final class HttpTracker extends Tracker {
 	}
 	
 	protected String buildScrapeRequestUrl(final TrackerSession... trackerSessions) {
-		//TODO: Implement method
-		return null;
+		final StringBuilder result = new StringBuilder(scrapeUrl);
+		result.append("?");
+		
+		result.append(Arrays.stream(trackerSessions).map(ts -> "info_hash=" +
+				HashUtilities.urlEncodeBytes(ts.getInfoHash().getBytes())).collect(Collectors.joining("&")));
+
+		return result.toString();
 	}
 	
-	protected String buildAnnounceRequestUrl(final AnnounceParameters announceParameters, final InfoHash infoHash) {
-				
+	protected String buildAnnounceRequestUrl(final AnnounceParameters announceParameters, final InfoHash infoHash) {		
 		final StringBuilder result = new StringBuilder(super.getUrl());
 		result.append("?info_hash=");
 		result.append(HashUtilities.urlEncodeBytes(infoHash.getBytes()));
 		result.append("&peer_id=");
-		
 		
 		try {
 			result.append(URLEncoder.encode(
@@ -286,9 +294,56 @@ public final class HttpTracker extends Tracker {
 		return new TrackerResponse(TrackerResponse.Type.TRACKER_ERROR, errorMessage.toString());
 	}
 	
-	protected ScrapeResponse buildScrapeResponse(final BinaryEncodedDictionary responseMap) {
-		//TODO: Implement method
-		return null;
+	protected ScrapeResponse buildScrapeResponse(final BinaryEncodedDictionary responseMap,
+			final TrackerSession... trackerSessions) {
+		final BinaryEncodedDictionary files = (BinaryEncodedDictionary)responseMap.get(BinaryEncodingKeyNames.KEY_FILES);
+		
+		if(!validateMandatoryResponseValues(files)) {			
+			return new ScrapeResponse(TrackerResponse.Type.INVALID_RESPONSE, 
+					"Missing mandatory response value: files");
+		}
+		
+		final Map<TrackerSession, ScrapeStatistics> scrapeStatistics = new HashMap<>();
+		
+		Arrays.stream(trackerSessions).forEach(ts -> {
+			final BinaryEncodedDictionary scrapeInfo = (BinaryEncodedDictionary)files.get(
+					new BinaryEncodedString(ts.getInfoHash().getBytes()));
+			if(scrapeInfo != null) {
+				final BinaryEncodedInteger complete = (BinaryEncodedInteger)scrapeInfo.get(
+						BinaryEncodingKeyNames.KEY_COMPLETE);
+				final BinaryEncodedInteger downloaded = (BinaryEncodedInteger)scrapeInfo.get(
+						BinaryEncodingKeyNames.KEY_DOWNLOADED);
+				final BinaryEncodedInteger incomplete = (BinaryEncodedInteger)scrapeInfo.get(
+						BinaryEncodingKeyNames.KEY_INCOMPLETE);				
+				
+				if(!validateMandatoryResponseValues(complete, downloaded, incomplete)) {
+					return;
+				}
+				
+				final BinaryEncodedString name = (BinaryEncodedString)scrapeInfo.get(
+						BinaryEncodingKeyNames.KEY_NAME);
+				
+				final ScrapeStatistics scrapeStat = new ScrapeStatistics((int)complete.getValue(),
+						(int)downloaded.getValue(), (int)incomplete.getValue(),
+						name != null? name.toString() : null);
+				scrapeStatistics.put(ts, scrapeStat);
+			}
+		});
+		
+		final BinaryEncodedString failureReason = (BinaryEncodedString)responseMap.get(
+				BinaryEncodingKeyNames.KEY_FAILURE_REASON);
+		
+		final Map<String, String> flags = new HashMap<>();
+		
+		final BinaryEncodedDictionary flagsDictionary = (BinaryEncodedDictionary)responseMap.get(
+				BinaryEncodingKeyNames.KEY_FLAGS);
+		
+		if(flagsDictionary != null) {
+			flagsDictionary.keys().forEach(key -> flags.put(key.toString(), flagsDictionary.get(key).toString()));
+		}
+		
+		return new ScrapeResponse(TrackerResponse.Type.OK, failureReason != null? 
+				failureReason.toString() : null, flags, scrapeStatistics);
 	}
 	
 	protected AnnounceResponse buildAnnounceResponse(final BinaryEncodedDictionary responseMap, final InfoHash infoHash) {

@@ -52,8 +52,8 @@ public final class AnnounceResponse {
 	/**
 	 * Constructor for building a normal announce response
 	 * 
-	 * @param type Type of response (either NORMAL or WARNING)
-	 * @param warningMessage null if NORMAL, warning message otherwise
+	 * @param type Type of response (either OK or WARNING)
+	 * @param warningMessage null if OK, warning message otherwise
 	 */
 	public AnnounceResponse(final Type type, final String warningMessage, final long interval,
 			final Long minInterval, final String trackerId, final long complete,

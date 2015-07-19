@@ -22,6 +22,7 @@ package org.matic.torrent.codec;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * A dictionary encoded as d<contents>e. The elements of the dictionary are
@@ -48,6 +49,10 @@ public final class BinaryEncodedDictionary implements BinaryEncodable {
 	
 	public final BinaryEncodable get(final BinaryEncodedString key) {
 		return map.get(key);
+	}
+	
+	public final Set<BinaryEncodedString> keys() {
+		return map.keySet();
 	}
 	
 	public final int size() {

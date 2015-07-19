@@ -20,9 +20,18 @@
 
 package org.matic.torrent.tracking;
 
+import java.util.Collections;
+import java.util.Map;
+
 import org.matic.torrent.tracking.TrackerResponse.Type;
 
 public final class ScrapeResponse {
+
+	private final Map<TrackerSession, ScrapeStatistics> scrapeStatistics;
+	private final Map<String, String> flags;
+
+	private final String message;
+	private final Type type;
 
 	/**
 	 * Constructor for building an error response
@@ -30,7 +39,39 @@ public final class ScrapeResponse {
 	 * @param type Type of tracker error
 	 * @param errorMessage Error message detailing the error
 	 */
-	public ScrapeResponse(final Type type, final String errorMessage) {
-		//TODO: Implement constructor
+	public ScrapeResponse(final Type type, final String errorMessage) {		
+		this(type, errorMessage, Collections.emptyMap(), Collections.emptyMap());
+	}
+	
+	/**
+	 * Constructor for building normal scrape response
+	 * 
+	 * @param type Type of response (OK)
+	 * @param message Any tracker message (usually absent)
+	 * @param flags miscellaneous tracker flags
+	 * @param scrapeStatistics Obtained tracker statistics mapped to torrent sessions
+	 */
+	public ScrapeResponse(final Type type, final String message, final Map<String, String> flags,
+			final Map<TrackerSession, ScrapeStatistics> scrapeStatistics) {
+		this.scrapeStatistics = scrapeStatistics;
+		this.flags = flags;
+		this.message = message;
+		this.type = type;
+	}
+
+	public Map<TrackerSession, ScrapeStatistics> getScrapeStatistics() {
+		return scrapeStatistics;
+	}
+
+	public Map<String, String> getFlags() {
+		return flags;
+	}
+
+	public String getMessage() {
+		return message;
+	}
+
+	public Type getType() {
+		return type;
 	}
 }
