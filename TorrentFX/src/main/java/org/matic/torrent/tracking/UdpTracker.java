@@ -219,9 +219,7 @@ public final class UdpTracker extends Tracker {
 		try(final DataOutputStream dos = new DataOutputStream(baos)) {
 			dos.writeLong(connectionId.get());
 			dos.writeInt(ACTION_SCRAPE);
-			
-			//TODO: Populate with correct transactionId value
-			dos.writeInt(ClientProperties.generateUniqueId());
+			dos.writeInt(super.getScrapeTransactionId());
 			
 			for(final TrackerSession trackerSession : trackerSessions) {
 				dos.write(trackerSession.getInfoHash().getBytes());

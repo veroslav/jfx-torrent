@@ -144,4 +144,10 @@ public final class TrackerSession {
 			return false;
 		return true;
 	}
+
+	@Override
+	public String toString() {
+		return "TrackerSession [infoHash=" + infoHash + ", tracker=" + tracker
+				+ "]";
+	}
 }
