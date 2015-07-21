@@ -36,7 +36,7 @@ public abstract class Tracker {
 	}
 	
 	public enum Status {
-		ANNOUNCING, CONNECTING
+		DISABLED, NOT_ALLOWED, ERROR, WORKING, SCRAPE_OK, SCRAPE_NOT_SUPPORTED, UNKNOWN
 	}
 	
 	public enum Type {

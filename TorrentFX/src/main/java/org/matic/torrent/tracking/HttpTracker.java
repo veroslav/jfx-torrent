@@ -107,7 +107,6 @@ public final class HttpTracker extends Tracker {
 		final ScrapeResponse scrapeResponse = trackerResponse.getType() == TrackerResponse.Type.OK?
 				buildScrapeResponse(trackerResponse.getResponseData(), trackerSessions) :
 				new ScrapeResponse(trackerResponse.getType(), trackerResponse.getMessage());
-		setLastScrape(System.currentTimeMillis());
 		responseListener.onScrapeResponseReceived(this, scrapeResponse);
 		
 		System.out.println("HttpTracker.scrape(" + getUrl() + ") took " + (System.currentTimeMillis() - start) + " ms.");

@@ -48,7 +48,7 @@ public final class TorrentJobView {
 		this.priority = new SimpleIntegerProperty(queuedTorrent.getPriority());
 		
 		queuedTorrent.getTrackers().forEach(t -> trackerContents.add(
-				new TrackerView(t, "Waiting for announce...", 0, 0, 0, 0)));
+				new TrackerView(t, "Waiting for announce...", 0, 0, 0, 0, 0, 0)));
 	}
 	
 	public final IntegerProperty priorityProperty() {

@@ -63,8 +63,14 @@ public class TrackerTable {
 					GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "Status"),
 			TableFactory.buildSimpleLongValueColumn(
 					tv -> new ReadOnlyObjectWrapper<Long>(tv.getValue().nextUpdateProperty().getValue()), 
-					val -> UnitConverter.formatTime(val, TimeZone.getDefault()), 140, 
+					val -> UnitConverter.formatTime(val, TimeZone.getDefault()), 120, 
 					GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "Update In"),
+			TableFactory.buildSimpleLongValueColumn(
+					tv -> new ReadOnlyObjectWrapper<Long>((long)tv.getValue().intervalProperty().getValue()), 
+					val -> String.valueOf(val), 70, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "Interval"),
+			TableFactory.buildSimpleLongValueColumn(
+					tv -> new ReadOnlyObjectWrapper<Long>((long)tv.getValue().minIntervalProperty().getValue()), 
+					val -> String.valueOf(val), 90, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "Min Interval"),
 			TableFactory.buildSimpleLongValueColumn(
 					tv -> new ReadOnlyObjectWrapper<Long>((long)tv.getValue().seedsProperty().getValue()), 
 					val -> String.valueOf(val), 70, GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "Seeds"),
@@ -73,6 +79,6 @@ public class TrackerTable {
 					val -> String.valueOf(val), 70, GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "Peers"),
 			TableFactory.buildSimpleLongValueColumn(
 					tv -> new ReadOnlyObjectWrapper<Long>((long)tv.getValue().downloadedProperty().getValue()),
-					val -> String.valueOf(val), 70, GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "Downloaded")));
+					val -> String.valueOf(val), 90, GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "Downloaded")));
 	}
 }

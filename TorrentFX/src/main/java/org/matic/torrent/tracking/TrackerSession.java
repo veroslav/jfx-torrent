@@ -28,11 +28,15 @@ import org.matic.torrent.peer.ClientProperties;
 
 public final class TrackerSession {
 
-	private volatile Tracker.Event lastTrackerEvent;
+	private volatile Tracker.Event lastTrackerEvent = Tracker.Event.STOPPED;
 	
 	private final InfoHash infoHash;	
 	private final Tracker tracker;
 	
+	private Tracker.Status trackerStatus = Tracker.Status.UNKNOWN; 
+	private String trackerMessage = null;
+	
+	private AtomicInteger downloaded = new AtomicInteger(0);
 	private AtomicInteger leechers = new AtomicInteger(0);
 	private AtomicInteger seeders = new AtomicInteger(0);	
 			
@@ -45,14 +49,40 @@ public final class TrackerSession {
 	public TrackerSession(final InfoHash infoHash, final Tracker tracker) {
 		this.infoHash = infoHash;
 		this.tracker = tracker;
-		
-		lastTrackerEvent = Tracker.Event.STOPPED;
+	}
+	
+	public final synchronized void setTrackerMessage(final String trackerMessage) {
+		this.trackerMessage = trackerMessage;
+	}
+	
+	public final synchronized String getTrackerMessage() {
+		return trackerMessage;
+	}
+	
+	public final void setTrackerStatus(final Tracker.Status trackerStatus) {
+		synchronized(this.trackerStatus) {
+			this.trackerStatus = trackerStatus;
+		}
+	}
+	
+	public final Tracker.Status getTrackerStatus() {
+		synchronized(this.trackerStatus) {
+			return trackerStatus;
+		}
 	}
 
 	public final void setTransactionId(final int transactionId) {
 		this.transactionId = transactionId;
 	}
 	
+	public final int getDownloaded() {
+		return downloaded.get();
+	}
+
+	public final void setDownloaded(final int downloaded) {
+		this.downloaded.set(downloaded);
+	}
+
 	public final int getLeechers() {
 		return leechers.get();
 	}

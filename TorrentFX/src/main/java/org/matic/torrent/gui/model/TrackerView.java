@@ -32,6 +32,9 @@ public final class TrackerView {
 	private final StringProperty trackerName;
 	private final StringProperty status;
 	
+	private final IntegerProperty minInterval;
+	private final IntegerProperty interval;
+	
 	private final IntegerProperty downloaded;
 	private final IntegerProperty leechers;
 	private final IntegerProperty seeds;
@@ -39,15 +42,34 @@ public final class TrackerView {
 	private final LongProperty nextUpdate;
 
 	public TrackerView(final String trackerName, final String status, final int seeds,
-			final int leechers, final long nextUpdate, final int downloaded) {
+			final int leechers, final long nextUpdate, final int downloaded,
+			final int interval, final int minInterval) {
+		this.minInterval = new SimpleIntegerProperty(minInterval);
 		this.trackerName = new SimpleStringProperty(trackerName);
 		this.downloaded = new SimpleIntegerProperty(downloaded);
 		this.nextUpdate = new SimpleLongProperty(nextUpdate);
+		this.interval = new SimpleIntegerProperty(interval);
 		this.leechers = new SimpleIntegerProperty(leechers);
 		this.status = new SimpleStringProperty(status);
 		this.seeds = new SimpleIntegerProperty(seeds);				
 	}
 	
+	public final int getMinInterval() {
+		return minInterval.get();
+	}
+	
+	public final IntegerProperty minIntervalProperty() {
+		return minInterval;
+	}
+
+	public final int getInterval() {
+		return interval.get();
+	}
+	
+	public final IntegerProperty intervalProperty() {
+		return interval;
+	}
+
 	public final int getDownloaded() {
 		return downloaded.get();
 	}

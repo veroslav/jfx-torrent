@@ -95,6 +95,7 @@ public final class QueuedTorrentManager {
 				//Update view with values from matching torrent tracker
 				tv.leechersProperty().set(m.getLeechers());
 				tv.seedsProperty().set(m.getSeeders());
+				tv.downloadedProperty().set(m.getDownloaded());
 				tv.nextUpdateProperty().set((System.currentTimeMillis() - m.getLastTrackerResponse()) - m.getInterval());
 			}
 		));
