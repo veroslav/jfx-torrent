@@ -29,17 +29,34 @@ package org.matic.torrent.net.udp;
  */
 public final class UdpRequest {
 	
+	public enum Type {
+		DHT, TRACKER
+	}
+	
 	private final String receiverHost;
 	private final byte[] requestData;
 	private final int receiverPort;
+	private final int id;
+	
+	private final Type type;
 
-	public UdpRequest(final byte[] requestData, final String receiverHost,
+	public UdpRequest(final Type type, final int id, final byte[] requestData, final String receiverHost,
 			final int receiverPort) {
 		this.requestData = new byte[requestData.length];
 		System.arraycopy(requestData, 0, this.requestData, 0, requestData.length);
 		
 		this.receiverPort = receiverPort;
-		this.receiverHost = receiverHost;
+		this.receiverHost = receiverHost;		
+		this.type = type;
+		this.id = id;
+	}
+	
+	public final int getId() {
+		return id;
+	}
+	
+	public final Type getType() {
+		return type;
 	}
 
 	public final String getReceiverHost() {

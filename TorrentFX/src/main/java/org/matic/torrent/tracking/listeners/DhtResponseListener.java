@@ -20,6 +20,7 @@
 
 package org.matic.torrent.tracking.listeners;
 
+import org.matic.torrent.net.udp.UdpRequest;
 import org.matic.torrent.tracking.methods.dht.DhtResponse;
 
 /**
@@ -37,4 +38,12 @@ public interface DhtResponseListener {
 	 * @param response Response containing DHT packet data
 	 */
 	void onDhtResponseReceived(final DhtResponse response);
+	
+	/**
+	 * Notify implementing classes when an error occurs on sending an UDP request
+	 * 
+	 * @param request The originating UDP request
+	 * @param message The error message
+	 */
+	void onDhtRequestError(final UdpRequest request, final String message);
 }

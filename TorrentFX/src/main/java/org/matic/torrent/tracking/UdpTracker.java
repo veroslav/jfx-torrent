@@ -177,7 +177,8 @@ public final class UdpTracker extends Tracker {
 		catch(final IOException ioe) {
 			return null;
 		}
-		return new UdpRequest(baos.toByteArray(), trackerUri.getHost(), trackerPort);
+		return new UdpRequest(UdpRequest.Type.TRACKER, transactionId, 
+				baos.toByteArray(), trackerUri.getHost(), trackerPort);
 	}
 
 	protected UdpRequest buildAnnounceRequest(final AnnounceParameters announceParameters, final InfoHash infoHash,
@@ -211,7 +212,8 @@ public final class UdpTracker extends Tracker {
 		catch(final IOException ioe) {
 			return null;
 		}		
-		return new UdpRequest(baos.toByteArray(), trackerUri.getHost(), trackerPort);
+		return new UdpRequest(UdpRequest.Type.TRACKER, transactionId,
+				baos.toByteArray(), trackerUri.getHost(), trackerPort);
 	}
 	
 	protected UdpRequest buildScrapeRequest(final Set<TrackerSession> trackerSessions) {	
@@ -228,7 +230,8 @@ public final class UdpTracker extends Tracker {
 		catch(final IOException ioe) {
 			return null;
 		}
-		return new UdpRequest(baos.toByteArray(), trackerUri.getHost(), trackerPort);
+		return new UdpRequest(UdpRequest.Type.TRACKER, super.getScrapeTransactionId(),
+				baos.toByteArray(), trackerUri.getHost(), trackerPort);
 	}
 
 	@Override

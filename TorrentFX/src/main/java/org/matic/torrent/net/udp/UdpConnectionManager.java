@@ -28,7 +28,6 @@ import java.nio.ByteOrder;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
-import java.nio.channels.UnresolvedAddressException;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -188,37 +187,60 @@ public final class UdpConnectionManager {
 		//First try to parse a DHT message
 		final DhtResponse dhtResponse = UdpDataPacketParser.parseDHTResponse(receivedPacket);
 		if(dhtResponse != null) {
-			notifyDHTListeners(dhtResponse);
+			notifyDhtListenersOnResponse(dhtResponse);
 		}
 		else {
 			//Try parsing as a regular UDP tracker response message
 			final UdpTrackerResponse trackerResponse = UdpDataPacketParser.parseTrackerResponse(receivedPacket);
 			if(trackerResponse != null) {
-				notifyTrackerListeners(trackerResponse);
+				notifyTrackerListenersOnResponse(trackerResponse);
 			}
 		}
 	}
 	
 	private void writeToChannel(final DatagramChannel channel, final UdpRequest udpRequest) {
+		final InetSocketAddress resolvedRemoteAddress = new InetSocketAddress(
+				udpRequest.getReceiverHost(), udpRequest.getReceiverPort());
+		
+		if(resolvedRemoteAddress.isUnresolved()) {
+			notifyListenersOnRequestError(udpRequest, "Hostname not found");
+			return;
+		}
+		
 		outputBuffer.clear();
 		outputBuffer.put(udpRequest.getRequestData());
 		outputBuffer.flip();
 		
-		try {
-			channel.send(outputBuffer, new InetSocketAddress(
-					udpRequest.getReceiverHost(), udpRequest.getReceiverPort()));			
-		} catch (final IOException | UnresolvedAddressException e) {
-			System.err.println("An error occurred while sending UDP packet [" + udpRequest.getReceiverHost() + "]: " +
-					e.toString());
+		try {			
+			channel.send(outputBuffer, resolvedRemoteAddress);			
+		} catch (final IOException ioe) {	
+			notifyListenersOnRequestError(udpRequest, "Connection error: " + ioe.getMessage());
 		}
 	}
 	
-	private void notifyDHTListeners(final DhtResponse dhtResponse) {
+	private void notifyListenersOnRequestError(final UdpRequest udpRequest, final String message) {
+		if(udpRequest.getType() == UdpRequest.Type.DHT) {
+			notifyDhtListenersOnRequestError(udpRequest, message);
+		}
+		else {
+			notifyTrackerListenersOnRequestError(udpRequest, message);
+		}
+	}
+	
+	private void notifyDhtListenersOnResponse(final DhtResponse dhtResponse) {
 		dhtListeners.stream().forEach(l -> l.onDhtResponseReceived(dhtResponse));
 	}
 	
-	private void notifyTrackerListeners(final UdpTrackerResponse response) {		
+	private void notifyDhtListenersOnRequestError(final UdpRequest udpRequest, final String message) {
+		dhtListeners.stream().forEach(l -> l.onDhtRequestError(udpRequest, message));
+	}
+	
+	private void notifyTrackerListenersOnResponse(final UdpTrackerResponse response) {		
 		trackerListeners.stream().forEach(l -> l.onUdpTrackerResponseReceived(response));
+	}
+	
+	private void notifyTrackerListenersOnRequestError(final UdpRequest udpRequest, final String message) {		
+		trackerListeners.stream().forEach(l -> l.onUdpTrackerRequestError(udpRequest, message));
 	}
 	
 	private void setChannelOptions(final DatagramChannel channel, final Selector connectionSelector,

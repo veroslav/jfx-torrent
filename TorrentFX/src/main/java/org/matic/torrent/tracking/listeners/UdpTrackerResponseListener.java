@@ -20,6 +20,7 @@
 
 package org.matic.torrent.tracking.listeners;
 
+import org.matic.torrent.net.udp.UdpRequest;
 import org.matic.torrent.net.udp.UdpTrackerResponse;
 
 /**
@@ -37,4 +38,12 @@ public interface UdpTrackerResponseListener {
 	 * @param response UDP tracker response
 	 */
 	void onUdpTrackerResponseReceived(final UdpTrackerResponse response);
+	
+	/**
+	 * Notify implementing classes when an error occurs on sending an UDP request
+	 * 
+	 * @param request The originating UDP request
+	 * @param message The error message
+	 */
+	void onUdpTrackerRequestError(final UdpRequest request, final String message);
 }
