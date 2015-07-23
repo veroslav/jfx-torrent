@@ -26,7 +26,10 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -264,14 +267,10 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 	 * @param shouldAnnounce Whether to announce to the tracker
 	 * @return Whether either the tracker or a new torrent was added 
 	 */
-	public boolean addTorrentTracker(final String trackerUrl, final InfoHash infoHash,
+	public boolean addTracker(final String trackerUrl, final InfoHash infoHash,
 			final boolean shouldAnnounce) {
-		final Tracker tracker = initTracker(trackerUrl);
-		if(tracker == null) {
-			return false;
-		}
-		
-		final TrackerSession trackerSession = new TrackerSession(infoHash, tracker); 
+		final Tracker tracker = initTracker(trackerUrl);		
+		final TrackerSession trackerSession = new TrackerSession(infoHash, tracker); 		
 		
 		//START TEST
 		//final long start = System.currentTimeMillis();
@@ -281,12 +280,19 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 			if(!trackerSessions.add(trackerSession)) {
 				return false;
 			}
+			
+			if(tracker.getType() == Tracker.Type.INVALID) {
+				trackerSession.setTrackerStatus(Tracker.Status.ERROR);
+				trackerSession.setTrackerMessage("Invalid URL");
+				return true;
+			}
+			
 			if(shouldAnnounce) {
 				final AnnounceParameters announceParameters = new AnnounceParameters( 
 						Tracker.Event.STARTED, 0, 0, 0);
 				scheduleAnnouncement(trackerSession, announceParameters, 0);
 			}
-			
+						
 			//Always scrape tracker statistics, if supported
 			if(tracker.isScrapeSupported()) {				
 				scheduleScrape(tracker, trackerSession);
@@ -302,48 +308,27 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 		return true;
 	}
 	
-	public final boolean removeTracker(final Tracker tracker, final InfoHash infoHash) {
-		
-		//START TEST
-		//final long start = System.currentTimeMillis();
-		//END TEST
-		
+	/**
+	 * Remove a tracker that is tracking a torrent
+	 * 
+	 * @param trackerUrl Tracker's URL
+	 * @param infoHash Target torrent's info hash
+	 * @return Whether the tracker was removed
+	 */
+	public final boolean removeTracker(final String trackerUrl, final InfoHash infoHash) {		
 		synchronized(trackerSessions) {
-			final Optional<TrackerSession> match = trackerSessions.stream().filter(
-					t -> t.getInfoHash().equals(infoHash) && t.getTracker().equals(tracker)).findFirst();
+			final List<TrackerSession> match = trackerSessions.stream().filter(
+					t -> t.getInfoHash().equals(infoHash) && t.getTracker().getUrl().equals(trackerUrl))
+						.collect(Collectors.toList());
 			
-			if(!match.isPresent()) {
-				return false;
-			}
-			
-			final TrackerSession trackerSession = match.get();
-			final boolean removed = trackerSessions.remove(trackerSession);
-			
-			//Issue STOPPED announce to affected tracker, if not already STOPPED
-			if(removed) {
-				if(trackerSession.getLastTrackerEvent() != Tracker.Event.STOPPED) {
-					final AnnounceParameters announceParameters = new AnnounceParameters( 
-							Tracker.Event.STOPPED, 0, 0, 0);
-					scheduleAnnouncement(trackerSession, announceParameters, 0);
-				}
-				if(tracker.getType() == Tracker.Type.UDP) {
-					//Remove any pending scrape requests for this tracker
-					scheduledUdpScrapes.remove(tracker.getScrapeTransactionId());
-				}
-			}
-			
-			/*System.out.println("SYNCHRONIZED.removeTracker(): Released lock after " 
-					+ (System.currentTimeMillis() - start) + " ms.");*/
-			
-			return removed;
+			return removeSessions(match) > 0;
 		}		
 	}
 	
 	/**
-	 * Stop tracking a torrent for all trackers that are serving it.
-	 * Also remove trackers that no longer serve any torrents.
+	 * Remove a torrent from all trackers that are tracking it.
 	 * 
-	 * @param torrent Info hash of the torrent to remove
+	 * @param torrentInfoHash Info hash of the torrent to remove
 	 * @return Whether the torrent was successfully removed
 	 */
 	public final boolean removeTorrent(final InfoHash torrentInfoHash) {
@@ -358,49 +343,10 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 					t -> t.getInfoHash().equals(torrentInfoHash))
 					.collect(Collectors.toList());
 			
-			if(matchList.isEmpty()) {
-				//No trackers are tracking this torrent
-				return false;
-			}
-			
-			//Issue STOPPED announce to affected trackers, if not already STOPPED
-			for(final TrackerSession trackerSession : matchList) {								
-				trackerSessions.remove(trackerSession);
-				
-				final Tracker tracker = trackerSession.getTracker();
-				final Tracker.Type trackerType = tracker.getType();
-				
-				if(trackerSession.getLastTrackerEvent() != Tracker.Event.STOPPED) {					
-					final AnnounceParameters announceParameters = new AnnounceParameters( 
-							Tracker.Event.STOPPED, 0, 0, 0);
-					scheduleAnnouncement(trackerSession, announceParameters, 0);
-				}
-				else {
-					scheduledRequests.computeIfPresent(trackerSession, (key, value) -> {
-						//Cancel any pending requests for this tracker session
-						
-						System.out.println("removeTorrent(): Canceling scheduled request for transaction_id = " +
-								trackerSession.getTransactionId());
-						
-						value.getFuture().cancel(false);
-						return null;
-					});
-				}
-				if(trackerType == Tracker.Type.UDP) {
-					//Remove any pending scrape requests for this torrent's trackers
-					scheduledUdpScrapes.computeIfPresent(tracker.getScrapeTransactionId(), 
-						(id, sessions) -> {
-							sessions.remove(trackerSession);
-							return sessions;
-						}
-					);
-				}
-			}
+			return removeSessions(matchList) > 0;
 			
 			/*System.out.println("SYNCHRONIZED.removeTorrent(): Released lock after " 
-					+ (System.currentTimeMillis() - start) + " ms.");*/
-			
-			return true;
+					+ (System.currentTimeMillis() - start) + " ms.");*/			
 		}
 	}
 	
@@ -430,6 +376,52 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 	public final void stop() {
 		requestScheduler.shutdownNow();
 		requestExecutor.shutdownNow();
+	}
+	
+	private int removeSessions(final List<TrackerSession> sessionList) {
+		if(sessionList.isEmpty()) {			
+			return 0;
+		}
+		
+		int removedCount = 0;
+		
+		//Remove and issue STOPPED announce to affected tracker(s), if not already STOPPED
+		for(final TrackerSession trackerSession : sessionList) {											
+			if(!trackerSessions.remove(trackerSession)) {
+				continue;
+			}
+			
+			++removedCount;
+			
+			if(trackerSession.getLastTrackerEvent() != Tracker.Event.STOPPED) {					
+				final AnnounceParameters announceParameters = new AnnounceParameters( 
+						Tracker.Event.STOPPED, 0, 0, 0);
+				scheduleAnnouncement(trackerSession, announceParameters, 0);
+			}
+			else {
+				scheduledRequests.computeIfPresent(trackerSession, (key, value) -> {
+					//Cancel any pending requests for this tracker session
+					
+					System.out.println("remove(List<TrackerSession>): Canceling requests for transaction_id = " +
+							trackerSession.getTransactionId());
+					
+					value.getFuture().cancel(false);
+					return null;
+				});
+			}
+			final Tracker tracker = trackerSession.getTracker();
+			if(tracker.getType() == Tracker.Type.UDP) {
+				//Remove any pending scrape requests
+				scheduledUdpScrapes.computeIfPresent(tracker.getScrapeTransactionId(), 
+					(id, sessions) -> {
+						sessions.remove(trackerSession);
+						return sessions.isEmpty()? null : sessions;
+					}
+				);
+			}
+		}
+		
+		return removedCount;
 	}
 	
 	private void onUdpTrackerConnect(final UdpTrackerResponse trackerResponse) {		
@@ -658,18 +650,31 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 	private Tracker initTracker(final String trackerUrl) {
 		if(trackerUrl.toLowerCase().startsWith(NetworkUtilities.HTTP_PROTOCOL) ||
 				trackerUrl.toLowerCase().startsWith(NetworkUtilities.HTTPS_PROTOCOL)) {			
-			return new HttpTracker(trackerUrl, this);
+			try {
+				new URL(trackerUrl);				
+			}
+			catch(final MalformedURLException mue) {
+				//Invalid tracker url, return an instance of InvalidTracker
+				return new InvalidTracker(trackerUrl);
+			}
+			
+			final HttpTracker httpTracker = new HttpTracker(trackerUrl);
+			httpTracker.addListener(this);
+			return httpTracker;
 		}
 		else if(trackerUrl.toLowerCase().startsWith(NetworkUtilities.UDP_PROTOCOL)) {			
 			try {
-				return new UdpTracker(trackerUrl);
-			} catch (final URISyntaxException use) {
-				//Invalid tracker url, simply ignore the tracker
+				final URI udpTrackerUri = new URI(trackerUrl);
+				return new UdpTracker(udpTrackerUri);
+			} catch (final URISyntaxException use) {				
 				System.err.println("Invalid UDP Tracker URL format (" + trackerUrl + "): " + use);
-				return null;
+				
+				//Invalid tracker url, return an instance of InvalidTracker
+				return new InvalidTracker(trackerUrl);
 			} 
 		}
-		return null;
+		//Unsupported tracker protocol, return an instance of InvalidTracker
+		return new InvalidTracker(trackerUrl);
 	}
 	
 	private void scheduleAnnouncement(final TrackerSession trackerSession,

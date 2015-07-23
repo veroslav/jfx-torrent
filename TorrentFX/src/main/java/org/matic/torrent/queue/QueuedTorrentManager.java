@@ -54,7 +54,7 @@ public final class QueuedTorrentManager {
 		if(added) {
 			final InfoHash infoHash = torrent.getInfoHash();
 			final TrackerManager trackerManager = ResourceManager.INSTANCE.getTrackerManager();
-			torrent.getTrackers().forEach(t -> trackerManager.addTorrentTracker(
+			torrent.getTrackers().forEach(t -> trackerManager.addTracker(
 					t, infoHash, torrent.getStatus() != QueuedTorrent.Status.STOPPED));
 			activeTorrentTrackerSessions = trackerManager.getTrackers(infoHash);
 			activeInfoHash = infoHash;

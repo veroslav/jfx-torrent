@@ -37,6 +37,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.matic.torrent.codec.BinaryDecoder;
@@ -63,19 +65,32 @@ public final class HttpTracker extends Tracker {
 	private static final String REQUEST_TYPE_ANNOUNCE = "announce";
 	private static final String REQUEST_TYPE_SCRAPE = "scrape";
 	
-	private final HttpTrackerResponseListener responseListener;
-	private final BinaryDecoder decoder;
+	private final Set<HttpTrackerResponseListener> listeners;	
 	private final String scrapeUrl;
 	
-	public HttpTracker(final String url, final HttpTrackerResponseListener responseListener) {
+	/**
+	 * @see Tracker#Tracker(String)
+	 */
+	protected HttpTracker(final String url) {
 		super(url);				
-		this.responseListener = responseListener;
-		decoder = new BinaryDecoder();
+		listeners = new CopyOnWriteArraySet<>();
 		
 		final int lastSlashIndex = url.lastIndexOf('/');
 		final boolean scrapeSupported = url.startsWith(REQUEST_TYPE_ANNOUNCE, lastSlashIndex + 1);
 		
 		scrapeUrl = scrapeSupported? url.replace(REQUEST_TYPE_ANNOUNCE, REQUEST_TYPE_SCRAPE) : null;
+	}
+	
+	public final void addListener(final HttpTrackerResponseListener listener) {
+		listeners.add(listener);
+	}
+	
+	public final void removeListener(final HttpTrackerResponseListener listener) {
+		listeners.remove(listener);
+	}
+	
+	private void notifyListeners(final Consumer<HttpTrackerResponseListener> notification) {
+		listeners.forEach(l -> notification.accept(l));
 	}
 	
 	/**
@@ -107,7 +122,8 @@ public final class HttpTracker extends Tracker {
 		final ScrapeResponse scrapeResponse = trackerResponse.getType() == TrackerResponse.Type.OK?
 				buildScrapeResponse(trackerResponse.getResponseData(), trackerSessions) :
 				new ScrapeResponse(trackerResponse.getType(), trackerResponse.getMessage());
-		responseListener.onScrapeResponseReceived(this, scrapeResponse);
+				
+		notifyListeners(l -> l.onScrapeResponseReceived(this, scrapeResponse));
 		
 		System.out.println("HttpTracker.scrape(" + getUrl() + ") took " + (System.currentTimeMillis() - start) + " ms.");
 	};
@@ -165,7 +181,7 @@ public final class HttpTracker extends Tracker {
 					new AnnounceResponse(trackerResponse.getType(), trackerResponse.getMessage());
 		
 		trackerSession.setLastTrackerEvent(announceParameters.getTrackerEvent());
-		responseListener.onAnnounceResponseReceived(announceResponse, trackerSession);
+		notifyListeners(l -> l.onAnnounceResponseReceived(announceResponse, trackerSession));
 		
 		System.out.println("HttpTracker.announce(" + getUrl() + ") took " + (System.currentTimeMillis() - start) + " ms.");
 	}
@@ -242,8 +258,8 @@ public final class HttpTracker extends Tracker {
 	
 	//TODO: Add proxy support for the request
 	private TrackerResponse sendRequest(final String url) {							
-		try {
-			final URL targetUrl = new URL(url);			
+		try {			
+			final URL targetUrl = new URL(url);
 			
 			HttpURLConnection.setFollowRedirects(false);
 			final HttpURLConnection connection = (HttpURLConnection)targetUrl.openConnection();			
@@ -259,9 +275,10 @@ public final class HttpTracker extends Tracker {
 					//Check whether the response stream is gzip encoded
 					final String contentEncoding = connection.getHeaderField(NetworkUtilities.HTTP_CONTENT_ENCODING);
 					
+					final BinaryDecoder responseDecoder = new BinaryDecoder();
 					final BinaryEncodedDictionary responseMap = contentEncoding != null && 
-							NetworkUtilities.HTTP_GZIP_ENCODING.equals(contentEncoding)? decoder.decodeGzip(responseStream) :
-								decoder.decode(responseStream);							
+							NetworkUtilities.HTTP_GZIP_ENCODING.equals(contentEncoding)? responseDecoder.decodeGzip(responseStream) :
+								responseDecoder.decode(responseStream);							
 					return new TrackerResponse(TrackerResponse.Type.OK, null, responseMap);
 				}				
 			}
@@ -273,7 +290,7 @@ public final class HttpTracker extends Tracker {
 		}
 		catch(final BinaryDecoderException bde) {
 			return new TrackerResponse(TrackerResponse.Type.INVALID_RESPONSE, bde.getMessage());
-		}
+		}		
 		catch(final MalformedURLException mue) {
 			return new TrackerResponse(TrackerResponse.Type.INVALID_URL, mue.getMessage());
 		}

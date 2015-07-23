@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * An abstract representation of a peer tracker (either TCP or UDP).
+ * An abstract representation of a peer tracker (either TCP, UDP or INVALID).
  * 
  * @author vedran
  *
@@ -41,7 +41,7 @@ public abstract class Tracker {
 	}
 	
 	public enum Type {
-		TCP, UDP
+		TCP, UDP, INVALID
 	}
 	
 	protected static final int NUM_WANTED_PEERS = 200;
@@ -52,7 +52,7 @@ public abstract class Tracker {
 	private final String url;
 	
 	/**
-	 * Create a peer tracker 
+	 * Create a tracker 
 	 * 
 	 * @param url The tracker URL
 	 */

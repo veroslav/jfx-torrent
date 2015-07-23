@@ -24,7 +24,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Set;
@@ -62,28 +61,41 @@ public final class UdpTracker extends Tracker {
 	private final AtomicInteger connectionAttempts = new AtomicInteger(0);
 	private final AtomicLong lastConnectionAttempt = new AtomicLong(0);
 	
-	private final URI trackerUri;
+	private final URI uri;
 	private final int trackerPort;
 	
-	public UdpTracker(final String url) 
-			throws URISyntaxException {
-		super(url);		
-		this.trackerUri = new URI(url);
+	/**
+	 * Create a new UDP tracker
+	 * 
+	 * @param uri Valid tracker URI
+	 */
+	protected UdpTracker(final URI uri) {
+		super(uri.toString());		
+		this.uri = uri;
 		
-		final int urlPort = trackerUri.getPort();
+		final int urlPort = uri.getPort();
 		trackerPort = urlPort != -1? urlPort : DEFAULT_PORT;
 	}
 	
+	/**
+	 * @see Tracker#getType()
+	 */
 	@Override
 	public Type getType() {
 		return Type.UDP;
 	}
 	
+	/**
+	 * @see Tracker#isScrapeSupported()
+	 */
 	@Override
 	public boolean isScrapeSupported() {
 		return true;
 	}
 	
+	/**
+	 * @see Tracker#scrape(TrackerSession...)
+	 */
 	@Override
 	protected void scrape(final TrackerSession... trackerSessions) {
 		if(trackerSessions.length == 0 || connectionId.get() == DEFAULT_CONNECTION_ID) {
@@ -98,6 +110,9 @@ public final class UdpTracker extends Tracker {
 		}
 	};
 
+	/**
+	 * @see Tracker#announce(AnnounceParameters, TrackerSession)
+	 */
 	@Override
 	protected void announce(final AnnounceParameters announceParameters,
 			final TrackerSession trackerSession) {
@@ -110,6 +125,9 @@ public final class UdpTracker extends Tracker {
 		}
 	}
 	
+	/**
+	 * @see Tracker#connect(int)
+	 */
 	@Override
 	protected int connect(final int transactionId) {
 		final int connectionAttempt = connectionAttempts.updateAndGet((value) -> {			
@@ -132,23 +150,35 @@ public final class UdpTracker extends Tracker {
 		return connectionAttempt;
 	}
 	
+	/**
+	 * @see Tracker#setLastResponse(long)
+	 */
 	@Override
 	public void setLastResponse(final long lastResponse) {
 		super.setLastResponse(lastResponse);
 		connectionAttempts.set(0);
 	}
 	
+	/**
+	 * @see Tracker#setLastScrape(long)
+	 */
 	@Override
 	public void setLastScrape(final long lastScrape) {	
 		super.setLastScrape(lastScrape);
 		connectionAttempts.set(0);
 	}
 
+	/**
+	 * @see Tracker#getId()
+	 */
 	@Override
 	public long getId() {
 		return connectionId.get();
 	}
 	
+	/**
+	 * @see Tracker#setId(long)
+	 */
 	@Override
 	public void setId(final long connectionId) {
 		this.connectionId.set(connectionId);
@@ -178,7 +208,7 @@ public final class UdpTracker extends Tracker {
 			return null;
 		}
 		return new UdpRequest(UdpRequest.Type.TRACKER, transactionId, 
-				baos.toByteArray(), trackerUri.getHost(), trackerPort);
+				baos.toByteArray(), uri.getHost(), trackerPort);
 	}
 
 	protected UdpRequest buildAnnounceRequest(final AnnounceParameters announceParameters, final InfoHash infoHash,
@@ -213,7 +243,7 @@ public final class UdpTracker extends Tracker {
 			return null;
 		}		
 		return new UdpRequest(UdpRequest.Type.TRACKER, transactionId,
-				baos.toByteArray(), trackerUri.getHost(), trackerPort);
+				baos.toByteArray(), uri.getHost(), trackerPort);
 	}
 	
 	protected UdpRequest buildScrapeRequest(final Set<TrackerSession> trackerSessions) {	
@@ -231,7 +261,7 @@ public final class UdpTracker extends Tracker {
 			return null;
 		}
 		return new UdpRequest(UdpRequest.Type.TRACKER, super.getScrapeTransactionId(),
-				baos.toByteArray(), trackerUri.getHost(), trackerPort);
+				baos.toByteArray(), uri.getHost(), trackerPort);
 	}
 
 	@Override
