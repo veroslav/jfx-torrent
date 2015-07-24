@@ -46,10 +46,10 @@ public final class PeriodicTaskRunner extends ScheduledService<Void> {
             @Override
             public Void call() {		            	
             	tasks.forEach(t -> {
-            		if((System.currentTimeMillis() - t.getLastRunTime()) >= t.getPeriod()) {           			
+            		//if((System.currentTimeMillis() - t.getLastRunTime()) >= t.getPeriod()) {           			
 	            		t.getTask().run();	            		
-	            		t.setLastRunTime(System.currentTimeMillis());
-	            	}
+	            		//t.setLastRunTime(System.currentTimeMillis());
+	            	//}
             	});		            	
             	return null;
             }

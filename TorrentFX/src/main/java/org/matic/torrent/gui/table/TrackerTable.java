@@ -21,16 +21,13 @@
 package org.matic.torrent.gui.table;
 
 import java.util.Arrays;
-import java.util.List;
-import java.util.TimeZone;
 
-import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.collections.ObservableList;
 import javafx.scene.Node;
 import javafx.scene.control.TableView;
 
 import org.matic.torrent.gui.GuiUtils;
 import org.matic.torrent.gui.model.TrackerView;
-import org.matic.torrent.utils.UnitConverter;
 
 public class TrackerTable {
 
@@ -44,7 +41,12 @@ public class TrackerTable {
 		return trackerTable;
 	}
 	
-	public final List<TrackerView> getTrackerViews() {
+	public final void setContent(final ObservableList<TrackerView> trackerViews) {
+		trackerTable.getItems().clear();
+		trackerTable.getItems().addAll(trackerViews);
+	}
+	
+	public final ObservableList<TrackerView> getTrackerViews() {
 		return trackerTable.getItems();
 	}
 	
@@ -61,24 +63,21 @@ public class TrackerTable {
 					GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "Name"),
 			TableFactory.buildSimpleStringColumn(tv -> tv.getValue().statusProperty(), 140, 
 					GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "Status"),
-			TableFactory.buildSimpleLongValueColumn(
-					tv -> new ReadOnlyObjectWrapper<Long>(tv.getValue().nextUpdateProperty().getValue()), 
-					val -> UnitConverter.formatTime(val, TimeZone.getDefault()), 120, 
+			TableFactory.buildSimpleNumberColumn(
+					tv -> tv.getValue().nextUpdateProperty(),
+					//val -> UnitConverter.formatTime(val, TimeZone.getDefault()), 
+					val -> String.valueOf(val), 120, 
 					GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "Update In"),
-			TableFactory.buildSimpleLongValueColumn(
-					tv -> new ReadOnlyObjectWrapper<Long>((long)tv.getValue().intervalProperty().getValue()), 
+			TableFactory.buildSimpleNumberColumn(tv -> tv.getValue().intervalProperty(),
 					val -> String.valueOf(val), 70, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "Interval"),
-			TableFactory.buildSimpleLongValueColumn(
-					tv -> new ReadOnlyObjectWrapper<Long>((long)tv.getValue().minIntervalProperty().getValue()), 
-					val -> String.valueOf(val), 90, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "Min Interval"),
-			TableFactory.buildSimpleLongValueColumn(
-					tv -> new ReadOnlyObjectWrapper<Long>((long)tv.getValue().seedsProperty().getValue()), 
+			TableFactory.buildSimpleNumberColumn(tv -> tv.getValue().minIntervalProperty(), 
+					val -> val.longValue() == 0? "" : String.valueOf(val),
+							90, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "Min Interval"),
+			TableFactory.buildSimpleNumberColumn(tv -> tv.getValue().seedsProperty(), 
 					val -> String.valueOf(val), 70, GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "Seeds"),
-			TableFactory.buildSimpleLongValueColumn(
-					tv -> new ReadOnlyObjectWrapper<Long>((long)tv.getValue().leechersProperty().getValue()),
+			TableFactory.buildSimpleNumberColumn(tv -> tv.getValue().leechersProperty(),
 					val -> String.valueOf(val), 70, GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "Peers"),
-			TableFactory.buildSimpleLongValueColumn(
-					tv -> new ReadOnlyObjectWrapper<Long>((long)tv.getValue().downloadedProperty().getValue()),
+			TableFactory.buildSimpleNumberColumn(tv -> tv.getValue().downloadedProperty(),
 					val -> String.valueOf(val), 90, GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "Downloaded")));
 	}
 }

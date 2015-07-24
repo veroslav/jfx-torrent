@@ -39,8 +39,8 @@ public final class QueuedTorrent implements Comparable<QueuedTorrent> {
 	private Status status;	
 	private int priority;
 
-	public QueuedTorrent(final InfoHash infoHash, 
-			final Set<String> trackers, final int priority, final Status status) {
+	public QueuedTorrent(final InfoHash infoHash, final Set<String> trackers,
+			final int priority, final Status status) {
 		this.infoHash = infoHash;
 		this.trackers = trackers;
 		this.priority = priority;

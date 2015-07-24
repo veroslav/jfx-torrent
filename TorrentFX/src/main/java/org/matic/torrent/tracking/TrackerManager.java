@@ -106,7 +106,8 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 					System.err.println("Announce returned an error ( " + announceResponse.getType() + "): "
 							+ trackerSession.getTracker() + ", msg = " + announceResponse.getMessage());
 					
-					trackerSession.setTrackerStatus(Tracker.Status.ERROR);				
+					trackerSession.setTrackerStatus(Tracker.Status.ERROR);	
+					trackerSession.setTrackerMessage(announceResponse.getMessage());
 					
 					final AnnounceParameters announceParameters = new AnnounceParameters( 
 							trackerSession.getLastTrackerEvent(), 0, 0, 0);
@@ -115,6 +116,9 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 				}
 				else {
 					trackerSession.setTrackerStatus(Tracker.Status.WORKING);
+					trackerSession.setTrackerMessage("announce ok");
+					trackerSession.setInterval(announceResponse.getInterval());
+					trackerSession.setMinInterval(announceResponse.getMinInterval());
 					
 					final AnnounceParameters announceParameters = new AnnounceParameters( 
 							Tracker.Event.UPDATE, 0, 0, 0);
@@ -165,6 +169,7 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 			if(trackerSession.getLastTrackerEvent() == Tracker.Event.STOPPED) {
 				trackerSession.setLastTrackerResponse(responseTime);
 				trackerSession.setTrackerStatus(Tracker.Status.SCRAPE_OK);
+				trackerSession.setTrackerMessage("Scrape ok");
 			}
 		});
 	}
@@ -265,9 +270,9 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 	 * @param trackerUrl URL of the tracker being added
 	 * @param infoHash Info hash of the torrent being tracked
 	 * @param shouldAnnounce Whether to announce to the tracker
-	 * @return Whether either the tracker or a new torrent was added 
+	 * @return Created tracker session or null, if session already exists 
 	 */
-	public boolean addTracker(final String trackerUrl, final InfoHash infoHash,
+	public TrackerSession addTracker(final String trackerUrl, final InfoHash infoHash,
 			final boolean shouldAnnounce) {
 		final Tracker tracker = initTracker(trackerUrl);		
 		final TrackerSession trackerSession = new TrackerSession(infoHash, tracker); 		
@@ -278,13 +283,13 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 		
 		synchronized(trackerSessions) {			
 			if(!trackerSessions.add(trackerSession)) {
-				return false;
+				return null;
 			}
 			
 			if(tracker.getType() == Tracker.Type.INVALID) {
 				trackerSession.setTrackerStatus(Tracker.Status.ERROR);
 				trackerSession.setTrackerMessage("Invalid URL");
-				return true;
+				return trackerSession;
 			}
 			
 			if(shouldAnnounce) {
@@ -299,13 +304,14 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 			}
 			else {
 				trackerSession.setTrackerStatus(Tracker.Status.SCRAPE_NOT_SUPPORTED);
+				trackerSession.setTrackerMessage("Scrape not supported");
 			}
 		}
 		
 		/*System.out.println("SYNCHRONIZED.addTorrentTracker(): Released lock after " 
 				+ (System.currentTimeMillis() - start) + " ms.");*/
 		
-		return true;
+		return trackerSession;
 	}
 	
 	/**
@@ -699,7 +705,10 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 			}
 			
 			final Tracker tracker = trackerSession.getTracker();			
-			final Runnable request = () -> tracker.announce(announceParameters, trackerSession);
+			final Runnable request = () -> {
+				trackerSession.setTrackerMessage("announcing...");
+				tracker.announce(announceParameters, trackerSession);
+			};
 			
 			if(tracker.getType() == Tracker.Type.TCP) {
 				final Future<?> future = delay == 0? requestScheduler.submit(() ->

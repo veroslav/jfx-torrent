@@ -101,8 +101,8 @@ public final class TorrentJobTable {
 	
 	private void addColumns() {
 		torrentJobTable.getColumns().addAll(Arrays.asList(
-				TableFactory.buildSimpleLongValueColumn(
-						tj -> new ReadOnlyObjectWrapper<Long>((long)tj.getValue().priorityProperty().getValue()), 
+				TableFactory.buildSimpleNumberColumn(
+						tj -> tj.getValue().priorityProperty(), 
 						val -> String.valueOf(val), 30, GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "#"),
 				TableFactory.buildSimpleStringColumn(tj -> new ReadOnlyObjectWrapper<String>(tj.getValue().getFileName()),
 				GuiUtils.NAME_COLUMN_PREFERRED_SIZE, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "Name")));

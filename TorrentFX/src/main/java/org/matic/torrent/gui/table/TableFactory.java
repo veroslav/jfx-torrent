@@ -107,29 +107,28 @@ public final class TableFactory {
 	}
 	
 	/**
-	 * Build a table column that will contain a simple long value
+	 * Build a table column that will contain a simple number value
 	 * 
 	 * @param cellValueFactory How to set the cell values
-	 * @param valueConverter Function that converts long to string representation
+	 * @param valueConverter Function that converts number to string representation
 	 * @param columnWidth Preferred column width
 	 * @param alignmentStyle Column content alignment
 	 * @param columnName Column name displayed in the column header
-	 * @param propertyName Property to read the long value from
 	 * @return Built column
 	 */
-	public static <T> TableColumn<T, Long> buildSimpleLongValueColumn(
-			final Callback<CellDataFeatures<T, Long>, ObservableValue<Long>> cellValueFactory,
-			final Function<Long, String> valueConverter, final int columnWidth, 
+	public static <T> TableColumn<T, Number> buildSimpleNumberColumn(
+			final Callback<CellDataFeatures<T, Number>, ObservableValue<Number>> cellValueFactory,
+			final Function<Number, String> valueConverter, final int columnWidth, 
 			final String alignmentStyle, final String columnName) {
-		final TableColumn<T, Long> longValueColumn = new TableColumn<T, Long>(columnName);
-		longValueColumn.setGraphic(TableFactory.buildColumnHeader(longValueColumn, alignmentStyle));
-		longValueColumn.setPrefWidth(columnWidth);
-		longValueColumn.setCellValueFactory(cellValueFactory);
-		longValueColumn.setCellFactory(column -> new TableCell<T, Long>() {
+		final TableColumn<T, Number> numberColumn = new TableColumn<T, Number>(columnName);
+		numberColumn.setGraphic(TableFactory.buildColumnHeader(numberColumn, alignmentStyle));
+		numberColumn.setPrefWidth(columnWidth);
+		numberColumn.setCellValueFactory(cellValueFactory);
+		numberColumn.setCellFactory(column -> new TableCell<T, Number>() {
 			final Label valueLabel = new Label();			
 			
 			@Override
-			protected final void updateItem(final Long value, final boolean empty) {
+			protected final void updateItem(final Number value, final boolean empty) {
 				super.updateItem(value, empty);
 				if(empty) {
 					setText(null);
@@ -153,6 +152,6 @@ public final class TableFactory {
 				}
 			}			
 		});
-		return longValueColumn;
+		return numberColumn;
 	}
 }

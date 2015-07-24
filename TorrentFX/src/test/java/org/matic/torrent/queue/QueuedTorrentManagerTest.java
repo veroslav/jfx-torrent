@@ -65,7 +65,7 @@ public final class QueuedTorrentManagerTest {
 	
 	@Test
 	public void testRemoveNonexistingTorrent() {
-		final boolean removed = unitUnderTest.remove(infoHash);
+		final boolean removed = unitUnderTest.remove(torrent);
 		Assert.assertFalse(removed);
 		Assert.assertEquals(0, unitUnderTest.getQueueSize());		
 	}
@@ -75,7 +75,7 @@ public final class QueuedTorrentManagerTest {
 		unitUnderTest.add(torrent);
 		Assert.assertEquals(1, unitUnderTest.getQueueSize());
 		
-		final boolean removed = unitUnderTest.remove(infoHash);
+		final boolean removed = unitUnderTest.remove(torrent);
 		
 		Assert.assertTrue(removed);
 		Assert.assertEquals(0, unitUnderTest.getQueueSize());

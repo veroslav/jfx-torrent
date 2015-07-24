@@ -20,27 +20,26 @@
 
 package org.matic.torrent.queue;
 
-import java.util.List;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.TreeSet;
+
+import javafx.collections.ObservableList;
 
 import org.matic.torrent.gui.model.TrackerView;
 import org.matic.torrent.hash.InfoHash;
-import org.matic.torrent.tracking.TrackerSession;
 import org.matic.torrent.tracking.TrackerManager;
+import org.matic.torrent.tracking.TrackerSession;
 import org.matic.torrent.utils.ResourceManager;
 
 public final class QueuedTorrentManager {
 
-	private final Set<QueuedTorrent> queuedTorrents;
+	private final Map<QueuedTorrent, Set<TrackerSession>> queuedTrackerSessions = new HashMap<>();
+	//private List<TrackerSession> activeTorrentTrackerSessions = null;
 	
-	private List<TrackerSession> activeTorrentTrackerSessions = null;
-	private InfoHash activeInfoHash = null; 
-	
-	public QueuedTorrentManager() {		 
-		queuedTorrents = new TreeSet<>();		
-	}
+	public QueuedTorrentManager() {	}
 	
 	/**
 	 * Add a torrent to be managed
@@ -49,31 +48,38 @@ public final class QueuedTorrentManager {
 	 * @return Whether this torrent was successfully added
 	 */
 	public boolean add(final QueuedTorrent torrent) {
-		final boolean added = queuedTorrents.add(torrent);
-		
-		if(added) {
-			final InfoHash infoHash = torrent.getInfoHash();
-			final TrackerManager trackerManager = ResourceManager.INSTANCE.getTrackerManager();
-			torrent.getTrackers().forEach(t -> trackerManager.addTracker(
-					t, infoHash, torrent.getStatus() != QueuedTorrent.Status.STOPPED));
-			activeTorrentTrackerSessions = trackerManager.getTrackers(infoHash);
-			activeInfoHash = infoHash;
+		if(queuedTrackerSessions.containsKey(torrent)) {
+			return false;
 		}
 		
-		return added;
+		final InfoHash infoHash = torrent.getInfoHash();
+		final TrackerManager trackerManager = ResourceManager.INSTANCE.getTrackerManager();
+		torrent.getTrackers().forEach(t -> {
+			final TrackerSession trackerSession = trackerManager.addTracker(
+				t, infoHash, torrent.getStatus() != QueuedTorrent.Status.STOPPED);
+			if(trackerSession != null) {
+				queuedTrackerSessions.compute(torrent, (key, value) -> {
+					final Set<TrackerSession> sessions = value == null? new HashSet<>() : value;
+					sessions.add(trackerSession);
+					return sessions;
+				});
+			}
+		});
+		
+		return true;
 	}
 	
 	/**
 	 * Remove and stop managing a torrent 
 	 * 
-	 * @param infoHash Info hash of the torrent to remove
+	 * @param queuedTorrent Queued torrent to remove
 	 * @return Whether the target torrent was successfully removed
 	 */
-	public boolean remove(final InfoHash infoHash) {
-		final boolean removed = queuedTorrents.removeIf(qt -> qt.getInfoHash().equals(infoHash));
+	public boolean remove(final QueuedTorrent queuedTorrent) {
+		final boolean removed = !queuedTrackerSessions.remove(queuedTorrent).isEmpty();
 		
 		if(removed) {
-			ResourceManager.INSTANCE.getTrackerManager().removeTorrent(infoHash);
+			ResourceManager.INSTANCE.getTrackerManager().removeTorrent(queuedTorrent.getInfoHash());
 		}
 		
 		return removed;
@@ -82,31 +88,40 @@ public final class QueuedTorrentManager {
 	/**
 	 * Update tracker view beans with the latest tracker statistics for a torrent
 	 * 
-	 * @param infoHash Target torrent's info hash
+	 * @param queuedTorrent Target torrent
 	 * @param trackerViews List of tracker views to update
 	 */
-	public void updateTrackerStatistics(final InfoHash infoHash, final List<TrackerView> trackerViews) {
-		if(activeInfoHash != infoHash) {
-			activeInfoHash = infoHash;
-			activeTorrentTrackerSessions = ResourceManager.INSTANCE.getTrackerManager().getTrackers(infoHash);
-		}
-		trackerViews.forEach(tv -> activeTorrentTrackerSessions.stream().filter(
-			tt -> tt.getTracker().getUrl().equalsIgnoreCase(tv.getTrackerName())).forEach(m -> {
-				//Update view with values from matching torrent tracker
-				tv.leechersProperty().set(m.getLeechers());
-				tv.seedsProperty().set(m.getSeeders());
-				tv.downloadedProperty().set(m.getDownloaded());
-				tv.nextUpdateProperty().set((System.currentTimeMillis() - m.getLastTrackerResponse()) - m.getInterval());
+	public final void trackerSnapshot(final QueuedTorrent queuedTorrent, 
+			final ObservableList<TrackerView> trackerViews) {		
+		queuedTrackerSessions.get(queuedTorrent).stream().forEach(ts -> {
+			final Optional<TrackerView> match = trackerViews.stream().filter(tv ->
+				tv.getTrackerName().equals(ts.getTracker().getUrl())
+			).findFirst();
+			if(match.isPresent()) {
+				final TrackerView trackerView = match.get();
+				
+				//System.out.println("trackerSnapshot(): leechers = " + ts.getLeechers());
+				
+				/*
+				 	Instant start = Instant.now();
+					Thread.sleep(63553);
+					Instant end = Instant.now();
+					System.out.println(Duration.between(start, end));
+				 */
+				
+				trackerView.statusProperty().set(ts.getTrackerMessage());
+				trackerView.leechersProperty().set(ts.getLeechers());
+				trackerView.seedsProperty().set(ts.getSeeders());
+				trackerView.downloadedProperty().set(ts.getDownloaded());
+				trackerView.intervalProperty().set(ts.getInterval());
+				
+				trackerView.nextUpdateProperty().set(ts.getInterval() - 
+						(System.currentTimeMillis() - ts.getLastTrackerResponse()) / 1000);
+				
+				final Long minInterval = ts.getMinInterval();
+				trackerView.minIntervalProperty().set(minInterval != null? minInterval : 0);
 			}
-		));
-	}
-	
-	//TODO: Remove updateTrackerStatistics(), use View.update(QueuedTorrent) and updateGui(QueuedTorrent) instead
-	//TODO: In ApplicationWindow, keep track of selected QueuedTorrent for more efficient view updates 
-	
-	public final void snapshotTrackerStatistics(final QueuedTorrent queuedTorrent,
-			final List<TrackerView> trackerViews) {
-		//TODO: Implement method
+		});
 	}
 	
 	/**
@@ -116,10 +131,10 @@ public final class QueuedTorrentManager {
 	 * @return Optionally found torrent
 	 */
 	public Optional<QueuedTorrent> find(final InfoHash infoHash) {
-		return queuedTorrents.stream().filter(t -> t.getInfoHash().equals(infoHash)).findFirst();
+		return queuedTrackerSessions.keySet().stream().filter(t -> t.getInfoHash().equals(infoHash)).findFirst();
 	}
 	
 	protected int getQueueSize() {
-		return queuedTorrents.size();
+		return queuedTrackerSessions.size();
 	}
 }

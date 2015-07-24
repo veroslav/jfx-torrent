@@ -23,32 +23,32 @@ package org.matic.torrent.gui.model;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.matic.torrent.hash.InfoHash;
-import org.matic.torrent.queue.QueuedTorrent;
-
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.scene.control.TreeItem;
+
+import org.matic.torrent.queue.QueuedTorrent;
 
 public final class TorrentJobView {
 	
 	private final List<TrackerView> trackerContents = new ArrayList<>();
 	private final TreeItem<TorrentFileEntry> torrentContentTree;
-	private final InfoHash infoHash;
+	private final QueuedTorrent queuedTorrent;
 	private final String fileName;
 	
 	private final IntegerProperty priority;
 
 	public TorrentJobView(final QueuedTorrent queuedTorrent, final String fileName,
-			final InfoHash infoHash, final TreeItem<TorrentFileEntry> torrentContents) {
+			final TreeItem<TorrentFileEntry> torrentContents) {
 		this.torrentContentTree = torrentContents;
 		this.fileName = fileName;
-		this.infoHash = infoHash;
-		
 		this.priority = new SimpleIntegerProperty(queuedTorrent.getPriority());
 		
-		queuedTorrent.getTrackers().forEach(t -> trackerContents.add(
-				new TrackerView(t, "Waiting for announce...", 0, 0, 0, 0, 0, 0)));
+		this.queuedTorrent = queuedTorrent;
+	}
+	
+	public final QueuedTorrent getQueuedTorrent() {
+		return queuedTorrent;
 	}
 	
 	public final IntegerProperty priorityProperty() {
@@ -65,13 +65,5 @@ public final class TorrentJobView {
 	
 	public final List<TrackerView> getTrackerContents() {
 		return trackerContents;
-	}
-	
-	public InfoHash getInfoHash() {
-		return infoHash;
-	}
-	
-	public final void updateValues(final QueuedTorrent queuedTorrent) {
-		
 	}
 }

@@ -394,6 +394,8 @@ public final class UrlLoaderWindow {
 			connection.setRequestProperty(NetworkUtilities.HTTP_ACCEPT_LANGUAGE, 
 					ClientProperties.getUserLocale());
 			
+			HttpURLConnection.setFollowRedirects(true);
+			
 			final long contentLength = connection.getContentLengthLong();			
 			final int responseCode = connection.getResponseCode();
 			final String contentEncoding = connection.getHeaderField(

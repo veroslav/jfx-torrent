@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import javafx.application.Platform;
+import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.Event;
 import javafx.geometry.Orientation;
@@ -77,6 +78,7 @@ import org.matic.torrent.gui.action.FileActionHandler;
 import org.matic.torrent.gui.action.WindowActionHandler;
 import org.matic.torrent.gui.image.ImageUtils;
 import org.matic.torrent.gui.model.TorrentJobView;
+import org.matic.torrent.gui.model.TrackerView;
 import org.matic.torrent.gui.table.TorrentJobTable;
 import org.matic.torrent.gui.table.TrackerTable;
 import org.matic.torrent.gui.tree.TorrentContentTree;
@@ -130,6 +132,9 @@ public final class ApplicationWindow {
 	
 	//View for displaying selected torrent's trackers
 	private final TrackerTable trackerTable = new TrackerTable();
+	
+	//Mapping between a torrent and it's tracker views
+	private final Map<QueuedTorrent, ObservableList<TrackerView>> trackerViewMappings = new HashMap<>();
 	
 	//Mapping between toolbar's buttons and their names
 	private final Map<String, Button> toolbarButtonsMap = new HashMap<>();
@@ -189,8 +194,9 @@ public final class ApplicationWindow {
 		if(!selectedTorrents.isEmpty()) {
 			//Render tracker statistics only if Trackers tab is selected
 			if(detailsTabMap.get(TRACKERS_TAB_FILES_NAME).isSelected()) {
-				queuedTorrentManager.updateTrackerStatistics(
-						selectedTorrents.get(0).getInfoHash(), trackerTable.getTrackerViews());
+				queuedTorrentManager.trackerSnapshot(
+					selectedTorrents.get(0).getQueuedTorrent(),
+					trackerTable.getTrackerViews());
 			}
 		}
 	}
@@ -495,8 +501,13 @@ public final class ApplicationWindow {
 			final QueuedTorrent queuedTorrent = new QueuedTorrent(infoHash, trackerUrls, 1, torrentStatus);
 			
 			final TorrentJobView jobView = new TorrentJobView(queuedTorrent, torrentOptions.getName(), 
-					torrentInfoHash, torrentOptions.getTorrentContents());
+					torrentOptions.getTorrentContents());
 			
+			final ObservableList<TrackerView> trackerViews = FXCollections.observableArrayList(
+					queuedTorrent.getTrackers().map(t -> new TrackerView(t)).collect(Collectors.toList()));
+			
+			trackerViewMappings.put(queuedTorrent, trackerViews);
+			trackerTable.setContent(trackerViews);
 			torrentJobTable.addJob(jobView);
 			queuedTorrentManager.add(queuedTorrent);
 			updateGui();
@@ -515,11 +526,12 @@ public final class ApplicationWindow {
 			final Optional<ButtonType> answer = confirmDeleteAlert.showAndWait();
 			if(answer.isPresent() && answer.get() == ButtonType.OK) {
 				selectedTorrentJobs.stream().map(
-						TorrentJobView::getInfoHash).forEach(queuedTorrentManager::remove);
+						TorrentJobView::getQueuedTorrent).forEach(queuedTorrentManager::remove);
 				torrentJobTable.deleteJobs(selectedTorrentJobs);
 				final ObservableList<TorrentJobView> newSelection = torrentJobTable.getSelectedJobs();
 				if(newSelection.isEmpty()) {
 					torrentContentTree.setContent(null);
+					trackerTable.setContent(FXCollections.emptyObservableList());
 				}
 				else {
 					torrentJobTable.selectJob(newSelection.get(0));
@@ -531,6 +543,7 @@ public final class ApplicationWindow {
 	private void onTorrentJobSelection(final TorrentJobView selectedTorrentJob) {
 		if(selectedTorrentJob != null) {				
 			torrentContentTree.setContent(selectedTorrentJob.getTorrentContents());
+			trackerTable.setContent(trackerViewMappings.get(selectedTorrentJob.getQueuedTorrent()));
 		}
 		
 		final Button removeButton = toolbarButtonsMap.get(TOOLBAR_BUTTON_REMOVE);	

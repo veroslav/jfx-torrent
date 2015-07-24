@@ -32,8 +32,8 @@ public final class TrackerView {
 	private final StringProperty trackerName;
 	private final StringProperty status;
 	
-	private final IntegerProperty minInterval;
-	private final IntegerProperty interval;
+	private final LongProperty minInterval;
+	private final LongProperty interval;
 	
 	private final IntegerProperty downloaded;
 	private final IntegerProperty leechers;
@@ -41,32 +41,30 @@ public final class TrackerView {
 	
 	private final LongProperty nextUpdate;
 
-	public TrackerView(final String trackerName, final String status, final int seeds,
-			final int leechers, final long nextUpdate, final int downloaded,
-			final int interval, final int minInterval) {
-		this.minInterval = new SimpleIntegerProperty(minInterval);
+	public TrackerView(final String trackerName) {
+		this.minInterval = new SimpleLongProperty(0);
 		this.trackerName = new SimpleStringProperty(trackerName);
-		this.downloaded = new SimpleIntegerProperty(downloaded);
-		this.nextUpdate = new SimpleLongProperty(nextUpdate);
-		this.interval = new SimpleIntegerProperty(interval);
-		this.leechers = new SimpleIntegerProperty(leechers);
-		this.status = new SimpleStringProperty(status);
-		this.seeds = new SimpleIntegerProperty(seeds);				
+		this.downloaded = new SimpleIntegerProperty(0);
+		this.nextUpdate = new SimpleLongProperty(0);
+		this.interval = new SimpleLongProperty(0);
+		this.leechers = new SimpleIntegerProperty(0);
+		this.status = new SimpleStringProperty("");
+		this.seeds = new SimpleIntegerProperty(0);				
 	}
 	
-	public final int getMinInterval() {
+	public final long getMinInterval() {
 		return minInterval.get();
 	}
 	
-	public final IntegerProperty minIntervalProperty() {
+	public final LongProperty minIntervalProperty() {
 		return minInterval;
 	}
 
-	public final int getInterval() {
+	public final long getInterval() {
 		return interval.get();
 	}
 	
-	public final IntegerProperty intervalProperty() {
+	public final LongProperty intervalProperty() {
 		return interval;
 	}
 
