@@ -22,17 +22,18 @@ package org.matic.torrent.queue;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import javafx.collections.ObservableList;
-
 import org.matic.torrent.gui.model.TrackerView;
 import org.matic.torrent.hash.InfoHash;
+import org.matic.torrent.tracking.Tracker;
 import org.matic.torrent.tracking.TrackerManager;
 import org.matic.torrent.tracking.TrackerSession;
 import org.matic.torrent.utils.ResourceManager;
+import org.matic.torrent.utils.UnitConverter;
 
 public final class QueuedTorrentManager {
 
@@ -55,8 +56,10 @@ public final class QueuedTorrentManager {
 		final InfoHash infoHash = torrent.getInfoHash();
 		final TrackerManager trackerManager = ResourceManager.INSTANCE.getTrackerManager();
 		torrent.getTrackers().forEach(t -> {
+			
 			final TrackerSession trackerSession = trackerManager.addTracker(
 				t, infoHash, torrent.getStatus() != QueuedTorrent.Status.STOPPED);
+			
 			if(trackerSession != null) {
 				queuedTrackerSessions.compute(torrent, (key, value) -> {
 					final Set<TrackerSession> sessions = value == null? new HashSet<>() : value;
@@ -92,34 +95,39 @@ public final class QueuedTorrentManager {
 	 * @param trackerViews List of tracker views to update
 	 */
 	public final void trackerSnapshot(final QueuedTorrent queuedTorrent, 
-			final ObservableList<TrackerView> trackerViews) {		
+			final List<TrackerView> trackerViews) {		
 		queuedTrackerSessions.get(queuedTorrent).stream().forEach(ts -> {
 			final Optional<TrackerView> match = trackerViews.stream().filter(tv ->
 				tv.getTrackerName().equals(ts.getTracker().getUrl())
 			).findFirst();
 			if(match.isPresent()) {
 				final TrackerView trackerView = match.get();
+		
+				final Tracker.Status trackerStatus = ts.getTrackerStatus();
+				final String statusMessage = Tracker.getStatusMessage(trackerStatus);
+				final String trackerMessage = ts.getTrackerMessage();
 				
-				//System.out.println("trackerSnapshot(): leechers = " + ts.getLeechers());
+				/* 	TODO: Move value formatting to TorrentView
+				 	TODO: Use <Long, String> instead of String (to allow for displaying
+				 		time values both as raw ints, and formatted as xd xh xm xs,
+				 		but also for correct sorting of tracker table columns) */
 				
-				/*
-				 	Instant start = Instant.now();
-					Thread.sleep(63553);
-					Instant end = Instant.now();
-					System.out.println(Duration.between(start, end));
-				 */
+				if(trackerStatus != Tracker.Status.ANNOUNCING) {
+					trackerView.statusProperty().set(trackerStatus == Tracker.Status.TRACKER_ERROR?
+							trackerMessage : statusMessage);
+				}
+				trackerView.nextUpdateProperty().set(trackerStatus == Tracker.Status.ANNOUNCING?
+						statusMessage : UnitConverter.formatMillisToTime(ts.getInterval() - 
+								(System.currentTimeMillis() - ts.getLastTrackerResponse())));
 				
-				trackerView.statusProperty().set(ts.getTrackerMessage());
-				trackerView.leechersProperty().set(ts.getLeechers());
-				trackerView.seedsProperty().set(ts.getSeeders());
+				final long interval = ts.getInterval();
+				trackerView.intervalProperty().set(interval > 0?
+					UnitConverter.formatMillisToTime(interval) : "");
+				
+				trackerView.minIntervalProperty().set(UnitConverter.formatMillisToTime(ts.getMinInterval()));
 				trackerView.downloadedProperty().set(ts.getDownloaded());
-				trackerView.intervalProperty().set(ts.getInterval());
-				
-				trackerView.nextUpdateProperty().set(ts.getInterval() - 
-						(System.currentTimeMillis() - ts.getLastTrackerResponse()) / 1000);
-				
-				final Long minInterval = ts.getMinInterval();
-				trackerView.minIntervalProperty().set(minInterval != null? minInterval : 0);
+				trackerView.leechersProperty().set(ts.getLeechers());				
+				trackerView.seedsProperty().set(ts.getSeeders());
 			}
 		});
 	}

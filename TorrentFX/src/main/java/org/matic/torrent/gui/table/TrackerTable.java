@@ -21,8 +21,8 @@
 package org.matic.torrent.gui.table;
 
 import java.util.Arrays;
+import java.util.List;
 
-import javafx.collections.ObservableList;
 import javafx.scene.Node;
 import javafx.scene.control.TableView;
 
@@ -41,12 +41,12 @@ public class TrackerTable {
 		return trackerTable;
 	}
 	
-	public final void setContent(final ObservableList<TrackerView> trackerViews) {
+	public final void setContent(final List<TrackerView> trackerViews) {
 		trackerTable.getItems().clear();
 		trackerTable.getItems().addAll(trackerViews);
 	}
 	
-	public final ObservableList<TrackerView> getTrackerViews() {
+	public final List<TrackerView> getTrackerViews() {
 		return trackerTable.getItems();
 	}
 	
@@ -63,16 +63,13 @@ public class TrackerTable {
 					GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "Name"),
 			TableFactory.buildSimpleStringColumn(tv -> tv.getValue().statusProperty(), 140, 
 					GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "Status"),
-			TableFactory.buildSimpleNumberColumn(
-					tv -> tv.getValue().nextUpdateProperty(),
-					//val -> UnitConverter.formatTime(val, TimeZone.getDefault()), 
-					val -> String.valueOf(val), 120, 
+			TableFactory.buildSimpleStringColumn(
+					tv -> tv.getValue().nextUpdateProperty(), 120, 
 					GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "Update In"),
-			TableFactory.buildSimpleNumberColumn(tv -> tv.getValue().intervalProperty(),
-					val -> String.valueOf(val), 70, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "Interval"),
-			TableFactory.buildSimpleNumberColumn(tv -> tv.getValue().minIntervalProperty(), 
-					val -> val.longValue() == 0? "" : String.valueOf(val),
-							90, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "Min Interval"),
+			TableFactory.buildSimpleStringColumn(tv -> tv.getValue().intervalProperty(),
+					70, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "Interval"),
+			TableFactory.buildSimpleStringColumn(tv -> tv.getValue().minIntervalProperty(),
+					90, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "Min Interval"),
 			TableFactory.buildSimpleNumberColumn(tv -> tv.getValue().seedsProperty(), 
 					val -> String.valueOf(val), 70, GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "Seeds"),
 			TableFactory.buildSimpleNumberColumn(tv -> tv.getValue().leechersProperty(),

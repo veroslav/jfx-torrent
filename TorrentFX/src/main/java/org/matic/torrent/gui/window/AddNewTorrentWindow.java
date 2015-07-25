@@ -113,7 +113,7 @@ public final class AddNewTorrentWindow {
 		
 		final BinaryEncodedInteger creationDateInSeconds = (BinaryEncodedInteger)torrentMetaData.get(
 				BinaryEncodingKeyNames.KEY_CREATION_DATE);
-		creationDate = creationDateInSeconds != null? UnitConverter.formatTime(
+		creationDate = creationDateInSeconds != null? UnitConverter.formatMillisToDate(
 				creationDateInSeconds.getValue() * 1000, TimeZone.getDefault()) : "";
 				
 		final BinaryEncodedDictionary infoDictionary = ((BinaryEncodedDictionary)torrentMetaData.get(

@@ -21,50 +21,46 @@
 package org.matic.torrent.gui.model;
 
 import javafx.beans.property.IntegerProperty;
-import javafx.beans.property.LongProperty;
 import javafx.beans.property.SimpleIntegerProperty;
-import javafx.beans.property.SimpleLongProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 
 public final class TrackerView {
 	
 	private final StringProperty trackerName;
+	private final StringProperty minInterval;
+	private final StringProperty nextUpdate;
+	private final StringProperty interval;
 	private final StringProperty status;
-	
-	private final LongProperty minInterval;
-	private final LongProperty interval;
 	
 	private final IntegerProperty downloaded;
 	private final IntegerProperty leechers;
 	private final IntegerProperty seeds;
-	
-	private final LongProperty nextUpdate;
 
 	public TrackerView(final String trackerName) {
-		this.minInterval = new SimpleLongProperty(0);
+		this.minInterval = new SimpleStringProperty("");
 		this.trackerName = new SimpleStringProperty(trackerName);
 		this.downloaded = new SimpleIntegerProperty(0);
-		this.nextUpdate = new SimpleLongProperty(0);
-		this.interval = new SimpleLongProperty(0);
+		this.nextUpdate = new SimpleStringProperty("");
+		this.interval = new SimpleStringProperty("");
 		this.leechers = new SimpleIntegerProperty(0);
 		this.status = new SimpleStringProperty("");
 		this.seeds = new SimpleIntegerProperty(0);				
 	}
 	
-	public final long getMinInterval() {
+	public final String getMinInterval() {
 		return minInterval.get();
 	}
 	
-	public final LongProperty minIntervalProperty() {
+	public final StringProperty minIntervalProperty() {
 		return minInterval;
 	}
 
-	public final long getInterval() {
+	public final String getInterval() {
 		return interval.get();
 	}
 	
-	public final LongProperty intervalProperty() {
+	public final StringProperty intervalProperty() {
 		return interval;
 	}
 
@@ -76,11 +72,11 @@ public final class TrackerView {
 		return downloaded;
 	}
 	
-	public long getNextUpdate() {
+	public String getNextUpdate() {
 		return nextUpdate.get();
 	}
 	
-	public final LongProperty nextUpdateProperty() {
+	public final StringProperty nextUpdateProperty() {
 		return nextUpdate;
 	}
 	

@@ -46,7 +46,7 @@ public final class UnitConverterTest {
 		final long timeToConvert = 969695100000L; 
 		final String expectedConvertedTime = "2000-09-23 07:45:00";
 		
-		Assert.assertEquals(expectedConvertedTime, UnitConverter.formatTime(timeToConvert,
+		Assert.assertEquals(expectedConvertedTime, UnitConverter.formatMillisToDate(timeToConvert,
 				TimeZone.getTimeZone(UnitConverter.UTC_TIMEZONE)));
 	}
 }

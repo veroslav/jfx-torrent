@@ -36,13 +36,24 @@ public abstract class Tracker {
 	}
 	
 	public enum Status {
-		CONNECTION_TIMEOUT, DISABLED, NOT_ALLOWED, ERROR, WORKING, 
-		SCRAPE_OK, SCRAPE_NOT_SUPPORTED, UNKNOWN
+		UNKNOWN, ANNOUNCING, HOSTNAME_NOT_FOUND, WORKING,
+		TRACKER_ERROR, INVALID_URL, SCRAPE_OK,
+		SCRAPE_NOT_SUPPORTED, CONNECTION_TIMEOUT
 	}
 	
 	public enum Type {
 		TCP, UDP, INVALID
 	}
+	
+	public static final long MIN_INTERVAL_DEFAULT_VALUE = 30000;	//30 seconds
+	
+	private static final String STATUS_SCRAPE_NOT_SUPPORTED_MESSAGE = "scrape not supported";
+	private static final String STATUS_CONNECTION_TIMEOUT_MESSAGE = "connect timeout";
+	private static final String STATUS_HOSTNAME_NOT_FOUND_MESSAGE = "hostname not found";
+	private static final String STATUS_INVALID_URL_MESSAGE = "invalid url";
+	private static final String STATUS_ANNOUNCING_MESSAGE = "updating...";
+	private static final String STATUS_SCRAPE_OK_MESSAGE = "scrape ok";
+	private static final String STATUS_WORKING_MESSAGE = "working";
 	
 	protected static final int NUM_WANTED_PEERS = 200;
 	
@@ -68,6 +79,27 @@ public abstract class Tracker {
 	
 	public abstract void setId(final long id);
 	
+	public static String getStatusMessage(final Status status) {
+		switch(status) {
+			case ANNOUNCING:
+				return STATUS_ANNOUNCING_MESSAGE;
+			case HOSTNAME_NOT_FOUND:
+				return STATUS_HOSTNAME_NOT_FOUND_MESSAGE;
+			case WORKING:
+				return STATUS_WORKING_MESSAGE;
+			case INVALID_URL:
+				return STATUS_INVALID_URL_MESSAGE;
+			case SCRAPE_OK:
+				return STATUS_SCRAPE_OK_MESSAGE;
+			case SCRAPE_NOT_SUPPORTED:
+				return STATUS_SCRAPE_NOT_SUPPORTED_MESSAGE;
+			case CONNECTION_TIMEOUT:
+				return STATUS_CONNECTION_TIMEOUT_MESSAGE;
+			default:
+				return "";
+		}
+	}
+	
 	public String getUrl() {
 		return url;
 	}
@@ -86,7 +118,6 @@ public abstract class Tracker {
 
 	public void setLastScrape(final long lastScrape) {
 		this.lastScrape.set(lastScrape);
-		
 	}
 	
 	public final int getScrapeTransactionId() {

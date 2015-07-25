@@ -33,16 +33,16 @@ public final class TrackerSession {
 	private final InfoHash infoHash;	
 	private final Tracker tracker;
 	
-	private Tracker.Status trackerStatus = Tracker.Status.UNKNOWN; 
+	private Tracker.Status trackerStatus = Tracker.Status.UNKNOWN;
 	private String trackerMessage = null;
 	
 	private AtomicInteger downloaded = new AtomicInteger(0);
 	private AtomicInteger leechers = new AtomicInteger(0);
 	private AtomicInteger seeders = new AtomicInteger(0);	
 			
+	private AtomicLong minInterval = new AtomicLong(Tracker.MIN_INTERVAL_DEFAULT_VALUE);
 	private AtomicLong lastTrackerResponse = new AtomicLong(0);
-	private AtomicLong interval = new AtomicLong(0);
-	private Long minInterval = null;	
+	private AtomicLong interval = new AtomicLong(0);	
 	
 	private int transactionId = ClientProperties.generateUniqueId();	
 
@@ -70,7 +70,7 @@ public final class TrackerSession {
 			return trackerStatus;
 		}
 	}
-
+	
 	public final void setTransactionId(final int transactionId) {
 		this.transactionId = transactionId;
 	}
@@ -99,12 +99,12 @@ public final class TrackerSession {
 		this.seeders.set(seeders);
 	}
 
-	public final Long getMinInterval() {
-		return minInterval;
+	public final long getMinInterval() {
+		return minInterval.get();
 	}
 
-	public final void setMinInterval(final Long minInterval) {
-		this.minInterval = minInterval;
+	public final void setMinInterval(final long minInterval) {
+		this.minInterval.set(minInterval);
 	}
 
 	public final long getInterval() {

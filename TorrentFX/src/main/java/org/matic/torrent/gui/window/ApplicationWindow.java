@@ -134,7 +134,7 @@ public final class ApplicationWindow {
 	private final TrackerTable trackerTable = new TrackerTable();
 	
 	//Mapping between a torrent and it's tracker views
-	private final Map<QueuedTorrent, ObservableList<TrackerView>> trackerViewMappings = new HashMap<>();
+	private final Map<QueuedTorrent, List<TrackerView>> trackerViewMappings = new HashMap<>();
 	
 	//Mapping between toolbar's buttons and their names
 	private final Map<String, Button> toolbarButtonsMap = new HashMap<>();
@@ -508,8 +508,9 @@ public final class ApplicationWindow {
 			
 			trackerViewMappings.put(queuedTorrent, trackerViews);
 			trackerTable.setContent(trackerViews);
-			torrentJobTable.addJob(jobView);
+			torrentJobTable.addJob(jobView);			
 			queuedTorrentManager.add(queuedTorrent);
+			
 			updateGui();
 		}
 	}

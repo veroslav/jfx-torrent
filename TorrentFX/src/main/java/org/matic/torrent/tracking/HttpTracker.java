@@ -110,10 +110,6 @@ public final class HttpTracker extends Tracker {
 			return;
 		}
 		
-		//START TEST
-		final long start = System.currentTimeMillis();
-		//END TEST
-		
 		final String requestUrl = buildScrapeRequestUrl(trackerSessions);
 		
 		final TrackerResponse trackerResponse = requestUrl == null? new TrackerResponse(
@@ -123,9 +119,7 @@ public final class HttpTracker extends Tracker {
 				buildScrapeResponse(trackerResponse.getResponseData(), trackerSessions) :
 				new ScrapeResponse(trackerResponse.getType(), trackerResponse.getMessage());
 				
-		notifyListeners(l -> l.onScrapeResponseReceived(this, scrapeResponse));
-		
-		System.out.println("HttpTracker.scrape(" + getUrl() + ") took " + (System.currentTimeMillis() - start) + " ms.");
+		notifyListeners(l -> l.onScrapeResponseReceived(this, scrapeResponse));		
 	};
 	
 	/**
@@ -166,12 +160,7 @@ public final class HttpTracker extends Tracker {
 	 * @see Tracker#announce(AnnounceParameters, TrackerSession)
 	 */
 	@Override
-	protected final void announce(final AnnounceParameters announceParameters, final TrackerSession trackerSession) {
-		
-		//START TEST
-		final long start = System.currentTimeMillis();
-		//END TEST
-		
+	protected final void announce(final AnnounceParameters announceParameters, final TrackerSession trackerSession) {		
 		final String requestUrl = buildAnnounceRequestUrl(announceParameters, trackerSession.getInfoHash());
 		final TrackerResponse trackerResponse = requestUrl == null? new TrackerResponse(
 				TrackerResponse.Type.INVALID_URL, "Unsupported encoding") : sendRequest(requestUrl);
@@ -181,9 +170,7 @@ public final class HttpTracker extends Tracker {
 					new AnnounceResponse(trackerResponse.getType(), trackerResponse.getMessage());
 		
 		trackerSession.setLastTrackerEvent(announceParameters.getTrackerEvent());
-		notifyListeners(l -> l.onAnnounceResponseReceived(announceResponse, trackerSession));
-		
-		System.out.println("HttpTracker.announce(" + getUrl() + ") took " + (System.currentTimeMillis() - start) + " ms.");
+		notifyListeners(l -> l.onAnnounceResponseReceived(announceResponse, trackerSession));		
 	}
 	
 	protected String getScrapeUrl() {

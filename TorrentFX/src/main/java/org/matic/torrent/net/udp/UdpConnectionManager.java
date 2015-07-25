@@ -37,6 +37,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.matic.torrent.net.NetworkUtilities;
+import org.matic.torrent.tracking.Tracker;
 import org.matic.torrent.tracking.listeners.DhtResponseListener;
 import org.matic.torrent.tracking.listeners.UdpTrackerResponseListener;
 import org.matic.torrent.tracking.methods.dht.DhtResponse;
@@ -203,7 +204,8 @@ public final class UdpConnectionManager {
 				udpRequest.getReceiverHost(), udpRequest.getReceiverPort());
 		
 		if(resolvedRemoteAddress.isUnresolved()) {
-			notifyListenersOnRequestError(udpRequest, "Hostname not found");
+			notifyListenersOnRequestError(udpRequest,
+					Tracker.getStatusMessage(Tracker.Status.HOSTNAME_NOT_FOUND));
 			return;
 		}
 		
@@ -214,7 +216,8 @@ public final class UdpConnectionManager {
 		try {			
 			channel.send(outputBuffer, resolvedRemoteAddress);			
 		} catch (final IOException ioe) {	
-			notifyListenersOnRequestError(udpRequest, "Connection error: " + ioe.getMessage());
+			notifyListenersOnRequestError(udpRequest, 
+					Tracker.getStatusMessage(Tracker.Status.CONNECTION_TIMEOUT));
 		}
 	}
 	

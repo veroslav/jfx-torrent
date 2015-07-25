@@ -24,6 +24,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
 
 public final class UnitConverter {
 	
@@ -46,15 +47,54 @@ public final class UnitConverter {
     }
 	
 	/**
-	 * Return a humanly readable presentation of time in milliseconds
+	 * Return a humanly readable date presentation of milliseconds
 	 * 
 	 * @param timeMillis Time to format (in ms)
-	 * @return
+	 * @param timeZone Time zone to use for formatting
+	 * @return Date formatted to humanly readable representation
 	 */
-	public static String formatTime(final long timeMillis, final TimeZone timeZone) {
+	public static String formatMillisToDate(final long timeMillis, final TimeZone timeZone) {
 		DATE_FORMATTER.setTimeZone(timeZone);
 		final Date timeAsDate = new Date(timeMillis);		
 		return UnitConverter.DATE_FORMATTER.format(timeAsDate);
+	}
+	
+	/**
+	 * Return a humanly readable time presentation of milliseconds
+	 * 
+	 * @param timeMillis Time to format (in ms)
+	 * @return Time formatted to humanly readable representation
+	 */
+	public static String formatMillisToTime(final long timeMillis) {
+		long millis = timeMillis;
+		
+		final long days = TimeUnit.MILLISECONDS.toDays(millis);
+        millis -= TimeUnit.DAYS.toMillis(days);
+        final long hours = TimeUnit.MILLISECONDS.toHours(millis);
+        millis -= TimeUnit.HOURS.toMillis(hours);
+        final long minutes = TimeUnit.MILLISECONDS.toMinutes(millis);
+        millis -= TimeUnit.MINUTES.toMillis(minutes);
+        final long seconds = TimeUnit.MILLISECONDS.toSeconds(millis);
+		
+        final StringBuilder result = new StringBuilder();
+        
+        if(days > 0) {
+        	result.append(days);
+        	result.append("d ");
+        }
+        if(hours > 0) {
+        	result.append(hours);
+        	result.append("h ");
+        }
+        if(minutes > 0) {
+        	result.append(minutes);
+        	result.append("m ");
+        }
+
+    	result.append(seconds);
+    	result.append("s");
+        
+        return result.toString();
 	}
 	
 	/**
