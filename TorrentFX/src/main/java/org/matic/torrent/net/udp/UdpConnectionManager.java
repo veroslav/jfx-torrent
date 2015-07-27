@@ -35,6 +35,9 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import org.matic.torrent.net.NetworkUtilities;
 import org.matic.torrent.tracking.Tracker;
@@ -59,6 +62,12 @@ public final class UdpConnectionManager {
 	private static final int MAX_OUTPUT_PACKET_SIZE = 1024;
 	private static final int MAX_OUTGOING_MESSAGES = 30;
 	
+	private static final int REQUEST_EXECUTOR_WORKER_TIMEOUT = 60;		//60 seconds
+	private static final int REQUEST_EXECUTOR_THREAD_POOL_SIZE = 5;	//parallel requests at a time
+	private final ThreadPoolExecutor channelWriterExecutor = new ThreadPoolExecutor(
+			REQUEST_EXECUTOR_THREAD_POOL_SIZE, REQUEST_EXECUTOR_THREAD_POOL_SIZE, 
+			REQUEST_EXECUTOR_WORKER_TIMEOUT, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
+	
 	private final BlockingQueue<UdpRequest> outgoingMessages;
 	private final Set<UdpTrackerResponseListener> trackerListeners;
 	private final Set<DhtResponseListener> dhtListeners;
@@ -76,6 +85,7 @@ public final class UdpConnectionManager {
 		trackerListeners = new CopyOnWriteArraySet<>();
 		dhtListeners = new CopyOnWriteArraySet<>();
 		
+		channelWriterExecutor.allowCoreThreadTimeOut(true);
 		outputBuffer.order(ByteOrder.BIG_ENDIAN);
 	}
 	
@@ -134,7 +144,8 @@ public final class UdpConnectionManager {
 					}
 					//Check for any pending packets to be sent
 					while(!outgoingMessages.isEmpty()) {
-						writeToChannel(channel, outgoingMessages.poll());
+						final UdpRequest request =  outgoingMessages.poll();
+						channelWriterExecutor.execute(() -> writeToChannel(channel, request));						
 					}
 				}
 			}
@@ -142,6 +153,7 @@ public final class UdpConnectionManager {
 				System.err.println("UDP server was shutdown unexpectedly: " + ioe.getMessage());
 			}			
 			connectionManagerExecutor.shutdown();
+			channelWriterExecutor.shutdown();
 		});
 	}
 	
@@ -150,6 +162,7 @@ public final class UdpConnectionManager {
 	 */
 	public final void unmanage() {		
 		connectionManagerExecutor.shutdownNow();
+		channelWriterExecutor.shutdownNow();
 		if(connectionSelector != null) {
 			connectionSelector.wakeup();
 		}
@@ -200,24 +213,26 @@ public final class UdpConnectionManager {
 	}
 	
 	private void writeToChannel(final DatagramChannel channel, final UdpRequest udpRequest) {
-		final InetSocketAddress resolvedRemoteAddress = new InetSocketAddress(
+		final InetSocketAddress remoteAddress = new InetSocketAddress(
 				udpRequest.getReceiverHost(), udpRequest.getReceiverPort());
 		
-		if(resolvedRemoteAddress.isUnresolved()) {
+		if(remoteAddress.isUnresolved()) {
 			notifyListenersOnRequestError(udpRequest,
 					Tracker.getStatusMessage(Tracker.Status.HOSTNAME_NOT_FOUND));
 			return;
 		}
 		
-		outputBuffer.clear();
-		outputBuffer.put(udpRequest.getRequestData());
-		outputBuffer.flip();
-		
-		try {			
-			channel.send(outputBuffer, resolvedRemoteAddress);			
-		} catch (final IOException ioe) {	
-			notifyListenersOnRequestError(udpRequest, 
-					Tracker.getStatusMessage(Tracker.Status.CONNECTION_TIMEOUT));
+		synchronized(outputBuffer) {
+			outputBuffer.clear();
+			outputBuffer.put(udpRequest.getRequestData());
+			outputBuffer.flip();
+			
+			try {			
+				channel.send(outputBuffer, remoteAddress);			
+			} catch (final IOException ioe) {	
+				notifyListenersOnRequestError(udpRequest, 
+						Tracker.getStatusMessage(Tracker.Status.CONNECTION_TIMEOUT));
+			}
 		}
 	}
 	

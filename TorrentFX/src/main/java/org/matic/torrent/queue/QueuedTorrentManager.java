@@ -38,10 +38,7 @@ import org.matic.torrent.utils.UnitConverter;
 public final class QueuedTorrentManager {
 
 	private final Map<QueuedTorrent, Set<TrackerSession>> queuedTrackerSessions = new HashMap<>();
-	//private List<TrackerSession> activeTorrentTrackerSessions = null;
-	
-	public QueuedTorrentManager() {	}
-	
+
 	/**
 	 * Add a torrent to be managed
 	 * 
@@ -104,25 +101,27 @@ public final class QueuedTorrentManager {
 				final TrackerView trackerView = match.get();
 		
 				final Tracker.Status trackerStatus = ts.getTrackerStatus();
-				final String statusMessage = Tracker.getStatusMessage(trackerStatus);
 				final String trackerMessage = ts.getTrackerMessage();
+				final String statusMessage = trackerMessage != null && !trackerMessage.equals("null")?
+						trackerMessage : Tracker.getStatusMessage(trackerStatus);
 				
 				/* 	TODO: Move value formatting to TorrentView
 				 	TODO: Use <Long, String> instead of String (to allow for displaying
 				 		time values both as raw ints, and formatted as xd xh xm xs,
 				 		but also for correct sorting of tracker table columns) */
 				
-				if(trackerStatus != Tracker.Status.ANNOUNCING) {
-					trackerView.statusProperty().set(trackerStatus == Tracker.Status.TRACKER_ERROR?
-							trackerMessage : statusMessage);
-				}
-				trackerView.nextUpdateProperty().set(trackerStatus == Tracker.Status.ANNOUNCING?
-						statusMessage : UnitConverter.formatMillisToTime(ts.getInterval() - 
-								(System.currentTimeMillis() - ts.getLastTrackerResponse())));
+				trackerView.statusProperty().set(trackerStatus != Tracker.Status.UPDATING? statusMessage : "");
 				
-				final long interval = ts.getInterval();
-				trackerView.intervalProperty().set(interval > 0?
-					UnitConverter.formatMillisToTime(interval) : "");
+				final long lastTrackerResponse = trackerStatus == Tracker.Status.CONNECTION_TIMEOUT?
+						ts.getTracker().getLastResponse() : ts.getLastAnnounceResponse();
+				
+				final long nextUpdateValue = ts.getInterval() - (System.currentTimeMillis() - lastTrackerResponse);
+				trackerView.nextUpdateProperty().set(trackerStatus == Tracker.Status.UPDATING || nextUpdateValue < 1?
+						Tracker.getStatusMessage(trackerStatus) : UnitConverter.formatMillisToTime(nextUpdateValue));
+				
+				final long intervalValue = ts.getInterval();
+				trackerView.intervalProperty().set(intervalValue > 0?
+					UnitConverter.formatMillisToTime(intervalValue) : "");
 				
 				trackerView.minIntervalProperty().set(UnitConverter.formatMillisToTime(ts.getMinInterval()));
 				trackerView.downloadedProperty().set(ts.getDownloaded());

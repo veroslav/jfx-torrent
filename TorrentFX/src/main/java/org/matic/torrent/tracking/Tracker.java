@@ -36,7 +36,7 @@ public abstract class Tracker {
 	}
 	
 	public enum Status {
-		UNKNOWN, ANNOUNCING, HOSTNAME_NOT_FOUND, WORKING,
+		UNKNOWN, UPDATING, HOSTNAME_NOT_FOUND, WORKING,
 		TRACKER_ERROR, INVALID_URL, SCRAPE_OK,
 		SCRAPE_NOT_SUPPORTED, CONNECTION_TIMEOUT
 	}
@@ -48,10 +48,11 @@ public abstract class Tracker {
 	public static final long MIN_INTERVAL_DEFAULT_VALUE = 30000;	//30 seconds
 	
 	private static final String STATUS_SCRAPE_NOT_SUPPORTED_MESSAGE = "scrape not supported";
-	private static final String STATUS_CONNECTION_TIMEOUT_MESSAGE = "connect timeout";
 	private static final String STATUS_HOSTNAME_NOT_FOUND_MESSAGE = "hostname not found";
+	private static final String STATUS_CONNECTION_TIMEOUT_MESSAGE = "connect timeout";
+	private static final String STATUS_TRACKER_ERROR_MESSAGE = "tracker error";
 	private static final String STATUS_INVALID_URL_MESSAGE = "invalid url";
-	private static final String STATUS_ANNOUNCING_MESSAGE = "updating...";
+	private static final String STATUS_UPDATING_MESSAGE = "updating...";
 	private static final String STATUS_SCRAPE_OK_MESSAGE = "scrape ok";
 	private static final String STATUS_WORKING_MESSAGE = "working";
 	
@@ -81,8 +82,8 @@ public abstract class Tracker {
 	
 	public static String getStatusMessage(final Status status) {
 		switch(status) {
-			case ANNOUNCING:
-				return STATUS_ANNOUNCING_MESSAGE;
+			case UPDATING:
+				return STATUS_UPDATING_MESSAGE;
 			case HOSTNAME_NOT_FOUND:
 				return STATUS_HOSTNAME_NOT_FOUND_MESSAGE;
 			case WORKING:
@@ -95,6 +96,8 @@ public abstract class Tracker {
 				return STATUS_SCRAPE_NOT_SUPPORTED_MESSAGE;
 			case CONNECTION_TIMEOUT:
 				return STATUS_CONNECTION_TIMEOUT_MESSAGE;
+			case TRACKER_ERROR:
+				return STATUS_TRACKER_ERROR_MESSAGE;
 			default:
 				return "";
 		}

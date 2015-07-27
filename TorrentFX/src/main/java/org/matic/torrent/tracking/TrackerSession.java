@@ -41,7 +41,8 @@ public final class TrackerSession {
 	private AtomicInteger seeders = new AtomicInteger(0);	
 			
 	private AtomicLong minInterval = new AtomicLong(Tracker.MIN_INTERVAL_DEFAULT_VALUE);
-	private AtomicLong lastTrackerResponse = new AtomicLong(0);
+	private AtomicLong lastAnnounceResponse = new AtomicLong(0);
+	private AtomicLong lastScrapeResponse = new AtomicLong(0);
 	private AtomicLong interval = new AtomicLong(0);	
 	
 	private int transactionId = ClientProperties.generateUniqueId();	
@@ -116,11 +117,19 @@ public final class TrackerSession {
 	}
 
 	public long getLastTrackerResponse() {
-		return lastTrackerResponse.get();
+		return Math.max(lastAnnounceResponse.get(), lastScrapeResponse.get());
+	}
+	
+	public long getLastAnnounceResponse() {
+		return lastAnnounceResponse.get();
 	}
 
-	public void setLastTrackerResponse(final long lastTrackerResponse) {
-		this.lastTrackerResponse.set(lastTrackerResponse);		
+	public void setLastAnnounceResponse(final long lastAnnounceResponse) {
+		this.lastAnnounceResponse.set(lastAnnounceResponse);		
+	}
+	
+	public void setLastScrapeResponse(final long lastScrapeResponse) {
+		this.lastScrapeResponse.set(lastScrapeResponse);		
 	}
 	
 	public final int getTransactionId() {

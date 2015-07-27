@@ -20,13 +20,23 @@
 
 package org.matic.torrent.tracking;
 
-public abstract class TrackerRequest {
+public final class TrackerRequest {
 	
-	protected final TrackerSession trackerSession;
+	public enum Type { ANNOUNCE, SCRAPE }
 	
-	protected TrackerRequest(final TrackerSession trackerSession) {
-		this.trackerSession = trackerSession;
+	private final Runnable runnable;
+	private final Type type;
+	
+	public TrackerRequest(final Type type, final Runnable runnable) {
+		this.runnable = runnable;
+		this.type = type;
 	}
 
-	protected abstract void execute();
+	public final Runnable getRunnable() {
+		return runnable;
+	}
+
+	public final Type getType() {
+		return type;
+	}
 }

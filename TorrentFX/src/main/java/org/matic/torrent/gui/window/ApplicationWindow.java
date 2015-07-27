@@ -399,8 +399,12 @@ public final class ApplicationWindow {
         	detailsTabMap.put(tabNames[i], tab);
         }
         
+        final ScrollPane trackerTableScroll = new ScrollPane(trackerTable.getView());
+        trackerTableScroll.setFitToHeight(true);
+        trackerTableScroll.setFitToWidth(true);
+        
         detailsTabMap.get(DETAILS_TAB_FILES_NAME).setContent(torrentContentTree.getView());
-        detailsTabMap.get(TRACKERS_TAB_FILES_NAME).setContent(trackerTable.getView());
+        detailsTabMap.get(TRACKERS_TAB_FILES_NAME).setContent(trackerTableScroll);
         
         return tabList;
     }

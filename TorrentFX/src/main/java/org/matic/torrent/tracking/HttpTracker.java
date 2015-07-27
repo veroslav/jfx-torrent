@@ -374,7 +374,7 @@ public final class HttpTracker extends Tracker {
 		}
 		
 		final long incompleteValue = incomplete.getValue();
-		final long intervalValue = interval.getValue();
+		final long intervalValue = interval.getValue() * 1000;
 		final long completeValue = complete.getValue();
 		
 		final BinaryEncodedString warningMessage = (BinaryEncodedString)responseMap.get(
@@ -386,7 +386,7 @@ public final class HttpTracker extends Tracker {
 		
 		final BinaryEncodedInteger minInterval = (BinaryEncodedInteger)responseMap.get(
 				BinaryEncodingKeyNames.KEY_MIN_INTERVAL);
-		final Long minIntervalValue = minInterval != null? minInterval.getValue() : null;
+		final Long minIntervalValue = minInterval != null? minInterval.getValue() * 1000 : null;
 		
 		final BinaryEncodedString trackerId = (BinaryEncodedString)responseMap.get(
 				BinaryEncodingKeyNames.KEY_TRACKER_ID);

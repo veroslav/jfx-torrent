@@ -147,6 +147,9 @@ public final class UdpTracker extends Tracker {
 				ResourceManager.INSTANCE.getUdpTrackerConnectionManager().send(udpRequest);		
 			}
 		}
+		else {
+			connectionAttempts.set(0);
+		}
 		return connectionAttempt;
 	}
 	
