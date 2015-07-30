@@ -184,8 +184,8 @@ public final class ApplicationWindow {
     		guiUpdateInterval = Long.parseLong(updateIntervalProperty);
     	} 
     	catch(final NumberFormatException nfe) {}		
-		
-		return new PeriodicTask(this::updateGui, guiUpdateInterval);
+		    
+		return new PeriodicTask(() -> Platform.runLater(this::updateGui), guiUpdateInterval);
 	}
 	
 	private void updateGui() {		
@@ -197,6 +197,7 @@ public final class ApplicationWindow {
 				queuedTorrentManager.trackerSnapshot(
 					selectedTorrents.get(0).getQueuedTorrent(),
 					trackerTable.getTrackerViews());
+				trackerTable.sort();
 			}
 		}
 	}
@@ -508,7 +509,7 @@ public final class ApplicationWindow {
 					torrentOptions.getTorrentContents());
 			
 			final ObservableList<TrackerView> trackerViews = FXCollections.observableArrayList(
-					queuedTorrent.getTrackers().map(t -> new TrackerView(t)).collect(Collectors.toList()));
+					queuedTorrent.getTrackers().map(t -> new TrackerView(t, torrentStatus)).collect(Collectors.toList()));
 			
 			trackerViewMappings.put(queuedTorrent, trackerViews);
 			trackerTable.setContent(trackerViews);

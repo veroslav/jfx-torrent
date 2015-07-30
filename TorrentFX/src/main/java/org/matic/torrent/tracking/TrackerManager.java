@@ -754,12 +754,10 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 			else {
 				final int connectionAttempt = tracker.connect(transactionId);				
 				if(connectionAttempt > UdpTracker.MAX_CONNECTION_ATTEMPTS) {
-					final long lastResponse = System.currentTimeMillis();
-					tracker.setLastResponse(lastResponse);
+					tracker.setLastResponse(System.currentTimeMillis());
 					Arrays.stream(trackerSessions).forEach(ts -> {							
 						ts.setTrackerStatus(Tracker.Status.CONNECTION_TIMEOUT);
-						ts.setInterval(REQUEST_DELAY_ON_TRACKER_ERROR);						
-						//ts.setLastAnnounceResponse(lastResponse);						
+						ts.setInterval(REQUEST_DELAY_ON_TRACKER_ERROR);												
 						scheduleOnTrackerError(tracker, ts);						
 					});
 				}
@@ -774,8 +772,8 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 					announcement.getFuture().cancel(false);								
 					return announcement;
 			});
-			if(previousAnnouncement != null) {
-				trackerSession.setLastTrackerEvent(Tracker.Event.STOPPED);
+			trackerSession.setLastTrackerEvent(Tracker.Event.STOPPED);
+			if(previousAnnouncement != null) {				
 				final AnnounceParameters oldAnnouncement = previousAnnouncement.getAnnounceParameters();
 				if(isValidTrackerEvent(Tracker.Event.STOPPED, oldAnnouncement.getTrackerEvent())) {
 					scheduleAnnouncement(trackerSession, oldAnnouncement, REQUEST_DELAY_ON_TRACKER_ERROR);

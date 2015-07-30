@@ -65,7 +65,9 @@ public final class TableFactory {
 	/**
 	 * Build a table column that will contain a simple string value
 	 * 
+	 * @param <T> Type of data represented by the table
 	 * @param cellValueFactory How to set the cell values
+	 * @param valueConverter Function that converts T to string representation
 	 * @param columnWidth Preferred column width
 	 * @param alignmentStyle Column content alignment
 	 * @param columnName Column name displayed in the column header
@@ -73,7 +75,8 @@ public final class TableFactory {
 	 */
 	public static <T> TableColumn<T, String> buildSimpleStringColumn(
 			final Callback<CellDataFeatures<T, String>, ObservableValue<String>> cellValueFactory,
-			final int columnWidth, final String alignmentStyle, final String columnName) {
+			final Function<T, String> valueConverter, final int columnWidth, final String alignmentStyle,
+			final String columnName) {
 		final TableColumn<T, String> stringColumn = new TableColumn<>(columnName);
 		stringColumn.setGraphic(TableFactory.buildColumnHeader(
 				stringColumn, alignmentStyle));
@@ -90,8 +93,11 @@ public final class TableFactory {
 					setGraphic(null);
 				}
 				else {
-					valueLabel.setText(value);
+					final T item = this.getTableView().getItems().get(this.getTableRow().getIndex());					
+					
+					valueLabel.setText(valueConverter.apply(item));					
 	                this.setGraphic(valueLabel);
+	                
 	                if(GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME.equals(alignmentStyle)) {
 	                	this.setAlignment(Pos.BASELINE_RIGHT);
 		                super.setPadding(GuiUtils.rightPadding());
@@ -109,8 +115,9 @@ public final class TableFactory {
 	/**
 	 * Build a table column that will contain a simple number value
 	 * 
+	 * @param <T> Type of data represented by the table
 	 * @param cellValueFactory How to set the cell values
-	 * @param valueConverter Function that converts number to string representation
+	 * @param valueConverter Function that converts T to string representation
 	 * @param columnWidth Preferred column width
 	 * @param alignmentStyle Column content alignment
 	 * @param columnName Column name displayed in the column header
@@ -118,7 +125,7 @@ public final class TableFactory {
 	 */
 	public static <T> TableColumn<T, Number> buildSimpleNumberColumn(
 			final Callback<CellDataFeatures<T, Number>, ObservableValue<Number>> cellValueFactory,
-			final Function<Number, String> valueConverter, final int columnWidth, 
+			final Function<T, String> valueConverter, final int columnWidth, 
 			final String alignmentStyle, final String columnName) {
 		final TableColumn<T, Number> numberColumn = new TableColumn<T, Number>(columnName);
 		numberColumn.setGraphic(TableFactory.buildColumnHeader(numberColumn, alignmentStyle));
@@ -130,6 +137,7 @@ public final class TableFactory {
 			@Override
 			protected final void updateItem(final Number value, final boolean empty) {
 				super.updateItem(value, empty);
+				
 				if(empty) {
 					setText(null);
 					setGraphic(null);
@@ -137,8 +145,11 @@ public final class TableFactory {
 				else {
 					if(this.getTableRow().getItem() == null) {
 						return;
-					}				
-					valueLabel.setText(valueConverter.apply(value));
+					}	
+					
+					final T item = this.getTableView().getItems().get(this.getTableRow().getIndex());
+					
+					valueLabel.setText(valueConverter.apply(item));
 	                this.setGraphic(valueLabel);
 	                
 	                if(GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME.equals(alignmentStyle)) {

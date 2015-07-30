@@ -20,47 +20,88 @@
 
 package org.matic.torrent.gui.model;
 
+import org.matic.torrent.queue.QueuedTorrent;
+import org.matic.torrent.tracking.Tracker;
+
 import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.LongProperty;
 import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleLongProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 
 public final class TrackerView {
+
+	private final SimpleStringProperty status = new SimpleStringProperty(Tracker.Status.UNKNOWN.name());
+	private final IntegerProperty downloaded = new SimpleIntegerProperty(0);
+	private final IntegerProperty leechers = new SimpleIntegerProperty(0);
+	private final IntegerProperty seeds = new SimpleIntegerProperty(0);
+	private final LongProperty minInterval = new SimpleLongProperty(0);
+	private final LongProperty nextUpdate = new SimpleLongProperty(0);
+	private final LongProperty interval = new SimpleLongProperty(0);
 	
 	private final StringProperty trackerName;
-	private final StringProperty minInterval;
-	private final StringProperty nextUpdate;
-	private final StringProperty interval;
-	private final StringProperty status;
-	
-	private final IntegerProperty downloaded;
-	private final IntegerProperty leechers;
-	private final IntegerProperty seeds;
 
-	public TrackerView(final String trackerName) {
-		this.minInterval = new SimpleStringProperty("");
+	private Tracker.Status trackerStatus = Tracker.Status.UNKNOWN;
+	private QueuedTorrent.Status torrentStatus;	
+	private long lastTrackerResponse = 0;
+	private String trackerMessage = "";
+
+	public TrackerView(final String trackerName, final QueuedTorrent.Status torrentStatus) {
 		this.trackerName = new SimpleStringProperty(trackerName);
-		this.downloaded = new SimpleIntegerProperty(0);
-		this.nextUpdate = new SimpleStringProperty("");
-		this.interval = new SimpleStringProperty("");
-		this.leechers = new SimpleIntegerProperty(0);
-		this.status = new SimpleStringProperty("");
-		this.seeds = new SimpleIntegerProperty(0);				
+		this.torrentStatus = torrentStatus;
+	}
+		
+	public QueuedTorrent.Status getTorrentStatus() {
+		return torrentStatus;
+	}
+
+	public void setTorrentStatus(final QueuedTorrent.Status torrentStatus) {
+		this.torrentStatus = torrentStatus;
+	}
+
+	public Tracker.Status getTrackerStatus() {
+		return trackerStatus;
 	}
 	
-	public final String getMinInterval() {
+	public final StringProperty statusProperty() {
+		return status;
+	}
+
+	public void setTrackerStatus(final Tracker.Status trackerStatus) {
+		this.trackerStatus = trackerStatus;
+		this.status.set(this.trackerStatus.name());
+	}
+
+	public long getLastTrackerResponse() {
+		return lastTrackerResponse;
+	}
+
+	public void setLastTrackerResponse(final long lastTrackerResponse) {
+		this.lastTrackerResponse = lastTrackerResponse;
+	}
+
+	public String getTrackerMessage() {
+		return trackerMessage;
+	}
+
+	public void setTrackerMessage(final String trackerMessage) {
+		this.trackerMessage = trackerMessage;
+	}
+
+	public final long getMinInterval() {
 		return minInterval.get();
 	}
 	
-	public final StringProperty minIntervalProperty() {
+	public final LongProperty minIntervalProperty() {
 		return minInterval;
 	}
 
-	public final String getInterval() {
+	public final long getInterval() {
 		return interval.get();
 	}
 	
-	public final StringProperty intervalProperty() {
+	public final LongProperty intervalProperty() {
 		return interval;
 	}
 
@@ -72,11 +113,11 @@ public final class TrackerView {
 		return downloaded;
 	}
 	
-	public String getNextUpdate() {
+	public long getNextUpdate() {
 		return nextUpdate.get();
 	}
 	
-	public final StringProperty nextUpdateProperty() {
+	public final LongProperty nextUpdateProperty() {
 		return nextUpdate;
 	}
 	
@@ -94,14 +135,6 @@ public final class TrackerView {
 	
 	public final IntegerProperty seedsProperty() {
 		return seeds;
-	}
-	
-	public String getStatus() {
-		return status.get();
-	}
-	
-	public final StringProperty statusProperty() {
-		return status;
 	}
 	
 	public String getTrackerName() {

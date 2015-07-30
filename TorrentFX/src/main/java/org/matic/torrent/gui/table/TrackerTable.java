@@ -20,16 +20,33 @@
 
 package org.matic.torrent.gui.table;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import javafx.scene.Node;
-import javafx.scene.control.TableView;
+import java.util.function.Function;
 
 import org.matic.torrent.gui.GuiUtils;
 import org.matic.torrent.gui.model.TrackerView;
+import org.matic.torrent.queue.QueuedTorrent;
+import org.matic.torrent.tracking.Tracker;
+import org.matic.torrent.utils.UnitConverter;
 
-public class TrackerTable {
+import javafx.scene.Node;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+
+public class TrackerTable {	
+	
+	private static final String MIN_INTERVAL_COLUMN_NAME = "Min Interval";
+	private static final String DOWNLOADED_COLUMN_NAME = "Downloaded";
+	private static final String UPDATE_IN_COLUMN_NAME = "Update In";	
+	private static final String INTERVAL_COLUMN_NAME = "Interval";
+	private static final String STATUS_COLUMN_NAME = "Status";
+	private static final String SEEDS_COLUMN_NAME = "Seeds";
+	private static final String PEERS_COLUMN_NAME = "Peers";
+	private static final String NAME_COLUMN_NAME = "Name";
+	
+	private static final String TRACKER_MESSAGE_NULL = "null";
 
 	private final TableView<TrackerView> trackerTable = new TableView<>();
 	
@@ -50,6 +67,12 @@ public class TrackerTable {
 		return trackerTable.getItems();
 	}
 	
+	public final void sort() {
+		final List<TableColumn<TrackerView, ?>> sortOrder = new ArrayList<>(trackerTable.getSortOrder());
+		trackerTable.getSortOrder().clear();
+		trackerTable.getSortOrder().addAll(sortOrder);
+	}
+	
 	private void initComponents() {
 		trackerTable.setPlaceholder(GuiUtils.getEmptyTablePlaceholder());
 		trackerTable.setTableMenuButtonVisible(true);
@@ -57,24 +80,54 @@ public class TrackerTable {
 		addColumns();
 	}
 	
-	private void addColumns() {		
+	private void addColumns() {	
+		final Function<TrackerView, String> updateInValueConverter = tv -> {			
+			if(tv.getTorrentStatus() == QueuedTorrent.Status.STOPPED) {
+				return "";
+			}
+			final long nextUpdateValue = tv.getNextUpdate();
+			if(nextUpdateValue < 1000) {
+				return Tracker.getStatusMessage(Tracker.Status.UPDATING);					
+			}
+			else {
+				return UnitConverter.formatMillisToTime(nextUpdateValue);
+			}			
+		}; 
+		
+		final Function<TrackerView, String> trackerStatusConverter = tv -> {
+			final String trackerMessage = tv.getTrackerMessage();
+			final Tracker.Status trackerStatus = tv.getTrackerStatus();
+			final String statusMessage = trackerMessage != null && !trackerMessage.equals(TRACKER_MESSAGE_NULL)?
+				trackerMessage : Tracker.getStatusMessage(trackerStatus);
+			
+			return trackerStatus != Tracker.Status.UPDATING && tv.getNextUpdate() >= 1000? statusMessage : "";					
+		};
+		
+		final Function<TrackerView, String> intervalValueConverter = tv -> {
+			final long interval = tv.getInterval(); 
+			return interval > 0? UnitConverter.formatMillisToTime(interval) : "";
+		};
+		
+		final Function<TrackerView, String> minIntervalValueConverter = tv ->
+			UnitConverter.formatMillisToTime(tv.getMinInterval());
+		
 		trackerTable.getColumns().addAll(Arrays.asList(
-			TableFactory.buildSimpleStringColumn(tv -> tv.getValue().trackerNameProperty(), GuiUtils.NAME_COLUMN_PREFERRED_SIZE,
-					GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "Name"),
-			TableFactory.buildSimpleStringColumn(tv -> tv.getValue().statusProperty(), 140, 
-					GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "Status"),
-			TableFactory.buildSimpleStringColumn(
-					tv -> tv.getValue().nextUpdateProperty(), 120, 
-					GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "Update In"),
-			TableFactory.buildSimpleStringColumn(tv -> tv.getValue().intervalProperty(),
-					70, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "Interval"),
-			TableFactory.buildSimpleStringColumn(tv -> tv.getValue().minIntervalProperty(),
-					90, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "Min Interval"),
+			TableFactory.buildSimpleStringColumn(tv -> tv.getValue().trackerNameProperty(),
+					tv -> tv.getTrackerName(), GuiUtils.NAME_COLUMN_PREFERRED_SIZE,
+					GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, NAME_COLUMN_NAME),
+			TableFactory.buildSimpleStringColumn(tv -> tv.getValue().statusProperty(),
+					trackerStatusConverter, 140, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, STATUS_COLUMN_NAME),
+			TableFactory.buildSimpleNumberColumn(tv -> tv.getValue().nextUpdateProperty(),
+					updateInValueConverter, 120, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, UPDATE_IN_COLUMN_NAME),
+			TableFactory.buildSimpleNumberColumn(tv -> tv.getValue().intervalProperty(),
+					intervalValueConverter, 70, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, INTERVAL_COLUMN_NAME),
+			TableFactory.buildSimpleNumberColumn(tv -> tv.getValue().minIntervalProperty(),
+					minIntervalValueConverter, 90, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, MIN_INTERVAL_COLUMN_NAME),
 			TableFactory.buildSimpleNumberColumn(tv -> tv.getValue().seedsProperty(), 
-					val -> String.valueOf(val), 70, GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "Seeds"),
+					val -> String.valueOf(val.getSeeds()), 70, GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, SEEDS_COLUMN_NAME),
 			TableFactory.buildSimpleNumberColumn(tv -> tv.getValue().leechersProperty(),
-					val -> String.valueOf(val), 70, GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "Peers"),
+					val -> String.valueOf(val.getLeechers()), 70, GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, PEERS_COLUMN_NAME),
 			TableFactory.buildSimpleNumberColumn(tv -> tv.getValue().downloadedProperty(),
-					val -> String.valueOf(val), 90, GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "Downloaded")));
+					val -> String.valueOf(val.getDownloaded()), 90, GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, DOWNLOADED_COLUMN_NAME)));
 	}
 }

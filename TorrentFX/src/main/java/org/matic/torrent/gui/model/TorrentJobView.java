@@ -55,6 +55,10 @@ public final class TorrentJobView {
 		return priority;
 	}
 	
+	public final int getPriority() {
+		return priority.get();
+	}
+	
 	public String getFileName() {
 		return fileName;
 	}
