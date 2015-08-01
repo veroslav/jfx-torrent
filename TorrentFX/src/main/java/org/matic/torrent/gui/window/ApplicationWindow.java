@@ -194,7 +194,7 @@ public final class ApplicationWindow {
 		if(!selectedTorrents.isEmpty()) {
 			//Render tracker statistics only if Trackers tab is selected
 			if(detailsTabMap.get(TRACKERS_TAB_FILES_NAME).isSelected()) {
-				queuedTorrentManager.trackerSnapshot(
+				ResourceManager.INSTANCE.getTrackerManager().trackerSnapshot(
 					selectedTorrents.get(0).getQueuedTorrent(),
 					trackerTable.getTrackerViews());
 				trackerTable.sort();

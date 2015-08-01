@@ -161,12 +161,12 @@ public final class HttpTracker extends Tracker {
 	 */
 	@Override
 	protected final void announce(final AnnounceParameters announceParameters, final TrackerSession trackerSession) {		
-		final String requestUrl = buildAnnounceRequestUrl(announceParameters, trackerSession.getInfoHash());
+		final String requestUrl = buildAnnounceRequestUrl(announceParameters, trackerSession.getTorrent().getInfoHash());
 		final TrackerResponse trackerResponse = requestUrl == null? new TrackerResponse(
 				TrackerResponse.Type.INVALID_URL, "Unsupported encoding") : sendRequest(requestUrl);
 				
 		final AnnounceResponse announceResponse = trackerResponse.getType() == TrackerResponse.Type.OK?
-				buildAnnounceResponse(trackerResponse.getResponseData(), trackerSession.getInfoHash()) :
+				buildAnnounceResponse(trackerResponse.getResponseData(), trackerSession.getTorrent().getInfoHash()) :
 					new AnnounceResponse(trackerResponse.getType(), trackerResponse.getMessage());
 		
 		trackerSession.setLastTrackerEvent(announceParameters.getTrackerEvent());
@@ -194,8 +194,8 @@ public final class HttpTracker extends Tracker {
 		final StringBuilder result = new StringBuilder(scrapeUrl);
 		result.append("?");
 		
-		result.append(Arrays.stream(trackerSessions).map(ts -> "info_hash=" +
-				HashUtilities.urlEncodeBytes(ts.getInfoHash().getBytes())).collect(Collectors.joining("&")));
+		result.append(Arrays.stream(trackerSessions).map(ts -> "info_hash=" + HashUtilities.urlEncodeBytes(
+				ts.getTorrent().getInfoHash().getBytes())).collect(Collectors.joining("&")));
 
 		return result.toString();
 	}
@@ -310,7 +310,7 @@ public final class HttpTracker extends Tracker {
 		
 		Arrays.stream(trackerSessions).forEach(ts -> {
 			final BinaryEncodedDictionary scrapeInfo = (BinaryEncodedDictionary)files.get(
-					new BinaryEncodedString(ts.getInfoHash().getBytes()));
+					new BinaryEncodedString(ts.getTorrent().getInfoHash().getBytes()));
 			if(scrapeInfo != null) {
 				final BinaryEncodedInteger complete = (BinaryEncodedInteger)scrapeInfo.get(
 						BinaryEncodingKeyNames.KEY_COMPLETE);

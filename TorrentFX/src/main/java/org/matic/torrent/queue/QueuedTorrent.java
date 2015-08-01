@@ -100,14 +100,7 @@ public final class QueuedTorrent implements Comparable<QueuedTorrent> {
 			if (other.infoHash != null)
 				return false;
 		} else if (!infoHash.equals(other.infoHash))
-			return false;
-		if (priority != other.priority)
-			return false;
-		if (trackers == null) {
-			if (other.trackers != null)
-				return false;
-		} else if (!trackers.equals(other.trackers))
-			return false;
+			return false;		
 		return true;
 	}
 }

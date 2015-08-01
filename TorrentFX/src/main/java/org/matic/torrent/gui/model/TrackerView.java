@@ -20,9 +20,6 @@
 
 package org.matic.torrent.gui.model;
 
-import org.matic.torrent.queue.QueuedTorrent;
-import org.matic.torrent.tracking.Tracker;
-
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.LongProperty;
 import javafx.beans.property.SimpleIntegerProperty;
@@ -30,22 +27,22 @@ import javafx.beans.property.SimpleLongProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 
+import org.matic.torrent.queue.QueuedTorrent;
+
 public final class TrackerView {
 
-	private final SimpleStringProperty status = new SimpleStringProperty(Tracker.Status.UNKNOWN.name());
 	private final IntegerProperty downloaded = new SimpleIntegerProperty(0);
 	private final IntegerProperty leechers = new SimpleIntegerProperty(0);
 	private final IntegerProperty seeds = new SimpleIntegerProperty(0);
 	private final LongProperty minInterval = new SimpleLongProperty(0);
 	private final LongProperty nextUpdate = new SimpleLongProperty(0);
 	private final LongProperty interval = new SimpleLongProperty(0);
-	
+
+	private final StringProperty status = new SimpleStringProperty();
 	private final StringProperty trackerName;
 
-	private Tracker.Status trackerStatus = Tracker.Status.UNKNOWN;
 	private QueuedTorrent.Status torrentStatus;	
 	private long lastTrackerResponse = 0;
-	private String trackerMessage = "";
 
 	public TrackerView(final String trackerName, final QueuedTorrent.Status torrentStatus) {
 		this.trackerName = new SimpleStringProperty(trackerName);
@@ -60,17 +57,16 @@ public final class TrackerView {
 		this.torrentStatus = torrentStatus;
 	}
 
-	public Tracker.Status getTrackerStatus() {
-		return trackerStatus;
+	public String getStatus() {
+		return status.get();
 	}
 	
 	public final StringProperty statusProperty() {
 		return status;
 	}
 
-	public void setTrackerStatus(final Tracker.Status trackerStatus) {
-		this.trackerStatus = trackerStatus;
-		this.status.set(this.trackerStatus.name());
+	public void setStatus(final String status) {
+		this.status.set(status);
 	}
 
 	public long getLastTrackerResponse() {
@@ -79,14 +75,6 @@ public final class TrackerView {
 
 	public void setLastTrackerResponse(final long lastTrackerResponse) {
 		this.lastTrackerResponse = lastTrackerResponse;
-	}
-
-	public String getTrackerMessage() {
-		return trackerMessage;
-	}
-
-	public void setTrackerMessage(final String trackerMessage) {
-		this.trackerMessage = trackerMessage;
 	}
 
 	public final long getMinInterval() {

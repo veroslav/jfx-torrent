@@ -22,20 +22,19 @@ package org.matic.torrent.queue;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import org.matic.torrent.gui.model.TrackerView;
 import org.matic.torrent.hash.InfoHash;
-import org.matic.torrent.tracking.Tracker;
 import org.matic.torrent.tracking.TrackerManager;
 import org.matic.torrent.tracking.TrackerSession;
 import org.matic.torrent.utils.ResourceManager;
 
 public final class QueuedTorrentManager {
 
+	//TODO: Simplify this to a Set<QueuedTorrent> (don't need TrackerSession anymore)
+	//TODO: Move trackers from QueuedTorrent to Map<QueuedTorrent, Set<String> trackers>
 	private final Map<QueuedTorrent, Set<TrackerSession>> queuedTrackerSessions = new HashMap<>();
 
 	/**
@@ -49,12 +48,10 @@ public final class QueuedTorrentManager {
 			return false;
 		}
 		
-		final InfoHash infoHash = torrent.getInfoHash();
 		final TrackerManager trackerManager = ResourceManager.INSTANCE.getTrackerManager();
 		torrent.getTrackers().forEach(t -> {
-			
 			final TrackerSession trackerSession = trackerManager.addTracker(
-				t, infoHash, torrent.getStatus() != QueuedTorrent.Status.STOPPED);
+				t, torrent, torrent.getStatus() != QueuedTorrent.Status.STOPPED);
 			
 			if(trackerSession != null) {
 				queuedTrackerSessions.compute(torrent, (key, value) -> {
@@ -82,46 +79,6 @@ public final class QueuedTorrentManager {
 		}
 		
 		return removed;
-	}
-	
-	/**
-	 * Update tracker view beans with the latest tracker statistics for a torrent
-	 * 
-	 * @param queuedTorrent Target torrent
-	 * @param trackerViews List of tracker views to update
-	 */
-	public final void trackerSnapshot(final QueuedTorrent queuedTorrent, 
-			final List<TrackerView> trackerViews) {		
-		queuedTrackerSessions.get(queuedTorrent).stream().forEach(ts -> {
-			final Optional<TrackerView> match = trackerViews.stream().filter(tv ->
-				tv.getTrackerName().equals(ts.getTracker().getUrl())
-			).findFirst();
-			if(match.isPresent()) {
-				final TrackerView trackerView = match.get();
-		
-				//TODO: Move entire method to TrackerManager
-				
-				final Tracker.Status trackerStatus = ts.getTrackerStatus();
-				final String trackerMessage = ts.getTrackerMessage();				
-				
-				final long lastTrackerResponse = trackerStatus == Tracker.Status.CONNECTION_TIMEOUT?
-						ts.getTracker().getLastResponse() : ts.getLastAnnounceResponse();
-				
-				final long nextUpdateValue = ts.getInterval() - (System.currentTimeMillis() - lastTrackerResponse);				
-												
-				trackerView.setLastTrackerResponse(lastTrackerResponse);				
-				trackerView.setTorrentStatus(queuedTorrent.getStatus());
-				trackerView.setTrackerMessage(trackerMessage);
-				trackerView.setTrackerStatus(trackerStatus);
-				trackerView.nextUpdateProperty().set(nextUpdateValue);												
-				trackerView.intervalProperty().set(ts.getInterval());				
-				trackerView.minIntervalProperty().set(ts.getMinInterval());
-				
-				trackerView.downloadedProperty().set(ts.getDownloaded());
-				trackerView.leechersProperty().set(ts.getLeechers());				
-				trackerView.seedsProperty().set(ts.getSeeders());
-			}
-		});
 	}
 	
 	/**

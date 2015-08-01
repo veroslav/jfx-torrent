@@ -23,14 +23,14 @@ package org.matic.torrent.tracking;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.peer.ClientProperties;
+import org.matic.torrent.queue.QueuedTorrent;
 
 public final class TrackerSession {
 
 	private volatile Tracker.Event lastTrackerEvent = Tracker.Event.STOPPED;
 	
-	private final InfoHash infoHash;	
+	private final QueuedTorrent queuedTorrent;	
 	private final Tracker tracker;
 	
 	private Tracker.Status trackerStatus = Tracker.Status.UNKNOWN;
@@ -47,8 +47,8 @@ public final class TrackerSession {
 	
 	private int transactionId = ClientProperties.generateUniqueId();	
 
-	public TrackerSession(final InfoHash infoHash, final Tracker tracker) {
-		this.infoHash = infoHash;
+	public TrackerSession(final QueuedTorrent queuedTorrent, final Tracker tracker) {
+		this.queuedTorrent = queuedTorrent;
 		this.tracker = tracker;
 	}
 	
@@ -136,8 +136,8 @@ public final class TrackerSession {
 		return transactionId;
 	}
 	
-	public InfoHash getInfoHash() {
-		return infoHash;
+	public QueuedTorrent getTorrent() {
+		return queuedTorrent;
 	}
 	
 	public Tracker.Event getLastTrackerEvent() {
@@ -157,7 +157,7 @@ public final class TrackerSession {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result
-				+ ((infoHash == null) ? 0 : infoHash.hashCode());
+				+ ((queuedTorrent == null) ? 0 : queuedTorrent.hashCode());
 		result = prime * result + ((tracker == null) ? 0 : tracker.hashCode());
 		return result;
 	}
@@ -171,10 +171,10 @@ public final class TrackerSession {
 		if (getClass() != obj.getClass())
 			return false;
 		TrackerSession other = (TrackerSession) obj;
-		if (infoHash == null) {
-			if (other.infoHash != null)
+		if (queuedTorrent == null) {
+			if (other.queuedTorrent != null)
 				return false;
-		} else if (!infoHash.equals(other.infoHash))
+		} else if (!queuedTorrent.equals(other.queuedTorrent))
 			return false;
 		if (tracker == null) {
 			if (other.tracker != null)
@@ -186,7 +186,7 @@ public final class TrackerSession {
 
 	@Override
 	public String toString() {
-		return "TrackerSession [infoHash=" + infoHash + ", tracker=" + tracker
+		return "TrackerSession [infoHash=" + queuedTorrent + ", tracker=" + tracker
 				+ "]";
 	}
 }

@@ -49,12 +49,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import org.matic.torrent.gui.model.TrackerView;
 import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.net.NetworkUtilities;
 import org.matic.torrent.net.pwp.PwpPeer;
 import org.matic.torrent.net.udp.UdpRequest;
 import org.matic.torrent.net.udp.UdpTrackerResponse;
 import org.matic.torrent.peer.ClientProperties;
+import org.matic.torrent.queue.QueuedTorrent;
 import org.matic.torrent.tracking.Tracker.Event;
 import org.matic.torrent.tracking.TrackerRequest.Type;
 import org.matic.torrent.tracking.listeners.HttpTrackerResponseListener;
@@ -68,6 +70,8 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 	private static final long UDP_TRACKER_CONNECTION_ID_TIMEOUT = 60000; 	//60 s		
 	private static final int UDP_TRACKER_RESPONSE_PEER_LENGTH = 6; 		//6 bytes [IP (4) + PORT (2)]
 	private static final int REQUEST_EXECUTOR_WORKER_TIMEOUT = 60000;		//60 seconds
+	
+	private static final String TRACKER_MESSAGE_NULL = "null";		//Sometimes returned as a tracker message 
 	
 	private static final int SCHEDULER_POOL_COUNT = 1;
 	private final ScheduledExecutorService requestScheduler = 
@@ -226,6 +230,52 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 		final UdpTrackerResponse response = new UdpTrackerResponse(baos.toByteArray(), UdpTracker.ACTION_ERROR, message);
 		onUdpTrackerError(response);
 	}
+	
+	/**
+	 * Update tracker view beans with the latest tracker statistics for a torrent
+	 * 
+	 * @param queuedTorrent Target torrent
+	 * @param trackerViews List of tracker views to update
+	 */
+	
+	//TODO: Cache and use QueuedTorrent instead of iterating trackerSessions each time
+	
+	public final void trackerSnapshot(final QueuedTorrent queuedTorrent, 
+			final List<TrackerView> trackerViews) {		
+		trackerSessions.stream().filter(s -> s.getTorrent().getInfoHash().equals(
+				queuedTorrent.getInfoHash())).forEach(ts -> {
+			final Optional<TrackerView> match = trackerViews.stream().filter(tv ->
+				tv.getTrackerName().equals(ts.getTracker().getUrl())
+			).findFirst();
+			if(match.isPresent()) {
+				final TrackerView trackerView = match.get();
+				final Tracker.Status trackerStatus = ts.getTrackerStatus();
+				final String trackerMessage = ts.getTrackerMessage();				
+				
+				final long lastTrackerResponse = trackerStatus == Tracker.Status.CONNECTION_TIMEOUT?
+					ts.getTracker().getLastResponse() : ts.getLastAnnounceResponse();
+				
+				final long nextUpdateValue = ts.getInterval() - (System.currentTimeMillis() - lastTrackerResponse);	
+				
+				final String statusMessage = trackerMessage != null && !trackerMessage.equals(TRACKER_MESSAGE_NULL)?
+					trackerMessage : Tracker.getStatusMessage(trackerStatus);
+				
+				final String displayedMessage = trackerStatus != Tracker.Status.UPDATING &&
+					nextUpdateValue >= 1000? statusMessage : "";
+												
+				trackerView.setLastTrackerResponse(lastTrackerResponse);				
+				trackerView.setTorrentStatus(queuedTorrent.getStatus());
+				trackerView.setStatus(displayedMessage);
+				trackerView.nextUpdateProperty().set(nextUpdateValue);												
+				trackerView.intervalProperty().set(ts.getInterval());				
+				trackerView.minIntervalProperty().set(ts.getMinInterval());
+				
+				trackerView.downloadedProperty().set(ts.getDownloaded());
+				trackerView.leechersProperty().set(ts.getLeechers());				
+				trackerView.seedsProperty().set(ts.getSeeders());
+			}
+		});
+	}
 
 	/**
 	 * Issue a tracker announce manually (explicitly by the user or when torrent state changes)
@@ -239,7 +289,7 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 			final AnnounceParameters announceParameters) {
 		synchronized(trackerSessions) {
 			final Optional<TrackerSession> match = trackerSessions.stream().filter(
-					t -> t.getInfoHash().equals(infoHash) && t.getTracker().equals(tracker)).findFirst();
+					t -> t.getTorrent().equals(infoHash) && t.getTracker().equals(tracker)).findFirst();
 			if(!match.isPresent()) {
 				return false;
 			}
@@ -260,21 +310,21 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 	 * @return Torrent tracker sessions
 	 */
 	public List<TrackerSession> getTrackers(final InfoHash infoHash) {
-		return trackerSessions.stream().filter(t -> t.getInfoHash().equals(infoHash)).collect(Collectors.toList());
+		return trackerSessions.stream().filter(t -> t.getTorrent().equals(infoHash)).collect(Collectors.toList());
 	}
 	
 	/**
 	 * Add a new tracker for a torrent
 	 * 
 	 * @param trackerUrl URL of the tracker being added
-	 * @param infoHash Info hash of the torrent being tracked
+	 * @param queuedTorrent Torrent being tracked
 	 * @param shouldAnnounce Whether to announce to the tracker
 	 * @return Created tracker session or null, if session already exists 
 	 */
-	public TrackerSession addTracker(final String trackerUrl, final InfoHash infoHash,
+	public TrackerSession addTracker(final String trackerUrl, final QueuedTorrent queuedTorrent,
 			final boolean shouldAnnounce) {		
 		final Tracker tracker = initTracker(trackerUrl);			
-		final TrackerSession trackerSession = new TrackerSession(infoHash, tracker); 		
+		final TrackerSession trackerSession = new TrackerSession(queuedTorrent, tracker); 		
 		
 		synchronized(trackerSessions) {			
 			if(!trackerSessions.add(trackerSession)) {
@@ -314,7 +364,7 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 	public final boolean removeTracker(final String trackerUrl, final InfoHash infoHash) {		
 		synchronized(trackerSessions) {
 			final List<TrackerSession> match = trackerSessions.stream().filter(
-					t -> t.getInfoHash().equals(infoHash) && t.getTracker().getUrl().equals(trackerUrl))
+					t -> t.getTorrent().equals(infoHash) && t.getTracker().getUrl().equals(trackerUrl))
 						.collect(Collectors.toList());
 			
 			return removeSessions(match) > 0;
@@ -331,7 +381,7 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 		synchronized(trackerSessions) {		
 			//Check if any tracked torrents match supplied info hash
 			final List<TrackerSession> matchList = trackerSessions.stream().filter(
-					t -> t.getInfoHash().equals(torrentInfoHash))
+					t -> t.getTorrent().equals(torrentInfoHash))
 					.collect(Collectors.toList());
 			
 			return removeSessions(matchList) > 0;					
@@ -491,7 +541,8 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 						"Announce interval: " + interval);*/
 				
 				final AnnounceResponse announceResponse = new AnnounceResponse(TrackerResponse.Type.OK,
-						null, interval, null, null, seeders, leechers, extractUdpTrackerPeers(dis, trackerSession.getInfoHash()));		
+						null, interval, null, null, seeders, leechers, extractUdpTrackerPeers(
+								dis, trackerSession.getTorrent().getInfoHash()));		
 				onAnnounceResponseReceived(announceResponse, trackerSession);
 			}
 		}

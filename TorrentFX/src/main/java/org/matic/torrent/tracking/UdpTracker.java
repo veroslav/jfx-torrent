@@ -116,8 +116,8 @@ public final class UdpTracker extends Tracker {
 	@Override
 	protected void announce(final AnnounceParameters announceParameters,
 			final TrackerSession trackerSession) {
-		final UdpRequest announceRequest = buildAnnounceRequest(announceParameters, trackerSession.getInfoHash(),
-				trackerSession.getTransactionId());
+		final UdpRequest announceRequest = buildAnnounceRequest(announceParameters,
+				trackerSession.getTorrent().getInfoHash(), trackerSession.getTransactionId());
 		
 		if(announceRequest != null) {
 			trackerSession.setLastTrackerEvent(announceParameters.getTrackerEvent());
@@ -257,7 +257,7 @@ public final class UdpTracker extends Tracker {
 			dos.writeInt(super.getScrapeTransactionId());
 			
 			for(final TrackerSession trackerSession : trackerSessions) {
-				dos.write(trackerSession.getInfoHash().getBytes());
+				dos.write(trackerSession.getTorrent().getInfoHash().getBytes());
 			}
 		}
 		catch(final IOException ioe) {

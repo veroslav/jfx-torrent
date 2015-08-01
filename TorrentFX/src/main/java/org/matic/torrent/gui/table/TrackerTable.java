@@ -25,15 +25,15 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 
+import javafx.scene.Node;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+
 import org.matic.torrent.gui.GuiUtils;
 import org.matic.torrent.gui.model.TrackerView;
 import org.matic.torrent.queue.QueuedTorrent;
 import org.matic.torrent.tracking.Tracker;
 import org.matic.torrent.utils.UnitConverter;
-
-import javafx.scene.Node;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
 
 public class TrackerTable {	
 	
@@ -45,8 +45,6 @@ public class TrackerTable {
 	private static final String SEEDS_COLUMN_NAME = "Seeds";
 	private static final String PEERS_COLUMN_NAME = "Peers";
 	private static final String NAME_COLUMN_NAME = "Name";
-	
-	private static final String TRACKER_MESSAGE_NULL = "null";
 
 	private final TableView<TrackerView> trackerTable = new TableView<>();
 	
@@ -92,16 +90,7 @@ public class TrackerTable {
 			else {
 				return UnitConverter.formatMillisToTime(nextUpdateValue);
 			}			
-		}; 
-		
-		final Function<TrackerView, String> trackerStatusConverter = tv -> {
-			final String trackerMessage = tv.getTrackerMessage();
-			final Tracker.Status trackerStatus = tv.getTrackerStatus();
-			final String statusMessage = trackerMessage != null && !trackerMessage.equals(TRACKER_MESSAGE_NULL)?
-				trackerMessage : Tracker.getStatusMessage(trackerStatus);
-			
-			return trackerStatus != Tracker.Status.UPDATING && tv.getNextUpdate() >= 1000? statusMessage : "";					
-		};
+		}; 		
 		
 		final Function<TrackerView, String> intervalValueConverter = tv -> {
 			final long interval = tv.getInterval(); 
@@ -116,7 +105,7 @@ public class TrackerTable {
 					tv -> tv.getTrackerName(), GuiUtils.NAME_COLUMN_PREFERRED_SIZE,
 					GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, NAME_COLUMN_NAME),
 			TableFactory.buildSimpleStringColumn(tv -> tv.getValue().statusProperty(),
-					trackerStatusConverter, 140, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, STATUS_COLUMN_NAME),
+					tv -> tv.getStatus(), 140, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, STATUS_COLUMN_NAME),
 			TableFactory.buildSimpleNumberColumn(tv -> tv.getValue().nextUpdateProperty(),
 					updateInValueConverter, 120, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, UPDATE_IN_COLUMN_NAME),
 			TableFactory.buildSimpleNumberColumn(tv -> tv.getValue().intervalProperty(),
