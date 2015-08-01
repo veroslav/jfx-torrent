@@ -20,9 +20,6 @@
 
 package org.matic.torrent.queue;
 
-import java.util.Set;
-import java.util.stream.Stream;
-
 import javax.xml.bind.DatatypeConverter;
 
 import org.matic.torrent.hash.InfoHash;
@@ -33,20 +30,18 @@ public final class QueuedTorrent implements Comparable<QueuedTorrent> {
 		ACTIVE, STOPPED, ERROR
 	}
 	
-	private final Set<String> trackers;
 	private final InfoHash infoHash;
 	
 	private Status status;	
 	private int priority;
 
-	public QueuedTorrent(final InfoHash infoHash, final Set<String> trackers,
-			final int priority, final Status status) {
+	public QueuedTorrent(final InfoHash infoHash, final int priority, final Status status) {
 		this.infoHash = infoHash;
-		this.trackers = trackers;
 		this.priority = priority;
 		this.status = status;
 	}
 	
+	//TODO: Move status handling to QueuedTorrentManager
 	public Status getStatus() {
 		return status;
 	}
@@ -57,10 +52,6 @@ public final class QueuedTorrent implements Comparable<QueuedTorrent> {
 	
 	public final int getPriority() {
 		return priority;
-	}
-	
-	public Stream<String> getTrackers() {
-		return trackers.stream();
 	}
 	
 	@Override
@@ -81,9 +72,7 @@ public final class QueuedTorrent implements Comparable<QueuedTorrent> {
 		int result = 1;
 		result = prime * result
 				+ ((infoHash == null) ? 0 : infoHash.hashCode());
-		result = prime * result + priority;
-		result = prime * result
-				+ ((trackers == null) ? 0 : trackers.hashCode());
+		result = prime * result + priority;		
 		return result;
 	}
 

@@ -503,18 +503,18 @@ public final class ApplicationWindow {
 			final InfoHash infoHash = torrentOptions.getInfoHash();
 			final QueuedTorrent.Status torrentStatus = torrentOptions.isStartTorrent()? 
 					QueuedTorrent.Status.ACTIVE : QueuedTorrent.Status.STOPPED;
-			final QueuedTorrent queuedTorrent = new QueuedTorrent(infoHash, trackerUrls, 1, torrentStatus);
+			final QueuedTorrent queuedTorrent = new QueuedTorrent(infoHash, 1, torrentStatus);
 			
 			final TorrentJobView jobView = new TorrentJobView(queuedTorrent, torrentOptions.getName(), 
 					torrentOptions.getTorrentContents());
 			
 			final ObservableList<TrackerView> trackerViews = FXCollections.observableArrayList(
-					queuedTorrent.getTrackers().map(t -> new TrackerView(t, torrentStatus)).collect(Collectors.toList()));
+					trackerUrls.stream().map(t -> new TrackerView(t, torrentStatus)).collect(Collectors.toList()));
 			
 			trackerViewMappings.put(queuedTorrent, trackerViews);
 			trackerTable.setContent(trackerViews);
 			torrentJobTable.addJob(jobView);			
-			queuedTorrentManager.add(queuedTorrent);
+			queuedTorrentManager.add(queuedTorrent, trackerUrls);
 			
 			updateGui();
 		}

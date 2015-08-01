@@ -31,12 +31,12 @@ import org.matic.torrent.hash.InfoHash;
 public final class QueuedTorrentManagerTest {
 
 	private final InfoHash infoHash = new InfoHash(DatatypeConverter.parseHexBinary("12345678901234567890"));
-	private final QueuedTorrent torrent = new QueuedTorrent(infoHash, Collections.emptySet(), 1, QueuedTorrent.Status.ACTIVE);
+	private final QueuedTorrent torrent = new QueuedTorrent(infoHash, 1, QueuedTorrent.Status.ACTIVE);
 	private final QueuedTorrentManager unitUnderTest = new QueuedTorrentManager();	
 	
 	@Test
 	public void testAddSingleTorrent() {
-		final boolean added = unitUnderTest.add(torrent);
+		final boolean added = unitUnderTest.add(torrent, Collections.emptySet());
 		Assert.assertTrue(added);
 		Assert.assertEquals(1, unitUnderTest.getQueueSize());
 	}
@@ -54,8 +54,8 @@ public final class QueuedTorrentManagerTest {
 	
 	@Test
 	public void testAddExistingTorrent() {
-		final boolean firstAddition = unitUnderTest.add(torrent);
-		final boolean secondAddition = unitUnderTest.add(torrent);
+		final boolean firstAddition = unitUnderTest.add(torrent, Collections.emptySet());
+		final boolean secondAddition = unitUnderTest.add(torrent, Collections.emptySet());
 		
 		Assert.assertTrue(firstAddition);
 		Assert.assertFalse(secondAddition);
@@ -72,7 +72,7 @@ public final class QueuedTorrentManagerTest {
 	
 	@Test
 	public void testRemoveOnlyTorrent() {
-		unitUnderTest.add(torrent);
+		unitUnderTest.add(torrent, Collections.emptySet());
 		Assert.assertEquals(1, unitUnderTest.getQueueSize());
 		
 		final boolean removed = unitUnderTest.remove(torrent);

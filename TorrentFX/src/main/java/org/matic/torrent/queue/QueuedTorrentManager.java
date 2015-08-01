@@ -21,46 +21,33 @@
 package org.matic.torrent.queue;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
 import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.tracking.TrackerManager;
-import org.matic.torrent.tracking.TrackerSession;
 import org.matic.torrent.utils.ResourceManager;
 
 public final class QueuedTorrentManager {
 
-	//TODO: Simplify this to a Set<QueuedTorrent> (don't need TrackerSession anymore)
-	//TODO: Move trackers from QueuedTorrent to Map<QueuedTorrent, Set<String> trackers>
-	private final Map<QueuedTorrent, Set<TrackerSession>> queuedTrackerSessions = new HashMap<>();
+	private final Map<QueuedTorrent, Set<String>> queuedTorrents = new HashMap<>();
 
 	/**
 	 * Add a torrent to be managed
 	 * 
 	 * @param torrent Target torrent
+	 * @param trackerUrls Torrent's trackers
 	 * @return Whether this torrent was successfully added
 	 */
-	public boolean add(final QueuedTorrent torrent) {
-		if(queuedTrackerSessions.containsKey(torrent)) {
+	public boolean add(final QueuedTorrent torrent, final Set<String> trackerUrls) {
+		if(queuedTorrents.putIfAbsent(torrent, trackerUrls) != null) {
 			return false;
 		}
 		
 		final TrackerManager trackerManager = ResourceManager.INSTANCE.getTrackerManager();
-		torrent.getTrackers().forEach(t -> {
-			final TrackerSession trackerSession = trackerManager.addTracker(
-				t, torrent, torrent.getStatus() != QueuedTorrent.Status.STOPPED);
-			
-			if(trackerSession != null) {
-				queuedTrackerSessions.compute(torrent, (key, value) -> {
-					final Set<TrackerSession> sessions = value == null? new HashSet<>() : value;
-					sessions.add(trackerSession);
-					return sessions;
-				});
-			}
-		});
+		trackerUrls.forEach(t ->
+			trackerManager.addTracker(t, torrent, torrent.getStatus() != QueuedTorrent.Status.STOPPED));
 		
 		return true;
 	}
@@ -68,14 +55,14 @@ public final class QueuedTorrentManager {
 	/**
 	 * Remove and stop managing a torrent 
 	 * 
-	 * @param queuedTorrent Queued torrent to remove
+	 * @param torrent Queued torrent to remove
 	 * @return Whether the target torrent was successfully removed
 	 */
-	public boolean remove(final QueuedTorrent queuedTorrent) {
-		final boolean removed = !queuedTrackerSessions.remove(queuedTorrent).isEmpty();
+	public boolean remove(final QueuedTorrent torrent) {
+		final boolean removed = queuedTorrents.remove(torrent) != null;
 		
 		if(removed) {
-			ResourceManager.INSTANCE.getTrackerManager().removeTorrent(queuedTorrent.getInfoHash());
+			ResourceManager.INSTANCE.getTrackerManager().removeTorrent(torrent);
 		}
 		
 		return removed;
@@ -88,10 +75,10 @@ public final class QueuedTorrentManager {
 	 * @return Optionally found torrent
 	 */
 	public Optional<QueuedTorrent> find(final InfoHash infoHash) {
-		return queuedTrackerSessions.keySet().stream().filter(t -> t.getInfoHash().equals(infoHash)).findFirst();
+		return queuedTorrents.keySet().stream().filter(t -> t.getInfoHash().equals(infoHash)).findFirst();
 	}
 	
 	protected int getQueueSize() {
-		return queuedTrackerSessions.size();
+		return queuedTorrents.size();
 	}
 }
