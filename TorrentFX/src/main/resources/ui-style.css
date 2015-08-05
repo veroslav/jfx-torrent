@@ -1,3 +1,7 @@
+.borderless-split-pane {
+	-fx-padding: 0;
+}
+
 .combo-box-popup .list-view .list-cell:selected {
 	-fx-text-fill: white
 }
@@ -217,8 +221,8 @@
 	-fx-background-color: transparent;
 }
 
-.split-pane > .split-pane-divider {  
-    -fx-padding: 0 0.15em 0 0.15em;  
+.split-pane > .split-pane-divider {
+	-fx-padding: 0 0.15em 0 0.15em;  
 }
 
 .tab {	

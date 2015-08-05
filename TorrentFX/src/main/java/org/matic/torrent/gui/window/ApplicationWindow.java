@@ -20,11 +20,11 @@
 
 package org.matic.torrent.gui.window;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -35,6 +35,7 @@ import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.Event;
+import javafx.event.EventTarget;
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
 import javafx.scene.Scene;
@@ -42,6 +43,8 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.CheckMenuItem;
+import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Label;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
@@ -58,7 +61,11 @@ import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
@@ -69,6 +76,7 @@ import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
+import org.controlsfx.control.StatusBar;
 import org.matic.torrent.codec.BinaryEncodedDictionary;
 import org.matic.torrent.codec.BinaryEncodedList;
 import org.matic.torrent.codec.BinaryEncodedString;
@@ -100,8 +108,10 @@ import org.matic.torrent.utils.ResourceManager;
 public final class ApplicationWindow {
 	
 	private static final String TOOLBAR_BUTTON_ADD_FROM_URL_NAME = "Add Torrent from URL";
+	private static final String TOOLBAR_BUTTON_ADD_RSS_FEED_NAME = "Add RSS Feed";
 	private static final String TOOLBAR_BUTTON_OPTIONS_NAME = "Preferences";
 	private static final String TOOLBAR_BUTTON_START_NAME = "Start Torrent";
+	private static final String TOOLBAR_BUTTON_PAUSE_NAME = "Pause Torrent";
 	private static final String TOOLBAR_BUTTON_STOP_NAME = "Stop Torrent";
 	private static final String TOOLBAR_BUTTON_ADD_NAME = "Add Torrent";
 	private static final String TOOLBAR_BUTTON_REMOVE_NAME = "Remove";	
@@ -135,6 +145,30 @@ public final class ApplicationWindow {
 	//View for displaying selected torrent's trackers
 	private final TrackerTable trackerTable = new TrackerTable();
 	
+	//Detailed torrent info tab pane 
+	private final TabPane torrentDetailsPane = new TabPane();
+	
+	//Application status below at the bottom of the window
+	private final StatusBar statusBar = new StatusBar();
+	
+	//Menu item for either showing or hiding the detailed info tab pane
+	private final CheckMenuItem showDetailedInfoItem = new CheckMenuItem("Show Detailed Info");
+	
+	//Menu item for selecting either compact or expanded tool bar
+	private final CheckMenuItem showCompactToolbarMenuItem = new CheckMenuItem("Narrow Toolbar");
+	
+	//Menu item for showing or hiding the status bar
+	private final CheckMenuItem showStatusBarMenuItem = new CheckMenuItem("Show Status Bar");
+	
+	//Menu item for either showing or hiding the filter view
+	private final CheckMenuItem showFilterViewMenuItem = new CheckMenuItem("Show Sidebar");
+	
+	//Menu item for showing or hiding the tool bar
+	private final CheckMenuItem showToolbarMenuItem = new CheckMenuItem("Show Toolbar");
+	
+	//Menu item for showing or hiding the tab icons
+	private final CheckMenuItem showTabIconsMenuItem = new CheckMenuItem("Icons on Tabs");
+	
 	//Mapping between a torrent and it's tracker views
 	private final Map<QueuedTorrent, List<TrackerView>> trackerViewMappings = new HashMap<>();
 	
@@ -152,18 +186,33 @@ public final class ApplicationWindow {
 	public ApplicationWindow(final Stage stage) {
 		this.stage = stage;
 		
+		initComponents();
+	}
+	
+	private void initComponents() {
+		showCompactToolbarMenuItem.setAccelerator(new KeyCodeCombination(KeyCode.F11));		
+		showFilterViewMenuItem.setAccelerator(new KeyCodeCombination(KeyCode.F7));
+		showStatusBarMenuItem.setAccelerator(new KeyCodeCombination(KeyCode.F6));
+		showDetailedInfoItem.setAccelerator(new KeyCodeCombination(KeyCode.F5));
+		showToolbarMenuItem.setAccelerator(new KeyCodeCombination(KeyCode.F4));		
+		
+		torrentDetailsPane.getTabs().addAll(buildTorrentDetailsTabs());	
+		torrentDetailsPane.getSelectionModel().selectFirst();
+		addDetailsTabHeaderContextMenu(torrentDetailsPane);
+		
+		statusBar.setText("");
+		
 		final BorderPane mainPane = new BorderPane();		
-		mainPane.setTop(buildNorthPane());
-		mainPane.setCenter(buildCenterPane());
+		mainPane.setTop(buildMenuBarPane());
+		mainPane.setCenter(buildContentPane());
+		mainPane.setBottom(statusBar);
+		
+		setupShowStatusBarListener(mainPane);
 		
 		final Scene scene = new Scene(mainPane, 900, 550);		
 		scene.getStylesheets().add("/ui-style.css");
 		stage.setScene(scene);
 		
-		initComponents();
-	}
-	
-	private void initComponents() {		
 		torrentJobTable.addSelectionListener(this::onTorrentJobSelection);		
 		torrentContentTree.getView().setPlaceholder(GuiUtils.getEmptyTablePlaceholder());
 		
@@ -204,17 +253,12 @@ public final class ApplicationWindow {
 		}
 	}
 	
-	private Pane initFilterTreeView() {
+	private void initFilterTreeView() {
 		filterTreeView.getStyleClass().add("filter-list-view");
 		filterTreeView.setRoot(buildFilterTreeViewItems());
 		filterTreeView.setShowRoot(false);
 		filterTreeView.getSelectionModel().select(0);
-		filterTreeView.requestFocus();
-		
-		final StackPane treeViewStack = new StackPane();
-		treeViewStack.getChildren().add(filterTreeView);		
-		
-		return treeViewStack;
+		filterTreeView.requestFocus();		
 	}
 	
 	private TreeItem<Node> buildFilterTreeViewItems() {		
@@ -260,53 +304,136 @@ public final class ApplicationWindow {
 		return rootNode;
 	}
 	
-	private Pane buildNorthPane() {
+	private Pane buildMenuBarPane() {
 		final VBox northPane = new VBox();
 		northPane.getChildren().add(buildMenuBar());
 		
 		return northPane;
 	}
 	
-	private SplitPane buildCenterPane() {
+	private Pane buildContentPane() {
+		final String borderlessSplitPaneStyle = "borderless-split-pane";
+		final BorderPane mainPane = new BorderPane();		
+		final ToolBar toolbar = buildToolbar();				
+				
 		final SplitPane verticalSplitPane = new SplitPane();
+		verticalSplitPane.getStyleClass().add(borderlessSplitPaneStyle);
         verticalSplitPane.setOrientation(Orientation.VERTICAL);
         verticalSplitPane.setDividerPosition(0, 0.6f);      
-        verticalSplitPane.getItems().addAll(buildToolbarAndTorrentListPane(), buildTorrentDetailsPane());
+        verticalSplitPane.getItems().addAll(buildTorrentJobTable(), torrentDetailsPane);        
         
-        final Pane filterTreeView = initFilterTreeView();
+        final BorderPane centerPane = new BorderPane();
+        centerPane.setCenter(verticalSplitPane);
         
-        final SplitPane horizontalSplitPane = new SplitPane();        
+        setupToolbarListener(mainPane, centerPane, toolbar);
+        initFilterTreeView();
+        
+        final SplitPane horizontalSplitPane = new SplitPane(); 
+        horizontalSplitPane.getStyleClass().add(borderlessSplitPaneStyle);
         horizontalSplitPane.setOrientation(Orientation.HORIZONTAL);
         horizontalSplitPane.setDividerPosition(0, 0.20);
-        horizontalSplitPane.getItems().addAll(filterTreeView, verticalSplitPane);
+        horizontalSplitPane.getItems().addAll(filterTreeView, centerPane);        
+                
+        setupShowDetailedInfoListener(verticalSplitPane);
+        setupShowFilterViewListener(horizontalSplitPane);
         
-        SplitPane.setResizableWithParent(filterTreeView, Boolean.FALSE);
+        SplitPane.setResizableWithParent(filterTreeView, Boolean.FALSE);        
+        mainPane.setCenter(horizontalSplitPane);
         
-        return horizontalSplitPane;
+        return mainPane;
 	}
 	
-	private Pane buildToolbarAndTorrentListPane() {				
-		final BorderPane centerPane = new BorderPane();
-		centerPane.setTop(buildToolbar());
-		centerPane.setCenter(buildTorrentJobTable());
-		
-		return centerPane;
+	private void setupShowStatusBarListener(final BorderPane mainPane) {
+		showStatusBarMenuItem.selectedProperty().addListener((obs, oldV, showStatusBar) ->
+				mainPane.setBottom(showStatusBar? statusBar : null));
+		showStatusBarMenuItem.setSelected(true);
+	}
+	
+	private void setupShowDetailedInfoListener(final SplitPane verticalSplitPane) {
+		showDetailedInfoItem.selectedProperty().addListener((obs, oldV, showDetailedInfo) -> {
+			final ObservableList<Node> items = verticalSplitPane.getItems();
+			if(showDetailedInfo && !items.contains(torrentDetailsPane)) {
+				items.add(1, torrentDetailsPane);
+				verticalSplitPane.setDividerPosition(0, torrentDetailsPane.getPrefHeight());
+			}
+			else if(!showDetailedInfo) {
+				torrentDetailsPane.setPrefHeight(verticalSplitPane.getDividerPositions()[0]);
+				items.remove(torrentDetailsPane);
+			}
+		});
+		showDetailedInfoItem.setSelected(true);
+	}
+	
+	private void setupShowFilterViewListener(final SplitPane horizontalSplitPane) {
+		showFilterViewMenuItem.selectedProperty().addListener((obs, oldV, showFilterView) -> {
+        	final ObservableList<Node> items = horizontalSplitPane.getItems();
+        	if(showFilterView && !items.contains(filterTreeView)) {
+        		items.add(0, filterTreeView);
+        		horizontalSplitPane.setDividerPosition(0, filterTreeView.getPrefWidth());        		
+        	}
+        	else if(!showFilterView) {
+        		filterTreeView.setPrefWidth(horizontalSplitPane.getDividerPositions()[0]);
+        		items.remove(filterTreeView);        		
+        	}
+        });
+        showFilterViewMenuItem.setSelected(true);
+	}
+	
+	private void setupToolbarListener(final BorderPane mainPane, final BorderPane centerPane, final ToolBar toolbar) {			
+		showCompactToolbarMenuItem.selectedProperty().addListener((obs, oldV, showCompact) -> {
+			final boolean isToolbarHidden = !showToolbarMenuItem.isSelected();
+    		mainPane.setTop(showCompact || isToolbarHidden? null : toolbar);
+    		centerPane.setTop(!showCompact || isToolbarHidden? null : toolbar); 
+    		toolbar.setId(showCompact? centerPane.getId() : mainPane.getId());
+    		
+    		final Button pauseButton = toolbarButtonsMap.get(TOOLBAR_BUTTON_PAUSE_NAME);
+    		final Button rssButton = toolbarButtonsMap.get(TOOLBAR_BUTTON_ADD_RSS_FEED_NAME);
+    		final ObservableList<Node> toolbarButtons = toolbar.getItems();
+    		    		
+    		if(showCompact) {
+    			toolbarButtons.removeAll(pauseButton, rssButton);
+    		}
+    		else if(!isExpandedToolbar(toolbar)) {
+    			//Add Pause button after Start Torrent and RSS button after Add from URL button respectively
+    			final int rssButtonIndex = toolbarButtons.indexOf(toolbarButtonsMap.get(TOOLBAR_BUTTON_ADD_FROM_URL_NAME));
+    			toolbarButtons.add(rssButtonIndex + 1, rssButton);
+    			
+    			final int downloadButtonIndex = toolbarButtons.indexOf(toolbarButtonsMap.get(TOOLBAR_BUTTON_START_NAME));    			    			
+    			toolbarButtons.add(downloadButtonIndex + 1, pauseButton);    			
+    		}    		
+        });
+		showToolbarMenuItem.selectedProperty().addListener((obs, oldV, showToolbar) -> {			
+			if(isExpandedToolbar(toolbar)) {				
+				mainPane.setTop(showToolbar? toolbar : null);								
+			}
+			else {
+				centerPane.setTop(showToolbar? toolbar : null);
+			}			
+		});		
+		showCompactToolbarMenuItem.setSelected(true);
+		showToolbarMenuItem.setSelected(true);
+	}
+	
+	private boolean isExpandedToolbar(final ToolBar toolbar) {
+		final ObservableList<Node> toolbarButtons = toolbar.getItems();
+		return toolbarButtons.contains(toolbarButtonsMap.get(TOOLBAR_BUTTON_PAUSE_NAME)) &&
+				toolbarButtons.contains(toolbarButtonsMap.get(TOOLBAR_BUTTON_ADD_RSS_FEED_NAME));
 	}
 	
 	private ToolBar buildToolbar() {				
 		final String[] buttonUrls = new String[]{"/images/appbar.add.png",
-				"/images/appbar.link.png", "/images/appbar.page.new.png", 
-				"/images/appbar.delete.png", "/images/appbar.download.png",
+				"/images/appbar.link.png", "/images/appbar.rss.dark.png",
+				"/images/appbar.page.new.png", "/images/appbar.delete.png",
+				"/images/appbar.download.png", "/images/appbar.control.pause.png",
 				"/images/appbar.control.stop.png", "/images/appbar.chevron.up.png",
 				"/images/appbar.chevron.down.png", "/images/appbar.unlock.keyhole.png",
 				"/images/appbar.monitor.png", "/images/appbar.settings.png"};
 		
-		final String[] buttonIds = {TOOLBAR_BUTTON_ADD_NAME, TOOLBAR_BUTTON_ADD_FROM_URL_NAME, "Create New Torrent", 
-				TOOLBAR_BUTTON_REMOVE_NAME, TOOLBAR_BUTTON_START_NAME, TOOLBAR_BUTTON_STOP_NAME, 
-				"Move Up Queue", "Move Down Queue", 
-				"Unlock Bundle", "Remote", TOOLBAR_BUTTON_OPTIONS_NAME};
+		final String[] buttonIds = {TOOLBAR_BUTTON_ADD_NAME, TOOLBAR_BUTTON_ADD_FROM_URL_NAME, TOOLBAR_BUTTON_ADD_RSS_FEED_NAME,
+				"Create New Torrent", TOOLBAR_BUTTON_REMOVE_NAME, TOOLBAR_BUTTON_START_NAME, TOOLBAR_BUTTON_PAUSE_NAME,
+				"Stop Torrent", "Move Up Queue", "Move Down Queue", "Unlock Bundle", "Remote", TOOLBAR_BUTTON_OPTIONS_NAME};
 		
-		final boolean[] buttonStates = {false, false, false, true, true, true, true, true, true, false, false};
+		final boolean[] buttonStates = {false, false, false, false, true, true, true, true, true, true, true, false, false};
 		
 		final Button[] toolbarButtons = new Button[buttonUrls.length];
 		for(int i = 0; i < toolbarButtons.length; ++i) {
@@ -329,13 +456,12 @@ public final class ApplicationWindow {
 		final HBox separatorBox = new HBox();		
 		HBox.setHgrow(separatorBox, Priority.ALWAYS);
 		
-		final Node[] toolbarContents = {toolbarButtons[0], toolbarButtons[1],
-				buildToolbarSeparator(), toolbarButtons[2], buildToolbarSeparator(), 
-				toolbarButtons[3], buildToolbarSeparator(), toolbarButtons[4], toolbarButtons[5],
-				buildToolbarSeparator(), toolbarButtons[6], toolbarButtons[7], buildToolbarSeparator(),
-				toolbarButtons[8], buildToolbarSeparator(), separatorBox, buildToolbarSeparator(), 
-				toolbarButtons[9], toolbarButtons[10]};
-		
+		final Node[] toolbarContents = {toolbarButtons[0], toolbarButtons[1], toolbarButtons[2],
+				buildToolbarSeparator(), toolbarButtons[3], buildToolbarSeparator(), 
+				toolbarButtons[4], buildToolbarSeparator(), toolbarButtons[5], toolbarButtons[6],
+				toolbarButtons[7], buildToolbarSeparator(), toolbarButtons[8], toolbarButtons[9],
+				buildToolbarSeparator(), toolbarButtons[10], buildToolbarSeparator(), separatorBox,
+				buildToolbarSeparator(), toolbarButtons[11], toolbarButtons[12]};
 		
 		final ToolBar toolBar = new ToolBar(toolbarContents);
 		return toolBar;
@@ -373,48 +499,83 @@ public final class ApplicationWindow {
 		return torrentJobTableScroll;
 	}
 	
-	private Pane buildTorrentDetailsPane() {
-		final TabPane torrentDetailsTab = new TabPane();
-		torrentDetailsTab.getTabs().addAll(buildTorrentDetailsTabs());	
-		torrentDetailsTab.getSelectionModel().selectFirst();
-		
-		final StackPane detailsPane = new StackPane();
-		detailsPane.getChildren().add(torrentDetailsTab);
-		return detailsPane;
-	}
-	
 	private Collection<Tab> buildTorrentDetailsTabs() {
 		final String[] tabNames = {DETAILS_TAB_FILES_NAME, "Info", "Peers", TRACKERS_TAB_FILES_NAME, "Speed"};        
         final String[] imagePaths = {"/images/appbar.folder.open.png",
         		"/images/appbar.information.circle.png", "/images/appbar.group.png",
         		"/images/appbar.location.circle.png", "/images/appbar.graph.line.png"};
-        final List<Tab> tabList = new ArrayList<>(); 
+        final Map<Tab, ImageView> tabImageViews = new LinkedHashMap<>(); 
         
         for(int i = 0; i < tabNames.length; ++i) {  
         	final Image tabImage = new Image(getClass().getResourceAsStream(imagePaths[i]));
         	final Tab tab = new Tab(tabNames[i]);
-        	tab.setGraphic(ImageUtils.colorImage(tabImage, Color.rgb(162, 170, 156), 
-					ImageUtils.CROPPED_MARGINS_IMAGE_VIEW, TAB_ICON_SIZE, TAB_ICON_SIZE));
         	tab.setClosable(false);        	
         	tab.setOnSelectionChanged(event -> {
         		final Color tabImageColor = tab.isSelected()? TAB_SELECTED_IMAGE_COLOR : TAB_DEFAULT_IMAGE_COLOR;
-        		tab.setGraphic(ImageUtils.colorImage(tabImage, tabImageColor, 
-        				ImageUtils.CROPPED_MARGINS_IMAGE_VIEW, TAB_ICON_SIZE, TAB_ICON_SIZE));
+        		final ImageView imageView = ImageUtils.colorImage(tabImage, tabImageColor, 
+        				ImageUtils.CROPPED_MARGINS_IMAGE_VIEW, TAB_ICON_SIZE, TAB_ICON_SIZE);
+        		tabImageViews.put(tab, imageView);    
+        		if(showTabIconsMenuItem.isSelected()) {
+        			tab.setGraphic(imageView);
+        		}
         		updateGui();
         	});        		        	
-        	tabList.add(tab);
+        	tabImageViews.put(tab, ImageUtils.colorImage(tabImage, Color.rgb(162, 170, 156), 
+					ImageUtils.CROPPED_MARGINS_IMAGE_VIEW, TAB_ICON_SIZE, TAB_ICON_SIZE));
         	detailsTabMap.put(tabNames[i], tab);
         }
+        
+        showTabIconsMenuItem.selectedProperty().addListener((obs, oldV, showTabIcons) -> {
+        	tabImageViews.keySet().forEach(tab -> tab.setGraphic(showTabIcons? tabImageViews.get(tab) : null));
+        });
+        showTabIconsMenuItem.setSelected(true);
         
         final ScrollPane trackerTableScroll = new ScrollPane(trackerTable.getView());
         trackerTableScroll.setFitToHeight(true);
         trackerTableScroll.setFitToWidth(true);
         
-        detailsTabMap.get(DETAILS_TAB_FILES_NAME).setContent(torrentContentTree.getView());
-        detailsTabMap.get(TRACKERS_TAB_FILES_NAME).setContent(trackerTableScroll);
+        final ScrollPane torrentContentTreeScroll = new ScrollPane(torrentContentTree.getView());
+        torrentContentTreeScroll.setFitToHeight(true);
+        torrentContentTreeScroll.setFitToWidth(true);
         
-        return tabList;
+        detailsTabMap.get(DETAILS_TAB_FILES_NAME).setContent(torrentContentTreeScroll);
+        detailsTabMap.get(TRACKERS_TAB_FILES_NAME).setContent(trackerTableScroll);
+
+        return tabImageViews.keySet();
     }
+	
+	private void addDetailsTabHeaderContextMenu(final TabPane tabPane) {	
+		final ContextMenu tabHeaderContextMenu = new ContextMenu();
+		final ObservableList<Tab> tabs = tabPane.getTabs();
+		
+		tabHeaderContextMenu.getItems().addAll(tabs.stream().map(t -> {
+			final CheckMenuItem tabMenuItem = new CheckMenuItem(t.getText());
+			
+			tabMenuItem.selectedProperty().addListener((obs, oldV, selected) -> {
+				if(selected && !tabs.contains(t)) {
+					tabs.add(t);
+				}
+				else if(tabs.size() > 1 && !selected && tabs.contains(t)) {
+					tabs.remove(t);
+				}
+			});
+			
+			tabMenuItem.setSelected(true);			
+			return tabMenuItem;
+		}).collect(Collectors.toList()));
+		
+		torrentDetailsPane.addEventHandler(MouseEvent.MOUSE_CLICKED, e -> {
+			final EventTarget eventTarget = e.getTarget();
+			if(e.getButton() == MouseButton.SECONDARY && eventTarget instanceof StackPane) {
+				final ObservableList<String> styleClasses = ((StackPane)eventTarget).getStyleClass();
+				final Optional<String> tabHeaderStyle = styleClasses.stream().filter(
+						sc -> "tab-header-background".equals(sc)).findFirst();
+				if(tabHeaderStyle.isPresent()) {
+					tabHeaderContextMenu.show(stage, e.getScreenX(), e.getScreenY());
+				}
+			}			
+        });
+	}
 	
 	private MenuBar buildMenuBar() {
 		final MenuBar menuBar = new MenuBar();
@@ -459,11 +620,13 @@ public final class ApplicationWindow {
 		final Menu optionsMenu = new Menu("_Options");
 		optionsMenu.setMnemonicParsing(true);
 		
-		final MenuItem optionsMenuItem = new MenuItem("Preferences...");
-		optionsMenuItem.setOnAction(event -> windowActionHandler.onOptionsWindowShown(stage, fileActionHandler));
-		optionsMenuItem.setAccelerator(KeyCombination.keyCombination("Ctrl+P"));
+		final MenuItem preferencesMenuItem = new MenuItem("Preferences...");
+		preferencesMenuItem.setOnAction(event -> windowActionHandler.onOptionsWindowShown(stage, fileActionHandler));
+		preferencesMenuItem.setAccelerator(KeyCombination.keyCombination("Ctrl+P"));
 		
-		optionsMenu.getItems().addAll(optionsMenuItem);
+		optionsMenu.getItems().addAll(preferencesMenuItem, new SeparatorMenuItem(), showToolbarMenuItem,
+				showDetailedInfoItem, showStatusBarMenuItem, showFilterViewMenuItem, showCompactToolbarMenuItem,
+				new SeparatorMenuItem(), showTabIconsMenuItem);
 		
 		return optionsMenu;
 	}
