@@ -86,7 +86,7 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 	private final Map<Integer, List<TrackerSession>> scheduledUdpScrapes = new ConcurrentHashMap<>();
 	
 	private final Set<PeerFoundListener> peerListeners = new CopyOnWriteArraySet<>();
-	private final HashMap<QueuedTorrent, Set<TrackerSession>> trackerSessions = new HashMap<>();	
+	private final Map<QueuedTorrent, Set<TrackerSession>> trackerSessions = new HashMap<>();	
 	
 	public TrackerManager() {
 		tcpRequestExecutor.allowCoreThreadTimeOut(true);
@@ -257,8 +257,8 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 					trackerMessage : Tracker.getStatusMessage(trackerStatus);
 				
 				final String displayedMessage = trackerStatus != Tracker.Status.UPDATING &&
-					nextUpdateValue >= 1000? statusMessage : "";
-												
+						nextUpdateValue >= 1000? statusMessage : "";
+				
 				trackerView.setLastTrackerResponse(lastTrackerResponse);				
 				trackerView.setTorrentStatus(torrent.getStatus());
 				trackerView.setStatus(displayedMessage);
@@ -274,29 +274,35 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 	}
 
 	/**
-	 * Issue a tracker announce manually (explicitly by the user or when torrent state changes)
+	 * Issue an announce to a tracker (either explicitly by the user or when torrent state changes)
 	 * 
-	 * @param tracker Target announce tracker
 	 * @param torrent Torrent for which the announcement is to be made
-	 * @param announceParameters Request parameters
+	 * @param trackerSession Matching tracker session
+	 * @param trackerEvent The tracker event to send
 	 * @return Whether request was successful (false if currently not allowed)
 	 */
-	public boolean issueAnnounce(final Tracker tracker, final QueuedTorrent torrent, 
-			final AnnounceParameters announceParameters) {
+	public boolean issueAnnounce(final QueuedTorrent torrent, final TrackerSession trackerSession,
+			final Tracker.Event trackerEvent) {
 		synchronized(trackerSessions) {			
-			final Optional<TrackerSession> match = trackerSessions.get(torrent).stream().filter(
-					ts -> ts.getTracker().equals(tracker)).findFirst();
-			
-			if(!match.isPresent()) {
-				return false;
-			}
-			final TrackerSession trackerSession = match.get();
 			final boolean announceAllowed = announceAllowed(trackerSession);
 			if(announceAllowed) {
+				final AnnounceParameters announceParameters = new AnnounceParameters(trackerEvent, 0, 0, 0);
 				scheduleAnnouncement(trackerSession, announceParameters, 0);
 			}
 			
 			return announceAllowed;
+		}
+	}
+	
+	/**
+	 * Issue an announce to all trackers tracking a torrent, when the torrent's state changes
+	 * 
+	 * @param torrent Target torrent
+	 * @param event Tracker event to send
+	 */
+	public void issueTorrentEvent(final QueuedTorrent torrent, Tracker.Event event) {
+		synchronized(trackerSessions) {
+			trackerSessions.get(torrent).forEach(ts -> issueAnnounce(torrent, ts, event));
 		}
 	}
 	
@@ -358,7 +364,7 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 			final Set<TrackerSession> match = trackerSessions.get(torrent).stream().filter(
 					ts -> ts.getTracker().getUrl().equals(trackerUrl)).collect(Collectors.toSet());
 			
-			return removeSessions(match) > 0;
+			return stopSessions(match) > 0;
 		}		
 	}
 	
@@ -372,7 +378,7 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 		synchronized(trackerSessions) {		
 			//Check if any tracked torrents match supplied info hash
 			final Set<TrackerSession> matchList = trackerSessions.remove(torrentInfoHash);			
-			return removeSessions(matchList) > 0;					
+			return stopSessions(matchList) > 0;					
 		}
 	}
 	
@@ -404,7 +410,7 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 		tcpRequestExecutor.shutdownNow();
 	}
 	
-	private int removeSessions(final Set<TrackerSession> sessions) {
+	private int stopSessions(final Set<TrackerSession> sessions) {
 		if(sessions.isEmpty()) {			
 			return 0;
 		}

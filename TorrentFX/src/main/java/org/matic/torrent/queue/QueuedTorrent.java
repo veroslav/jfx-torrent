@@ -20,6 +20,9 @@
 
 package org.matic.torrent.queue;
 
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
+
 import javax.xml.bind.DatatypeConverter;
 
 import org.matic.torrent.hash.InfoHash;
@@ -32,17 +35,26 @@ public final class QueuedTorrent implements Comparable<QueuedTorrent> {
 	
 	private final InfoHash infoHash;
 	
-	private Status status;	
+	private final ObjectProperty<Status> status;	
+	
+	//TODO: Move priority handling to QueuedTorrentManager
 	private int priority;
 
 	public QueuedTorrent(final InfoHash infoHash, final int priority, final Status status) {
+		this.status = new SimpleObjectProperty<>(status);
 		this.infoHash = infoHash;
 		this.priority = priority;
-		this.status = status;
 	}
 	
-	//TODO: Move status handling to QueuedTorrentManager
+	public void setStatus(final Status status) {
+		this.status.set(status);
+	}
+	
 	public Status getStatus() {
+		return status.get();
+	}
+	
+	public ObjectProperty<Status> statusProperty() {
 		return status;
 	}
 	

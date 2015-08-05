@@ -24,13 +24,18 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
+import javafx.beans.value.ChangeListener;
 
 import org.matic.torrent.hash.InfoHash;
+import org.matic.torrent.tracking.Tracker;
 import org.matic.torrent.tracking.TrackerManager;
 import org.matic.torrent.utils.ResourceManager;
 
 public final class QueuedTorrentManager {
 
+	private final Map<QueuedTorrent, ChangeListener<QueuedTorrent.Status>> statusChangeListeners = new ConcurrentHashMap<>();
 	private final Map<QueuedTorrent, Set<String>> queuedTorrents = new HashMap<>();
 
 	/**
@@ -44,6 +49,8 @@ public final class QueuedTorrentManager {
 		if(queuedTorrents.putIfAbsent(torrent, trackerUrls) != null) {
 			return false;
 		}
+		
+		addTorrentStatusChangeListener(torrent);
 		
 		final TrackerManager trackerManager = ResourceManager.INSTANCE.getTrackerManager();
 		trackerUrls.forEach(t ->
@@ -62,6 +69,7 @@ public final class QueuedTorrentManager {
 		final boolean removed = queuedTorrents.remove(torrent) != null;
 		
 		if(removed) {
+			torrent.statusProperty().removeListener(statusChangeListeners.remove(torrent));
 			ResourceManager.INSTANCE.getTrackerManager().removeTorrent(torrent);
 		}
 		
@@ -80,5 +88,23 @@ public final class QueuedTorrentManager {
 	
 	protected int getQueueSize() {
 		return queuedTorrents.size();
+	}
+	
+	private void onTorrentStatusChanged(final QueuedTorrent torrent, QueuedTorrent.Status oldValue,
+			QueuedTorrent.Status newValue) {
+		if(oldValue == newValue || (newValue != QueuedTorrent.Status.ACTIVE &&
+				newValue != QueuedTorrent.Status.STOPPED)) {
+			return;
+		}
+		
+		ResourceManager.INSTANCE.getTrackerManager().issueTorrentEvent(torrent, 
+				newValue == QueuedTorrent.Status.ACTIVE? Tracker.Event.STARTED : Tracker.Event.STOPPED);		
+	}
+	
+	private void addTorrentStatusChangeListener(final QueuedTorrent torrent) {
+		final ChangeListener<QueuedTorrent.Status> statusChangeListener = 
+				(obs, oldV, newV) -> onTorrentStatusChanged(torrent, oldV, newV);
+		statusChangeListeners.put(torrent, statusChangeListener);
+		torrent.statusProperty().addListener(statusChangeListener);
 	}
 }

@@ -94,11 +94,14 @@ public class TrackerTable {
 		
 		final Function<TrackerView, String> intervalValueConverter = tv -> {
 			final long interval = tv.getInterval(); 
-			return interval > 0? UnitConverter.formatMillisToTime(interval) : "";
+			return (tv.getTorrentStatus() != QueuedTorrent.Status.STOPPED) && (interval > 0)?
+					UnitConverter.formatMillisToTime(interval) : "";
 		};
 		
-		final Function<TrackerView, String> minIntervalValueConverter = tv ->
-			UnitConverter.formatMillisToTime(tv.getMinInterval());
+		final Function<TrackerView, String> minIntervalValueConverter = tv -> {
+			return tv.getTorrentStatus() != QueuedTorrent.Status.STOPPED? 
+					UnitConverter.formatMillisToTime(tv.getMinInterval()) : "";
+		};
 		
 		trackerTable.getColumns().addAll(Arrays.asList(
 			TableFactory.buildSimpleStringColumn(tv -> tv.getValue().trackerNameProperty(),

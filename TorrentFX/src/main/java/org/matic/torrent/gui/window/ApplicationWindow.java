@@ -99,10 +99,12 @@ import org.matic.torrent.utils.ResourceManager;
  */
 public final class ApplicationWindow {
 	
-	private static final String TOOLBAR_BUTTON_ADD_FROM_URL = "Add Torrent from URL";
-	private static final String TOOLBAR_BUTTON_OPTIONS = "Preferences";
-	private static final String TOOLBAR_BUTTON_ADD = "Add Torrent";
-	private static final String TOOLBAR_BUTTON_REMOVE = "Remove";	
+	private static final String TOOLBAR_BUTTON_ADD_FROM_URL_NAME = "Add Torrent from URL";
+	private static final String TOOLBAR_BUTTON_OPTIONS_NAME = "Preferences";
+	private static final String TOOLBAR_BUTTON_START_NAME = "Start Torrent";
+	private static final String TOOLBAR_BUTTON_STOP_NAME = "Stop Torrent";
+	private static final String TOOLBAR_BUTTON_ADD_NAME = "Add Torrent";
+	private static final String TOOLBAR_BUTTON_REMOVE_NAME = "Remove";	
 	
 	private static final String TRACKERS_TAB_FILES_NAME = "Trackers";
 	private static final String DETAILS_TAB_FILES_NAME = "Files";
@@ -299,10 +301,10 @@ public final class ApplicationWindow {
 				"/images/appbar.chevron.down.png", "/images/appbar.unlock.keyhole.png",
 				"/images/appbar.monitor.png", "/images/appbar.settings.png"};
 		
-		final String[] buttonIds = {TOOLBAR_BUTTON_ADD, TOOLBAR_BUTTON_ADD_FROM_URL, "Create New Torrent", 
-				TOOLBAR_BUTTON_REMOVE, "Start Torrent", "Stop Torrent", 
+		final String[] buttonIds = {TOOLBAR_BUTTON_ADD_NAME, TOOLBAR_BUTTON_ADD_FROM_URL_NAME, "Create New Torrent", 
+				TOOLBAR_BUTTON_REMOVE_NAME, TOOLBAR_BUTTON_START_NAME, TOOLBAR_BUTTON_STOP_NAME, 
 				"Move Up Queue", "Move Down Queue", 
-				"Unlock Bundle", "Remote", TOOLBAR_BUTTON_OPTIONS};
+				"Unlock Bundle", "Remote", TOOLBAR_BUTTON_OPTIONS_NAME};
 		
 		final boolean[] buttonStates = {false, false, false, true, true, true, true, true, true, false, false};
 		
@@ -311,14 +313,18 @@ public final class ApplicationWindow {
 			toolbarButtons[i] = buildToolbarButton(buttonUrls[i], buttonIds[i], buttonStates[i]);
 		}
 		
-		toolbarButtonsMap.get(TOOLBAR_BUTTON_ADD).setOnAction(
+		toolbarButtonsMap.get(TOOLBAR_BUTTON_ADD_NAME).setOnAction(
 				event -> onAddTorrent(fileActionHandler.onFileOpen(stage)));
-		toolbarButtonsMap.get(TOOLBAR_BUTTON_ADD_FROM_URL).setOnAction(
+		toolbarButtonsMap.get(TOOLBAR_BUTTON_ADD_FROM_URL_NAME).setOnAction(
 				event -> onAddTorrent(fileActionHandler.onLoadUrl(stage)));
-		toolbarButtonsMap.get(TOOLBAR_BUTTON_OPTIONS).setOnAction(
+		toolbarButtonsMap.get(TOOLBAR_BUTTON_OPTIONS_NAME).setOnAction(
 				event -> windowActionHandler.onOptionsWindowShown(stage, fileActionHandler));
-		toolbarButtonsMap.get(TOOLBAR_BUTTON_REMOVE).setOnAction(
+		toolbarButtonsMap.get(TOOLBAR_BUTTON_REMOVE_NAME).setOnAction(
 				event -> onRemoveTorrent());
+		toolbarButtonsMap.get(TOOLBAR_BUTTON_START_NAME).setOnAction(
+				event -> onChangeTorrentState(QueuedTorrent.Status.ACTIVE));
+		toolbarButtonsMap.get(TOOLBAR_BUTTON_STOP_NAME).setOnAction(
+				event -> onChangeTorrentState(QueuedTorrent.Status.STOPPED));
 
 		final HBox separatorBox = new HBox();		
 		HBox.setHgrow(separatorBox, Priority.ALWAYS);
@@ -520,6 +526,18 @@ public final class ApplicationWindow {
 		}
 	}
 	
+	private void onChangeTorrentState(final QueuedTorrent.Status newStatus) {
+		toolbarButtonsMap.get(TOOLBAR_BUTTON_START_NAME).setDisable(newStatus == QueuedTorrent.Status.ACTIVE);
+		toolbarButtonsMap.get(TOOLBAR_BUTTON_STOP_NAME).setDisable(newStatus == QueuedTorrent.Status.STOPPED);
+		
+		final ObservableList<TorrentJobView> selectedTorrentJobs = torrentJobTable.getSelectedJobs();
+		
+		if(selectedTorrentJobs.size() > 0) {
+			selectedTorrentJobs.stream().map(
+					TorrentJobView::getQueuedTorrent).forEach(t -> t.setStatus(newStatus));			
+		}
+	}
+	
 	private void onRemoveTorrent() {
 		final ObservableList<TorrentJobView> selectedTorrentJobs = torrentJobTable.getSelectedJobs();
 		
@@ -547,15 +565,20 @@ public final class ApplicationWindow {
 	}
 	
 	private void onTorrentJobSelection(final TorrentJobView selectedTorrentJob) {
-		if(selectedTorrentJob != null) {				
+		final boolean torrentSelected = selectedTorrentJob != null;
+		if(torrentSelected) {				
 			torrentContentTree.setContent(selectedTorrentJob.getTorrentContents());
 			trackerTable.setContent(trackerViewMappings.get(selectedTorrentJob.getQueuedTorrent()));
 		}
+		toolbarButtonsMap.get(TOOLBAR_BUTTON_START_NAME).setDisable(
+				!torrentSelected || selectedTorrentJob.getQueuedTorrent().getStatus() == QueuedTorrent.Status.ACTIVE);
+		toolbarButtonsMap.get(TOOLBAR_BUTTON_STOP_NAME).setDisable(
+				!torrentSelected || selectedTorrentJob.getQueuedTorrent().getStatus() == QueuedTorrent.Status.STOPPED);
 		
-		final Button removeButton = toolbarButtonsMap.get(TOOLBAR_BUTTON_REMOVE);	
+		final Button removeButton = toolbarButtonsMap.get(TOOLBAR_BUTTON_REMOVE_NAME);	
 		final ImageView buttonImageView = (ImageView)removeButton.getGraphic();
 		
-		removeButton.setDisable(selectedTorrentJob == null);
+		removeButton.setDisable(!torrentSelected);
 		final Color buttonImageColor = removeButton.isDisabled()? 
 				TOOLBAR_BUTTON_COLOR : REMOVE_BUTTON_COLOR; 
 		
