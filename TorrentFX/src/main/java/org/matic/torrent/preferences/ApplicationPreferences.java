@@ -29,9 +29,6 @@ import java.util.prefs.Preferences;
  *
  */
 public final class ApplicationPreferences {
-	
-	public static final String BOOLEAN_PROPERTY_UNSET = "0";
-	public static final String BOOLEAN_PROPERTY_SET = "1";
 
 	//Application preferences stored between the program sessions 
 	private static final Preferences PREFERENCES = Preferences.userRoot().node(ApplicationPreferences.class.getName());
@@ -40,10 +37,73 @@ public final class ApplicationPreferences {
 	private ApplicationPreferences() {}
 	
 	/**
-	 * Get a value of an application property
+	 * Get a boolean value of an application property
 	 * 
 	 * @param propName Property name
-	 * @param defaultValue Default value to set and return if it is a new property
+	 * @param defaultValue Property value or default value if not present
+	 * @return
+	 */
+	public static boolean getProperty(final String propName, final boolean defaultValue) {
+		return PREFERENCES.getBoolean(propName, defaultValue);
+	}
+	
+	/**
+	 * Update existing or create a new application property with the given boolean value
+	 * 
+	 * @param propName Property name
+	 * @param propValue Property value
+	 */
+	public static void setProperty(final String propName, final boolean propValue) {
+		PREFERENCES.putBoolean(propName, propValue);
+	}
+	
+	/**
+	 * Get a double value of an application property
+	 * 
+	 * @param propName Property name
+	 * @param defaultValue Property value or default value if not present
+	 * @return
+	 */
+	public static double getProperty(final String propName, final double defaultValue) {
+		return PREFERENCES.getDouble(propName, defaultValue);
+	}
+	
+	/**
+	 * Update existing or create a new application property with the given double value
+	 * 
+	 * @param propName Property name
+	 * @param propValue Property value
+	 */
+	public static void setProperty(final String propName, final double propValue) {
+		PREFERENCES.putDouble(propName, propValue);
+	}
+	
+	/**
+	 * Get a long value of an application property
+	 * 
+	 * @param propName Property name
+	 * @param defaultValue Property value or default value if not present
+	 * @return
+	 */
+	public static long getProperty(final String propName, final long defaultValue) {
+		return PREFERENCES.getLong(propName, defaultValue);
+	}
+	
+	/**
+	 * Update existing or create a new application property with the given long value
+	 * 
+	 * @param propName Property name
+	 * @param propValue Property value
+	 */
+	public static void setProperty(final String propName, final long propValue) {
+		PREFERENCES.putLong(propName, propValue);
+	}
+	
+	/**
+	 * Get a String value of an application property
+	 * 
+	 * @param propName Property name
+	 * @param defaultValue Property value or default value if not present
 	 * @return
 	 */
 	public static String getProperty(final String propName, final String defaultValue) {
@@ -51,7 +111,7 @@ public final class ApplicationPreferences {
 	}
 	
 	/**
-	 * Update existing or create a new application property with the given value
+	 * Update existing or create a new application property with the given String value
 	 * 
 	 * @param propName Property name
 	 * @param propValue Property value

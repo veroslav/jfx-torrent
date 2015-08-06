@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import javafx.application.Platform;
@@ -106,6 +107,8 @@ import org.matic.torrent.utils.ResourceManager;
  *
  */
 public final class ApplicationWindow {
+	
+	//TODO: Properly updateGUI() when hiding/showing window components (such as detailed info pane)
 	
 	private static final String TOOLBAR_BUTTON_ADD_FROM_URL_NAME = "Add Torrent from URL";
 	private static final String TOOLBAR_BUTTON_ADD_RSS_FEED_NAME = "Add RSS Feed";
@@ -200,26 +203,51 @@ public final class ApplicationWindow {
 		torrentDetailsPane.getSelectionModel().selectFirst();
 		addDetailsTabHeaderContextMenu(torrentDetailsPane);
 		
-		statusBar.setText("");
-		
 		final BorderPane mainPane = new BorderPane();		
 		mainPane.setTop(buildMenuBarPane());
 		mainPane.setCenter(buildContentPane());
 		mainPane.setBottom(statusBar);
 		
-		setupShowStatusBarListener(mainPane);
-		
-		final Scene scene = new Scene(mainPane, 900, 550);		
-		scene.getStylesheets().add("/ui-style.css");
-		stage.setScene(scene);
+		final boolean statusBarShown = ApplicationPreferences.getProperty(
+    			GuiProperties.STATUSBAR_VISIBLE, GuiProperties.DEFAULT_STATUSBAR_VISIBLE);
+		showStatusBarMenuItem.setSelected(statusBarShown);
+		showStatusBar(mainPane, showStatusBarMenuItem.isSelected());
+		showStatusBarMenuItem.selectedProperty().addListener((obs, oldV, showStatusBar) -> {
+			showStatusBar(mainPane, showStatusBar);
+			ApplicationPreferences.setProperty(GuiProperties.STATUSBAR_VISIBLE, showStatusBar);
+		});
 		
 		torrentJobTable.addSelectionListener(this::onTorrentJobSelection);		
 		torrentContentTree.getView().setPlaceholder(GuiUtils.getEmptyTablePlaceholder());
 		
+		final double windowWidth = ApplicationPreferences.getProperty(
+				GuiProperties.APPLICATION_WINDOW_WIDTH, GuiProperties.DEFAULT_APPLICATION_WINDOW_WIDTH);
+		final double windowHeight = ApplicationPreferences.getProperty(
+				GuiProperties.APPLICATION_WINDOW_HEIGHT, GuiProperties.DEFAULT_APPLICATION_WINDOW_HEIGHT);
+		
+		final Scene scene = new Scene(mainPane, windowWidth, windowHeight);		
+		scene.getStylesheets().add("/ui-style.css");
+		
+		final double windowXPosition = ApplicationPreferences.getProperty(
+				GuiProperties.APPLICATION_WINDOW_POSITION_X, GuiProperties.DEFAULT_WINDOW_POSITION);
+		final double windowYPosition = ApplicationPreferences.getProperty(
+				GuiProperties.APPLICATION_WINDOW_POSITION_Y, GuiProperties.DEFAULT_WINDOW_POSITION);
+		
+		if(windowXPosition != GuiProperties.DEFAULT_WINDOW_POSITION &&
+				windowYPosition != GuiProperties.DEFAULT_WINDOW_POSITION) {
+			stage.setX(windowXPosition);
+			stage.setY(windowYPosition);
+		}
+		else {
+			stage.centerOnScreen();
+		}
+		
+		stage.setScene(scene);
 		stage.setOnCloseRequest(this::onShutdown);		
-		stage.setTitle("jfxTorrent");        
-		stage.centerOnScreen();		
+		stage.setTitle("jfxTorrent");        		
 		stage.show();
+		
+		Platform.runLater(() -> windowActionHandler.handleWindowStateChanges(stage));
 		
 		periodicTaskRunner.addTask(createGuiUpdateTask());		
 		periodicTaskRunner.setPeriod(Duration.seconds(1));		
@@ -318,24 +346,65 @@ public final class ApplicationWindow {
 				
 		final SplitPane verticalSplitPane = new SplitPane();
 		verticalSplitPane.getStyleClass().add(borderlessSplitPaneStyle);
-        verticalSplitPane.setOrientation(Orientation.VERTICAL);
-        verticalSplitPane.setDividerPosition(0, 0.6f);      
+        verticalSplitPane.setOrientation(Orientation.VERTICAL);     
         verticalSplitPane.getItems().addAll(buildTorrentJobTable(), torrentDetailsPane);        
         
         final BorderPane centerPane = new BorderPane();
         centerPane.setCenter(verticalSplitPane);
         
-        setupToolbarListener(mainPane, centerPane, toolbar);
+        final boolean toolbarShown = ApplicationPreferences.getProperty(
+    			GuiProperties.TOOLBAR_VISIBLE, GuiProperties.DEFAULT_TOOLBAR_VISIBLE);
+        showToolbarMenuItem.setSelected(toolbarShown);
+        showToolbar(mainPane, centerPane, toolbar, showToolbarMenuItem.isSelected());
+        showToolbarMenuItem.selectedProperty().addListener((obs, oldV, showToolbar) -> {
+        	showToolbar(mainPane, centerPane, toolbar, showToolbar);
+        	ApplicationPreferences.setProperty(GuiProperties.TOOLBAR_VISIBLE, showToolbar);
+        });
+        
+        final boolean compactToolbarShown = ApplicationPreferences.getProperty(
+    			GuiProperties.COMPACT_TOOLBAR, GuiProperties.DEFAULT_COMPACT_TOOLBAR);
+        showCompactToolbarMenuItem.setSelected(compactToolbarShown);
+        showCompactToolbar(mainPane, centerPane, toolbar, showCompactToolbarMenuItem.isSelected());
+        showCompactToolbarMenuItem.selectedProperty().addListener((obs, oldV, showCompact) -> {
+        	showCompactToolbar(mainPane, centerPane, toolbar, showCompact);
+        	ApplicationPreferences.setProperty(GuiProperties.COMPACT_TOOLBAR, showCompact);
+        });
         initFilterTreeView();
         
         final SplitPane horizontalSplitPane = new SplitPane(); 
         horizontalSplitPane.getStyleClass().add(borderlessSplitPaneStyle);
         horizontalSplitPane.setOrientation(Orientation.HORIZONTAL);
-        horizontalSplitPane.setDividerPosition(0, 0.20);
         horizontalSplitPane.getItems().addAll(filterTreeView, centerPane);        
                 
-        setupShowDetailedInfoListener(verticalSplitPane);
-        setupShowFilterViewListener(horizontalSplitPane);
+        final double horizontalDividerPosition = ApplicationPreferences.getProperty(
+        		GuiProperties.HORIZONTAL_DIVIDER_POSITION, GuiProperties.DEFAULT_HORIZONTAL_DIVIDER_POSITION);
+    	horizontalSplitPane.setDividerPosition(0, horizontalDividerPosition);
+    	horizontalSplitPane.getDividers().get(0).positionProperty().addListener((obs, oldV, position) ->
+    		ApplicationPreferences.setProperty(GuiProperties.HORIZONTAL_DIVIDER_POSITION, position.doubleValue()));        	        
+    	
+    	final double verticalDividerPosition = ApplicationPreferences.getProperty(
+        		GuiProperties.VERTICAL_DIVIDER_POSITION, GuiProperties.DEFAULT_VERTICAL_DIVIDER_POSITION);
+    	verticalSplitPane.setDividerPosition(0, verticalDividerPosition);
+    	verticalSplitPane.getDividers().get(0).positionProperty().addListener((obs, oldV, position) ->
+    		ApplicationPreferences.setProperty(GuiProperties.VERTICAL_DIVIDER_POSITION, position.doubleValue()));
+                
+        final boolean detailedInfoShown = ApplicationPreferences.getProperty(
+    			GuiProperties.DETAILED_INFO_VISIBLE, GuiProperties.DEFAULT_DETAILED_INFO_VISIBLE);
+        showDetailedInfoItem.setSelected(detailedInfoShown);
+        showDetailedInfo(verticalSplitPane, showDetailedInfoItem.isSelected());
+        showDetailedInfoItem.selectedProperty().addListener((obs, oldV, showDetailedInfo) -> {
+        	showDetailedInfo(verticalSplitPane, showDetailedInfo);
+        	ApplicationPreferences.setProperty(GuiProperties.DETAILED_INFO_VISIBLE, showDetailedInfo);
+        });
+        
+        final boolean filterViewShown = ApplicationPreferences.getProperty(
+    			GuiProperties.FILTER_VIEW_VISIBLE, GuiProperties.DEFAULT_FILTER_VIEW_VISIBLE);
+        showFilterViewMenuItem.setSelected(filterViewShown);
+        showFilterView(horizontalSplitPane, showFilterViewMenuItem.isSelected());
+        showFilterViewMenuItem.selectedProperty().addListener((obs, oldV, showFilterView) -> {
+        	showFilterView(horizontalSplitPane, showFilterView);
+        	ApplicationPreferences.setProperty(GuiProperties.FILTER_VIEW_VISIBLE, showFilterView);
+        });
         
         SplitPane.setResizableWithParent(filterTreeView, Boolean.FALSE);        
         mainPane.setCenter(horizontalSplitPane);
@@ -343,75 +412,66 @@ public final class ApplicationWindow {
         return mainPane;
 	}
 	
-	private void setupShowStatusBarListener(final BorderPane mainPane) {
-		showStatusBarMenuItem.selectedProperty().addListener((obs, oldV, showStatusBar) ->
-				mainPane.setBottom(showStatusBar? statusBar : null));
-		showStatusBarMenuItem.setSelected(true);
+	private void showStatusBar(final BorderPane mainPane, final boolean showStatusBar) {		
+		mainPane.setBottom(showStatusBar? statusBar : null);		
 	}
 	
-	private void setupShowDetailedInfoListener(final SplitPane verticalSplitPane) {
-		showDetailedInfoItem.selectedProperty().addListener((obs, oldV, showDetailedInfo) -> {
-			final ObservableList<Node> items = verticalSplitPane.getItems();
-			if(showDetailedInfo && !items.contains(torrentDetailsPane)) {
-				items.add(1, torrentDetailsPane);
-				verticalSplitPane.setDividerPosition(0, torrentDetailsPane.getPrefHeight());
-			}
-			else if(!showDetailedInfo) {
-				torrentDetailsPane.setPrefHeight(verticalSplitPane.getDividerPositions()[0]);
-				items.remove(torrentDetailsPane);
-			}
-		});
-		showDetailedInfoItem.setSelected(true);
+	private void showDetailedInfo(final SplitPane verticalSplitPane, final boolean showDetailedInfo) {
+		final ObservableList<Node> items = verticalSplitPane.getItems();
+		if(showDetailedInfo && !items.contains(torrentDetailsPane)) {
+			items.add(1, torrentDetailsPane);
+			verticalSplitPane.setDividerPosition(0, torrentDetailsPane.getPrefHeight());
+		}
+		else if(!showDetailedInfo) {
+			torrentDetailsPane.setPrefHeight(verticalSplitPane.getDividerPositions()[0]);
+			items.remove(torrentDetailsPane);
+		}		
 	}
 	
-	private void setupShowFilterViewListener(final SplitPane horizontalSplitPane) {
-		showFilterViewMenuItem.selectedProperty().addListener((obs, oldV, showFilterView) -> {
-        	final ObservableList<Node> items = horizontalSplitPane.getItems();
-        	if(showFilterView && !items.contains(filterTreeView)) {
-        		items.add(0, filterTreeView);
-        		horizontalSplitPane.setDividerPosition(0, filterTreeView.getPrefWidth());        		
-        	}
-        	else if(!showFilterView) {
-        		filterTreeView.setPrefWidth(horizontalSplitPane.getDividerPositions()[0]);
-        		items.remove(filterTreeView);        		
-        	}
-        });
-        showFilterViewMenuItem.setSelected(true);
+	private void showFilterView(final SplitPane horizontalSplitPane, final boolean showFilterView) {		
+    	final ObservableList<Node> items = horizontalSplitPane.getItems();
+    	if(showFilterView && !items.contains(filterTreeView)) {
+    		items.add(0, filterTreeView);
+    		horizontalSplitPane.setDividerPosition(0, filterTreeView.getPrefWidth());        		
+    	}
+    	else if(!showFilterView) {
+    		filterTreeView.setPrefWidth(horizontalSplitPane.getDividerPositions()[0]);
+    		items.remove(filterTreeView);        		
+    	}        
 	}
 	
-	private void setupToolbarListener(final BorderPane mainPane, final BorderPane centerPane, final ToolBar toolbar) {			
-		showCompactToolbarMenuItem.selectedProperty().addListener((obs, oldV, showCompact) -> {
-			final boolean isToolbarHidden = !showToolbarMenuItem.isSelected();
-    		mainPane.setTop(showCompact || isToolbarHidden? null : toolbar);
-    		centerPane.setTop(!showCompact || isToolbarHidden? null : toolbar); 
-    		toolbar.setId(showCompact? centerPane.getId() : mainPane.getId());
-    		
-    		final Button pauseButton = toolbarButtonsMap.get(TOOLBAR_BUTTON_PAUSE_NAME);
-    		final Button rssButton = toolbarButtonsMap.get(TOOLBAR_BUTTON_ADD_RSS_FEED_NAME);
-    		final ObservableList<Node> toolbarButtons = toolbar.getItems();
-    		    		
-    		if(showCompact) {
-    			toolbarButtons.removeAll(pauseButton, rssButton);
-    		}
-    		else if(!isExpandedToolbar(toolbar)) {
-    			//Add Pause button after Start Torrent and RSS button after Add from URL button respectively
-    			final int rssButtonIndex = toolbarButtons.indexOf(toolbarButtonsMap.get(TOOLBAR_BUTTON_ADD_FROM_URL_NAME));
-    			toolbarButtons.add(rssButtonIndex + 1, rssButton);
-    			
-    			final int downloadButtonIndex = toolbarButtons.indexOf(toolbarButtonsMap.get(TOOLBAR_BUTTON_START_NAME));    			    			
-    			toolbarButtons.add(downloadButtonIndex + 1, pauseButton);    			
-    		}    		
-        });
-		showToolbarMenuItem.selectedProperty().addListener((obs, oldV, showToolbar) -> {			
-			if(isExpandedToolbar(toolbar)) {				
-				mainPane.setTop(showToolbar? toolbar : null);								
-			}
-			else {
-				centerPane.setTop(showToolbar? toolbar : null);
-			}			
-		});		
-		showCompactToolbarMenuItem.setSelected(true);
-		showToolbarMenuItem.setSelected(true);
+	private void showCompactToolbar(final BorderPane mainPane, final BorderPane centerPane,
+		final ToolBar toolbar, final boolean showCompact) {					
+		final boolean isToolbarHidden = !showToolbarMenuItem.isSelected();
+		mainPane.setTop(showCompact || isToolbarHidden? null : toolbar);
+		centerPane.setTop(!showCompact || isToolbarHidden? null : toolbar); 
+		toolbar.setId(showCompact? centerPane.getId() : mainPane.getId());
+		
+		final Button pauseButton = toolbarButtonsMap.get(TOOLBAR_BUTTON_PAUSE_NAME);
+		final Button rssButton = toolbarButtonsMap.get(TOOLBAR_BUTTON_ADD_RSS_FEED_NAME);
+		final ObservableList<Node> toolbarButtons = toolbar.getItems();
+		    		
+		if(showCompact) {
+			toolbarButtons.removeAll(pauseButton, rssButton);
+		}
+		else if(!isExpandedToolbar(toolbar)) {
+			//Add Pause button after Start Torrent and RSS button after Add from URL button respectively
+			final int rssButtonIndex = toolbarButtons.indexOf(toolbarButtonsMap.get(TOOLBAR_BUTTON_ADD_FROM_URL_NAME));
+			toolbarButtons.add(rssButtonIndex + 1, rssButton);
+			
+			final int downloadButtonIndex = toolbarButtons.indexOf(toolbarButtonsMap.get(TOOLBAR_BUTTON_START_NAME));    			    			
+			toolbarButtons.add(downloadButtonIndex + 1, pauseButton);    			
+		}		
+	}
+	
+	private void showToolbar(final BorderPane mainPane, final BorderPane centerPane,
+		final ToolBar toolbar, final boolean showToolbar) {			
+		if(isExpandedToolbar(toolbar)) {				
+			mainPane.setTop(showToolbar? toolbar : null);								
+		}
+		else {
+			centerPane.setTop(showToolbar? toolbar : null);
+		}		
 	}
 	
 	private boolean isExpandedToolbar(final ToolBar toolbar) {
@@ -505,6 +565,9 @@ public final class ApplicationWindow {
         		"/images/appbar.information.circle.png", "/images/appbar.group.png",
         		"/images/appbar.location.circle.png", "/images/appbar.graph.line.png"};
         final Map<Tab, ImageView> tabImageViews = new LinkedHashMap<>(); 
+        final boolean tabIconsShown = ApplicationPreferences.getProperty(
+    			GuiProperties.TAB_ICONS_VISIBLE, GuiProperties.DEFAULT_TAB_ICONS_VISIBLE);
+        showTabIconsMenuItem.setSelected(tabIconsShown);
         
         for(int i = 0; i < tabNames.length; ++i) {  
         	final Image tabImage = new Image(getClass().getResourceAsStream(imagePaths[i]));
@@ -525,10 +588,13 @@ public final class ApplicationWindow {
         	detailsTabMap.put(tabNames[i], tab);
         }
         
-        showTabIconsMenuItem.selectedProperty().addListener((obs, oldV, showTabIcons) -> {
-        	tabImageViews.keySet().forEach(tab -> tab.setGraphic(showTabIcons? tabImageViews.get(tab) : null));
-        });
-        showTabIconsMenuItem.setSelected(true);
+        final Consumer<Boolean> setTabGraphic = set ->
+    		tabImageViews.keySet().forEach(tab -> tab.setGraphic(set? tabImageViews.get(tab) : null));
+    	setTabGraphic.accept(tabIconsShown);
+    	showTabIconsMenuItem.selectedProperty().addListener((obs, oldV, showTabIcons) -> {
+    		setTabGraphic.accept(showTabIcons);
+    		ApplicationPreferences.setProperty(GuiProperties.TAB_ICONS_VISIBLE, showTabIcons);
+    	});
         
         final ScrollPane trackerTableScroll = new ScrollPane(trackerTable.getView());
         trackerTableScroll.setFitToHeight(true);

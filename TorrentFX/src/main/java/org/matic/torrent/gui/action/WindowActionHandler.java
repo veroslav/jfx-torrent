@@ -29,8 +29,26 @@ import javafx.scene.control.ButtonType;
 import javafx.stage.Window;
 
 import org.matic.torrent.gui.window.preferences.PreferencesWindow;
+import org.matic.torrent.preferences.ApplicationPreferences;
+import org.matic.torrent.preferences.GuiProperties;
 
 public final class WindowActionHandler {
+	
+	/**
+	 * Listen for and store position and size after a window resize and movement
+	 * 
+	 * @param window Target window
+	 */
+	public final void handleWindowStateChanges(final Window window) {
+		window.widthProperty().addListener((obs, oldV, width) ->								
+			ApplicationPreferences.setProperty(GuiProperties.APPLICATION_WINDOW_WIDTH, width.doubleValue()));
+		window.heightProperty().addListener((obs, oldV, height) ->
+			ApplicationPreferences.setProperty(GuiProperties.APPLICATION_WINDOW_HEIGHT, height.doubleValue()));
+		window.xProperty().addListener((obs, oldV, x) -> 
+			ApplicationPreferences.setProperty(GuiProperties.APPLICATION_WINDOW_POSITION_X, x.doubleValue()));
+		window.yProperty().addListener((obs, oldV, y) ->
+			ApplicationPreferences.setProperty(GuiProperties.APPLICATION_WINDOW_POSITION_Y, y.doubleValue()));
+	}
 	
 	/**
 	 * Handle user opening the options dialog.

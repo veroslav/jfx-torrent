@@ -93,27 +93,14 @@ public final class DirectoriesContentPane implements CategoryContentPane {
 			ApplicationPreferences.setProperty(PathProperties.NEW_TORRENTS, storeTorrentsDirectoryField.getText());
 			
 			//Save checkbox values
-			ApplicationPreferences.setProperty(PathProperties.NEW_DOWNLOADS_SET, 
-					downloadsDirectoryCheck.isSelected()? ApplicationPreferences.BOOLEAN_PROPERTY_SET : 
-						ApplicationPreferences.BOOLEAN_PROPERTY_UNSET);
-			ApplicationPreferences.setProperty(PathProperties.COMPLETED_DOWNLOADS_SET, 
-					completedDirectoryCheck.isSelected()? ApplicationPreferences.BOOLEAN_PROPERTY_SET : 
-						ApplicationPreferences.BOOLEAN_PROPERTY_UNSET);
-			ApplicationPreferences.setProperty(PathProperties.NEW_TORRENTS_SET, 
-					storeTorrentsCheck.isSelected()? ApplicationPreferences.BOOLEAN_PROPERTY_SET : 
-						ApplicationPreferences.BOOLEAN_PROPERTY_UNSET);
-			ApplicationPreferences.setProperty(PathProperties.COMPLETED_TORRENTS_SET, 
-					moveTorrentsCheck.isSelected()? ApplicationPreferences.BOOLEAN_PROPERTY_SET : 
-						ApplicationPreferences.BOOLEAN_PROPERTY_UNSET);
-			ApplicationPreferences.setProperty(PathProperties.LOAD_TORRENTS_SET, 
-					loadTorrentsCheck.isSelected()? ApplicationPreferences.BOOLEAN_PROPERTY_SET : 
-						ApplicationPreferences.BOOLEAN_PROPERTY_UNSET);
+			ApplicationPreferences.setProperty(PathProperties.NEW_DOWNLOADS_SET, downloadsDirectoryCheck.isSelected());
+			ApplicationPreferences.setProperty(PathProperties.COMPLETED_DOWNLOADS_SET, completedDirectoryCheck.isSelected());
+			ApplicationPreferences.setProperty(PathProperties.NEW_TORRENTS_SET, storeTorrentsCheck.isSelected());
+			ApplicationPreferences.setProperty(PathProperties.COMPLETED_TORRENTS_SET, moveTorrentsCheck.isSelected());
+			ApplicationPreferences.setProperty(PathProperties.LOAD_TORRENTS_SET, loadTorrentsCheck.isSelected());
 			ApplicationPreferences.setProperty(PathProperties.MOVE_COMPLETED_DOWNLOADS_FROM_DEFAULT_SET, 
-					moveFromDefaultCheck.isSelected()? ApplicationPreferences.BOOLEAN_PROPERTY_SET : 
-						ApplicationPreferences.BOOLEAN_PROPERTY_UNSET);
-			ApplicationPreferences.setProperty(PathProperties.DELETE_LOADED_TORRENTS_SET, 
-					deleteTorrentsCheck.isSelected()? ApplicationPreferences.BOOLEAN_PROPERTY_SET : 
-						ApplicationPreferences.BOOLEAN_PROPERTY_UNSET);
+					moveFromDefaultCheck.isSelected());
+			ApplicationPreferences.setProperty(PathProperties.DELETE_LOADED_TORRENTS_SET, deleteTorrentsCheck.isSelected());
 		}
 	};
 	
@@ -194,40 +181,33 @@ public final class DirectoriesContentPane implements CategoryContentPane {
 		moveFromDefaultCheck.setOnAction(e -> preferencesChanged.set(true));
 		deleteTorrentsCheck.setOnAction(e -> preferencesChanged.set(true));
 		
-		final String downloadsDirectorySet = ApplicationPreferences.getProperty(
-				PathProperties.NEW_DOWNLOADS_SET, null);
-		downloadsDirectoryCheck.selectedProperty().set(downloadsDirectorySet != null && 
-				!ApplicationPreferences.BOOLEAN_PROPERTY_UNSET.equals(downloadsDirectorySet));
+		final boolean downloadsDirectorySet = ApplicationPreferences.getProperty(
+				PathProperties.NEW_DOWNLOADS_SET, false);
+		downloadsDirectoryCheck.setSelected(downloadsDirectorySet);
 		
-		final String completedDirectorySet = ApplicationPreferences.getProperty(
-				PathProperties.COMPLETED_DOWNLOADS_SET, null); 
-		completedDirectoryCheck.selectedProperty().set(completedDirectorySet != null && 
-				!ApplicationPreferences.BOOLEAN_PROPERTY_UNSET.equals(completedDirectorySet));
+		final boolean completedDirectorySet = ApplicationPreferences.getProperty(
+				PathProperties.COMPLETED_DOWNLOADS_SET, false); 
+		completedDirectoryCheck.setSelected(completedDirectorySet);
 		
-		final String storeTorrentsSet = ApplicationPreferences.getProperty(
-				PathProperties.NEW_TORRENTS_SET, null);
-		storeTorrentsCheck.selectedProperty().set(storeTorrentsSet != null && 
-				!ApplicationPreferences.BOOLEAN_PROPERTY_UNSET.equals(storeTorrentsSet));
+		final boolean storeTorrentsSet = ApplicationPreferences.getProperty(
+				PathProperties.NEW_TORRENTS_SET, false);
+		storeTorrentsCheck.setSelected(storeTorrentsSet);
 				
-		final String moveTorrentsSet = ApplicationPreferences.getProperty(
-				PathProperties.COMPLETED_TORRENTS_SET, null);
-		moveTorrentsCheck.selectedProperty().set(moveTorrentsSet != null && 
-				!ApplicationPreferences.BOOLEAN_PROPERTY_UNSET.equals(moveTorrentsSet));
+		final boolean moveTorrentsSet = ApplicationPreferences.getProperty(
+				PathProperties.COMPLETED_TORRENTS_SET, false);
+		moveTorrentsCheck.setSelected(moveTorrentsSet);
 		
-		final String loadTorrentsSet = ApplicationPreferences.getProperty(
-				PathProperties.LOAD_TORRENTS_SET, null);
-		loadTorrentsCheck.selectedProperty().set(loadTorrentsSet != null && 
-				!ApplicationPreferences.BOOLEAN_PROPERTY_UNSET.equals(loadTorrentsSet));
+		final boolean loadTorrentsSet = ApplicationPreferences.getProperty(
+				PathProperties.LOAD_TORRENTS_SET, false);
+		loadTorrentsCheck.setSelected(loadTorrentsSet);
 		
-		final String moveFromDefaultSet = ApplicationPreferences.getProperty(
-				PathProperties.MOVE_COMPLETED_DOWNLOADS_FROM_DEFAULT_SET, null);
-		moveFromDefaultCheck.selectedProperty().set(moveFromDefaultSet != null && 
-				!ApplicationPreferences.BOOLEAN_PROPERTY_UNSET.equals(moveFromDefaultSet));
+		final boolean moveFromDefaultSet = ApplicationPreferences.getProperty(
+				PathProperties.MOVE_COMPLETED_DOWNLOADS_FROM_DEFAULT_SET, false);
+		moveFromDefaultCheck.setSelected(moveFromDefaultSet);
 		
-		final String deleteTorrentsSet = ApplicationPreferences.getProperty(
-				PathProperties.DELETE_LOADED_TORRENTS_SET, null); 
-		deleteTorrentsCheck.selectedProperty().set(deleteTorrentsSet != null && 
-				!ApplicationPreferences.BOOLEAN_PROPERTY_UNSET.equals(deleteTorrentsSet));
+		final boolean deleteTorrentsSet = ApplicationPreferences.getProperty(
+				PathProperties.DELETE_LOADED_TORRENTS_SET, false); 
+		deleteTorrentsCheck.setSelected(deleteTorrentsSet);
 	}
 	
 	private void onBrowseForPath(final TextField targetPathField) {
