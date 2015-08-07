@@ -21,6 +21,14 @@
 package org.matic.torrent.preferences;
 
 public final class GuiProperties {
+	
+	//Tab ID:s
+	public static final String TRACKERS_TAB_ID = "Trackers";
+	public static final String FILES_TAB_ID = "Files";
+	public static final String PEERS_TAB_ID = "Peers";
+	public static final String SPEED_TAB_ID = "Speed";
+	public static final String CLOSE_TAB_ID = "Close";
+	public static final String INFO_TAB_ID = "Info";
 
 	//Visibility of the main window components
 	public static final String TOOLBAR_VISIBLE = "gui.toolbar.visible"; 
@@ -40,6 +48,9 @@ public final class GuiProperties {
 	
 	public static final String TAB_ICONS_VISIBLE = "gui.tab.icons.visible"; 
 	public static final boolean DEFAULT_TAB_ICONS_VISIBLE = true;
+	
+	public static final String SELECTED_TAB_ID = "gui.tab.selected";
+	public static final String DEFAULT_SELECTED_TAB_ID = FILES_TAB_ID;
 	
 	//Positions of window components and the window itself
 	public static final String APPLICATION_WINDOW_WIDTH = "gui.window.width";

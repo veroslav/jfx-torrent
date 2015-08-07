@@ -39,6 +39,25 @@ import javafx.scene.shape.Rectangle;
 import org.matic.torrent.gui.window.ApplicationWindow;
 
 public final class ImageUtils {
+			
+	public static final String ARROW_DOWN_IMAGE_LOCATION = "/images/appbar.arrow.down.up.png";
+	public static final String FOLDER_OPEN_IMAGE_LOCATION = "/images/appbar.folder.open.png";
+	public static final String FOLDER_CLOSED_IMAGE_LOCATION = "/images/appbar.folder.png";
+	public static final String PAUSE_IMAGE_LOCATION = "/images/appbar.control.pause.png";
+	public static final String LOCK_IMAGE_LOCATION = "/images/appbar.unlock.keyhole.png";
+	public static final String SETTINGS_IMAGE_LOCATION = "/images/appbar.settings.png";
+	public static final String STOP_IMAGE_LOCATION = "/images/appbar.control.stop.png";
+	public static final String RSS_DARK_IMAGE_LOCATION = "/images/appbar.rss.dark.png";	
+	public static final String DOWNLOAD_IMAGE_LOCATION = "/images/appbar.download.png";
+	public static final String DOWN_IMAGE_LOCATION = "/images/appbar.chevron.down.png";
+	public static final String MONITOR_IMAGE_LOCATION = "/images/appbar.monitor.png";
+	public static final String LABEL_IMAGE_LOCATION = "/images/appbar.tag.label.png";
+	public static final String UP_IMAGE_LOCATION = "/images/appbar.chevron.up.png";
+	public static final String DELETE_IMAGE_LOCATION = "/images/appbar.delete.png";	
+	public static final String NEW_IMAGE_LOCATION = "/images/appbar.page.new.png";
+	public static final String LINK_IMAGE_LOCATION = "/images/appbar.link.png";
+	public static final String ADD_IMAGE_LOCATION = "/images/appbar.add.png";
+	public static final String RSS_IMAGE_LOCATION = "/images/appbar.rss.png";
 	
 	public static final int TOOLBAR_BUTTON_IMAGE_SIZE = 18;
 	public static final int CATEGORY_LIST_IMAGE_SIZE = 25;
@@ -49,17 +68,17 @@ public final class ImageUtils {
 
 	//Folder opened/closed images
 	public static final Image FOLDER_CLOSED_IMAGE = new Image(
-			ApplicationWindow.class.getResourceAsStream("/images/appbar.folder.png"));
+			ApplicationWindow.class.getResourceAsStream(FOLDER_CLOSED_IMAGE_LOCATION));
 	public static final Image FOLDER_OPENED_IMAGE = new Image(
-			ApplicationWindow.class.getResourceAsStream("/images/appbar.folder.open.png"));
+			ApplicationWindow.class.getResourceAsStream(FOLDER_OPEN_IMAGE_LOCATION));
 	
 	//Filter list category images
 	public static final Image DOWNLOADS_IMAGE = new Image(
-			ApplicationWindow.class.getResourceAsStream("/images/appbar.arrow.down.up.png"), 25, 25, true, true);
+			ApplicationWindow.class.getResourceAsStream(ARROW_DOWN_IMAGE_LOCATION), 25, 25, true, true);
 	public static final Image LABEL_IMAGE = new Image(
-			ApplicationWindow.class.getResourceAsStream("/images/appbar.tag.label.png"), 25, 25, true, true);
+			ApplicationWindow.class.getResourceAsStream(LABEL_IMAGE_LOCATION), 25, 25, true, true);
 	public static final Image RSS_IMAGE = new Image(
-			ApplicationWindow.class.getResourceAsStream("/images/appbar.rss.png"), 25, 25, true, true);	
+			ApplicationWindow.class.getResourceAsStream(RSS_IMAGE_LOCATION), 25, 25, true, true);	
 	
 	//File type mapping names
 	private static final String FILE_TYPE_IMAGE = "file_type_image";
