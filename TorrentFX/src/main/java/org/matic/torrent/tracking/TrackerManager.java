@@ -237,7 +237,7 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 	 * @param trackerViews List of tracker views to update
 	 */
 	public final void trackerSnapshot(final QueuedTorrent torrent, 
-			final List<TrackerView> trackerViews) {		
+			final List<TrackerView> trackerViews) {	
 		trackerSessions.get(torrent).stream().filter(s -> s.getTorrent().getInfoHash().equals(
 				torrent.getInfoHash())).forEach(ts -> {
 			final Optional<TrackerView> match = trackerViews.stream().filter(tv ->

@@ -277,17 +277,18 @@ public final class ApplicationWindow {
 		periodicTaskRunner.start();
 	}
 	
-	private void updateGui() {		
+	private void updateGui() {					
+		if(stage.isIconified()) {
+			return;
+		}
+		
 		final List<TorrentJobView> selectedTorrents = torrentJobTable.getSelectedJobs();
 		
 		if(!selectedTorrents.isEmpty()) {
 			//Render Detailed Info pane contents only if it is visible
 			if(showDetailedInfoMenuItem.isSelected()) {
 				//Render tracker statistics if Trackers tab is selected
-				if(detailsTabMap.get(GuiProperties.TRACKERS_TAB_ID).isSelected()) {
-					
-					System.out.println("Updating Trackers Tab");
-					
+				if(detailsTabMap.get(GuiProperties.TRACKERS_TAB_ID).isSelected()) {					
 					ResourceManager.INSTANCE.getTrackerManager().trackerSnapshot(
 						selectedTorrents.get(0).getQueuedTorrent(),
 						trackerTable.getTrackerViews());
@@ -372,19 +373,15 @@ public final class ApplicationWindow {
     			GuiProperties.TOOLBAR_VISIBLE, GuiProperties.DEFAULT_TOOLBAR_VISIBLE);        
         showToolbarMenuItem.setSelected(toolbarShown);
         showToolbar(mainPane, centerPane, toolbar, showToolbarMenuItem.isSelected());
-        showToolbarMenuItem.selectedProperty().addListener((obs, oldV, showToolbar) -> {
-        	showToolbar(mainPane, centerPane, toolbar, showToolbar);
-        	ApplicationPreferences.setProperty(GuiProperties.TOOLBAR_VISIBLE, showToolbar);
-        });
+        showToolbarMenuItem.selectedProperty().addListener((obs, oldV, showToolbar) ->
+        	showToolbar(mainPane, centerPane, toolbar, showToolbar));
         
         final boolean compactToolbarShown = ApplicationPreferences.getProperty(
     			GuiProperties.COMPACT_TOOLBAR, GuiProperties.DEFAULT_COMPACT_TOOLBAR);        
         showCompactToolbarMenuItem.setSelected(compactToolbarShown);
         showCompactToolbar(mainPane, centerPane, toolbar, showCompactToolbarMenuItem.isSelected());
-        showCompactToolbarMenuItem.selectedProperty().addListener((obs, oldV, showCompact) -> {
-        	showCompactToolbar(mainPane, centerPane, toolbar, showCompact);
-        	ApplicationPreferences.setProperty(GuiProperties.COMPACT_TOOLBAR, showCompact);
-        });
+        showCompactToolbarMenuItem.selectedProperty().addListener((obs, oldV, showCompact) ->
+        	showCompactToolbar(mainPane, centerPane, toolbar, showCompact));
         initFilterTreeView();
         
         final SplitPane horizontalSplitPane = new SplitPane(); 
@@ -407,10 +404,8 @@ public final class ApplicationWindow {
     			GuiProperties.DETAILED_INFO_VISIBLE, GuiProperties.DEFAULT_DETAILED_INFO_VISIBLE);        
         showDetailedInfoMenuItem.setSelected(detailedInfoShown);
         showDetailedInfo(verticalSplitPane, showDetailedInfoMenuItem.isSelected(), verticalDividerPositionListener);
-        showDetailedInfoMenuItem.selectedProperty().addListener((obs, oldV, showDetailedInfo) -> {
-        	showDetailedInfo(verticalSplitPane, showDetailedInfo, verticalDividerPositionListener);
-        	ApplicationPreferences.setProperty(GuiProperties.DETAILED_INFO_VISIBLE, showDetailedInfo);
-        });
+        showDetailedInfoMenuItem.selectedProperty().addListener((obs, oldV, showDetailedInfo) ->
+        	showDetailedInfo(verticalSplitPane, showDetailedInfo, verticalDividerPositionListener));
         
         final ChangeListener<?super Number> horizontalDividerPositionListener = (obs, oldV, position) ->
     		ApplicationPreferences.setProperty(GuiProperties.HORIZONTAL_DIVIDER_POSITION, position.doubleValue());
@@ -805,10 +800,10 @@ public final class ApplicationWindow {
 			final ObservableList<TrackerView> trackerViews = FXCollections.observableArrayList(
 					trackerUrls.stream().map(t -> new TrackerView(t, torrentStatus)).collect(Collectors.toList()));
 			
+			queuedTorrentManager.add(queuedTorrent, trackerUrls);
 			trackerViewMappings.put(queuedTorrent, trackerViews);
 			trackerTable.setContent(trackerViews);
-			torrentJobTable.addJob(jobView);			
-			queuedTorrentManager.add(queuedTorrent, trackerUrls);
+			torrentJobTable.addJob(jobView);						
 			
 			updateGui();
 		}
@@ -877,19 +872,40 @@ public final class ApplicationWindow {
 	}
 	
 	//TODO: Store all window changes in this method only
-	private void storeWindowPreferences() {
-		//Store currently selected tab, if needed
+	private void storeWindowChanges() {
+		//Store currently selected tab, if changed
 		final Tab selectedTab = detailedInfoTabPane.getSelectionModel().getSelectedItem();
 		if(!ApplicationPreferences.getProperty(GuiProperties.SELECTED_TAB_ID,
 				GuiProperties.DEFAULT_SELECTED_TAB_ID).equals(selectedTab.getId())) {			
 			ApplicationPreferences.setProperty(GuiProperties.SELECTED_TAB_ID, selectedTab.getId());
 		}
-		//Store status bar visibility, if needed
+		//Store status bar visibility, if changed
 		final boolean wasStatusBarShown = ApplicationPreferences.getProperty(
 				GuiProperties.STATUSBAR_VISIBLE, GuiProperties.DEFAULT_STATUSBAR_VISIBLE);
 		final boolean isStatusBarShown = showStatusBarMenuItem.isSelected();
 		if(isStatusBarShown != wasStatusBarShown) {
 			ApplicationPreferences.setProperty(GuiProperties.STATUSBAR_VISIBLE, isStatusBarShown);
+		}
+		//Store tool bar visibility, if changed
+		final boolean wasToolBarShown = ApplicationPreferences.getProperty(
+				GuiProperties.TOOLBAR_VISIBLE, GuiProperties.DEFAULT_TOOLBAR_VISIBLE);
+		final boolean isToolBarShown = showToolbarMenuItem.isSelected();
+		if(isToolBarShown != wasToolBarShown) {
+			ApplicationPreferences.setProperty(GuiProperties.TOOLBAR_VISIBLE, isToolBarShown);
+		}
+		//Store compact tool bar property, if changed
+		final boolean wasCompactToolBar = ApplicationPreferences.getProperty(
+				GuiProperties.COMPACT_TOOLBAR, GuiProperties.DEFAULT_COMPACT_TOOLBAR);
+		final boolean isCompactToolBar = showCompactToolbarMenuItem.isSelected();
+		if(isCompactToolBar != wasCompactToolBar) {
+			ApplicationPreferences.setProperty(GuiProperties.COMPACT_TOOLBAR, isCompactToolBar);
+		}
+		//Store detailed info visibility, if changed
+		final boolean wasDetailedInfoShown = ApplicationPreferences.getProperty(
+				GuiProperties.DETAILED_INFO_VISIBLE, GuiProperties.DEFAULT_DETAILED_INFO_VISIBLE);
+		final boolean isDetailedInfoShown = showDetailedInfoMenuItem.isSelected();
+		if(isDetailedInfoShown != wasDetailedInfoShown) {
+			ApplicationPreferences.setProperty(GuiProperties.DETAILED_INFO_VISIBLE, isDetailedInfoShown);
 		}
 	}
 	
@@ -904,7 +920,7 @@ public final class ApplicationWindow {
 			ResourceManager.INSTANCE.cleanup();
 			
 			//Store any changes to window components
-			storeWindowPreferences();
+			storeWindowChanges();
 			
 			//User chose to close the application, quit
 	        Platform.exit();
