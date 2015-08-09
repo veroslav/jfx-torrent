@@ -29,33 +29,33 @@ import org.matic.torrent.hash.InfoHash;
 
 public final class QueuedTorrent implements Comparable<QueuedTorrent> {
 
-	public enum Status {
+	public enum State {
 		ACTIVE, STOPPED, ERROR
 	}
 	
 	private final InfoHash infoHash;
 	
-	private final ObjectProperty<Status> status;	
+	private final ObjectProperty<State> state;	
 	
 	//TODO: Move priority handling to QueuedTorrentManager
 	private int priority;
 
-	public QueuedTorrent(final InfoHash infoHash, final int priority, final Status status) {
-		this.status = new SimpleObjectProperty<>(status);
+	public QueuedTorrent(final InfoHash infoHash, final int priority, final State state) {
+		this.state = new SimpleObjectProperty<>(state);
 		this.infoHash = infoHash;
 		this.priority = priority;
 	}
 	
-	public void setStatus(final Status status) {
-		this.status.set(status);
+	public void setState(final State state) {
+		this.state.set(state);
 	}
 	
-	public Status getStatus() {
-		return status.get();
+	public State getState() {
+		return state.get();
 	}
 	
-	public ObjectProperty<Status> statusProperty() {
-		return status;
+	public ObjectProperty<State> stateProperty() {
+		return state;
 	}
 	
 	public InfoHash getInfoHash() {

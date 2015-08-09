@@ -534,9 +534,9 @@ public final class ApplicationWindow {
 		toolbarButtonsMap.get(TOOLBAR_BUTTON_REMOVE_NAME).setOnAction(
 				event -> onRemoveTorrent());
 		toolbarButtonsMap.get(TOOLBAR_BUTTON_START_NAME).setOnAction(
-				event -> onChangeTorrentState(QueuedTorrent.Status.ACTIVE));
+				event -> onChangeTorrentState(QueuedTorrent.State.ACTIVE));
 		toolbarButtonsMap.get(TOOLBAR_BUTTON_STOP_NAME).setOnAction(
-				event -> onChangeTorrentState(QueuedTorrent.Status.STOPPED));
+				event -> onChangeTorrentState(QueuedTorrent.State.STOPPED));
 
 		final HBox separatorBox = new HBox();		
 		HBox.setHgrow(separatorBox, Priority.ALWAYS);
@@ -790,8 +790,8 @@ public final class ApplicationWindow {
 			}
 			
 			final InfoHash infoHash = torrentOptions.getInfoHash();
-			final QueuedTorrent.Status torrentStatus = torrentOptions.isStartTorrent()? 
-					QueuedTorrent.Status.ACTIVE : QueuedTorrent.Status.STOPPED;
+			final QueuedTorrent.State torrentStatus = torrentOptions.isStartTorrent()? 
+					QueuedTorrent.State.ACTIVE : QueuedTorrent.State.STOPPED;
 			final QueuedTorrent queuedTorrent = new QueuedTorrent(infoHash, 1, torrentStatus);
 			
 			final TorrentJobView jobView = new TorrentJobView(queuedTorrent, torrentOptions.getName(), 
@@ -809,15 +809,15 @@ public final class ApplicationWindow {
 		}
 	}
 	
-	private void onChangeTorrentState(final QueuedTorrent.Status newStatus) {
-		toolbarButtonsMap.get(TOOLBAR_BUTTON_START_NAME).setDisable(newStatus == QueuedTorrent.Status.ACTIVE);
-		toolbarButtonsMap.get(TOOLBAR_BUTTON_STOP_NAME).setDisable(newStatus == QueuedTorrent.Status.STOPPED);
+	private void onChangeTorrentState(final QueuedTorrent.State newStatus) {
+		toolbarButtonsMap.get(TOOLBAR_BUTTON_START_NAME).setDisable(newStatus == QueuedTorrent.State.ACTIVE);
+		toolbarButtonsMap.get(TOOLBAR_BUTTON_STOP_NAME).setDisable(newStatus == QueuedTorrent.State.STOPPED);
 		
 		final ObservableList<TorrentJobView> selectedTorrentJobs = torrentJobTable.getSelectedJobs();
 		
 		if(selectedTorrentJobs.size() > 0) {
 			selectedTorrentJobs.stream().map(
-					TorrentJobView::getQueuedTorrent).forEach(t -> t.setStatus(newStatus));			
+					TorrentJobView::getQueuedTorrent).forEach(t -> t.setState(newStatus));			
 		}
 	}
 	
@@ -855,9 +855,9 @@ public final class ApplicationWindow {
 			updateGui();
 		}
 		toolbarButtonsMap.get(TOOLBAR_BUTTON_START_NAME).setDisable(
-				!torrentSelected || selectedTorrentJob.getQueuedTorrent().getStatus() == QueuedTorrent.Status.ACTIVE);
+				!torrentSelected || selectedTorrentJob.getQueuedTorrent().getState() == QueuedTorrent.State.ACTIVE);
 		toolbarButtonsMap.get(TOOLBAR_BUTTON_STOP_NAME).setDisable(
-				!torrentSelected || selectedTorrentJob.getQueuedTorrent().getStatus() == QueuedTorrent.Status.STOPPED);
+				!torrentSelected || selectedTorrentJob.getQueuedTorrent().getState() == QueuedTorrent.State.STOPPED);
 		
 		final Button removeButton = toolbarButtonsMap.get(TOOLBAR_BUTTON_REMOVE_NAME);	
 		final ImageView buttonImageView = (ImageView)removeButton.getGraphic();

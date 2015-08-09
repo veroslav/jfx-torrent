@@ -80,7 +80,7 @@ public class TrackerTable {
 	
 	private void addColumns() {	
 		final Function<TrackerView, String> updateInValueConverter = tv -> {			
-			if(tv.getTorrentStatus() == QueuedTorrent.Status.STOPPED) {
+			if(tv.getTorrentState() == QueuedTorrent.State.STOPPED) {
 				return "";
 			}
 			final long nextUpdateValue = tv.getNextUpdate();
@@ -94,12 +94,12 @@ public class TrackerTable {
 		
 		final Function<TrackerView, String> intervalValueConverter = tv -> {
 			final long interval = tv.getInterval(); 
-			return (tv.getTorrentStatus() != QueuedTorrent.Status.STOPPED) && (interval > 0)?
+			return (tv.getTorrentState() != QueuedTorrent.State.STOPPED) && (interval > 0)?
 					UnitConverter.formatMillisToTime(interval) : "";
 		};
 		
 		final Function<TrackerView, String> minIntervalValueConverter = tv -> {
-			return tv.getTorrentStatus() != QueuedTorrent.Status.STOPPED? 
+			return tv.getTorrentState() != QueuedTorrent.State.STOPPED? 
 					UnitConverter.formatMillisToTime(tv.getMinInterval()) : "";
 		};
 		

@@ -59,12 +59,12 @@ import org.matic.torrent.peer.ClientProperties;
 import org.matic.torrent.queue.QueuedTorrent;
 import org.matic.torrent.tracking.Tracker.Event;
 import org.matic.torrent.tracking.TrackerRequest.Type;
-import org.matic.torrent.tracking.listeners.HttpTrackerResponseListener;
+import org.matic.torrent.tracking.listeners.TrackerResponseListener;
 import org.matic.torrent.tracking.listeners.PeerFoundListener;
 import org.matic.torrent.tracking.listeners.UdpTrackerResponseListener;
 import org.matic.torrent.utils.UnitConverter;
 
-public final class TrackerManager implements HttpTrackerResponseListener, UdpTrackerResponseListener {
+public final class TrackerManager implements TrackerResponseListener, UdpTrackerResponseListener {
 	
 	private static final long REQUEST_DELAY_ON_TRACKER_ERROR = 1200000;  	//Wait for 20 mins on tracker error
 	private static final long UDP_TRACKER_CONNECTION_ID_TIMEOUT = 60000; 	//60 s		
@@ -93,7 +93,7 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 	}
 	
 	/**
-	 * @see HttpTrackerResponseListener#onAnnounceResponseReceived(AnnounceResponse, TrackedTorrent)
+	 * @see TrackerResponseListener#onAnnounceResponseReceived(AnnounceResponse, TrackedTorrent)
 	 */
 	@Override
 	public final void onAnnounceResponseReceived(final AnnounceResponse announceResponse, 
@@ -107,8 +107,17 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 		trackerSession.setLastAnnounceResponse(responseTime);
 		
 		synchronized(trackerSessions) {		
-			if(trackerSessions.containsKey(trackerSession.getTorrent()) &&
-				trackerSession.getLastTrackerEvent() != Tracker.Event.STOPPED) {
+			if(trackerSessions.containsKey(trackerSession.getTorrent())) {
+				if(trackerSession.getTorrent().getState() == QueuedTorrent.State.STOPPED) {
+					//Cancel any scheduled requests as we have STOPPED
+					
+					/*System.out.println("onAnnounceResponseReceived(" + trackerSession.getTracker().getUrl() + 
+							": Cancelling due to STOPPED");*/
+
+					resetSessionStateOnStop(trackerSession);					
+					return;
+				}
+				
 				trackerSession.setTrackerMessage(announceResponse.getMessage());
 				
 				//Check whether it was an error response before scheduling
@@ -121,9 +130,10 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 					trackerSession.setTrackerMessage(announceResponse.getMessage());
 					trackerSession.setInterval(REQUEST_DELAY_ON_TRACKER_ERROR);
 					
-					final AnnounceParameters announceParameters = new AnnounceParameters( 
-							trackerSession.getLastTrackerEvent(), 0, 0, 0);
-					trackerSession.setLastTrackerEvent(Event.STOPPED);
+					final Tracker.Event sentTrackerEvent = scheduledRequests.get(trackerSession).
+							getAnnounceParameters().getTrackerEvent();
+					
+					final AnnounceParameters announceParameters = new AnnounceParameters(sentTrackerEvent, 0, 0, 0);
 					scheduleAnnouncement(trackerSession, announceParameters, REQUEST_DELAY_ON_TRACKER_ERROR);
 				}
 				else {
@@ -139,25 +149,11 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 					scheduleAnnouncement(trackerSession, announceParameters, announceResponse.getInterval());
 				}
 			}
-			else {
-				//Cancel any scheduled requests as we have STOPPED
-				/*System.out.println("onAnnounceResponseReceived(" + trackerSession.getTracker().getUrl() + 
-						": Cancelling due to STOPPED");*/
-				
-				trackerSession.setTrackerStatus(Tracker.Status.UNKNOWN);
-				trackerSession.setTrackerMessage(announceResponse.getMessage());
-				
-				scheduledRequests.compute(trackerSession, (session, announcement) -> {
-					final Future<?> future = announcement.getFuture(); 
-					future.cancel(false);
-					return null;
-				});
-			}
 		}
 	}	
 	
 	/**
-	 * @see HttpTrackerResponseListener#onScrapeResponseReceived(Tracker, ScrapeResponse)
+	 * @see TrackerResponseListener#onScrapeResponseReceived(Tracker, ScrapeResponse)
 	 */
 	@Override
 	public void onScrapeResponseReceived(final Tracker tracker, final ScrapeResponse scrapeResponse) {
@@ -178,7 +174,7 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 			trackerSession.setDownloaded(scrapeStat.getDownloaded());
 			trackerSession.setLastScrapeResponse(responseTime);
 			
-			if(trackerSession.getTorrent().getStatus() == QueuedTorrent.Status.STOPPED) {
+			if(trackerSession.getTorrent().getState() == QueuedTorrent.State.STOPPED) {
 				trackerSession.setTrackerStatus(Tracker.Status.SCRAPE_OK);
 			}
 		});
@@ -256,11 +252,15 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 				final String statusMessage = trackerMessage != null && !trackerMessage.equals(TRACKER_MESSAGE_NULL)?
 					trackerMessage : Tracker.getStatusMessage(trackerStatus);
 				
+				final boolean isTrackerScraped = trackerStatus == Tracker.Status.SCRAPE_OK ||
+						trackerStatus == Tracker.Status.SCRAPE_NOT_SUPPORTED;
+				
 				final String displayedMessage = trackerStatus != Tracker.Status.UPDATING &&
-						nextUpdateValue >= 1000? statusMessage : "";
+						nextUpdateValue >= 1000 && (torrent.getState() == QueuedTorrent.State.ACTIVE ||
+						isTrackerScraped)? statusMessage : "";
 				
 				trackerView.setLastTrackerResponse(lastTrackerResponse);				
-				trackerView.setTorrentStatus(torrent.getStatus());
+				trackerView.setTorrentState(torrent.getState());
 				trackerView.setStatus(displayedMessage);
 				trackerView.nextUpdateProperty().set(nextUpdateValue);												
 				trackerView.intervalProperty().set(ts.getInterval());				
@@ -276,15 +276,20 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 	/**
 	 * Issue an announce to a tracker (either explicitly by the user or when torrent state changes)
 	 * 
-	 * @param torrent Torrent for which the announcement is to be made
 	 * @param trackerSession Matching tracker session
 	 * @param trackerEvent The tracker event to send
 	 * @return Whether request was successful (false if currently not allowed)
 	 */
-	public boolean issueAnnounce(final QueuedTorrent torrent, final TrackerSession trackerSession,
+	public boolean issueAnnounce(final TrackerSession trackerSession,
 			final Tracker.Event trackerEvent) {
+		
+		System.out.println("issueAnnounce: tracker = " + trackerSession.getTracker().getUrl() + ", event = " + trackerEvent);
+		
 		synchronized(trackerSessions) {			
-			final boolean announceAllowed = announceAllowed(trackerSession);
+			final boolean announceAllowed = announceAllowed(trackerSession, trackerEvent);
+			
+			System.out.println("announceAllowed? " + announceAllowed);
+			
 			if(announceAllowed) {
 				final AnnounceParameters announceParameters = new AnnounceParameters(trackerEvent, 0, 0, 0);
 				scheduleAnnouncement(trackerSession, announceParameters, 0);
@@ -302,7 +307,7 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 	 */
 	public void issueTorrentEvent(final QueuedTorrent torrent, Tracker.Event event) {
 		synchronized(trackerSessions) {
-			trackerSessions.get(torrent).forEach(ts -> issueAnnounce(torrent, ts, event));
+			trackerSessions.get(torrent).forEach(ts -> issueAnnounce(ts, event));
 		}
 	}
 	
@@ -419,22 +424,17 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 		
 		//Remove and issue STOPPED announce to affected tracker(s), if not already STOPPED
 		for(final TrackerSession trackerSession : sessions) {														
-			if(trackerSession.getLastTrackerEvent() != Tracker.Event.STOPPED) {					
-				final AnnounceParameters announceParameters = new AnnounceParameters( 
-						Tracker.Event.STOPPED, 0, 0, 0);
-				scheduleAnnouncement(trackerSession, announceParameters, 0);
-			}
-			else {
-				scheduledRequests.computeIfPresent(trackerSession, (key, value) -> {
-					//Cancel any pending requests for this tracker session
-					
-					/*System.out.println("remove(List<TrackerSession>): Canceling requests for transaction_id = " +
-							trackerSession.getTransactionId());*/
-					
-					value.getFuture().cancel(false);
-					return null;
-				});
-			}
+			synchronized(trackerSessions) {
+	
+				/*System.out.println("remove(List<TrackerSession>): Canceling requests for transaction_id = " +
+						trackerSession.getTransactionId());*/
+				
+				if(trackerSession.getLastAcknowledgedEvent() != Tracker.Event.STOPPED) {					
+					final AnnounceParameters announceParameters = new AnnounceParameters( 
+							Tracker.Event.STOPPED, 0, 0, 0);
+					scheduleAnnouncement(trackerSession, announceParameters, 0);
+				}
+			};
 			final Tracker tracker = trackerSession.getTracker();
 			if(tracker.getType() == Tracker.Type.UDP) {
 				//Remove any pending scrape requests
@@ -524,6 +524,8 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 				final int seeders = dis.readInt();
 				
 				final TrackerSession trackerSession = match.get();
+				final AnnounceParameters announceParameters = scheduledRequests.get(trackerSession).getAnnounceParameters();
+				trackerSession.setLastAcknowledgedEvent(announceParameters.getTrackerEvent());
 				
 				/*System.out.println("onUdpTrackerAnnounce(transaction_id: " + transactionId + 
 						"): " + leechers + " leechers and " + seeders + " seeders. " +
@@ -594,7 +596,6 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 			final Consumer<TrackerSession> sessionStatusUpdate = ts -> {
 				ts.setInterval(REQUEST_DELAY_ON_TRACKER_ERROR);
 				ts.setTrackerStatus(Tracker.Status.TRACKER_ERROR);
-				ts.setLastTrackerEvent(Event.STOPPED);
 				ts.setTrackerMessage(new String(messageBytes,
 						ClientProperties.STRING_ENCODING_CHARSET));
 				
@@ -646,35 +647,39 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 		return peers;
 	}
 	
-	private boolean announceAllowed(final TrackerSession trackerSession) {
+	private boolean announceAllowed(final TrackerSession trackerSession, final Tracker.Event trackerEvent) {
 		final Long minInterval = trackerSession.getMinInterval();
 		final long minAnnounceWaitInterval = minInterval != null? 
 				minInterval : trackerSession.getInterval();
-		return (System.currentTimeMillis() - trackerSession.getLastAnnounceResponse()) > minAnnounceWaitInterval;
+		return trackerEvent != trackerSession.getLastAcknowledgedEvent() ||
+				(System.currentTimeMillis() - trackerSession.getLastAnnounceResponse()) > minAnnounceWaitInterval;
 	}
 	
-	private boolean isValidTrackerEvent(final Tracker.Event lastTrackerEvent, final Tracker.Event targetEvent) {		
+	private boolean isValidTrackerEvent(final TrackerSession trackerSession, final Tracker.Event targetEvent) {		
+		final Tracker.Event lastAcknowledgedTrackerEvent = trackerSession.getLastAcknowledgedEvent();
+		
+		System.out.println("isValidTrackerEvent(): tracker = " + trackerSession.getTracker().getUrl() +
+				", lastAcknowledgedEvent: " + lastAcknowledgedTrackerEvent);
+		
 		switch(targetEvent) {
 		case COMPLETED:
-			if(lastTrackerEvent == Event.COMPLETED || lastTrackerEvent == Event.STOPPED) {
+			if(lastAcknowledgedTrackerEvent == Event.COMPLETED ||
+				lastAcknowledgedTrackerEvent == Event.STOPPED) {
 				return false;
 			}
 			break;
 		case STARTED:
-			if(lastTrackerEvent == Event.STARTED || lastTrackerEvent == Event.UPDATE) {
+			if(lastAcknowledgedTrackerEvent == Event.STARTED ||
+				lastAcknowledgedTrackerEvent == Event.UPDATE) {
 				return false;
 			}
 			break;
 		case STOPPED:
-			if(lastTrackerEvent == Event.STOPPED) {
+		case UPDATE:
+			if(lastAcknowledgedTrackerEvent == Event.STOPPED) {
 				return false;
 			}
-			break;
-		case UPDATE:
-			if(lastTrackerEvent == Event.STOPPED) {
-				return false;
-			}	
-			break;
+			break;		
 		}
 		return true;
 	}
@@ -712,13 +717,20 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 	private void scheduleAnnouncement(final TrackerSession trackerSession,
 			final AnnounceParameters announceParameters, final long delay) {
 		final Tracker tracker = trackerSession.getTracker();
+		final Runnable runnable = () -> {
+			if(trackerSession.getTorrent().getState() == QueuedTorrent.State.STOPPED) {
+				resetSessionStateOnStop(trackerSession);
+			}
+			else {
+				tracker.announce(announceParameters, trackerSession);
+			}
+		};
 		
 		scheduledRequests.compute(trackerSession, (session, announcement) -> {			
-			if(!isValidTrackerEvent(trackerSession.getLastTrackerEvent(),
-					announceParameters.getTrackerEvent())) {
+			if(!isValidTrackerEvent(trackerSession, announceParameters.getTrackerEvent())) {
 				
-				System.out.println(tracker + "Invalid tracker event: last: " 
-						+ trackerSession.getLastTrackerEvent() +
+				System.out.println(tracker.getUrl() + "Invalid tracker event: last: " 
+						+ trackerSession.getLastAcknowledgedEvent() +
 						", current: " + announceParameters.getTrackerEvent());
 				
 				return announcement;
@@ -726,8 +738,7 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 			if(announcement != null) {
 				announcement.getFuture().cancel(false);
 			}
-						
-			final Runnable runnable = () -> tracker.announce(announceParameters, trackerSession);
+			
 			final TrackerRequest trackerRequest = new TrackerRequest(Type.ANNOUNCE, runnable);
 			
 			if(tracker.getType() == Tracker.Type.TCP) {
@@ -812,10 +823,9 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 					announcement.getFuture().cancel(false);								
 					return announcement;
 			});
-			trackerSession.setLastTrackerEvent(Tracker.Event.STOPPED);
 			if(previousAnnouncement != null) {				
 				final AnnounceParameters oldAnnouncement = previousAnnouncement.getAnnounceParameters();
-				if(isValidTrackerEvent(Tracker.Event.STOPPED, oldAnnouncement.getTrackerEvent())) {
+				if(isValidTrackerEvent(trackerSession, oldAnnouncement.getTrackerEvent())) {
 					scheduleAnnouncement(trackerSession, oldAnnouncement, REQUEST_DELAY_ON_TRACKER_ERROR);
 				}
 			}
@@ -833,6 +843,25 @@ public final class TrackerManager implements HttpTrackerResponseListener, UdpTra
 		synchronized(trackerSessions) {			
 			return (tracker.getId() != UdpTracker.DEFAULT_CONNECTION_ID) &&
 				((System.currentTimeMillis() - tracker.getLastResponse()) <= UDP_TRACKER_CONNECTION_ID_TIMEOUT);
+		}
+	}
+	
+	private void resetSessionStateOnStop(final TrackerSession trackerSession) {
+		
+		System.out.println("Torrent has been stopped, resetting tracker session's state");
+		
+		scheduledRequests.compute(trackerSession, (session, announcement) -> {
+			announcement.getFuture().cancel(false);
+			return null;
+		});		
+		
+		synchronized(trackerSessions) {
+			trackerSession.setLastAcknowledgedEvent(Tracker.Event.STOPPED);
+			trackerSession.setMinInterval(Tracker.MIN_INTERVAL_DEFAULT_VALUE);			
+			trackerSession.setTrackerStatus(Tracker.Status.UNKNOWN);
+			trackerSession.setLastAnnounceResponse(0);			
+			trackerSession.setTrackerMessage("");
+			trackerSession.setInterval(0);
 		}
 	}
 }

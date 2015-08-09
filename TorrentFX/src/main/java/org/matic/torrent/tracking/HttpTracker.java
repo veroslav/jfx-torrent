@@ -54,7 +54,7 @@ import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.net.NetworkUtilities;
 import org.matic.torrent.net.pwp.PwpPeer;
 import org.matic.torrent.peer.ClientProperties;
-import org.matic.torrent.tracking.listeners.HttpTrackerResponseListener;
+import org.matic.torrent.tracking.listeners.TrackerResponseListener;
 
 public final class HttpTracker extends Tracker {
 	
@@ -65,7 +65,7 @@ public final class HttpTracker extends Tracker {
 	private static final String REQUEST_TYPE_ANNOUNCE = "announce";
 	private static final String REQUEST_TYPE_SCRAPE = "scrape";
 	
-	private final Set<HttpTrackerResponseListener> listeners;	
+	private final Set<TrackerResponseListener> listeners;	
 	private final String scrapeUrl;
 	
 	/**
@@ -81,15 +81,15 @@ public final class HttpTracker extends Tracker {
 		scrapeUrl = scrapeSupported? url.replace(REQUEST_TYPE_ANNOUNCE, REQUEST_TYPE_SCRAPE) : null;
 	}
 	
-	public final void addListener(final HttpTrackerResponseListener listener) {
+	public final void addListener(final TrackerResponseListener listener) {
 		listeners.add(listener);
 	}
 	
-	public final void removeListener(final HttpTrackerResponseListener listener) {
+	public final void removeListener(final TrackerResponseListener listener) {
 		listeners.remove(listener);
 	}
 	
-	private void notifyListeners(final Consumer<HttpTrackerResponseListener> notification) {
+	private void notifyListeners(final Consumer<TrackerResponseListener> notification) {
 		listeners.forEach(l -> notification.accept(l));
 	}
 	
@@ -169,7 +169,9 @@ public final class HttpTracker extends Tracker {
 				buildAnnounceResponse(trackerResponse.getResponseData(), trackerSession.getTorrent().getInfoHash()) :
 					new AnnounceResponse(trackerResponse.getType(), trackerResponse.getMessage());
 		
-		trackerSession.setLastTrackerEvent(announceParameters.getTrackerEvent());
+		if(trackerResponse.getType() == TrackerResponse.Type.OK) {
+			trackerSession.setLastAcknowledgedEvent(announceParameters.getTrackerEvent());
+		}
 		notifyListeners(l -> l.onAnnounceResponseReceived(announceResponse, trackerSession));		
 	}
 	

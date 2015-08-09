@@ -120,7 +120,6 @@ public final class UdpTracker extends Tracker {
 				trackerSession.getTorrent().getInfoHash(), trackerSession.getTransactionId());
 		
 		if(announceRequest != null) {
-			trackerSession.setLastTrackerEvent(announceParameters.getTrackerEvent());
 			ResourceManager.INSTANCE.getUdpTrackerConnectionManager().send(announceRequest);
 		}
 	}

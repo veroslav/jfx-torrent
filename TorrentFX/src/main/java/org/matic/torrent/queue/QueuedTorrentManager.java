@@ -35,7 +35,7 @@ import org.matic.torrent.utils.ResourceManager;
 
 public final class QueuedTorrentManager {
 
-	private final Map<QueuedTorrent, ChangeListener<QueuedTorrent.Status>> statusChangeListeners = new ConcurrentHashMap<>();
+	private final Map<QueuedTorrent, ChangeListener<QueuedTorrent.State>> stateChangeListeners = new ConcurrentHashMap<>();
 	private final Map<QueuedTorrent, Set<String>> queuedTorrents = new HashMap<>();
 
 	/**
@@ -50,11 +50,11 @@ public final class QueuedTorrentManager {
 			return false;
 		}
 		
-		addTorrentStatusChangeListener(torrent);
+		addTorrentStateChangeListener(torrent);
 		
 		final TrackerManager trackerManager = ResourceManager.INSTANCE.getTrackerManager();
 		trackerUrls.forEach(t ->
-			trackerManager.addTracker(t, torrent, torrent.getStatus() != QueuedTorrent.Status.STOPPED));
+			trackerManager.addTracker(t, torrent, torrent.getState() != QueuedTorrent.State.STOPPED));
 		
 		return true;
 	}
@@ -69,7 +69,7 @@ public final class QueuedTorrentManager {
 		final boolean removed = queuedTorrents.remove(torrent) != null;
 		
 		if(removed) {
-			torrent.statusProperty().removeListener(statusChangeListeners.remove(torrent));
+			torrent.stateProperty().removeListener(stateChangeListeners.remove(torrent));
 			ResourceManager.INSTANCE.getTrackerManager().removeTorrent(torrent);
 		}
 		
@@ -90,21 +90,21 @@ public final class QueuedTorrentManager {
 		return queuedTorrents.size();
 	}
 	
-	private void onTorrentStatusChanged(final QueuedTorrent torrent, QueuedTorrent.Status oldValue,
-			QueuedTorrent.Status newValue) {
-		if(oldValue == newValue || (newValue != QueuedTorrent.Status.ACTIVE &&
-				newValue != QueuedTorrent.Status.STOPPED)) {
+	private void onTorrentStateChanged(final QueuedTorrent torrent, QueuedTorrent.State oldValue,
+			QueuedTorrent.State newValue) {
+		if(oldValue == newValue || (newValue != QueuedTorrent.State.ACTIVE &&
+				newValue != QueuedTorrent.State.STOPPED)) {
 			return;
 		}
 		
 		ResourceManager.INSTANCE.getTrackerManager().issueTorrentEvent(torrent, 
-				newValue == QueuedTorrent.Status.ACTIVE? Tracker.Event.STARTED : Tracker.Event.STOPPED);		
+				newValue == QueuedTorrent.State.ACTIVE? Tracker.Event.STARTED : Tracker.Event.STOPPED);		
 	}
 	
-	private void addTorrentStatusChangeListener(final QueuedTorrent torrent) {
-		final ChangeListener<QueuedTorrent.Status> statusChangeListener = 
-				(obs, oldV, newV) -> onTorrentStatusChanged(torrent, oldV, newV);
-		statusChangeListeners.put(torrent, statusChangeListener);
-		torrent.statusProperty().addListener(statusChangeListener);
+	private void addTorrentStateChangeListener(final QueuedTorrent torrent) {
+		final ChangeListener<QueuedTorrent.State> stateChangeListener = 
+				(obs, oldV, newV) -> onTorrentStateChanged(torrent, oldV, newV);
+		stateChangeListeners.put(torrent, stateChangeListener);
+		torrent.stateProperty().addListener(stateChangeListener);
 	}
 }

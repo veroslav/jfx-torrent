@@ -26,12 +26,12 @@ import org.matic.torrent.tracking.Tracker;
 import org.matic.torrent.tracking.TrackerSession;
 
 /**
- * A listener for receiving and managing HTTP tracker responses
+ * A listener for receiving and managing tracker responses
  * 
  * @author vedran
  *
  */
-public interface HttpTrackerResponseListener {
+public interface TrackerResponseListener {
 
 	/**
 	 * Handle a tracker announce response  

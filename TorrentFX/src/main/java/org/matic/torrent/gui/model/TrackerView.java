@@ -41,20 +41,20 @@ public final class TrackerView {
 	private final StringProperty status = new SimpleStringProperty();
 	private final StringProperty trackerName;
 
-	private QueuedTorrent.Status torrentStatus;	
+	private QueuedTorrent.State torrentState;	
 	private long lastTrackerResponse = 0;
 
-	public TrackerView(final String trackerName, final QueuedTorrent.Status torrentStatus) {
+	public TrackerView(final String trackerName, final QueuedTorrent.State torrentState) {
 		this.trackerName = new SimpleStringProperty(trackerName);
-		this.torrentStatus = torrentStatus;
+		this.torrentState = torrentState;
 	}
 		
-	public QueuedTorrent.Status getTorrentStatus() {
-		return torrentStatus;
+	public QueuedTorrent.State getTorrentState() {
+		return torrentState;
 	}
 
-	public void setTorrentStatus(final QueuedTorrent.Status torrentStatus) {
-		this.torrentStatus = torrentStatus;
+	public void setTorrentState(final QueuedTorrent.State torrentState) {
+		this.torrentState = torrentState;
 	}
 
 	public String getStatus() {

@@ -28,7 +28,7 @@ import org.matic.torrent.queue.QueuedTorrent;
 
 public final class TrackerSession {
 
-	private volatile Tracker.Event lastTrackerEvent = Tracker.Event.STOPPED;
+	private Tracker.Event lastAcknowledgedTrackerEvent = Tracker.Event.STOPPED;
 	
 	private final QueuedTorrent queuedTorrent;	
 	private final Tracker tracker;
@@ -140,12 +140,24 @@ public final class TrackerSession {
 		return queuedTorrent;
 	}
 	
-	public Tracker.Event getLastTrackerEvent() {
-		return lastTrackerEvent;
+	/**
+	 * Return the last announced tracker event acknowledged by the tracker
+	 * 
+	 * @return Tracker event
+	 */
+	public Tracker.Event getLastAcknowledgedEvent() {
+		synchronized(lastAcknowledgedTrackerEvent) {
+			return lastAcknowledgedTrackerEvent;
+		}
 	}
 
-	public void setLastTrackerEvent(final Tracker.Event lastTrackerEvent) {
-		this.lastTrackerEvent = lastTrackerEvent;
+	public void setLastAcknowledgedEvent(final Tracker.Event trackerEvent) {
+		synchronized(lastAcknowledgedTrackerEvent) {
+			
+			System.out.println("setLastAcknowledgedEvent(" + trackerEvent + "): " + tracker.getUrl());
+			
+			this.lastAcknowledgedTrackerEvent = trackerEvent;
+		}
 	}
 
 	public Tracker getTracker() {
