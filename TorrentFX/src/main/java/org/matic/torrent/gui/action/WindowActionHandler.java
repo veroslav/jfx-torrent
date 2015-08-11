@@ -23,6 +23,7 @@ package org.matic.torrent.gui.action;
 import java.util.Optional;
 
 import javafx.event.Event;
+import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.ButtonType;
@@ -35,19 +36,39 @@ import org.matic.torrent.preferences.GuiProperties;
 public final class WindowActionHandler {
 	
 	/**
-	 * Listen for and store position and size after a window resize and movement
+	 * Store position and size of the window, if changed
 	 * 
 	 * @param window Target window
 	 */
-	public final void handleWindowStateChanges(final Window window) {
-		window.widthProperty().addListener((obs, oldV, width) ->								
-			ApplicationPreferences.setProperty(GuiProperties.APPLICATION_WINDOW_WIDTH, width.doubleValue()));
-		window.heightProperty().addListener((obs, oldV, height) ->
-			ApplicationPreferences.setProperty(GuiProperties.APPLICATION_WINDOW_HEIGHT, height.doubleValue()));
-		window.xProperty().addListener((obs, oldV, x) -> 
-			ApplicationPreferences.setProperty(GuiProperties.APPLICATION_WINDOW_POSITION_X, x.doubleValue()));
-		window.yProperty().addListener((obs, oldV, y) ->
-			ApplicationPreferences.setProperty(GuiProperties.APPLICATION_WINDOW_POSITION_Y, y.doubleValue()));
+	public final void storeWindowStateChanges(final Window window) {
+		final Scene scene = window.getScene();
+		final double oldWindowWidth = ApplicationPreferences.getProperty(GuiProperties.APPLICATION_WINDOW_WIDTH,
+				GuiProperties.DEFAULT_APPLICATION_WINDOW_WIDTH);
+		final double newWindowWidth = scene.getWidth();
+		if(newWindowWidth != oldWindowWidth) {			
+			ApplicationPreferences.setProperty(GuiProperties.APPLICATION_WINDOW_WIDTH, newWindowWidth);
+		}
+		
+		final double oldWindowHeight = ApplicationPreferences.getProperty(GuiProperties.APPLICATION_WINDOW_HEIGHT,
+				GuiProperties.DEFAULT_APPLICATION_WINDOW_HEIGHT);
+		final double newWindowHeight = scene.getHeight();
+		if(newWindowHeight != oldWindowHeight) {			
+			ApplicationPreferences.setProperty(GuiProperties.APPLICATION_WINDOW_HEIGHT, newWindowHeight);
+		}
+		
+		final double oldXPosition = ApplicationPreferences.getProperty(GuiProperties.APPLICATION_WINDOW_POSITION_X,
+				GuiProperties.DEFAULT_APPLICATION_WINDOW_POSITION);
+		final double newXPosition = window.getX();
+		if(newXPosition != oldXPosition) {			
+			ApplicationPreferences.setProperty(GuiProperties.APPLICATION_WINDOW_POSITION_X, newXPosition);
+		}
+		
+		final double oldYPosition = ApplicationPreferences.getProperty(GuiProperties.APPLICATION_WINDOW_POSITION_Y,
+				GuiProperties.DEFAULT_APPLICATION_WINDOW_POSITION);
+		final double newYPosition = window.getY();
+		if(newYPosition != oldYPosition) {						
+			ApplicationPreferences.setProperty(GuiProperties.APPLICATION_WINDOW_POSITION_Y, newYPosition);
+		}
 	}
 	
 	/**

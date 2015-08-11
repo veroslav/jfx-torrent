@@ -22,13 +22,16 @@ package org.matic.torrent.preferences;
 
 public final class GuiProperties {
 	
-	//Tab ID:s
+	//Tab ID:s	
 	public static final String TRACKERS_TAB_ID = "Trackers";
+	public static final String PIECES_TAB_ID = "Pieces";
+	public static final String LOGGER_TAB_ID = "Logger";
 	public static final String FILES_TAB_ID = "Files";
 	public static final String PEERS_TAB_ID = "Peers";
 	public static final String SPEED_TAB_ID = "Speed";
-	public static final String CLOSE_TAB_ID = "Close";
 	public static final String INFO_TAB_ID = "Info";
+	
+	public static final String COMPOSITE_PROPERTY_VALUE_SEPARATOR = ":";
 
 	//Visibility of the main window components
 	public static final String TOOLBAR_VISIBLE = "gui.toolbar.visible"; 
@@ -46,11 +49,19 @@ public final class GuiProperties {
 	public static final String FILTER_VIEW_VISIBLE = "gui.filter.view.visible"; 
 	public static final boolean DEFAULT_FILTER_VIEW_VISIBLE = true;
 	
+	//Visibility and sizes of tables' headers
+	public static final String TRACKERS_COLUMN_VISIBILITY = "gui.columns.visibility.trackers";	
+	public static final String DEFAULT_TRACKERS_COLUMN_VISIBILITY = "Name:Status:Update In:Seeds:Peers:Downloaded";
+	
+	//Visibility of the detailed info tab pane components
 	public static final String TAB_ICONS_VISIBLE = "gui.tab.icons.visible"; 
 	public static final boolean DEFAULT_TAB_ICONS_VISIBLE = true;
 	
 	public static final String SELECTED_TAB_ID = "gui.tab.selected";
 	public static final String DEFAULT_SELECTED_TAB_ID = FILES_TAB_ID;
+		
+	public static final String TAB_VISIBILITY = "gui.tab.visibility";	
+	public static final String DEFAULT_TAB_VISIBILITY = "Files:Info:Peers:Trackers:Pieces:Speed:Logger";
 	
 	//Positions of window components and the window itself
 	public static final String APPLICATION_WINDOW_WIDTH = "gui.window.width";
@@ -61,7 +72,7 @@ public final class GuiProperties {
 	
 	public static final String APPLICATION_WINDOW_POSITION_X = "gui.window.x";	
 	public static final String APPLICATION_WINDOW_POSITION_Y = "gui.window.y";
-	public static final double DEFAULT_WINDOW_POSITION = Double.MIN_VALUE;
+	public static final double DEFAULT_APPLICATION_WINDOW_POSITION = Double.MIN_VALUE;
 	
 	public static final String HORIZONTAL_DIVIDER_POSITION = "gui.horizontal.divider.position";
 	public static final double DEFAULT_HORIZONTAL_DIVIDER_POSITION = 0.20;

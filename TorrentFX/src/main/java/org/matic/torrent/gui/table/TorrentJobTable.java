@@ -23,6 +23,10 @@ package org.matic.torrent.gui.table;
 import java.util.Arrays;
 import java.util.function.Consumer;
 
+import org.matic.torrent.gui.GuiUtils;
+import org.matic.torrent.gui.model.TorrentJobView;
+import org.matic.torrent.hash.InfoHash;
+
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.ObservableList;
@@ -32,10 +36,6 @@ import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TableView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.text.Text;
-
-import org.matic.torrent.gui.GuiUtils;
-import org.matic.torrent.gui.model.TorrentJobView;
-import org.matic.torrent.hash.InfoHash;
 
 /**
  * This is a graphical view (represented as a table) of current torrent jobs
@@ -84,7 +84,7 @@ public final class TorrentJobTable {
 	
 	private void initComponents() {
 		torrentJobTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
-		torrentJobTable.setTableMenuButtonVisible(true);
+		torrentJobTable.setTableMenuButtonVisible(false);
 		
 		final Text emptyTorrentListPlaceholder = new Text("Go to 'File->Add Torrent...' to add torrents.");
 		emptyTorrentListPlaceholder.getStyleClass().add("empty-torrent-list-text");
@@ -95,11 +95,11 @@ public final class TorrentJobTable {
 		placeholderPane.setLeft(emptyTorrentListPlaceholder);
 		
 		torrentJobTable.setPlaceholder(placeholderPane);		
-		addColumns();
+		createColumns();
 		
 	}
 	
-	private void addColumns() {
+	private void createColumns() {
 		torrentJobTable.getColumns().addAll(Arrays.asList(
 			TableFactory.buildSimpleNumberColumn(
 					tj -> tj.getValue().priorityProperty(), 
@@ -107,5 +107,7 @@ public final class TorrentJobTable {
 			TableFactory.buildSimpleStringColumn(tj -> 
 				new ReadOnlyObjectWrapper<String>(tj.getValue().getFileName()), tj -> tj.getFileName(),
 			GuiUtils.NAME_COLUMN_PREFERRED_SIZE, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "Name")));
+		
+		TableFactory.addHeaderContextMenus(torrentJobTable.getColumns());
 	}
 }

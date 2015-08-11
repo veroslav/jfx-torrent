@@ -20,20 +20,28 @@
 
 package org.matic.torrent.gui.table;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import org.matic.torrent.gui.GuiUtils;
 
 import javafx.beans.value.ObservableValue;
+import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.control.CheckMenuItem;
+import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Label;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableColumn.CellDataFeatures;
 import javafx.scene.control.TableColumnBase;
 import javafx.scene.layout.StackPane;
 import javafx.util.Callback;
-
-import org.matic.torrent.gui.GuiUtils;
 
 /**
  * This class is used for building a table's columns and headers
@@ -61,6 +69,41 @@ public final class TableFactory {
 	    
 	    return columnHeaderNode;
 	}
+	
+	/**
+	 * Add context menu to table columns
+	 * 
+	 * @param tableColumns Target table columns for context menu addition
+	 */
+	public static <T> void addHeaderContextMenus(final ObservableList<? extends TableColumnBase<T, ?>> tableColumns) {		
+		final ContextMenu headerContextMenu = new ContextMenu();		
+		tableColumns.forEach(c -> {
+			final CheckMenuItem columnVisibleMenuItem = new CheckMenuItem(c.getText());			
+			headerContextMenu.getItems().add(columnVisibleMenuItem);
+			c.visibleProperty().bind(columnVisibleMenuItem.selectedProperty());
+			columnVisibleMenuItem.setSelected(true);
+			c.setContextMenu(headerContextMenu);
+			
+			columnVisibleMenuItem.selectedProperty().addListener((obs, oldV, selected) -> {
+				final List<? extends TableColumnBase<T, ?>> visibleColumnHeaders = TableFactory.getVisibleColumnHeaders(tableColumns);
+				if(!selected && visibleColumnHeaders.size() == 1) {
+					final Optional<MenuItem> lastSelectedMenuItem = headerContextMenu.getItems().stream().filter(
+							mi -> ((CheckMenuItem)mi).isSelected()).findFirst();
+					if(lastSelectedMenuItem.isPresent()) {
+						lastSelectedMenuItem.get().setDisable(true);
+					}
+				}
+				else if(selected && visibleColumnHeaders.size() == 2) {
+					headerContextMenu.getItems().stream().filter(mi ->
+						((CheckMenuItem)mi).isSelected()).forEach(mi -> mi.setDisable(false));
+				}
+			});
+		});
+		//TODO: Implement Reset functionality
+		headerContextMenu.getItems().addAll(new SeparatorMenuItem(), new MenuItem("Reset"));
+	}
+	
+	//TODO: Combine buildSimple[Number | String]Column to a single method (U = String, Number)
 	
 	/**
 	 * Build a table column that will contain a simple string value
@@ -164,5 +207,10 @@ public final class TableFactory {
 			}			
 		});
 		return numberColumn;
+	}
+	
+	private static final <T> List<? extends TableColumnBase<T, ?>> getVisibleColumnHeaders(
+			final ObservableList<? extends TableColumnBase<T, ?>> tableColumns) {
+		return tableColumns.stream().filter(TableColumnBase::isVisible).collect(Collectors.toList());
 	}
 }

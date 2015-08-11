@@ -56,11 +56,9 @@ import org.matic.torrent.utils.PeriodicTaskRunner;
 import org.matic.torrent.utils.ResourceManager;
 
 import javafx.application.Platform;
-import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.Event;
-import javafx.event.EventTarget;
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
 import javafx.scene.Scene;
@@ -89,13 +87,10 @@ import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
-import javafx.scene.input.MouseButton;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
-import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
@@ -119,6 +114,14 @@ public final class ApplicationWindow {
 	private static final String TOOLBAR_BUTTON_STOP_NAME = "Stop Torrent";
 	private static final String TOOLBAR_BUTTON_ADD_NAME = "Add Torrent";
 	private static final String TOOLBAR_BUTTON_REMOVE_NAME = "Remove";	
+	
+	private static final List<String> TAB_NAMES = Arrays.asList(GuiProperties.FILES_TAB_ID,
+			GuiProperties.INFO_TAB_ID, GuiProperties.PEERS_TAB_ID, GuiProperties.TRACKERS_TAB_ID,
+			GuiProperties.PIECES_TAB_ID, GuiProperties.SPEED_TAB_ID, GuiProperties.LOGGER_TAB_ID);        
+    private static final String[] TAB_IMAGE_PATHS = {ImageUtils.FOLDER_OPEN_IMAGE_LOCATION,
+    		"/images/appbar.information.circle.png", "/images/appbar.group.png",
+    		"/images/appbar.location.circle.png", "/images/appbar.input.keyboard.png",
+    		"/images/appbar.graph.line.png", "/images/appbar.lines.horizontal.4.png"};
 		
 	private static final Color TOOLBAR_BUTTON_COLOR = Color.rgb(46, 46, 46);
 	private static final Color REMOVE_BUTTON_COLOR = Color.rgb(165,57,57);
@@ -127,6 +130,12 @@ public final class ApplicationWindow {
 	private static final Color TAB_DEFAULT_IMAGE_COLOR = Color.rgb(162, 170, 156);
 	
 	private static final int TAB_ICON_SIZE = 14;
+	
+	//Split pane containing torrent job view and detailed info view
+	private final SplitPane verticalSplitPane = new SplitPane();
+	
+	//Split pane containing filter view and vertical split pane
+	private final SplitPane horizontalSplitPane = new SplitPane();
 	
 	//The manager for handling queued torrents states
 	private final QueuedTorrentManager queuedTorrentManager = new QueuedTorrentManager();
@@ -208,8 +217,6 @@ public final class ApplicationWindow {
 		stage.setTitle("jfxTorrent");        		
 		stage.show();
 		
-		Platform.runLater(() -> windowActionHandler.handleWindowStateChanges(stage));
-		
 		initPeriodicTaskRunner();
 	}
 	
@@ -232,12 +239,12 @@ public final class ApplicationWindow {
 		scene.getStylesheets().add("/ui-style.css");
 		
 		final double windowXPosition = ApplicationPreferences.getProperty(
-				GuiProperties.APPLICATION_WINDOW_POSITION_X, GuiProperties.DEFAULT_WINDOW_POSITION);
+				GuiProperties.APPLICATION_WINDOW_POSITION_X, GuiProperties.DEFAULT_APPLICATION_WINDOW_POSITION);
 		final double windowYPosition = ApplicationPreferences.getProperty(
-				GuiProperties.APPLICATION_WINDOW_POSITION_Y, GuiProperties.DEFAULT_WINDOW_POSITION);
+				GuiProperties.APPLICATION_WINDOW_POSITION_Y, GuiProperties.DEFAULT_APPLICATION_WINDOW_POSITION);
 		
-		if(windowXPosition != GuiProperties.DEFAULT_WINDOW_POSITION &&
-				windowYPosition != GuiProperties.DEFAULT_WINDOW_POSITION) {
+		if(windowXPosition != GuiProperties.DEFAULT_APPLICATION_WINDOW_POSITION &&
+				windowYPosition != GuiProperties.DEFAULT_APPLICATION_WINDOW_POSITION) {
 			stage.setX(windowXPosition);
 			stage.setY(windowYPosition);
 		}
@@ -252,10 +259,9 @@ public final class ApplicationWindow {
 				GuiProperties.SELECTED_TAB_ID, GuiProperties.DEFAULT_SELECTED_TAB_ID);	
 		
 		final Collection<Tab> tabs = buildDetailedInfoTabs(selectedTabId);
-		detailedInfoTabPane.getTabs().addAll(tabs);
-		
-		addTabMenus(detailedInfoTabPane.getTabs());
-		addDetailsTabHeaderContextMenu(detailedInfoTabPane.getTabs());
+		final ObservableList<Tab> tabList = detailedInfoTabPane.getTabs();
+		tabList.addAll(tabs);
+		addDetailsTabHeaderContextMenu(tabList);
 	}
 	
 	private void setMenuAccelerators() {
@@ -360,8 +366,7 @@ public final class ApplicationWindow {
 		final String borderlessSplitPaneStyle = "borderless-split-pane";
 		final BorderPane mainPane = new BorderPane();		
 		final ToolBar toolbar = buildToolbar();				
-				
-		final SplitPane verticalSplitPane = new SplitPane();
+		
 		verticalSplitPane.getStyleClass().add(borderlessSplitPaneStyle);
         verticalSplitPane.setOrientation(Orientation.VERTICAL);     
         verticalSplitPane.getItems().addAll(buildTorrentJobTable(), detailedInfoTabPane);        
@@ -383,8 +388,7 @@ public final class ApplicationWindow {
         showCompactToolbarMenuItem.selectedProperty().addListener((obs, oldV, showCompact) ->
         	showCompactToolbar(mainPane, centerPane, toolbar, showCompact));
         initFilterTreeView();
-        
-        final SplitPane horizontalSplitPane = new SplitPane(); 
+         
         horizontalSplitPane.getStyleClass().add(borderlessSplitPaneStyle);
         horizontalSplitPane.setOrientation(Orientation.HORIZONTAL);
         horizontalSplitPane.getItems().addAll(filterTreeView, centerPane); 
@@ -397,27 +401,19 @@ public final class ApplicationWindow {
         		GuiProperties.VERTICAL_DIVIDER_POSITION, GuiProperties.DEFAULT_VERTICAL_DIVIDER_POSITION);    	
     	verticalSplitPane.setDividerPosition(0, verticalDividerPosition);
 
-        final ChangeListener<?super Number> verticalDividerPositionListener = (obs, oldV, position) ->
-    		ApplicationPreferences.setProperty(GuiProperties.VERTICAL_DIVIDER_POSITION, position.doubleValue());
-    	
     	final boolean detailedInfoShown = ApplicationPreferences.getProperty(
     			GuiProperties.DETAILED_INFO_VISIBLE, GuiProperties.DEFAULT_DETAILED_INFO_VISIBLE);        
         showDetailedInfoMenuItem.setSelected(detailedInfoShown);
-        showDetailedInfo(verticalSplitPane, showDetailedInfoMenuItem.isSelected(), verticalDividerPositionListener);
+        showDetailedInfo(verticalSplitPane, showDetailedInfoMenuItem.isSelected());
         showDetailedInfoMenuItem.selectedProperty().addListener((obs, oldV, showDetailedInfo) ->
-        	showDetailedInfo(verticalSplitPane, showDetailedInfo, verticalDividerPositionListener));
-        
-        final ChangeListener<?super Number> horizontalDividerPositionListener = (obs, oldV, position) ->
-    		ApplicationPreferences.setProperty(GuiProperties.HORIZONTAL_DIVIDER_POSITION, position.doubleValue());
-        
+        	showDetailedInfo(verticalSplitPane, showDetailedInfo));
+       
         final boolean filterViewShown = ApplicationPreferences.getProperty(
     			GuiProperties.FILTER_VIEW_VISIBLE, GuiProperties.DEFAULT_FILTER_VIEW_VISIBLE);        
         showFilterViewMenuItem.setSelected(filterViewShown);
-        showFilterView(horizontalSplitPane, showFilterViewMenuItem.isSelected(), horizontalDividerPositionListener);
-        showFilterViewMenuItem.selectedProperty().addListener((obs, oldV, showFilterView) -> {
-        	showFilterView(horizontalSplitPane, showFilterView, horizontalDividerPositionListener);
-        	ApplicationPreferences.setProperty(GuiProperties.FILTER_VIEW_VISIBLE, showFilterView);
-        });
+        showFilterView(horizontalSplitPane, showFilterViewMenuItem.isSelected());
+        showFilterViewMenuItem.selectedProperty().addListener((obs, oldV, showFilterView) ->
+        	showFilterView(horizontalSplitPane, showFilterView));
         
         SplitPane.setResizableWithParent(filterTreeView, Boolean.FALSE);        
         mainPane.setCenter(horizontalSplitPane);
@@ -429,39 +425,27 @@ public final class ApplicationWindow {
 		mainPane.setBottom(showStatusBar? statusBar : null);		
 	}
 	
-	private void showDetailedInfo(final SplitPane verticalSplitPane, final boolean showDetailedInfo,
-			final ChangeListener<?super Number> dividerPositionListener) {
+	private void showDetailedInfo(final SplitPane verticalSplitPane, final boolean showDetailedInfo) {
 		final ObservableList<Node> items = verticalSplitPane.getItems();
 		if(showDetailedInfo && !items.contains(detailedInfoTabPane)) {
-			items.add(1, detailedInfoTabPane);
-			verticalSplitPane.getDividers().get(0).positionProperty().addListener(dividerPositionListener);
+			items.add(1, detailedInfoTabPane);			
 			verticalSplitPane.setDividerPosition(0, detailedInfoTabPane.getPrefHeight());
 		}
 		else if(!showDetailedInfo) {
 			detailedInfoTabPane.setPrefHeight(verticalSplitPane.getDividerPositions()[0]);
-			verticalSplitPane.getDividers().get(0).positionProperty().removeListener(dividerPositionListener);
 			items.remove(detailedInfoTabPane);
-		}
-		else {
-    		verticalSplitPane.getDividers().get(0).positionProperty().addListener(dividerPositionListener);
-    	}		
+		}				
 	}
 	
-	private void showFilterView(final SplitPane horizontalSplitPane, final boolean showFilterView,
-			final ChangeListener<?super Number> dividerPositionListener) {				
+	private void showFilterView(final SplitPane horizontalSplitPane, final boolean showFilterView) {				
     	final ObservableList<Node> items = horizontalSplitPane.getItems();
     	if(showFilterView && !items.contains(filterTreeView)) {
     		items.add(0, filterTreeView);
-    		horizontalSplitPane.getDividers().get(0).positionProperty().addListener(dividerPositionListener);
     		horizontalSplitPane.setDividerPosition(0, filterTreeView.getPrefWidth());    		
     	}
     	else if(!showFilterView) {
     		filterTreeView.setPrefWidth(horizontalSplitPane.getDividerPositions()[0]);
-    		horizontalSplitPane.getDividers().get(0).positionProperty().removeListener(dividerPositionListener);
     		items.remove(filterTreeView);        		
-    	} 
-    	else {
-    		horizontalSplitPane.getDividers().get(0).positionProperty().addListener(dividerPositionListener);
     	}
 	}
 	
@@ -583,20 +567,17 @@ public final class ApplicationWindow {
 		return torrentJobTableScroll;
 	}
 	
-	private Collection<Tab> buildDetailedInfoTabs(final String selectedTabId) {
-		final String[] tabNames = {GuiProperties.FILES_TAB_ID, "Info", "Peers", GuiProperties.TRACKERS_TAB_ID, "Speed"};        
-        final String[] imagePaths = {ImageUtils.FOLDER_OPEN_IMAGE_LOCATION,
-        		"/images/appbar.information.circle.png", "/images/appbar.group.png",
-        		"/images/appbar.location.circle.png", "/images/appbar.graph.line.png"};
+	private Collection<Tab> buildDetailedInfoTabs(final String selectedTabId) {		
         final Map<Tab, ImageView> tabImageViews = new LinkedHashMap<>(); 
         final boolean tabIconsShown = ApplicationPreferences.getProperty(
     			GuiProperties.TAB_ICONS_VISIBLE, GuiProperties.DEFAULT_TAB_ICONS_VISIBLE);
         showTabIconsMenuItem.setSelected(tabIconsShown);
         
-        for(int i = 0; i < tabNames.length; ++i) {  
-        	final Image tabImage = new Image(getClass().getResourceAsStream(imagePaths[i]));
-        	final Tab tab = new Tab(tabNames[i]);
-        	tab.setId(tabNames[i]);
+        for(int i = 0; i < TAB_NAMES.size(); ++i) {  
+        	final Image tabImage = new Image(getClass().getResourceAsStream(TAB_IMAGE_PATHS[i]));
+        	final String tabName = TAB_NAMES.get(i);
+        	final Tab tab = new Tab(tabName);
+        	tab.setId(tabName);
         	tab.setClosable(false); 
         	if(selectedTabId.equals(tab.getId())) {
 				detailedInfoTabPane.getSelectionModel().select(tab);        		
@@ -613,16 +594,14 @@ public final class ApplicationWindow {
         	});       		        
         	tabImageViews.put(tab, ImageUtils.colorImage(tabImage, Color.rgb(162, 170, 156), 
 					ImageUtils.CROPPED_MARGINS_IMAGE_VIEW, TAB_ICON_SIZE, TAB_ICON_SIZE));
-        	detailsTabMap.put(tabNames[i], tab);
+        	detailsTabMap.put(tabName, tab);
         }
         
         final Consumer<Boolean> setTabGraphic = set ->
     		tabImageViews.keySet().forEach(tab -> tab.setGraphic(set? tabImageViews.get(tab) : null));
     	setTabGraphic.accept(tabIconsShown);
-    	showTabIconsMenuItem.selectedProperty().addListener((obs, oldV, showTabIcons) -> {
-    		setTabGraphic.accept(showTabIcons);
-    		ApplicationPreferences.setProperty(GuiProperties.TAB_ICONS_VISIBLE, showTabIcons);
-    	});
+    	showTabIconsMenuItem.selectedProperty().addListener((obs, oldV, showTabIcons) -> 
+    		setTabGraphic.accept(showTabIcons));
         
         final ScrollPane trackerTableScroll = new ScrollPane(trackerTable.getView());
         trackerTableScroll.setFitToHeight(true);
@@ -638,26 +617,14 @@ public final class ApplicationWindow {
         return tabImageViews.keySet();
     }
 	
-	private void addTabMenus(final ObservableList<Tab> tabs) {		
-		tabs.forEach(t -> {
-			final ContextMenu tabContextMenu = new ContextMenu();
-			final MenuItem closeTabMenuItem = new MenuItem(GuiProperties.CLOSE_TAB_ID);			
-			tabContextMenu.getItems().addAll(closeTabMenuItem);
-			t.setContextMenu(tabContextMenu);			
-			t.selectedProperty().addListener((obs, oldV, selected) ->
-				closeTabMenuItem.setDisable(tabs.size() == 1));
-		});
-	}
-	
 	private void addDetailsTabHeaderContextMenu(final ObservableList<Tab> tabs) {	
 		final ContextMenu tabHeaderContextMenu = new ContextMenu();		
+		final Set<String> visibleTabNames = ApplicationPreferences.getCompositePropertyValues(
+				GuiProperties.TAB_VISIBILITY, GuiProperties.DEFAULT_TAB_VISIBILITY);
+		
 		tabHeaderContextMenu.getItems().addAll(tabs.stream().map(t -> {
-			final CheckMenuItem tabMenuItem = new CheckMenuItem(t.getText());
-			final Optional<MenuItem> closeTabMenuItem = t.getContextMenu().getItems().stream().filter(
-					mi -> mi.getText().equals(GuiProperties.CLOSE_TAB_ID)).findFirst();
-			if(closeTabMenuItem.isPresent()) {
-				closeTabMenuItem.get().setOnAction(e -> tabMenuItem.setSelected(false));
-			}
+			final CheckMenuItem tabMenuItem = new CheckMenuItem(t.getText());	
+			tabMenuItem.setId(t.getId());
 			tabMenuItem.selectedProperty().addListener((obs, oldV, selected) -> {				
 				if(selected && !tabs.contains(t)) {
 					if(tabs.size() == 1) {
@@ -665,36 +632,49 @@ public final class ApplicationWindow {
 						tabHeaderContextMenu.getItems().stream().filter(
 								mi -> mi.getText().equals(remainingTab.getText())).forEach(mi -> mi.setDisable(false));											
 					}
-					tabs.add(t);
+					final int insertedTabOrder = TAB_NAMES.indexOf(t.getText());
+					int insertionIndex = 0;
+					for(int i = 0; i < tabs.size(); ++i) {						
+						if(TAB_NAMES.indexOf(tabs.get(i).getText()) > insertedTabOrder) {
+							insertionIndex = i;
+							break;
+						}
+						if(i == tabs.size() - 1) {
+							insertionIndex = tabs.size();
+						}
+					}
+					tabs.add(insertionIndex, t);
 					if(tabs.size() > 1) {
 						tabs.forEach(tb -> tb.getContextMenu().getItems().forEach(mi -> mi.setDisable(false)));	
 					}
 				}
 				else if(!selected && tabs.contains(t)) {
 					tabs.remove(t);
-					if(tabs.size() == 1) {
-						final Tab remainingTab = tabs.get(0);
-						tabHeaderContextMenu.getItems().stream().filter(
-								mi -> mi.getText().equals(remainingTab.getText())).forEach(mi -> mi.setDisable(true));
-						tabs.forEach(tb -> tb.getContextMenu().getItems().forEach(mi -> mi.setDisable(true)));
+					if(tabs.size() == 1) {						
+						final Tab remainingTab = tabs.get(0);						
+						tabHeaderContextMenu.getItems().stream().filter(mi -> 
+							mi.getText().equals(remainingTab.getText())).forEach(mi -> mi.setDisable(true));								
 					}
 				}
-			});						
-			tabMenuItem.setSelected(true);
-			return tabMenuItem;
-		}).collect(Collectors.toList()));
-		
-		detailedInfoTabPane.addEventHandler(MouseEvent.MOUSE_CLICKED, e -> {
-			final EventTarget eventTarget = e.getTarget();
-			if(e.getButton() == MouseButton.SECONDARY && eventTarget instanceof StackPane) {
-				final ObservableList<String> styleClasses = ((StackPane)eventTarget).getStyleClass();
-				final Optional<String> tabHeaderStyle = styleClasses.stream().filter(
-						sc -> "tab-header-background".equals(sc)).findFirst();
-				if(tabHeaderStyle.isPresent()) {
-					tabHeaderContextMenu.show(stage, e.getScreenX(), e.getScreenY());
+			});
+			final boolean tabVisible = visibleTabNames.contains(t.getId());
+			Platform.runLater(() -> {
+				if(!tabVisible) {
+					tabs.remove(t);
+					if(tabs.size() == 1) {
+						final String singleTabId = tabs.get(0).getId();
+						tabHeaderContextMenu.getItems().stream().filter(mi ->
+							mi.getId().equals(singleTabId)).forEach(mi -> mi.setDisable(true));
+					}
 				}
-			}			
-        });
+			});
+			tabMenuItem.setSelected(tabVisible);
+			t.setContextMenu(tabHeaderContextMenu);
+			return tabMenuItem;
+		}).collect(Collectors.toList()));	
+		
+		//TODO: Implement Reset functionality
+		tabHeaderContextMenu.getItems().addAll(new SeparatorMenuItem(), new MenuItem("Reset"));
 	}
 	
 	private MenuBar buildMenuBar() {
@@ -870,43 +850,106 @@ public final class ApplicationWindow {
 				ImageUtils.CROPPED_MARGINS_IMAGE_VIEW, (int)buttonImageView.getFitWidth(), 
 				(int)buttonImageView.getFitHeight()));
 	}
-	
-	//TODO: Store all window changes in this method only
+
 	private void storeWindowChanges() {
-		//Store currently selected tab, if changed
-		final Tab selectedTab = detailedInfoTabPane.getSelectionModel().getSelectedItem();
-		if(!ApplicationPreferences.getProperty(GuiProperties.SELECTED_TAB_ID,
-				GuiProperties.DEFAULT_SELECTED_TAB_ID).equals(selectedTab.getId())) {			
-			ApplicationPreferences.setProperty(GuiProperties.SELECTED_TAB_ID, selectedTab.getId());
+		windowActionHandler.storeWindowStateChanges(stage);
+		storeDetailedInfoChanges();		
+		storeFilterViewChanges();
+		storeStatusBarChanges();
+		storeDividerLocations();
+		storeToolBarChanges();
+	}
+	
+	private void storeDividerLocations() {
+		//Store horizontal divider position, if changed
+		final double oldHorizontalDividerPosition = ApplicationPreferences.getProperty(
+				GuiProperties.HORIZONTAL_DIVIDER_POSITION, GuiProperties.DEFAULT_HORIZONTAL_DIVIDER_POSITION);
+		final double newHorizontalDividerPosition = showFilterViewMenuItem.isSelected()?
+				horizontalSplitPane.getDividerPositions()[0] : filterTreeView.getPrefWidth();
+		if(newHorizontalDividerPosition != oldHorizontalDividerPosition) {			
+			ApplicationPreferences.setProperty(GuiProperties.HORIZONTAL_DIVIDER_POSITION, newHorizontalDividerPosition);
 		}
+		
+		//Store vertical divider position, if changed
+		final double oldVerticalDividerPosition = ApplicationPreferences.getProperty(
+				GuiProperties.VERTICAL_DIVIDER_POSITION, GuiProperties.DEFAULT_VERTICAL_DIVIDER_POSITION);
+		final double newVerticalDividerPosition = showDetailedInfoMenuItem.isSelected()?
+				verticalSplitPane.getDividerPositions()[0] : detailedInfoTabPane.getPrefHeight();
+		if(newVerticalDividerPosition != oldVerticalDividerPosition) {			
+			ApplicationPreferences.setProperty(GuiProperties.VERTICAL_DIVIDER_POSITION, newVerticalDividerPosition);
+		}
+	}	
+	
+	private void storeFilterViewChanges() {
+		//Store filter view visibility, if changed
+		final boolean wasFilterViewShown = ApplicationPreferences.getProperty(
+				GuiProperties.FILTER_VIEW_VISIBLE, GuiProperties.DEFAULT_FILTER_VIEW_VISIBLE);
+		final boolean isFilterViewShown = showFilterViewMenuItem.isSelected();
+		if(isFilterViewShown != wasFilterViewShown) {			
+			ApplicationPreferences.setProperty(GuiProperties.FILTER_VIEW_VISIBLE, isFilterViewShown);
+		}
+	}
+	
+	private void storeStatusBarChanges() {
 		//Store status bar visibility, if changed
 		final boolean wasStatusBarShown = ApplicationPreferences.getProperty(
 				GuiProperties.STATUSBAR_VISIBLE, GuiProperties.DEFAULT_STATUSBAR_VISIBLE);
 		final boolean isStatusBarShown = showStatusBarMenuItem.isSelected();
-		if(isStatusBarShown != wasStatusBarShown) {
+		if(isStatusBarShown != wasStatusBarShown) {			
 			ApplicationPreferences.setProperty(GuiProperties.STATUSBAR_VISIBLE, isStatusBarShown);
 		}
+	}
+	
+	private void storeToolBarChanges() {
 		//Store tool bar visibility, if changed
 		final boolean wasToolBarShown = ApplicationPreferences.getProperty(
 				GuiProperties.TOOLBAR_VISIBLE, GuiProperties.DEFAULT_TOOLBAR_VISIBLE);
 		final boolean isToolBarShown = showToolbarMenuItem.isSelected();
-		if(isToolBarShown != wasToolBarShown) {
+		if(isToolBarShown != wasToolBarShown) {			
 			ApplicationPreferences.setProperty(GuiProperties.TOOLBAR_VISIBLE, isToolBarShown);
 		}
 		//Store compact tool bar property, if changed
 		final boolean wasCompactToolBar = ApplicationPreferences.getProperty(
 				GuiProperties.COMPACT_TOOLBAR, GuiProperties.DEFAULT_COMPACT_TOOLBAR);
 		final boolean isCompactToolBar = showCompactToolbarMenuItem.isSelected();
-		if(isCompactToolBar != wasCompactToolBar) {
+		if(isCompactToolBar != wasCompactToolBar) {			
 			ApplicationPreferences.setProperty(GuiProperties.COMPACT_TOOLBAR, isCompactToolBar);
 		}
+	}
+	
+	private void storeDetailedInfoChanges() {
+		//Store currently selected tab, if changed
+		final Tab selectedTab = detailedInfoTabPane.getSelectionModel().getSelectedItem();
+		if(!ApplicationPreferences.getProperty(GuiProperties.SELECTED_TAB_ID,
+				GuiProperties.DEFAULT_SELECTED_TAB_ID).equals(selectedTab.getId())) {				
+			ApplicationPreferences.setProperty(GuiProperties.SELECTED_TAB_ID, selectedTab.getId());
+		}
+		
+		//Store tab visibilities, if changed
+		final String oldTabVisibility = ApplicationPreferences.getProperty(
+				GuiProperties.TAB_VISIBILITY, GuiProperties.DEFAULT_TAB_VISIBILITY);
+		final String newTabVisibility = detailedInfoTabPane.getTabs().stream().map(
+				t -> t.getId()).collect(Collectors.joining(GuiProperties.COMPOSITE_PROPERTY_VALUE_SEPARATOR));
+		
+		if(!newTabVisibility.equals(oldTabVisibility)) {			
+			ApplicationPreferences.setProperty(GuiProperties.TAB_VISIBILITY, newTabVisibility);
+		}
+		
+		//Store tab icons visibility, if changed
+		final boolean wereTabIconsShown = ApplicationPreferences.getProperty(
+				GuiProperties.TAB_ICONS_VISIBLE, GuiProperties.DEFAULT_TAB_ICONS_VISIBLE);
+		final boolean areTabIconsShown = showTabIconsMenuItem.isSelected();
+		if(areTabIconsShown != wereTabIconsShown) {			
+			ApplicationPreferences.setProperty(GuiProperties.TAB_ICONS_VISIBLE, areTabIconsShown);
+		}
+		
 		//Store detailed info visibility, if changed
 		final boolean wasDetailedInfoShown = ApplicationPreferences.getProperty(
 				GuiProperties.DETAILED_INFO_VISIBLE, GuiProperties.DEFAULT_DETAILED_INFO_VISIBLE);
 		final boolean isDetailedInfoShown = showDetailedInfoMenuItem.isSelected();
 		if(isDetailedInfoShown != wasDetailedInfoShown) {
 			ApplicationPreferences.setProperty(GuiProperties.DETAILED_INFO_VISIBLE, isDetailedInfoShown);
-		}
+		}		
 	}
 	
 	private void onShutdown(final Event event) {

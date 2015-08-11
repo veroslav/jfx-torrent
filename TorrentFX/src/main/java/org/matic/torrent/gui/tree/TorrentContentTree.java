@@ -251,15 +251,15 @@ public final class TorrentContentTree {
 			fileEntryTree.setRoot(rootNode);
 			selectedFilesSize.set(getRootFileEntry().getSize());
 		}
-		fileEntryTree.setTableMenuButtonVisible(true);
+		fileEntryTree.setTableMenuButtonVisible(false);
 		fileEntryTree.setShowRoot(false);
 		fileEntryTree.setEditable(true);					
 		
-		addColumns(addProgressDetailColumns);
+		createColumns(addProgressDetailColumns);
 		fileEntryTree.setRowFactory(table -> new TorrentContentTreeRow(this));				
 	}
 	
-	private void addColumns(final boolean addProgressDetailColumns) {
+	private void createColumns(final boolean addProgressDetailColumns) {
 		final TreeTableColumn<TorrentFileEntry, FileNameColumnModel> fileNameColumn = buildFileNameColumn();
 		fileEntryTree.getColumns().addAll(Arrays.asList(fileNameColumn, 
 				buildPathColumn(), buildSimpleLongValueColumn("Size", "size", GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, 
@@ -279,6 +279,8 @@ public final class TorrentContentTree {
 							tfe -> String.valueOf(tfe.pieceCountProperty().get())),
 					buildProgressColumn()));
 		}
+		
+		TableFactory.addHeaderContextMenus(fileEntryTree.getColumns());
 		
 		fileEntryTree.getSortOrder().add(fileNameColumn);
 	}

@@ -20,7 +20,10 @@
 
 package org.matic.torrent.preferences;
 
+import java.util.Arrays;
+import java.util.Set;
 import java.util.prefs.Preferences;
+import java.util.stream.Collectors;
 
 /**
  * Helper class for managing application preferences storage and retrieval
@@ -123,5 +126,18 @@ public final class ApplicationPreferences {
 		else {
 			PREFERENCES.remove(propName);
 		}		
+	}
+	
+	/**
+	 * Get a property value of following form: <val1>:<val2>:...<valn>
+	 * 
+	 * @param propName Property name
+	 * @param defaultValue Default property value
+	 * @return Property value or default value if not present
+	 */
+	public static Set<String> getCompositePropertyValues(final String propName, final String defaultValue) {
+		final String compositePropertyValue = ApplicationPreferences.getProperty(propName, defaultValue);		
+		return Arrays.stream(compositePropertyValue.split(
+				GuiProperties.COMPOSITE_PROPERTY_VALUE_SEPARATOR)).collect(Collectors.toSet());
 	}
 }

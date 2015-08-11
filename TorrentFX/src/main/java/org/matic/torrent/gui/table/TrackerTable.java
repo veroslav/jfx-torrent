@@ -25,15 +25,15 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 
-import javafx.scene.Node;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-
 import org.matic.torrent.gui.GuiUtils;
 import org.matic.torrent.gui.model.TrackerView;
 import org.matic.torrent.queue.QueuedTorrent;
 import org.matic.torrent.tracking.Tracker;
 import org.matic.torrent.utils.UnitConverter;
+
+import javafx.scene.Node;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
 
 public class TrackerTable {	
 	
@@ -73,12 +73,12 @@ public class TrackerTable {
 	
 	private void initComponents() {
 		trackerTable.setPlaceholder(GuiUtils.getEmptyTablePlaceholder());
-		trackerTable.setTableMenuButtonVisible(true);
+		trackerTable.setTableMenuButtonVisible(false);
 		
-		addColumns();
+		createColumns();		
 	}
 	
-	private void addColumns() {	
+	private void createColumns() {	
 		final Function<TrackerView, String> updateInValueConverter = tv -> {			
 			if(tv.getTorrentState() == QueuedTorrent.State.STOPPED) {
 				return "";
@@ -121,5 +121,7 @@ public class TrackerTable {
 					val -> String.valueOf(val.getLeechers()), 70, GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, PEERS_COLUMN_NAME),
 			TableFactory.buildSimpleNumberColumn(tv -> tv.getValue().downloadedProperty(),
 					val -> String.valueOf(val.getDownloaded()), 90, GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, DOWNLOADED_COLUMN_NAME)));
+		
+		TableFactory.addHeaderContextMenus(trackerTable.getColumns());
 	}
 }
