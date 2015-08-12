@@ -55,6 +55,7 @@ import org.matic.torrent.gui.GuiUtils;
 import org.matic.torrent.gui.image.ImageUtils;
 import org.matic.torrent.gui.model.TorrentFileEntry;
 import org.matic.torrent.gui.table.TableFactory;
+import org.matic.torrent.preferences.GuiProperties;
 import org.matic.torrent.queue.FilePriority;
 import org.matic.torrent.utils.UnitConverter;
 
@@ -280,7 +281,7 @@ public final class TorrentContentTree {
 					buildProgressColumn()));
 		}
 		
-		TableFactory.addHeaderContextMenus(fileEntryTree.getColumns());
+		TableFactory.addHeaderContextMenus(fileEntryTree.getColumns(), GuiProperties.DEFAULT_INFO_COLUMN_VISIBILITY);
 		
 		fileEntryTree.getSortOrder().add(fileNameColumn);
 	}
@@ -289,7 +290,7 @@ public final class TorrentContentTree {
 			final String columnName, final String propertyName, final String style, final Insets padding,
 			final Function<TorrentFileEntry, String> valueGetter) {
 		final TreeTableColumn<TorrentFileEntry, Long> longValueColumn = new TreeTableColumn<TorrentFileEntry, Long>(columnName);
-		
+		longValueColumn.setId(columnName);
 		longValueColumn.setGraphic(TableFactory.buildColumnHeader(longValueColumn, style));
 		longValueColumn.setCellValueFactory(new TreeItemPropertyValueFactory<TorrentFileEntry, Long>(propertyName));
 		longValueColumn.setCellFactory(column -> new TreeTableCell<TorrentFileEntry, Long>() {
@@ -321,7 +322,9 @@ public final class TorrentContentTree {
 	}
 	
 	private TreeTableColumn<TorrentFileEntry, Integer> buildPriorityColumn() {
-		final TreeTableColumn<TorrentFileEntry, Integer> priorityColumn = new TreeTableColumn<TorrentFileEntry, Integer>("Priority");
+		final String columnName = "Priority";
+		final TreeTableColumn<TorrentFileEntry, Integer> priorityColumn = new TreeTableColumn<TorrentFileEntry, Integer>(columnName);
+		priorityColumn.setId(columnName);
 		priorityColumn.setGraphic(TableFactory.buildColumnHeader(priorityColumn, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME));
 		priorityColumn.setCellValueFactory(new TreeItemPropertyValueFactory<TorrentFileEntry, Integer>("priority"));
 		priorityColumn.setCellFactory(column -> new TreeTableCell<TorrentFileEntry, Integer>() {
@@ -351,17 +354,21 @@ public final class TorrentContentTree {
 	}
 	
 	private TreeTableColumn<TorrentFileEntry, String> buildPathColumn() {
-		final TreeTableColumn<TorrentFileEntry, String> pathColumn = new TreeTableColumn<TorrentFileEntry, String>("Path");
+		final String columnName = "Path";
+		final TreeTableColumn<TorrentFileEntry, String> pathColumn = new TreeTableColumn<TorrentFileEntry, String>(columnName);
 		pathColumn.setGraphic(TableFactory.buildColumnHeader(pathColumn, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME));
 		pathColumn.setCellValueFactory(new TreeItemPropertyValueFactory<TorrentFileEntry, String>("path"));
 		pathColumn.setVisible(false);
+		pathColumn.setId(columnName);
 		
 		return pathColumn;
 	}
 	
 	private TreeTableColumn<TorrentFileEntry, Double> buildProgressColumn() {
+		final String columnName = "Progress";
 		final TreeTableColumn<TorrentFileEntry, Double> progressColumn = 
-				new TreeTableColumn<TorrentFileEntry, Double>("Progress");
+				new TreeTableColumn<TorrentFileEntry, Double>(columnName);
+		progressColumn.setId(columnName);
 		progressColumn.setCellValueFactory(new TreeItemPropertyValueFactory<TorrentFileEntry, Double>("progress"));
 		progressColumn.setGraphic(TableFactory.buildColumnHeader(progressColumn, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME));
 		progressColumn.setCellFactory(column -> new ProgressBarTreeTableCell<TorrentFileEntry>() {			
@@ -393,8 +400,10 @@ public final class TorrentContentTree {
 	}
 	
 	private TreeTableColumn<TorrentFileEntry, FileNameColumnModel> buildFileNameColumn() {
+		final String columnName = "Name";
 		final TreeTableColumn<TorrentFileEntry, FileNameColumnModel> fileNameColumn = 
-				new TreeTableColumn<TorrentFileEntry, FileNameColumnModel>("Name");	
+				new TreeTableColumn<TorrentFileEntry, FileNameColumnModel>(columnName);
+		fileNameColumn.setId(columnName);
 		fileNameColumn.setGraphic(TableFactory.buildColumnHeader(fileNameColumn, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME));
 		fileNameColumn.setSortType(TreeTableColumn.SortType.DESCENDING);
 		fileNameColumn.setEditable(true);

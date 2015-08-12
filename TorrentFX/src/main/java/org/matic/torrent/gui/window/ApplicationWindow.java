@@ -276,7 +276,7 @@ public final class ApplicationWindow {
 		final long guiUpdateInterval = ApplicationPreferences.getProperty(
     			GuiProperties.GUI_UPDATE_INTERVAL, GuiProperties.DEFAULT_GUI_UPDATE_INTERVAL);
 		
-		PeriodicTask periodicTask = new PeriodicTask(() -> Platform.runLater(this::updateGui), guiUpdateInterval);
+		final PeriodicTask periodicTask = new PeriodicTask(() -> Platform.runLater(this::updateGui), guiUpdateInterval);
 		
 		periodicTaskRunner.addTask(periodicTask);		
 		periodicTaskRunner.setPeriod(Duration.seconds(1));		

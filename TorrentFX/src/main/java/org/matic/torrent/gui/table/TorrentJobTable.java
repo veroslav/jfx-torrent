@@ -26,16 +26,20 @@ import java.util.function.Consumer;
 import org.matic.torrent.gui.GuiUtils;
 import org.matic.torrent.gui.model.TorrentJobView;
 import org.matic.torrent.hash.InfoHash;
+import org.matic.torrent.preferences.GuiProperties;
 
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TableView;
+import javafx.scene.control.TableColumn.CellDataFeatures;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.text.Text;
+import javafx.util.Callback;
 
 /**
  * This is a graphical view (represented as a table) of current torrent jobs
@@ -100,14 +104,16 @@ public final class TorrentJobTable {
 	}
 	
 	private void createColumns() {
-		torrentJobTable.getColumns().addAll(Arrays.asList(
-			TableFactory.buildSimpleNumberColumn(
-					tj -> tj.getValue().priorityProperty(), 
+		final Callback<CellDataFeatures<TorrentJobView, Number>, ObservableValue<Number>> priorityValueFactory = 
+				tj -> tj.getValue().priorityProperty();
+		final Callback<CellDataFeatures<TorrentJobView, String>, ObservableValue<String>> nameValueFactory =
+				tj -> new ReadOnlyObjectWrapper<String>(tj.getValue().getFileName());
+				
+		torrentJobTable.getColumns().addAll(Arrays.asList(TableFactory.buildColumn(priorityValueFactory, 
 					val -> String.valueOf(val.getPriority()), 30, GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "#"),
-			TableFactory.buildSimpleStringColumn(tj -> 
-				new ReadOnlyObjectWrapper<String>(tj.getValue().getFileName()), tj -> tj.getFileName(),
+			TableFactory.buildColumn(nameValueFactory, tj -> tj.getFileName(),
 			GuiUtils.NAME_COLUMN_PREFERRED_SIZE, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, "Name")));
 		
-		TableFactory.addHeaderContextMenus(torrentJobTable.getColumns());
+		TableFactory.addHeaderContextMenus(torrentJobTable.getColumns(), GuiProperties.DEFAULT_TORRENT_JOBS_COLUMN_VISIBILITY);
 	}
 }

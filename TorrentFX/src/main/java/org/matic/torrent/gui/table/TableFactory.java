@@ -20,12 +20,15 @@
 
 package org.matic.torrent.gui.table;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.matic.torrent.gui.GuiUtils;
+import org.matic.torrent.preferences.GuiProperties;
 
 import javafx.beans.value.ObservableValue;
 import javafx.collections.ObservableList;
@@ -75,10 +78,12 @@ public final class TableFactory {
 	 * 
 	 * @param tableColumns Target table columns for context menu addition
 	 */
-	public static <T> void addHeaderContextMenus(final ObservableList<? extends TableColumnBase<T, ?>> tableColumns) {		
+	public static <T> void addHeaderContextMenus(final ObservableList<? extends TableColumnBase<T, ?>> tableColumns,
+			final String defaultVisibleColumns) {		
 		final ContextMenu headerContextMenu = new ContextMenu();		
 		tableColumns.forEach(c -> {
-			final CheckMenuItem columnVisibleMenuItem = new CheckMenuItem(c.getText());			
+			final CheckMenuItem columnVisibleMenuItem = new CheckMenuItem(c.getText());
+			columnVisibleMenuItem.setId(c.getId());
 			headerContextMenu.getItems().add(columnVisibleMenuItem);
 			c.visibleProperty().bind(columnVisibleMenuItem.selectedProperty());
 			columnVisibleMenuItem.setSelected(true);
@@ -94,16 +99,75 @@ public final class TableFactory {
 					}
 				}
 				else if(selected && visibleColumnHeaders.size() == 2) {
-					headerContextMenu.getItems().stream().filter(mi ->
+					headerContextMenu.getItems().stream().filter(mi -> mi instanceof CheckMenuItem &&
 						((CheckMenuItem)mi).isSelected()).forEach(mi -> mi.setDisable(false));
 				}
 			});
 		});
-		//TODO: Implement Reset functionality
-		headerContextMenu.getItems().addAll(new SeparatorMenuItem(), new MenuItem("Reset"));
+
+		final MenuItem resetHeadersMenuItem = new MenuItem("Reset");
+		resetHeadersMenuItem.setOnAction(e -> {
+			final Set<String> defaultVisibleColumnNames = Arrays.stream(defaultVisibleColumns.split(
+					GuiProperties.COMPOSITE_PROPERTY_VALUE_SEPARATOR)).collect(Collectors.toSet());			
+			headerContextMenu.getItems().stream().filter(mi -> mi instanceof CheckMenuItem).forEach(
+					mi -> ((CheckMenuItem)mi).setSelected(defaultVisibleColumnNames.contains(mi.getId())));
+		});
+		headerContextMenu.getItems().addAll(new SeparatorMenuItem(), resetHeadersMenuItem);
 	}
 	
-	//TODO: Combine buildSimple[Number | String]Column to a single method (U = String, Number)
+	/**
+	 * Build a table column
+	 * 
+	 * @param <T> View of the data stored in the table
+	 * @param <U> Type of data stored in the table cells
+	 * @param cellValueFactory How to set the cell values
+	 * @param valueConverter Function that converts T to string representation
+	 * @param columnWidth Preferred column width
+	 * @param alignmentStyle Column content alignment
+	 * @param columnName Column name displayed in the column header
+	 * @return Built column
+	 */
+	public static <T, U> TableColumn<T, U> buildColumn(
+			final Callback<CellDataFeatures<T, U>, ObservableValue<U>> cellValueFactory,
+			final Function<T, String> valueConverter, final int columnWidth, final String alignmentStyle,
+			final String columnName) {
+		final TableColumn<T, U> builtColumn = new TableColumn<>(columnName);
+		builtColumn.setId(columnName);
+		builtColumn.setGraphic(TableFactory.buildColumnHeader(builtColumn, alignmentStyle));
+		builtColumn.setPrefWidth(columnWidth);
+		builtColumn.setCellValueFactory(cellValueFactory);
+		builtColumn.setCellFactory(column -> new TableCell<T, U>() {
+			final Label valueLabel = new Label();
+			
+			@Override
+			protected final void updateItem(final U value, final boolean empty) {
+				super.updateItem(value, empty);
+				if(empty) {
+					setText(null);
+					setGraphic(null);
+				}
+				else {
+					/*if(this.getTableRow().getItem() == null) {
+						return;
+					}*/
+					final T item = this.getTableView().getItems().get(this.getTableRow().getIndex());					
+					
+					valueLabel.setText(valueConverter.apply(item));					
+	                this.setGraphic(valueLabel);
+	                
+	                if(GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME.equals(alignmentStyle)) {
+	                	this.setAlignment(Pos.BASELINE_RIGHT);
+		                super.setPadding(GuiUtils.rightPadding());
+	                }
+	                else {
+		                this.setAlignment(Pos.BASELINE_LEFT);
+		                super.setPadding(GuiUtils.leftPadding());
+	                }
+				}
+			}
+		});
+		return builtColumn;
+	}
 	
 	/**
 	 * Build a table column that will contain a simple string value
@@ -116,7 +180,7 @@ public final class TableFactory {
 	 * @param columnName Column name displayed in the column header
 	 * @return Built column
 	 */
-	public static <T> TableColumn<T, String> buildSimpleStringColumn(
+	/*public static <T> TableColumn<T, String> buildSimpleStringColumn(
 			final Callback<CellDataFeatures<T, String>, ObservableValue<String>> cellValueFactory,
 			final Function<T, String> valueConverter, final int columnWidth, final String alignmentStyle,
 			final String columnName) {
@@ -153,7 +217,7 @@ public final class TableFactory {
 			}
 		});
 		return stringColumn;
-	}
+	}*/
 	
 	/**
 	 * Build a table column that will contain a simple number value
@@ -166,7 +230,7 @@ public final class TableFactory {
 	 * @param columnName Column name displayed in the column header
 	 * @return Built column
 	 */
-	public static <T> TableColumn<T, Number> buildSimpleNumberColumn(
+	/*public static <T> TableColumn<T, Number> buildSimpleNumberColumn(
 			final Callback<CellDataFeatures<T, Number>, ObservableValue<Number>> cellValueFactory,
 			final Function<T, String> valueConverter, final int columnWidth, 
 			final String alignmentStyle, final String columnName) {
@@ -207,7 +271,7 @@ public final class TableFactory {
 			}			
 		});
 		return numberColumn;
-	}
+	}*/
 	
 	private static final <T> List<? extends TableColumnBase<T, ?>> getVisibleColumnHeaders(
 			final ObservableList<? extends TableColumnBase<T, ?>> tableColumns) {

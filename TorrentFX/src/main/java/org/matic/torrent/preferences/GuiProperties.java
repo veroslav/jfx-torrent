@@ -50,6 +50,12 @@ public final class GuiProperties {
 	public static final boolean DEFAULT_FILTER_VIEW_VISIBLE = true;
 	
 	//Visibility and sizes of tables' headers
+	public static final String TORRENT_JOBS_COLUMN_VISIBILITY = "gui.columns.visibility.jobs";	
+	public static final String DEFAULT_TORRENT_JOBS_COLUMN_VISIBILITY = "#:Name";
+	
+	public static final String INFO_COLUMN_VISIBILITY = "gui.columns.visibility.info";	
+	public static final String DEFAULT_INFO_COLUMN_VISIBILITY = "Name:Size:Priority:Done";
+	
 	public static final String TRACKERS_COLUMN_VISIBILITY = "gui.columns.visibility.trackers";	
 	public static final String DEFAULT_TRACKERS_COLUMN_VISIBILITY = "Name:Status:Update In:Seeds:Peers:Downloaded";
 	
