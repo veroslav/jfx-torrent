@@ -21,7 +21,7 @@
 package org.matic.torrent.preferences;
 
 import java.util.Arrays;
-import java.util.Set;
+import java.util.List;
 import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
 
@@ -133,11 +133,11 @@ public final class ApplicationPreferences {
 	 * 
 	 * @param propName Property name
 	 * @param defaultValue Default property value
-	 * @return Property value or default value if not present
+	 * @return A list of property value tokens
 	 */
-	public static Set<String> getCompositePropertyValues(final String propName, final String defaultValue) {
+	public static List<String> getCompositePropertyValues(final String propName, final String defaultValue) {
 		final String compositePropertyValue = ApplicationPreferences.getProperty(propName, defaultValue);		
 		return Arrays.stream(compositePropertyValue.split(
-				GuiProperties.COMPOSITE_PROPERTY_VALUE_SEPARATOR)).collect(Collectors.toSet());
+				GuiProperties.COMPOSITE_PROPERTY_VALUE_SEPARATOR)).collect(Collectors.toList());
 	}
 }

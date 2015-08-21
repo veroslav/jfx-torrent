@@ -21,8 +21,9 @@
 package org.matic.torrent.gui.table;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import org.matic.torrent.gui.GuiUtils;
@@ -56,6 +57,7 @@ public class TrackerTable {
 		initComponents();
 	}
 	
+	//TODO: Don't expose TableView, unless necessary (doesn't appear to be the case)
 	public Node getView() {
 		return trackerTable;
 	}
@@ -69,10 +71,23 @@ public class TrackerTable {
 		return trackerTable.getItems();
 	}
 	
+	/**
+	 * Sort the table based on the current sort order and latest table entry values
+	 */
 	public final void sort() {
 		final List<TableColumn<TrackerView, ?>> sortOrder = new ArrayList<>(trackerTable.getSortOrder());
 		trackerTable.getSortOrder().clear();
 		trackerTable.getSortOrder().addAll(sortOrder);
+	}
+	
+	/**
+	 * Store any changes to column order, visibility, and/or size
+	 */
+	public void storeColumnStates() {		
+		TableUtils.storeColumnStates(trackerTable.getColumns(), GuiProperties.TRACKER_TAB_COLUMN_VISIBILITY,
+			GuiProperties.DEFAULT_TRACKER_TAB_COLUMN_VISIBILITIES, GuiProperties.TRACKER_TAB_COLUMN_SIZE,
+			GuiProperties.DEFAULT_TRACKER_TAB_COLUMN_SIZES, GuiProperties.TRACKER_TAB_COLUMN_ORDER,
+			GuiProperties.DEFAULT_TRACKER_TAB_COLUMN_ORDER);		
 	}
 	
 	private void initComponents() {
@@ -82,7 +97,22 @@ public class TrackerTable {
 		createColumns();		
 	}
 	
-	private void createColumns() {	
+	private void createColumns() {									
+		final LinkedHashMap<String, TableColumn<TrackerView, ?>> columnMappings = buildColumnMappings();
+		final BiConsumer<String, Double> columnResizer = (columnId, targetWidth) -> {				
+			final TableColumn<TrackerView,?> tableColumn = columnMappings.get(columnId);						
+			trackerTable.getColumns().add(tableColumn);
+			trackerTable.resizeColumn(tableColumn, targetWidth- tableColumn.getWidth());			
+		};
+		final TableState<TrackerView> columnState = TableUtils.loadColumnStates(columnMappings, columnResizer,
+				GuiProperties.TRACKER_TAB_COLUMN_VISIBILITY, GuiProperties.DEFAULT_TRACKER_TAB_COLUMN_VISIBILITIES,
+				GuiProperties.TRACKER_TAB_COLUMN_SIZE, GuiProperties.DEFAULT_TRACKER_TAB_COLUMN_SIZES,
+				GuiProperties.TRACKER_TAB_COLUMN_ORDER, GuiProperties.DEFAULT_TRACKER_TAB_COLUMN_ORDER);
+		
+		TableUtils.addTableHeaderContextMenus(trackerTable.getColumns(), columnState, columnResizer);
+	}
+	
+	private LinkedHashMap<String, TableColumn<TrackerView, ?>> buildColumnMappings() {
 		final Function<TrackerView, String> updateInValueConverter = tv -> {			
 			if(tv.getTorrentState() == QueuedTorrent.State.STOPPED) {
 				return "";
@@ -106,7 +136,7 @@ public class TrackerTable {
 			return tv.getTorrentState() != QueuedTorrent.State.STOPPED? 
 					UnitConverter.formatMillisToTime(tv.getMinInterval()) : "";
 		};
-				
+		
 		final Callback<CellDataFeatures<TrackerView, String>, ObservableValue<String>> nameValueFactory =
 				tv -> tv.getValue().trackerNameProperty();
 		final Callback<CellDataFeatures<TrackerView, String>, ObservableValue<String>> statusValueFactory =
@@ -123,26 +153,25 @@ public class TrackerTable {
 				tv -> tv.getValue().leechersProperty();
 		final Callback<CellDataFeatures<TrackerView, Number>, ObservableValue<Number>> downloadedValueFactory =
 				tv -> tv.getValue().downloadedProperty();
+				
+		final LinkedHashMap<String, TableColumn<TrackerView, ?>> columnMappings = new LinkedHashMap<>();
+		columnMappings.put(NAME_COLUMN_NAME, TableUtils.buildColumn(nameValueFactory,
+				tv -> tv.getTrackerName(), GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, NAME_COLUMN_NAME));
+		columnMappings.put(STATUS_COLUMN_NAME, TableUtils.buildColumn(statusValueFactory,
+				tv -> tv.getStatus(), GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, STATUS_COLUMN_NAME));
+		columnMappings.put(UPDATE_IN_COLUMN_NAME, TableUtils.buildColumn(nextUpdateValueFactory,
+				updateInValueConverter, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, UPDATE_IN_COLUMN_NAME));
+		columnMappings.put(INTERVAL_COLUMN_NAME, TableUtils.buildColumn(intervalValueFactory,
+				intervalValueConverter, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, INTERVAL_COLUMN_NAME));
+		columnMappings.put(MIN_INTERVAL_COLUMN_NAME, TableUtils.buildColumn(minIntervalValueFactory,
+				minIntervalValueConverter, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, MIN_INTERVAL_COLUMN_NAME));
+		columnMappings.put(SEEDS_COLUMN_NAME, TableUtils.buildColumn(seedsValueFactory,
+				val -> String.valueOf(val.getSeeds()), GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, SEEDS_COLUMN_NAME));
+		columnMappings.put(PEERS_COLUMN_NAME, TableUtils.buildColumn(peersValueFactory, val ->
+			String.valueOf(val.getLeechers()), GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, PEERS_COLUMN_NAME));
+		columnMappings.put(DOWNLOADED_COLUMN_NAME, TableUtils.buildColumn(downloadedValueFactory, val ->
+			String.valueOf(val.getDownloaded()), GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, DOWNLOADED_COLUMN_NAME));
 		
-		trackerTable.getColumns().addAll(Arrays.asList(
-			TableFactory.buildColumn(nameValueFactory,
-					tv -> tv.getTrackerName(), GuiUtils.NAME_COLUMN_PREFERRED_SIZE,
-					GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, NAME_COLUMN_NAME),
-			TableFactory.buildColumn(statusValueFactory, tv -> tv.getStatus(), 140,
-					GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, STATUS_COLUMN_NAME),
-			TableFactory.buildColumn(nextUpdateValueFactory, updateInValueConverter, 120,
-					GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, UPDATE_IN_COLUMN_NAME),
-			TableFactory.buildColumn(intervalValueFactory, intervalValueConverter, 70,
-					GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, INTERVAL_COLUMN_NAME),
-			TableFactory.buildColumn(minIntervalValueFactory, minIntervalValueConverter, 90,
-					GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, MIN_INTERVAL_COLUMN_NAME),
-			TableFactory.buildColumn(seedsValueFactory, val -> String.valueOf(val.getSeeds()), 70,
-					GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, SEEDS_COLUMN_NAME),
-			TableFactory.buildColumn(peersValueFactory, val -> String.valueOf(val.getLeechers()), 70,
-					GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, PEERS_COLUMN_NAME),
-			TableFactory.buildColumn(downloadedValueFactory, val -> String.valueOf(val.getDownloaded()), 90,
-					GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, DOWNLOADED_COLUMN_NAME)));
-		
-		TableFactory.addHeaderContextMenus(trackerTable.getColumns(), GuiProperties.DEFAULT_TRACKERS_COLUMN_VISIBILITY);
-	}
+		return columnMappings;
+	}	
 }

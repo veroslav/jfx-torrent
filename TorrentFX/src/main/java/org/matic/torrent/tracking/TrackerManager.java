@@ -272,6 +272,8 @@ public final class TrackerManager implements TrackerResponseListener, UdpTracker
 			}
 		});
 	}
+	
+	//TODO: Add method issueScrape(final Tracker tracker)
 
 	/**
 	 * Issue an announce to a tracker (either explicitly by the user or when torrent state changes)
@@ -280,8 +282,7 @@ public final class TrackerManager implements TrackerResponseListener, UdpTracker
 	 * @param trackerEvent The tracker event to send
 	 * @return Whether request was successful (false if currently not allowed)
 	 */
-	public boolean issueAnnounce(final TrackerSession trackerSession,
-			final Tracker.Event trackerEvent) {
+	public boolean issueAnnounce(final TrackerSession trackerSession, final Tracker.Event trackerEvent) {
 		
 		System.out.println("issueAnnounce: tracker = " + trackerSession.getTracker().getUrl() + ", event = " + trackerEvent);
 		
@@ -291,6 +292,9 @@ public final class TrackerManager implements TrackerResponseListener, UdpTracker
 			System.out.println("announceAllowed? " + announceAllowed);
 			
 			if(announceAllowed) {
+				
+				//TODO: Don't create announce parameters here: pass them to issueAnnounce() instead
+				
 				final AnnounceParameters announceParameters = new AnnounceParameters(trackerEvent, 0, 0, 0);
 				scheduleAnnouncement(trackerSession, announceParameters, 0);
 			}
@@ -763,6 +767,7 @@ public final class TrackerManager implements TrackerResponseListener, UdpTracker
 		}		
 	}
 	
+	//TODO: Add more flexible scrape request scheduling
 	private void scheduleScrape(final Tracker tracker, final TrackerSession... torrents) {		
 		synchronized(trackerSessions) {
 			if(tracker.isScrapeSupported()) {				
@@ -826,6 +831,7 @@ public final class TrackerManager implements TrackerResponseListener, UdpTracker
 			if(previousAnnouncement != null) {				
 				final AnnounceParameters oldAnnouncement = previousAnnouncement.getAnnounceParameters();
 				if(isValidTrackerEvent(trackerSession, oldAnnouncement.getTrackerEvent())) {
+					//TODO: Expand REQUEST_DELAY_ON_TRACKER_ERROR based on total request attempt count
 					scheduleAnnouncement(trackerSession, oldAnnouncement, REQUEST_DELAY_ON_TRACKER_ERROR);
 				}
 			}
@@ -846,6 +852,7 @@ public final class TrackerManager implements TrackerResponseListener, UdpTracker
 		}
 	}
 	
+	//TODO: After stopping a session manually, some fields appear to not have been reset until column resize
 	private void resetSessionStateOnStop(final TrackerSession trackerSession) {
 		
 		System.out.println("Torrent has been stopped, resetting tracker session's state");

@@ -23,9 +23,9 @@ package org.matic.torrent.peer;
 import java.lang.management.ManagementFactory;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import java.util.Locale;
 import java.util.Properties;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 
 public final class ClientProperties {
@@ -41,6 +41,8 @@ public final class ClientProperties {
 	
 	private static final AtomicLong ID_GENERATOR_BASE = new AtomicLong(System.nanoTime());
 	private static final String CLIENT_IDENTIFIER = "-jX0001-";
+	
+	public static final SecureRandom RANDOM_INSTANCE = new SecureRandom();
 	
 	//Unique client id to be sent in tracker requests and to other peers
 	public static final String PEER_ID = ClientProperties.generatePeerId();
@@ -64,6 +66,7 @@ public final class ClientProperties {
 		return userLocale.toString();
 	}
 	
+	//TODO: Implement more generic generateUniqueId(length)
 	public static int generateUniqueId() {
 		final StringBuilder transactionId = new StringBuilder(ClientProperties.getUniqueHashBase());
 		transactionId.append(ID_GENERATOR_BASE.incrementAndGet());
@@ -113,10 +116,9 @@ public final class ClientProperties {
 	private static String generatePeerId() {
 		final String uniqueHash = String.valueOf(Math.abs(generateUniqueId()));
 		final StringBuilder peerId = new StringBuilder(CLIENT_IDENTIFIER);
-		final Random random = new Random(System.nanoTime());
 		
 		for(int i = 0; i < 12 - uniqueHash.length(); ++i) {
-			peerId.append(LETTER_HEX_VALUES[random.nextInt(LETTER_HEX_VALUES.length)]);
+			peerId.append(LETTER_HEX_VALUES[RANDOM_INSTANCE.nextInt(LETTER_HEX_VALUES.length)]);
 		}
 		
 		peerId.append(uniqueHash);

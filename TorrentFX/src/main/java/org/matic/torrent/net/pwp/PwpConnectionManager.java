@@ -108,8 +108,7 @@ public final class PwpConnectionManager {
 		
 		connectionListeners = new CopyOnWriteArraySet<>();
 		messageListeners = new CopyOnWriteArraySet<>();
-		
-		
+				
 		connectionManagerExecutor = Executors.newSingleThreadExecutor();
 		workerPool = Executors.newFixedThreadPool(PwpConnectionManager.WORKER_POOL_SIZE);				
 	}

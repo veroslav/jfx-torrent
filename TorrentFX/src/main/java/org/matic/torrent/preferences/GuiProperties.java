@@ -50,14 +50,22 @@ public final class GuiProperties {
 	public static final boolean DEFAULT_FILTER_VIEW_VISIBLE = true;
 	
 	//Visibility and sizes of tables' headers
-	public static final String TORRENT_JOBS_COLUMN_VISIBILITY = "gui.columns.visibility.jobs";	
-	public static final String DEFAULT_TORRENT_JOBS_COLUMN_VISIBILITY = "#:Name";
+	public static final String TORRENT_JOBS_TAB_COLUMN_VISIBILITY = "gui.columns.visibility.jobs";	
+	public static final String TORRENT_JOBS_TAB_COLUMN_ORDER = "gui.columns.order.jobs";		
+	public static final String TORRENT_JOBS_TAB_COLUMN_SIZE = "gui.columns.size.jobs";
+	public static final String DEFAULT_TORRENT_JOBS_TAB_COLUMN_VISIBILITIES = "true:true";
+	public static final String DEFAULT_TORRENT_JOBS_TAB_COLUMN_ORDER = "#:Name";
+	public static final String DEFAULT_TORRENT_JOBS_COLUMN_SIZES = "40:200";
 	
 	public static final String INFO_COLUMN_VISIBILITY = "gui.columns.visibility.info";	
 	public static final String DEFAULT_INFO_COLUMN_VISIBILITY = "Name:Size:Priority:Done";
-	
-	public static final String TRACKERS_COLUMN_VISIBILITY = "gui.columns.visibility.trackers";	
-	public static final String DEFAULT_TRACKERS_COLUMN_VISIBILITY = "Name:Status:Update In:Seeds:Peers:Downloaded";
+		
+	public static final String DEFAULT_TRACKER_TAB_COLUMN_ORDER = "Name:Status:Update In:Interval:Min Interval:Seeds:Peers:Downloaded";
+	public static final String DEFAULT_TRACKER_TAB_COLUMN_SIZES = "230:140:90:90:70:70:70:110";
+	public static final String DEFAULT_TRACKER_TAB_COLUMN_VISIBILITIES = "true:true:true:false:false:true:true:true";	
+	public static final String TRACKER_TAB_COLUMN_ORDER = "gui.columns.order.trackers";
+	public static final String TRACKER_TAB_COLUMN_VISIBILITY = "gui.columns.visibility.trackers";
+	public static final String TRACKER_TAB_COLUMN_SIZE = "gui.columns.size.trackers";			
 	
 	//Visibility of the detailed info tab pane components
 	public static final String TAB_ICONS_VISIBLE = "gui.tab.icons.visible"; 

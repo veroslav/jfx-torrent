@@ -619,7 +619,7 @@ public final class ApplicationWindow {
 	
 	private void addDetailsTabHeaderContextMenu(final ObservableList<Tab> tabs) {	
 		final ContextMenu tabHeaderContextMenu = new ContextMenu();		
-		final Set<String> visibleTabNames = ApplicationPreferences.getCompositePropertyValues(
+		final List<String> visibleTabNames = ApplicationPreferences.getCompositePropertyValues(
 				GuiProperties.TAB_VISIBILITY, GuiProperties.DEFAULT_TAB_VISIBILITY);
 		
 		tabHeaderContextMenu.getItems().addAll(tabs.stream().map(t -> {
@@ -949,7 +949,10 @@ public final class ApplicationWindow {
 		final boolean isDetailedInfoShown = showDetailedInfoMenuItem.isSelected();
 		if(isDetailedInfoShown != wasDetailedInfoShown) {
 			ApplicationPreferences.setProperty(GuiProperties.DETAILED_INFO_VISIBLE, isDetailedInfoShown);
-		}		
+		}
+		
+		trackerTable.storeColumnStates();
+		torrentJobTable.storeColumnStates();
 	}
 	
 	private void onShutdown(final Event event) {

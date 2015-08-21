@@ -240,7 +240,9 @@ public final class HttpTracker extends Tracker {
 		
 		result.append("&numwant=");
 		result.append(trackerEvent != Event.STOPPED? NUM_WANTED_PEERS : 0);
-		result.append("&compact=1&no_peer_id=1"); //&supportcrypto=1&redundant=0");
+		
+		//TODO: Add &supportcrypto=1&redundant=0 to the request parameters
+		result.append("&compact=1&no_peer_id=1");
 		
 		return result.toString();
 	}

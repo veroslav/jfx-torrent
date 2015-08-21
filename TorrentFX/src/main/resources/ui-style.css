@@ -274,6 +274,10 @@
     -fx-background-color: #E2EDF9;
 }
 
+.text{
+    -fx-font-smoothing-type: gray;
+}
+
 .tool-bar:horizontal {
 	-fx-alignment: CENTER_LEFT;
     -fx-background-color: 
