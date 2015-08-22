@@ -20,8 +20,9 @@
 
 package org.matic.torrent.gui.tree;
 
-import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -33,7 +34,9 @@ import org.matic.torrent.codec.BinaryEncodingKeyNames;
 import org.matic.torrent.gui.GuiUtils;
 import org.matic.torrent.gui.image.ImageUtils;
 import org.matic.torrent.gui.model.TorrentFileEntry;
+import org.matic.torrent.gui.table.TableState;
 import org.matic.torrent.gui.table.TableUtils;
+import org.matic.torrent.preferences.GuiProperties;
 import org.matic.torrent.queue.FilePriority;
 import org.matic.torrent.utils.UnitConverter;
 
@@ -65,6 +68,15 @@ import javafx.scene.paint.Color;
  * 
  */
 public final class TorrentContentTree {
+		
+	private static final String FIRST_PIECE_COLUMN_NAME = "First Piece";
+	private static final String PIECE_COUNT_COLUMN_NAME = "#Pieces";
+	private static final String PROGRESS_COLUMN_NAME = "Progress";
+	private static final String PRIORITY_COLUMN_NAME = "Priority";
+	private static final String PATH_COLUMN_NAME = "Path";
+	private static final String NAME_COLUMN_NAME = "Name";
+	private static final String SIZE_COLUMN_NAME = "Size";
+	private static final String DONE_COLUMN_NAME = "Done";
 
 	private final TreeTableView<TorrentFileEntry> fileEntryTree;
 	private final LongProperty selectedFilesSize;
@@ -73,13 +85,13 @@ public final class TorrentContentTree {
 	 * Create and populate a file tree with data from a torrent's info dictionary
 	 * 
 	 * @param infoDictionary Torrent's info dictionary
-	 * @param addProgressDetailColumns Whether to display columns showing download progress 
+	 * @param showProgressDetailColumns Whether to display columns showing download progress 
 	 */
 	public TorrentContentTree(final BinaryEncodedDictionary infoDictionary,
-			final boolean addProgressDetailColumns) {		
+			final boolean showProgressDetailColumns) {		
 		selectedFilesSize = new SimpleLongProperty();		 
 		fileEntryTree = new TreeTableView<TorrentFileEntry>();
-		initComponents(infoDictionary, addProgressDetailColumns);
+		initComponents(infoDictionary, showProgressDetailColumns);
 	}
 	
 	/**
@@ -184,6 +196,16 @@ public final class TorrentContentTree {
 		selectedFilesSize.set(contentRoot != null? contentRoot.getValue().getSize() : 0);
 	}
 	
+	/**
+	 * Store any changes to column order, visibility, and/or size
+	 */
+	public void storeColumnStates() {		
+		TableUtils.storeColumnStates(fileEntryTree.getColumns(), GuiProperties.INFO_TAB_COLUMN_VISIBILITY,
+			GuiProperties.DEFAULT_INFO_TAB_COLUMN_VISIBILITIES, GuiProperties.INFO_TAB_COLUMN_SIZE,
+			GuiProperties.DEFAULT_INFO_TAB_COLUMN_SIZES, GuiProperties.INFO_TAB_COLUMN_ORDER,
+			GuiProperties.DEFAULT_INFO_TAB_COLUMN_ORDER);		
+	}
+	
 	protected void onCollapseTreeItem(final TreeItem<TorrentFileEntry> targetItem) {
 		TreeItem<TorrentFileEntry> treeItem = targetItem;
 		if(treeItem.isLeaf()) {
@@ -260,30 +282,41 @@ public final class TorrentContentTree {
 	}
 	
 	private void createColumns(final boolean addProgressDetailColumns) {
+		final LinkedHashMap<String, TreeTableColumn<TorrentFileEntry, ?>> columnMappings = new LinkedHashMap<>();
+		
 		final TreeTableColumn<TorrentFileEntry, FileNameColumnModel> fileNameColumn = buildFileNameColumn();
-		fileEntryTree.getColumns().addAll(Arrays.asList(fileNameColumn, 
-				buildPathColumn(), buildSimpleLongValueColumn("Size", "size", GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, 
-						GuiUtils.rightPadding(), tfe -> UnitConverter.formatByteCount(
-								tfe.sizeProperty().get())), buildPriorityColumn()));
+		columnMappings.put(NAME_COLUMN_NAME, fileNameColumn);
+		columnMappings.put(PATH_COLUMN_NAME, buildPathColumn());
+		columnMappings.put(SIZE_COLUMN_NAME, buildSimpleLongValueColumn(SIZE_COLUMN_NAME, "size", 
+						GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, GuiUtils.rightPadding(), 
+						tfe -> UnitConverter.formatByteCount(tfe.sizeProperty().get())));
+		columnMappings.put(PRIORITY_COLUMN_NAME, buildPriorityColumn());
 		
 		if(addProgressDetailColumns) {
-			fileEntryTree.getColumns().addAll(Arrays.asList(
-					buildSimpleLongValueColumn(
-							"Done", "done", GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, GuiUtils.rightPadding(),
-							tfe -> UnitConverter.formatByteCount(tfe.doneProperty().get())),
-					buildSimpleLongValueColumn(
-							"First Piece", "firstPiece", GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, GuiUtils.rightPadding(),
-							tfe -> String.valueOf(tfe.firstPieceProperty().get())),
-					buildSimpleLongValueColumn(
-							"#Pieces", "pieceCount", GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, GuiUtils.rightPadding(),
-							tfe -> String.valueOf(tfe.pieceCountProperty().get())),
-					buildProgressColumn()));
-		}
+			columnMappings.put(DONE_COLUMN_NAME, buildSimpleLongValueColumn(DONE_COLUMN_NAME, "done",
+					GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, GuiUtils.rightPadding(),
+							tfe -> UnitConverter.formatByteCount(tfe.doneProperty().get())));
+			columnMappings.put(FIRST_PIECE_COLUMN_NAME,buildSimpleLongValueColumn(FIRST_PIECE_COLUMN_NAME, "firstPiece",
+							GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, GuiUtils.rightPadding(),
+							tfe -> String.valueOf(tfe.firstPieceProperty().get())));
+			columnMappings.put(PIECE_COUNT_COLUMN_NAME, buildSimpleLongValueColumn(
+							PIECE_COUNT_COLUMN_NAME, "pieceCount", GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME,
+							GuiUtils.rightPadding(),tfe -> String.valueOf(tfe.pieceCountProperty().get())));
+			columnMappings.put(PROGRESS_COLUMN_NAME, buildProgressColumn());
+		}		
 		
-		//TODO: Uncomment and implement function call correctly
-		/*TableFactory.addHeaderContextMenus(fileEntryTree.getColumns(), Collections.emptyList(),
-				GuiProperties.DEFAULT_INFO_COLUMN_VISIBILITY);*/
+		final BiConsumer<String, Double> columnResizer = (columnId, targetWidth) -> {				
+			final TreeTableColumn<TorrentFileEntry,?> tableColumn = columnMappings.get(columnId);						
+			fileEntryTree.getColumns().add(tableColumn);
+			fileEntryTree.resizeColumn(tableColumn, targetWidth - tableColumn.getWidth());			
+		};
 		
+		final TableState<TreeItem<TorrentFileEntry>> columnState = TableUtils.loadColumnStates(columnMappings, columnResizer,
+				GuiProperties.INFO_TAB_COLUMN_VISIBILITY, GuiProperties.DEFAULT_INFO_TAB_COLUMN_VISIBILITIES,
+				GuiProperties.INFO_TAB_COLUMN_SIZE, GuiProperties.DEFAULT_INFO_TAB_COLUMN_SIZES,
+				GuiProperties.INFO_TAB_COLUMN_ORDER, GuiProperties.DEFAULT_INFO_TAB_COLUMN_ORDER);
+		
+		TableUtils.addTableHeaderContextMenus(fileEntryTree.getColumns(), columnState, columnResizer);		
 		fileEntryTree.getSortOrder().add(fileNameColumn);
 	}
 	
@@ -322,10 +355,10 @@ public final class TorrentContentTree {
 		return longValueColumn;
 	}
 	
-	private TreeTableColumn<TorrentFileEntry, Integer> buildPriorityColumn() {
-		final String columnName = "Priority";
-		final TreeTableColumn<TorrentFileEntry, Integer> priorityColumn = new TreeTableColumn<TorrentFileEntry, Integer>(columnName);
-		priorityColumn.setId(columnName);
+	private TreeTableColumn<TorrentFileEntry, Integer> buildPriorityColumn() {		
+		final TreeTableColumn<TorrentFileEntry, Integer> priorityColumn =
+				new TreeTableColumn<TorrentFileEntry, Integer>(PRIORITY_COLUMN_NAME);
+		priorityColumn.setId(PRIORITY_COLUMN_NAME);
 		priorityColumn.setGraphic(TableUtils.buildColumnHeader(priorityColumn, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME));
 		priorityColumn.setCellValueFactory(new TreeItemPropertyValueFactory<TorrentFileEntry, Integer>("priority"));
 		priorityColumn.setCellFactory(column -> new TreeTableCell<TorrentFileEntry, Integer>() {
@@ -355,21 +388,20 @@ public final class TorrentContentTree {
 	}
 	
 	private TreeTableColumn<TorrentFileEntry, String> buildPathColumn() {
-		final String columnName = "Path";
-		final TreeTableColumn<TorrentFileEntry, String> pathColumn = new TreeTableColumn<TorrentFileEntry, String>(columnName);
-		pathColumn.setGraphic(TableUtils.buildColumnHeader(pathColumn, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME));
+		final TreeTableColumn<TorrentFileEntry, String> pathColumn =
+				new TreeTableColumn<TorrentFileEntry, String>(PATH_COLUMN_NAME);
+		pathColumn.setId(PATH_COLUMN_NAME);		
 		pathColumn.setCellValueFactory(new TreeItemPropertyValueFactory<TorrentFileEntry, String>("path"));
-		pathColumn.setVisible(false);
-		pathColumn.setId(columnName);
+		pathColumn.setGraphic(TableUtils.buildColumnHeader(pathColumn, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME));
+		pathColumn.setVisible(false);		
 		
 		return pathColumn;
 	}
 	
 	private TreeTableColumn<TorrentFileEntry, Double> buildProgressColumn() {
-		final String columnName = "Progress";
 		final TreeTableColumn<TorrentFileEntry, Double> progressColumn = 
-				new TreeTableColumn<TorrentFileEntry, Double>(columnName);
-		progressColumn.setId(columnName);
+				new TreeTableColumn<TorrentFileEntry, Double>(PROGRESS_COLUMN_NAME);
+		progressColumn.setId(PROGRESS_COLUMN_NAME);
 		progressColumn.setCellValueFactory(new TreeItemPropertyValueFactory<TorrentFileEntry, Double>("progress"));
 		progressColumn.setGraphic(TableUtils.buildColumnHeader(progressColumn, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME));
 		progressColumn.setCellFactory(column -> new ProgressBarTreeTableCell<TorrentFileEntry>() {			
@@ -401,10 +433,9 @@ public final class TorrentContentTree {
 	}
 	
 	private TreeTableColumn<TorrentFileEntry, FileNameColumnModel> buildFileNameColumn() {
-		final String columnName = "Name";
 		final TreeTableColumn<TorrentFileEntry, FileNameColumnModel> fileNameColumn = 
-				new TreeTableColumn<TorrentFileEntry, FileNameColumnModel>(columnName);
-		fileNameColumn.setId(columnName);
+				new TreeTableColumn<TorrentFileEntry, FileNameColumnModel>(NAME_COLUMN_NAME);
+		fileNameColumn.setId(NAME_COLUMN_NAME);
 		fileNameColumn.setGraphic(TableUtils.buildColumnHeader(fileNameColumn, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME));
 		fileNameColumn.setSortType(TreeTableColumn.SortType.DESCENDING);
 		fileNameColumn.setEditable(true);

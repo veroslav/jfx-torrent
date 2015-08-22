@@ -102,7 +102,7 @@ public class TrackerTable {
 		final BiConsumer<String, Double> columnResizer = (columnId, targetWidth) -> {				
 			final TableColumn<TrackerView,?> tableColumn = columnMappings.get(columnId);						
 			trackerTable.getColumns().add(tableColumn);
-			trackerTable.resizeColumn(tableColumn, targetWidth- tableColumn.getWidth());			
+			trackerTable.resizeColumn(tableColumn, targetWidth - tableColumn.getWidth());			
 		};
 		final TableState<TrackerView> columnState = TableUtils.loadColumnStates(columnMappings, columnResizer,
 				GuiProperties.TRACKER_TAB_COLUMN_VISIBILITY, GuiProperties.DEFAULT_TRACKER_TAB_COLUMN_VISIBILITIES,

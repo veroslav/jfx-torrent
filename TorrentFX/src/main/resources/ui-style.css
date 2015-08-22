@@ -275,7 +275,7 @@
 }
 
 .text{
-    -fx-font-smoothing-type: gray;
+    -fx-font-smoothing-type: lcd;
 }
 
 .tool-bar:horizontal {

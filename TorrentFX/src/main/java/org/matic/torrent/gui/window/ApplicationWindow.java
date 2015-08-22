@@ -953,6 +953,7 @@ public final class ApplicationWindow {
 		
 		trackerTable.storeColumnStates();
 		torrentJobTable.storeColumnStates();
+		torrentContentTree.storeColumnStates();
 	}
 	
 	private void onShutdown(final Event event) {

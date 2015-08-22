@@ -122,7 +122,7 @@ public final class TorrentJobTable {
 		final BiConsumer<String, Double> columnResizer = (columnId, targetWidth) -> {
 			final TableColumn<TorrentJobView,?> tableColumn = columnMappings.get(columnId);
 			torrentJobTable.getColumns().add(tableColumn);
-			torrentJobTable.resizeColumn(tableColumn, targetWidth- tableColumn.getWidth());
+			torrentJobTable.resizeColumn(tableColumn, targetWidth - tableColumn.getWidth());
 		};
 		final TableState<TorrentJobView> columnState = TableUtils.loadColumnStates(columnMappings, columnResizer,
 				GuiProperties.TORRENT_JOBS_TAB_COLUMN_VISIBILITY, GuiProperties.DEFAULT_TORRENT_JOBS_TAB_COLUMN_VISIBILITIES,

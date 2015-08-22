@@ -57,8 +57,12 @@ public final class GuiProperties {
 	public static final String DEFAULT_TORRENT_JOBS_TAB_COLUMN_ORDER = "#:Name";
 	public static final String DEFAULT_TORRENT_JOBS_COLUMN_SIZES = "40:200";
 	
-	public static final String INFO_COLUMN_VISIBILITY = "gui.columns.visibility.info";	
-	public static final String DEFAULT_INFO_COLUMN_VISIBILITY = "Name:Size:Priority:Done";
+	public static final String DEFAULT_INFO_TAB_COLUMN_ORDER = "Name:Path:Size:Priority:Done:First Piece:#Pieces:Progress";
+	public static final String DEFAULT_INFO_TAB_COLUMN_SIZES = "230:150:140:90:90:70:70:70";
+	public static final String DEFAULT_INFO_TAB_COLUMN_VISIBILITIES = "true:false:true:true:true:true:true:true";
+	public static final String INFO_TAB_COLUMN_ORDER = "gui.columns.order.info";
+	public static final String INFO_TAB_COLUMN_VISIBILITY = "gui.columns.visibility.info";
+	public static final String INFO_TAB_COLUMN_SIZE = "gui.columns.size.info";
 		
 	public static final String DEFAULT_TRACKER_TAB_COLUMN_ORDER = "Name:Status:Update In:Interval:Min Interval:Seeds:Peers:Downloaded";
 	public static final String DEFAULT_TRACKER_TAB_COLUMN_SIZES = "230:140:90:90:70:70:70:110";

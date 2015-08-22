@@ -71,5 +71,12 @@ public final class TableState<T> {
 
 	public final Set<String> getDefaultVisibleColumnNames() {
 		return defaultVisibleColumnNames;
-	}	
+	}
+
+	@Override
+	public String toString() {
+		return "TableState [columnMappings=" + columnMappings + ", columnVisibilityMapping=" + columnVisibilityMapping
+				+ ", defaultVisibleColumnNames=" + defaultVisibleColumnNames + ", defaultColumnSizeMapping="
+				+ defaultColumnSizeMapping + ", defaultColumnOrder=" + defaultColumnOrder + "]";
+	}		
 }

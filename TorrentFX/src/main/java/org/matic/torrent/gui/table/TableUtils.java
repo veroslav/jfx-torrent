@@ -191,11 +191,11 @@ public final class TableUtils {
 	 * 
 	 * @param <T> Type of the view object stored in the table
 	 * @param columns Table columns
-	 * @param columnState Loaded column states
+	 * @param tableState Loaded column states
 	 * @param columnResizer Resetter of columns' widths and order
 	 */
 	public static <T> void addTableHeaderContextMenus(final ObservableList<? extends TableColumnBase<T, ?>> columns,
-			final TableState<T> columnState, final BiConsumer<String, Double> columnResizer) {			
+			final TableState<T> tableState, final BiConsumer<String, Double> columnResizer) {			
 		final ContextMenu headerContextMenu = new ContextMenu();			
 		final Map<String, CheckMenuItem> menuItemMapping = new HashMap<>();
 		
@@ -225,20 +225,20 @@ public final class TableUtils {
 			
 			Platform.runLater(() -> {
 				final Optional<? extends TableColumnBase<T, ?>> columnId = columns.stream().filter(
-						tc -> tc.getId().equals(c.getId())).findFirst();
+						tc -> tc.getId().equals(c.getId())).findFirst();				
 				columnVisibleMenuItem.setSelected(columnId.isPresent()?
-						columnState.getColumnVisibilityMapping().get(columnId.get().getId()) : false);
+						tableState.getColumnVisibilityMapping().get(columnId.get().getId()) : false);
 			});
 		});
 
-		columnState.getColumnMappings().values().forEach(c -> 
+		tableState.getColumnMappings().values().forEach(c -> 
 			headerContextMenu.getItems().add(menuItemMapping.get(c.getId())));		
 
 		final List<CheckMenuItem> checkMenuItems = headerContextMenu.getItems().stream().map(
 				mi -> mi instanceof CheckMenuItem? (CheckMenuItem)mi : null).filter(Objects::nonNull).collect(Collectors.toList());
 		
 		final MenuItem resetHeadersMenuItem = new MenuItem("Reset");
-		resetHeadersMenuItem.setOnAction(e -> TableUtils.resetTableHeader(columns, checkMenuItems, columnState, columnResizer));		
+		resetHeadersMenuItem.setOnAction(e -> TableUtils.resetTableHeader(columns, checkMenuItems, tableState, columnResizer));		
 		headerContextMenu.getItems().addAll(new SeparatorMenuItem(), resetHeadersMenuItem);
 	}
 	
