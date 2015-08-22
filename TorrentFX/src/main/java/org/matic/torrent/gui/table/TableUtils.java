@@ -210,6 +210,7 @@ public final class TableUtils {
 			columnVisibleMenuItem.selectedProperty().addListener((obs, oldV, selected) -> {				
 				final List<? extends TableColumnBase<T, ?>> visibleColumnHeaders = 
 						TableUtils.getVisibleColumnHeaders(columns);
+				
 				if(!selected && visibleColumnHeaders.size() == 1) {					
 					final Optional<MenuItem> lastSelectedMenuItem = headerContextMenu.getItems().stream().filter(
 							mi -> ((CheckMenuItem)mi).isSelected()).findFirst();
@@ -302,11 +303,10 @@ public final class TableUtils {
 		columns.clear();		
 		columnCheckItems.forEach(ci -> {
 			final String columnId = ci.getId();
-			final boolean columnVisible = columnState.getDefaultVisibleColumnNames().contains(columnId);
-			ci.setSelected(columnVisible);
 			ci.setDisable(false);			
-			columnResizer.accept(columnId, defaultColumnSizeMapping.get(columnId));	
-		});		
+			columnResizer.accept(columnId, defaultColumnSizeMapping.get(columnId));
+		});	
+		columnCheckItems.forEach(ci -> ci.setSelected(columnState.getDefaultVisibleColumnNames().contains(ci.getId())));
 	}
 	
 	private static final <T> List<? extends TableColumnBase<T, ?>> getVisibleColumnHeaders(

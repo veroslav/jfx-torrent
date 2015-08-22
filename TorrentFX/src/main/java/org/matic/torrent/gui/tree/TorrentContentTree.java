@@ -198,12 +198,22 @@ public final class TorrentContentTree {
 	
 	/**
 	 * Store any changes to column order, visibility, and/or size
+	 * 
+	 * @param areInfoTabColumns Whether the info is shown in a details tab or on torrent loading
 	 */
-	public void storeColumnStates() {		
-		TableUtils.storeColumnStates(fileEntryTree.getColumns(), GuiProperties.INFO_TAB_COLUMN_VISIBILITY,
-			GuiProperties.DEFAULT_INFO_TAB_COLUMN_VISIBILITIES, GuiProperties.INFO_TAB_COLUMN_SIZE,
-			GuiProperties.DEFAULT_INFO_TAB_COLUMN_SIZES, GuiProperties.INFO_TAB_COLUMN_ORDER,
-			GuiProperties.DEFAULT_INFO_TAB_COLUMN_ORDER);		
+	public void storeColumnStates(final boolean areInfoTabColumns) {
+		if(areInfoTabColumns) {
+			TableUtils.storeColumnStates(fileEntryTree.getColumns(), GuiProperties.INFO_TAB_COLUMN_VISIBILITY,
+				GuiProperties.DEFAULT_INFO_TAB_COLUMN_VISIBILITIES, GuiProperties.INFO_TAB_COLUMN_SIZE,
+				GuiProperties.DEFAULT_INFO_TAB_COLUMN_SIZES, GuiProperties.INFO_TAB_COLUMN_ORDER,
+				GuiProperties.DEFAULT_INFO_TAB_COLUMN_ORDER);
+		}
+		else {
+			TableUtils.storeColumnStates(fileEntryTree.getColumns(), GuiProperties.INFO_COLUMN_VISIBILITY,
+				GuiProperties.DEFAULT_INFO_COLUMN_VISIBILITIES, GuiProperties.INFO_COLUMN_SIZE,
+				GuiProperties.DEFAULT_INFO_COLUMN_SIZES, GuiProperties.INFO_COLUMN_ORDER,
+				GuiProperties.DEFAULT_INFO_COLUMN_ORDER);
+		}
 	}
 	
 	protected void onCollapseTreeItem(final TreeItem<TorrentFileEntry> targetItem) {
@@ -311,10 +321,15 @@ public final class TorrentContentTree {
 			fileEntryTree.resizeColumn(tableColumn, targetWidth - tableColumn.getWidth());			
 		};
 		
-		final TableState<TreeItem<TorrentFileEntry>> columnState = TableUtils.loadColumnStates(columnMappings, columnResizer,
-				GuiProperties.INFO_TAB_COLUMN_VISIBILITY, GuiProperties.DEFAULT_INFO_TAB_COLUMN_VISIBILITIES,
-				GuiProperties.INFO_TAB_COLUMN_SIZE, GuiProperties.DEFAULT_INFO_TAB_COLUMN_SIZES,
-				GuiProperties.INFO_TAB_COLUMN_ORDER, GuiProperties.DEFAULT_INFO_TAB_COLUMN_ORDER);
+		final TableState<TreeItem<TorrentFileEntry>> columnState = addProgressDetailColumns?
+				TableUtils.loadColumnStates(columnMappings, columnResizer,
+					GuiProperties.INFO_TAB_COLUMN_VISIBILITY, GuiProperties.DEFAULT_INFO_TAB_COLUMN_VISIBILITIES,
+					GuiProperties.INFO_TAB_COLUMN_SIZE, GuiProperties.DEFAULT_INFO_TAB_COLUMN_SIZES,
+					GuiProperties.INFO_TAB_COLUMN_ORDER, GuiProperties.DEFAULT_INFO_TAB_COLUMN_ORDER) :					
+				TableUtils.loadColumnStates(columnMappings, columnResizer,
+						GuiProperties.INFO_COLUMN_VISIBILITY, GuiProperties.DEFAULT_INFO_COLUMN_VISIBILITIES,
+						GuiProperties.INFO_COLUMN_SIZE, GuiProperties.DEFAULT_INFO_COLUMN_SIZES,
+						GuiProperties.INFO_COLUMN_ORDER, GuiProperties.DEFAULT_INFO_COLUMN_ORDER);
 		
 		TableUtils.addTableHeaderContextMenus(fileEntryTree.getColumns(), columnState, columnResizer);		
 		fileEntryTree.getSortOrder().add(fileNameColumn);
