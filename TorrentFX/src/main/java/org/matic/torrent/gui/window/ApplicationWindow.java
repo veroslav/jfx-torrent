@@ -621,21 +621,21 @@ public final class ApplicationWindow {
 		final ContextMenu tabHeaderContextMenu = new ContextMenu();		
 		final List<String> visibleTabNames = ApplicationPreferences.getCompositePropertyValues(
 				GuiProperties.TAB_VISIBILITY, GuiProperties.DEFAULT_TAB_VISIBILITY);
-		
+				
 		tabHeaderContextMenu.getItems().addAll(tabs.stream().map(t -> {
 			final CheckMenuItem tabMenuItem = new CheckMenuItem(t.getText());	
 			tabMenuItem.setId(t.getId());
 			tabMenuItem.selectedProperty().addListener((obs, oldV, selected) -> {				
-				if(selected && !tabs.contains(t)) {
-					if(tabs.size() == 1) {
-						final Tab remainingTab = tabs.get(0);
+				if(selected && !tabs.contains(t)) {					
+					if(tabs.size() == 1) {						
+						final Tab remainingTab = tabs.get(0);						
 						tabHeaderContextMenu.getItems().stream().filter(
-								mi -> mi.getText().equals(remainingTab.getText())).forEach(mi -> mi.setDisable(false));											
+								mi -> remainingTab.getId().equals(mi.getId())).forEach(mi -> mi.setDisable(false));											
 					}
 					final int insertedTabOrder = TAB_NAMES.indexOf(t.getText());
 					int insertionIndex = 0;
 					for(int i = 0; i < tabs.size(); ++i) {						
-						if(TAB_NAMES.indexOf(tabs.get(i).getText()) > insertedTabOrder) {
+						if(TAB_NAMES.indexOf(tabs.get(i).getId()) > insertedTabOrder) {
 							insertionIndex = i;
 							break;
 						}
@@ -648,12 +648,12 @@ public final class ApplicationWindow {
 						tabs.forEach(tb -> tb.getContextMenu().getItems().forEach(mi -> mi.setDisable(false)));	
 					}
 				}
-				else if(!selected && tabs.contains(t)) {
+				else if(!selected && tabs.contains(t)) {					
 					tabs.remove(t);
 					if(tabs.size() == 1) {						
 						final Tab remainingTab = tabs.get(0);						
 						tabHeaderContextMenu.getItems().stream().filter(mi -> 
-							mi.getText().equals(remainingTab.getText())).forEach(mi -> mi.setDisable(true));								
+							remainingTab.getId().equals(mi.getId())).forEach(mi -> mi.setDisable(true));								
 					}
 				}
 			});
@@ -664,7 +664,7 @@ public final class ApplicationWindow {
 					if(tabs.size() == 1) {
 						final String singleTabId = tabs.get(0).getId();
 						tabHeaderContextMenu.getItems().stream().filter(mi ->
-							mi.getId().equals(singleTabId)).forEach(mi -> mi.setDisable(true));
+						singleTabId.equals(mi.getId())).forEach(mi -> mi.setDisable(true));
 					}
 				}
 			});
@@ -673,8 +673,27 @@ public final class ApplicationWindow {
 			return tabMenuItem;
 		}).collect(Collectors.toList()));	
 		
-		//TODO: Implement Reset functionality
-		tabHeaderContextMenu.getItems().addAll(new SeparatorMenuItem(), new MenuItem("Reset"));
+		final MenuItem resetTabsMenuItem = new MenuItem("Reset");
+		final List<CheckMenuItem> checkMenuItems = tabHeaderContextMenu.getItems().stream().filter(
+				mi -> mi instanceof CheckMenuItem).map(mi -> (CheckMenuItem)mi).collect(Collectors.toList());
+		resetTabsMenuItem.setOnAction(e -> onResetTabs(checkMenuItems));
+		tabHeaderContextMenu.getItems().addAll(new SeparatorMenuItem(), resetTabsMenuItem);
+	}
+	
+	private void onResetTabs(final List<CheckMenuItem> checkMenuItems) {
+		detailedInfoTabPane.getTabs().clear();
+		final Set<String> defaultVisibleTabNames = Arrays.stream(GuiProperties.DEFAULT_TAB_VISIBILITY.split(
+				GuiProperties.COMPOSITE_PROPERTY_VALUE_SEPARATOR)).collect(Collectors.toSet());
+		checkMenuItems.stream().filter(mi -> mi instanceof CheckMenuItem).forEach(cm -> {
+			final CheckMenuItem tabVisibilityCheck = (CheckMenuItem)cm;
+			tabVisibilityCheck.setDisable(false);
+			final String tabId = tabVisibilityCheck.getId();			
+			final boolean tabVisible = defaultVisibleTabNames.contains(tabId);				
+			if(tabVisible) {
+				detailedInfoTabPane.getTabs().add(detailsTabMap.get(tabId));
+			}
+		});
+		checkMenuItems.stream().forEach(cm -> cm.setSelected(defaultVisibleTabNames.contains(cm.getId())));		
 	}
 	
 	private MenuBar buildMenuBar() {

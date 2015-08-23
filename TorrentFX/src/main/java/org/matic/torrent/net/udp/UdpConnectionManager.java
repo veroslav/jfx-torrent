@@ -246,19 +246,19 @@ public final class UdpConnectionManager {
 	}
 	
 	private void notifyDhtListenersOnResponse(final DhtResponse dhtResponse) {
-		dhtListeners.stream().forEach(l -> l.onDhtResponseReceived(dhtResponse));
+		dhtListeners.forEach(l -> l.onDhtResponseReceived(dhtResponse));
 	}
 	
 	private void notifyDhtListenersOnRequestError(final UdpRequest udpRequest, final String message) {
-		dhtListeners.stream().forEach(l -> l.onDhtRequestError(udpRequest, message));
+		dhtListeners.forEach(l -> l.onDhtRequestError(udpRequest, message));
 	}
 	
 	private void notifyTrackerListenersOnResponse(final UdpTrackerResponse response) {		
-		trackerListeners.stream().forEach(l -> l.onUdpTrackerResponseReceived(response));
+		trackerListeners.forEach(l -> l.onUdpTrackerResponseReceived(response));
 	}
 	
 	private void notifyTrackerListenersOnRequestError(final UdpRequest udpRequest, final String message) {		
-		trackerListeners.stream().forEach(l -> l.onUdpTrackerRequestError(udpRequest, message));
+		trackerListeners.forEach(l -> l.onUdpTrackerRequestError(udpRequest, message));
 	}
 	
 	private void setChannelOptions(final DatagramChannel channel, final Selector connectionSelector,

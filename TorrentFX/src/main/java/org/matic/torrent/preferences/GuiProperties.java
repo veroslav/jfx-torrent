@@ -86,7 +86,7 @@ public final class GuiProperties {
 	public static final String DEFAULT_SELECTED_TAB_ID = FILES_TAB_ID;
 		
 	public static final String TAB_VISIBILITY = "gui.tab.visibility";	
-	public static final String DEFAULT_TAB_VISIBILITY = "Files:Info:Peers:Trackers:Pieces:Speed:Logger";
+	public static final String DEFAULT_TAB_VISIBILITY = "Files:Info:Peers:Trackers:Speed";
 	
 	//Positions of window components and the window itself
 	public static final String APPLICATION_WINDOW_WIDTH = "gui.window.width";
