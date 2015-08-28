@@ -23,6 +23,7 @@ package org.matic.torrent.net.udp;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.DatagramChannel;
@@ -266,5 +267,7 @@ public final class UdpConnectionManager {
 		channel.configureBlocking(false);
 		channel.bind(NetworkUtilities.getSocketAddressFromNetworkInterface(networkInterface, listenPort));
 		channel.register(connectionSelector, SelectionKey.OP_READ);
+		
+		System.out.println("Send buffer size: " + channel.getOption(StandardSocketOptions.SO_SNDBUF));
 	}
 }

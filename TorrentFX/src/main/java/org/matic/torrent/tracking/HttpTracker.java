@@ -161,7 +161,8 @@ public final class HttpTracker extends Tracker {
 	 */
 	@Override
 	protected final void announce(final AnnounceParameters announceParameters, final TrackerSession trackerSession) {		
-		final String requestUrl = buildAnnounceRequestUrl(announceParameters, trackerSession.getTorrent().getInfoHash());
+		final String requestUrl = buildAnnounceRequestUrl(announceParameters,
+				trackerSession.getTorrent().getInfoHash(), trackerSession.getKey());
 		final TrackerResponse trackerResponse = requestUrl == null? new TrackerResponse(
 				TrackerResponse.Type.INVALID_URL, "Unsupported encoding") : sendRequest(requestUrl);
 				
@@ -202,7 +203,8 @@ public final class HttpTracker extends Tracker {
 		return result.toString();
 	}
 	
-	protected String buildAnnounceRequestUrl(final AnnounceParameters announceParameters, final InfoHash infoHash) {		
+	protected String buildAnnounceRequestUrl(final AnnounceParameters announceParameters,
+			final InfoHash infoHash, final int key) {		
 		final StringBuilder result = new StringBuilder(super.getUrl());
 		result.append("?info_hash=");
 		result.append(HashUtilities.urlEncodeBytes(infoHash.getBytes()));
@@ -227,9 +229,10 @@ public final class HttpTracker extends Tracker {
 		result.append(announceParameters.getDownloaded());
 		result.append("&left=");
 		result.append(announceParameters.getLeft());
+		result.append("&corrupt=0");
 		
-		//TODO: Send correct key value
-		result.append("&corrupt=0&key=6F187D4A");
+		result.append("&key=");
+		result.append(Integer.toHexString(key));
 		
 		final Event trackerEvent = announceParameters.getTrackerEvent();
 		final String eventName = getEventName(trackerEvent);

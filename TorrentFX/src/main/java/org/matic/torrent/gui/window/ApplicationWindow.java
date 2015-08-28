@@ -37,7 +37,6 @@ import org.matic.torrent.codec.BinaryEncodedDictionary;
 import org.matic.torrent.codec.BinaryEncodedList;
 import org.matic.torrent.codec.BinaryEncodedString;
 import org.matic.torrent.codec.BinaryEncodingKeyNames;
-import org.matic.torrent.gui.GuiUtils;
 import org.matic.torrent.gui.action.FileActionHandler;
 import org.matic.torrent.gui.action.WindowActionHandler;
 import org.matic.torrent.gui.image.ImageUtils;
@@ -103,8 +102,6 @@ import javafx.util.Duration;
  *
  */
 public final class ApplicationWindow {
-	
-	//TODO: Properly updateGUI() when hiding/showing window components (such as detailed info pane)
 	
 	private static final String TOOLBAR_BUTTON_ADD_FROM_URL_NAME = "Add Torrent from URL";
 	private static final String TOOLBAR_BUTTON_ADD_RSS_FEED_NAME = "Add RSS Feed";
@@ -210,7 +207,6 @@ public final class ApplicationWindow {
 		initStatusBar(mainPane);
 		
 		torrentJobTable.addSelectionListener(this::onTorrentJobSelection);		
-		torrentContentTree.getView().setPlaceholder(GuiUtils.getEmptyTablePlaceholder());
 		
 		stage.setScene(initScene(mainPane));
 		stage.setOnCloseRequest(this::onShutdown);		
@@ -603,11 +599,13 @@ public final class ApplicationWindow {
     	showTabIconsMenuItem.selectedProperty().addListener((obs, oldV, showTabIcons) -> 
     		setTabGraphic.accept(showTabIcons));
         
-        final ScrollPane trackerTableScroll = new ScrollPane(trackerTable.getView());
+        final ScrollPane trackerTableScroll = new ScrollPane();
+        trackerTable.wrapWith(trackerTableScroll);
         trackerTableScroll.setFitToHeight(true);
         trackerTableScroll.setFitToWidth(true);
         
-        final ScrollPane torrentContentTreeScroll = new ScrollPane(torrentContentTree.getView());
+        final ScrollPane torrentContentTreeScroll = new ScrollPane();
+        torrentContentTree.wrapWith(torrentContentTreeScroll);
         torrentContentTreeScroll.setFitToHeight(true);
         torrentContentTreeScroll.setFitToWidth(true);
         

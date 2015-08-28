@@ -44,8 +44,9 @@ public final class TrackerSession {
 	private AtomicLong lastAnnounceResponse = new AtomicLong(0);
 	private AtomicLong lastScrapeResponse = new AtomicLong(0);
 	private AtomicLong interval = new AtomicLong(0);	
-	
-	private int transactionId = ClientProperties.generateUniqueId();	
+		
+	private final int transactionId = ClientProperties.generateUniqueId();
+	private final int key = ClientProperties.generateUniqueId();
 
 	public TrackerSession(final QueuedTorrent queuedTorrent, final Tracker tracker) {
 		this.queuedTorrent = queuedTorrent;
@@ -70,10 +71,6 @@ public final class TrackerSession {
 		synchronized(this.trackerStatus) {
 			return trackerStatus;
 		}
-	}
-	
-	public final void setTransactionId(final int transactionId) {
-		this.transactionId = transactionId;
 	}
 	
 	public final int getDownloaded() {
@@ -136,6 +133,10 @@ public final class TrackerSession {
 		return transactionId;
 	}
 	
+	public final int getKey() {
+		return key;
+	}
+	
 	public QueuedTorrent getTorrent() {
 		return queuedTorrent;
 	}
@@ -152,10 +153,7 @@ public final class TrackerSession {
 	}
 
 	public void setLastAcknowledgedEvent(final Tracker.Event trackerEvent) {
-		synchronized(lastAcknowledgedTrackerEvent) {
-			
-			System.out.println("setLastAcknowledgedEvent(" + trackerEvent + "): " + tracker.getUrl());
-			
+		synchronized(lastAcknowledgedTrackerEvent) {			
 			this.lastAcknowledgedTrackerEvent = trackerEvent;
 		}
 	}

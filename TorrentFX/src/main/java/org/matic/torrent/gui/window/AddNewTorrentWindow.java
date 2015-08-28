@@ -179,7 +179,7 @@ public final class AddNewTorrentWindow {
 			final byte[] infoHashBytes = ((BinaryEncodedString)torrentMetaData.get(
 					BinaryEncodingKeyNames.KEY_INFO_HASH)).getBytes();
 			final InfoHash infoHash = new InfoHash(infoHashBytes);			
-			return new TorrentOptions(torrentMetaData, infoHash, torrentContentTree.getView().getRoot(), 
+			return new TorrentOptions(torrentMetaData, infoHash, torrentContentTree.getContent(), 
 					nameTextField.getText(), savePathCombo.getValue(), labelCombo.getValue(),
 					startTorrentCheckbox.isSelected(), createSubFolderCheckbox.isSelected(),
 					addToTopQueueCheckbox.isSelected(), skipHashCheckbox.isSelected());
@@ -357,7 +357,7 @@ public final class AddNewTorrentWindow {
 		northPane.getChildren().addAll(labelPane, buttonsPane);
 		
 		final ScrollPane torrentContentsScroll = new ScrollPane();
-		torrentContentsScroll.setContent(torrentContentTree.getView());
+		torrentContentTree.wrapWith(torrentContentsScroll);
 		torrentContentsScroll.setFitToWidth(true);
 		torrentContentsScroll.setFitToHeight(true);
 		

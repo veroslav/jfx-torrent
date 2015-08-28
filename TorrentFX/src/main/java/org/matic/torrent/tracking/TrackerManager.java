@@ -237,8 +237,7 @@ public final class TrackerManager implements TrackerResponseListener, UdpTracker
 		trackerSessions.get(torrent).stream().filter(s -> s.getTorrent().getInfoHash().equals(
 				torrent.getInfoHash())).forEach(ts -> {
 			final Optional<TrackerView> match = trackerViews.stream().filter(tv ->
-				tv.getTrackerName().equals(ts.getTracker().getUrl())
-			).findFirst();
+				tv.getTrackerName().equals(ts.getTracker().getUrl())).findFirst();			
 			if(match.isPresent()) {
 				final TrackerView trackerView = match.get();
 				final Tracker.Status trackerStatus = ts.getTrackerStatus();
@@ -255,9 +254,11 @@ public final class TrackerManager implements TrackerResponseListener, UdpTracker
 				final boolean isTrackerScraped = trackerStatus == Tracker.Status.SCRAPE_OK ||
 						trackerStatus == Tracker.Status.SCRAPE_NOT_SUPPORTED;
 				
-				final String displayedMessage = trackerStatus != Tracker.Status.UPDATING &&
-						nextUpdateValue >= 1000 && (torrent.getState() == QueuedTorrent.State.ACTIVE ||
-						isTrackerScraped)? statusMessage : "";
+				final QueuedTorrent.State torrentState = torrent.getState();
+				
+				final String displayedMessage = (trackerStatus != Tracker.Status.UPDATING &&
+						nextUpdateValue >= 1000 && (torrentState == QueuedTorrent.State.ACTIVE)) ||
+						(isTrackerScraped && torrentState == QueuedTorrent.State.STOPPED)? statusMessage : "";
 				
 				trackerView.setLastTrackerResponse(lastTrackerResponse);				
 				trackerView.setTorrentState(torrent.getState());
@@ -274,7 +275,12 @@ public final class TrackerManager implements TrackerResponseListener, UdpTracker
 	}
 	
 	//TODO: Add method issueScrape(final Tracker tracker)
-
+	/*public void issueScrape(final Tracker tracker) {
+		if(tracker.isScrapeSupported()) {					
+			scheduleScrape(tracker, trackerSessions);				
+		}
+	}*/
+	
 	/**
 	 * Issue an announce to a tracker (either explicitly by the user or when torrent state changes)
 	 * 
@@ -502,7 +508,6 @@ public final class TrackerManager implements TrackerResponseListener, UdpTracker
 					tracker.setLastResponse(responseTime);
 					tracker.setId(connectionId);
 					
-					//scrapeSessions.stream().forEach(s -> s.setLastTrackerResponse(responseTime));
 					scheduleScrape(tracker, scrapeSessions.stream().toArray(TrackerSession[]::new));						
 				}				
 			}
@@ -660,11 +665,7 @@ public final class TrackerManager implements TrackerResponseListener, UdpTracker
 	}
 	
 	private boolean isValidTrackerEvent(final TrackerSession trackerSession, final Tracker.Event targetEvent) {		
-		final Tracker.Event lastAcknowledgedTrackerEvent = trackerSession.getLastAcknowledgedEvent();
-		
-		System.out.println("isValidTrackerEvent(): tracker = " + trackerSession.getTracker().getUrl() +
-				", lastAcknowledgedEvent: " + lastAcknowledgedTrackerEvent);
-		
+		final Tracker.Event lastAcknowledgedTrackerEvent = trackerSession.getLastAcknowledgedEvent();				
 		switch(targetEvent) {
 		case COMPLETED:
 			if(lastAcknowledgedTrackerEvent == Event.COMPLETED ||
@@ -761,10 +762,8 @@ public final class TrackerManager implements TrackerResponseListener, UdpTracker
 			}
 		});
 		
-		//Always schedule scrape as well, each time we announce
-		if(tracker.isScrapeSupported()) {					
-			scheduleScrape(tracker, trackerSession);				
-		}		
+		//Always schedule scrape as well, each time we announce					
+		scheduleScrape(tracker, trackerSession);								
 	}
 	
 	//TODO: Add more flexible scrape request scheduling

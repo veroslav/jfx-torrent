@@ -34,7 +34,10 @@ import org.matic.torrent.tracking.Tracker;
 import org.matic.torrent.utils.UnitConverter;
 
 import javafx.beans.value.ObservableValue;
-import javafx.scene.Node;
+import javafx.scene.control.ContextMenu;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableColumn.CellDataFeatures;
 import javafx.scene.control.TableView;
@@ -42,6 +45,7 @@ import javafx.util.Callback;
 
 public class TrackerTable {	
 	
+	//Tracker column header names
 	private static final String MIN_INTERVAL_COLUMN_NAME = "Min Interval";
 	private static final String DOWNLOADED_COLUMN_NAME = "Downloaded";
 	private static final String UPDATE_IN_COLUMN_NAME = "Update In";	
@@ -50,16 +54,15 @@ public class TrackerTable {
 	private static final String SEEDS_COLUMN_NAME = "Seeds";
 	private static final String PEERS_COLUMN_NAME = "Peers";
 	private static final String NAME_COLUMN_NAME = "Name";
+	
+	//Context menu commands
+	private static final String REMOVE_TRACKER = "Remove Tracker";
+	private static final String ADD_TRACKER = "Add Tracker";
 
 	private final TableView<TrackerView> trackerTable = new TableView<>();
 	
 	public TrackerTable() {
 		initComponents();
-	}
-	
-	//TODO: Don't expose TableView, unless necessary (doesn't appear to be the case)
-	public Node getView() {
-		return trackerTable;
 	}
 	
 	public final void setContent(final List<TrackerView> trackerViews) {
@@ -69,6 +72,10 @@ public class TrackerTable {
 	
 	public final List<TrackerView> getTrackerViews() {
 		return trackerTable.getItems();
+	}
+	
+	public void wrapWith(final ScrollPane wrapper) {
+		wrapper.setContent(trackerTable);
 	}
 	
 	/**
@@ -94,7 +101,27 @@ public class TrackerTable {
 		trackerTable.setPlaceholder(GuiUtils.getEmptyTablePlaceholder());
 		trackerTable.setTableMenuButtonVisible(false);
 		
-		createColumns();		
+		createColumns();
+		createContextMenu();
+	}
+	
+	private void createContextMenu() {
+		final ContextMenu contextMenu = new ContextMenu();
+		
+		final MenuItem removeTrackerMenuItem = new MenuItem(REMOVE_TRACKER);
+		removeTrackerMenuItem.setId(REMOVE_TRACKER);
+		removeTrackerMenuItem.setDisable(true);
+		
+		final MenuItem addTrackerMenuItem = new MenuItem(ADD_TRACKER);
+		addTrackerMenuItem.setId(ADD_TRACKER);
+		addTrackerMenuItem.setDisable(false);
+		
+		contextMenu.getItems().addAll(addTrackerMenuItem, new SeparatorMenuItem(), removeTrackerMenuItem);		
+		trackerTable.setContextMenu(contextMenu);
+		
+		trackerTable.getSelectionModel().selectedItemProperty().addListener((obs, oldV, selected) -> {			
+			removeTrackerMenuItem.setDisable(selected == null);
+		});
 	}
 	
 	private void createColumns() {									

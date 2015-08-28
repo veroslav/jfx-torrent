@@ -48,6 +48,7 @@ import javafx.geometry.Pos;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.CheckBoxTreeItem;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeTableCell;
 import javafx.scene.control.TreeTableColumn;
@@ -120,13 +121,8 @@ public final class TorrentContentTree {
 		return other.fileEntryTree.equals(fileEntryTree);
 	}
 	
-	/**
-	 * Expose wrapped TreeTableView
-	 * 
-	 * @return
-	 */
-	public TreeTableView<TorrentFileEntry> getView() {
-		return fileEntryTree;
+	public void wrapWith(final ScrollPane wrapper) {
+		wrapper.setContent(fileEntryTree);
 	}
 	
 	/**
@@ -194,6 +190,15 @@ public final class TorrentContentTree {
 	public void setContent(final TreeItem<TorrentFileEntry> contentRoot) {
 		fileEntryTree.setRoot(contentRoot);
 		selectedFilesSize.set(contentRoot != null? contentRoot.getValue().getSize() : 0);
+	}
+	
+	/**
+	 * Get the contents of the tree
+	 * 
+	 * @return Tree items
+	 */
+	public TreeItem<TorrentFileEntry> getContent() {
+		return fileEntryTree.getRoot();
 	}
 	
 	/**
@@ -283,6 +288,7 @@ public final class TorrentContentTree {
 			fileEntryTree.setRoot(rootNode);
 			selectedFilesSize.set(getRootFileEntry().getSize());
 		}
+		fileEntryTree.setPlaceholder(GuiUtils.getEmptyTablePlaceholder());
 		fileEntryTree.setTableMenuButtonVisible(false);
 		fileEntryTree.setShowRoot(false);
 		fileEntryTree.setEditable(true);					

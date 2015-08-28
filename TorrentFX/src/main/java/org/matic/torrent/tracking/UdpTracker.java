@@ -117,7 +117,8 @@ public final class UdpTracker extends Tracker {
 	protected void announce(final AnnounceParameters announceParameters,
 			final TrackerSession trackerSession) {
 		final UdpRequest announceRequest = buildAnnounceRequest(announceParameters,
-				trackerSession.getTorrent().getInfoHash(), trackerSession.getTransactionId());
+				trackerSession.getTorrent().getInfoHash(), trackerSession.getKey(),
+				trackerSession.getTransactionId());
 		
 		if(announceRequest != null) {
 			ResourceManager.INSTANCE.getUdpTrackerConnectionManager().send(announceRequest);
@@ -214,7 +215,7 @@ public final class UdpTracker extends Tracker {
 	}
 
 	protected UdpRequest buildAnnounceRequest(final AnnounceParameters announceParameters, final InfoHash infoHash,
-			final int transactionId) {
+			final int key, final int transactionId) {
 		final ByteArrayOutputStream baos = new ByteArrayOutputStream(MESSAGE_LENGTH);
 		try(final DataOutputStream dos = new DataOutputStream(baos)) {
 			
@@ -232,12 +233,15 @@ public final class UdpTracker extends Tracker {
 			dos.writeInt(requestEvent);
 			
 			//IP address (0 = default)
-			dos.writeInt(0);			
-			//key (TODO: should be calculated and sent)
-			dos.writeInt(42);
+			dos.writeInt(0);
+			
+			//key
+			dos.writeInt(key);
+			
 			//num_want (-1 = default)
 			dos.writeInt(requestEvent != EVENT_STOPPED? NUM_WANTED_PEERS : 0);
 			
+			//port
 			dos.writeShort(ResourceManager.INSTANCE.getUdpTrackerPort());			
 			dos.flush();
 		}

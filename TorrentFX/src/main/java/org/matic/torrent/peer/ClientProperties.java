@@ -20,13 +20,11 @@
 
 package org.matic.torrent.peer;
 
-import java.lang.management.ManagementFactory;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Locale;
-import java.util.Properties;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public final class ClientProperties {
 	
@@ -34,15 +32,11 @@ public final class ClientProperties {
 		Windows, Mac, Linux
 	}
 	
-	private static Platform os = null;
-	
-	private static final char[] LETTER_HEX_VALUES = {'A', 'B', 'C', 'D', 'E', 'F'};
+	private static final String CLIENT_IDENTIFIER = "-jX0001-";
 	private static final String OS_PROPERTY_NAME = "os.name";
 	
-	private static final AtomicLong ID_GENERATOR_BASE = new AtomicLong(System.nanoTime());
-	private static final String CLIENT_IDENTIFIER = "-jX0001-";
-	
 	public static final SecureRandom RANDOM_INSTANCE = new SecureRandom();
+	private static final AtomicInteger ID_GENERATOR_BASE = new AtomicInteger(RANDOM_INSTANCE.nextInt());
 	
 	//Unique client id to be sent in tracker requests and to other peers
 	public static final String PEER_ID = ClientProperties.generatePeerId();
@@ -66,12 +60,13 @@ public final class ClientProperties {
 		return userLocale.toString();
 	}
 	
-	//TODO: Implement more generic generateUniqueId(length)
+	/**
+	 * Generate an unique integer on each call
+	 * 
+	 * @return Generated integer
+	 */
 	public static int generateUniqueId() {
-		final StringBuilder transactionId = new StringBuilder(ClientProperties.getUniqueHashBase());
-		transactionId.append(ID_GENERATOR_BASE.incrementAndGet());
-		
-		return transactionId.toString().hashCode();
+		return ID_GENERATOR_BASE.incrementAndGet();		
 	}	
 	
 	/**
@@ -79,49 +74,39 @@ public final class ClientProperties {
 	 * 
 	 * @return Host platform 
 	 */
-	public static Platform getOS() {
-		if(os == null) {
-			final String osName = System.getProperty(OS_PROPERTY_NAME).toLowerCase();
+	public static Platform getOS() {		
+		final String osName = System.getProperty(OS_PROPERTY_NAME).toLowerCase();
  
-			switch(osName) {
-			case "win":
-				os = Platform.Windows;
-				break;
-			case "mac":
-				os = Platform.Mac;
-				break;
-			default:
-				os = Platform.Linux;	
-			}
+		switch (osName) {
+		case "win":
+			return Platform.Windows;
+		case "mac":
+			return Platform.Mac;
+		default:
+			return Platform.Linux;
 		}
- 
-		return os;
 	}
 	
-	private static String getUniqueHashBase() {
-		final Properties systemProps = System.getProperties();		
-		final StringBuilder hashBase = new StringBuilder();
-		
-		hashBase.append(systemProps.getProperty("os.name"));
-		hashBase.append(systemProps.getProperty("os.arch"));
-		hashBase.append(systemProps.getProperty("os.version"));
-		hashBase.append(systemProps.getProperty("user.name"));
-		hashBase.append(systemProps.getProperty("user.home"));
-		hashBase.append(systemProps.getProperty("user.dir"));
-		hashBase.append(ManagementFactory.getRuntimeMXBean().getName());
-		
-		return hashBase.toString();
-	}
+	/**
+	 * Generate a random hexadecimal char sequence of specified length and case
+	 * 
+	 * @param length Target length
+	 * @param upperCase Whether to generate an upper- or lower case sequence
+	 * @return Generated hexadecimal sequence
+	 */
+	public static String generateRandomHexId(final int length, final boolean upperCase) {
+        final StringBuffer buffer = new StringBuffer();
+        while(buffer.length() < length){
+            buffer.append(Integer.toHexString(ID_GENERATOR_BASE.incrementAndGet()));
+        }
+
+        final String result = buffer.toString().substring(0, length);
+        return upperCase? result.toUpperCase() : result;
+    }
 	
 	private static String generatePeerId() {
-		final String uniqueHash = String.valueOf(Math.abs(generateUniqueId()));
 		final StringBuilder peerId = new StringBuilder(CLIENT_IDENTIFIER);
-		
-		for(int i = 0; i < 12 - uniqueHash.length(); ++i) {
-			peerId.append(LETTER_HEX_VALUES[RANDOM_INSTANCE.nextInt(LETTER_HEX_VALUES.length)]);
-		}
-		
-		peerId.append(uniqueHash);
+		peerId.append(generateRandomHexId(12, true));		
 		return peerId.toString();
 	}	
 }
