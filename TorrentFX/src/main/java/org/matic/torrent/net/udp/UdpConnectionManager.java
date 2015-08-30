@@ -23,7 +23,6 @@ package org.matic.torrent.net.udp;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.DatagramChannel;
@@ -73,7 +72,6 @@ public final class UdpConnectionManager {
 	private final Set<UdpTrackerResponseListener> trackerListeners;
 	private final Set<DhtResponseListener> dhtListeners;
 	
-	private final ByteBuffer outputBuffer = ByteBuffer.allocate(MAX_OUTPUT_PACKET_SIZE);
 	private final ByteBuffer inputBuffer = ByteBuffer.allocate(MAX_INPUT_PACKET_SIZE);
 	
 	private final ExecutorService connectionManagerExecutor;
@@ -87,7 +85,6 @@ public final class UdpConnectionManager {
 		dhtListeners = new CopyOnWriteArraySet<>();
 		
 		channelWriterExecutor.allowCoreThreadTimeOut(true);
-		outputBuffer.order(ByteOrder.BIG_ENDIAN);
 	}
 	
 	public final void addTrackerListener(final UdpTrackerResponseListener listener) {		
@@ -223,17 +220,16 @@ public final class UdpConnectionManager {
 			return;
 		}
 		
-		synchronized(outputBuffer) {
-			outputBuffer.clear();
-			outputBuffer.put(udpRequest.getRequestData());
-			outputBuffer.flip();
-			
-			try {			
-				channel.send(outputBuffer, remoteAddress);			
-			} catch (final IOException ioe) {	
-				notifyListenersOnRequestError(udpRequest, 
-						Tracker.getStatusMessage(Tracker.Status.CONNECTION_TIMEOUT));
-			}
+		final ByteBuffer outputBuffer = ByteBuffer.allocate(MAX_OUTPUT_PACKET_SIZE);
+		outputBuffer.order(ByteOrder.BIG_ENDIAN);
+		outputBuffer.put(udpRequest.getRequestData());
+		outputBuffer.flip();
+		
+		try {			
+			channel.send(outputBuffer, remoteAddress);			
+		} catch (final IOException ioe) {	
+			notifyListenersOnRequestError(udpRequest, 
+					Tracker.getStatusMessage(Tracker.Status.CONNECTION_TIMEOUT));
 		}
 	}
 	
@@ -267,7 +263,5 @@ public final class UdpConnectionManager {
 		channel.configureBlocking(false);
 		channel.bind(NetworkUtilities.getSocketAddressFromNetworkInterface(networkInterface, listenPort));
 		channel.register(connectionSelector, SelectionKey.OP_READ);
-		
-		System.out.println("Send buffer size: " + channel.getOption(StandardSocketOptions.SO_SNDBUF));
 	}
 }

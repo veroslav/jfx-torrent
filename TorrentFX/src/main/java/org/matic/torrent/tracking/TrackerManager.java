@@ -256,9 +256,14 @@ public final class TrackerManager implements TrackerResponseListener, UdpTracker
 				
 				final QueuedTorrent.State torrentState = torrent.getState();
 				
-				final String displayedMessage = (trackerStatus != Tracker.Status.UPDATING &&
-						nextUpdateValue >= 1000 && (torrentState == QueuedTorrent.State.ACTIVE)) ||
-						(isTrackerScraped && torrentState == QueuedTorrent.State.STOPPED)? statusMessage : "";
+				String displayedMessage = "";
+				if((trackerStatus != Tracker.Status.UPDATING && nextUpdateValue >= 1000 &&
+						(torrentState == QueuedTorrent.State.ACTIVE))) {
+					displayedMessage = statusMessage;
+				}
+				else if(torrentState == QueuedTorrent.State.STOPPED && isTrackerScraped) {
+					displayedMessage = Tracker.getStatusMessage(trackerStatus);
+				}
 				
 				trackerView.setLastTrackerResponse(lastTrackerResponse);				
 				trackerView.setTorrentState(torrent.getState());
@@ -274,12 +279,7 @@ public final class TrackerManager implements TrackerResponseListener, UdpTracker
 		});
 	}
 	
-	//TODO: Add method issueScrape(final Tracker tracker)
-	/*public void issueScrape(final Tracker tracker) {
-		if(tracker.isScrapeSupported()) {					
-			scheduleScrape(tracker, trackerSessions);				
-		}
-	}*/
+	//TODO: Add method issueScrape(final Tracker tracker)	
 	
 	/**
 	 * Issue an announce to a tracker (either explicitly by the user or when torrent state changes)
@@ -288,15 +288,9 @@ public final class TrackerManager implements TrackerResponseListener, UdpTracker
 	 * @param trackerEvent The tracker event to send
 	 * @return Whether request was successful (false if currently not allowed)
 	 */
-	public boolean issueAnnounce(final TrackerSession trackerSession, final Tracker.Event trackerEvent) {
-		
-		System.out.println("issueAnnounce: tracker = " + trackerSession.getTracker().getUrl() + ", event = " + trackerEvent);
-		
+	public boolean issueAnnounce(final TrackerSession trackerSession, final Tracker.Event trackerEvent) {		
 		synchronized(trackerSessions) {			
-			final boolean announceAllowed = announceAllowed(trackerSession, trackerEvent);
-			
-			System.out.println("announceAllowed? " + announceAllowed);
-			
+			final boolean announceAllowed = announceAllowed(trackerSession, trackerEvent);			
 			if(announceAllowed) {
 				
 				//TODO: Don't create announce parameters here: pass them to issueAnnounce() instead
@@ -593,7 +587,7 @@ public final class TrackerManager implements TrackerResponseListener, UdpTracker
 		try(final DataInputStream dis = new DataInputStream(new ByteArrayInputStream(trackerResponse.getData()))) {
 			final int actionId = dis.readInt();			
 			if(actionId != UdpTracker.ACTION_ERROR) {
-				System.err.println("Invalid error action id: " + actionId);
+				System.err.println("Invalid error action id: " + actionId + ", message: " + trackerResponse.getMessage());
 				return;
 			}
 			final int transactionId = dis.readInt();
@@ -606,18 +600,11 @@ public final class TrackerManager implements TrackerResponseListener, UdpTracker
 				ts.setInterval(REQUEST_DELAY_ON_TRACKER_ERROR);
 				ts.setTrackerStatus(Tracker.Status.TRACKER_ERROR);
 				ts.setTrackerMessage(new String(messageBytes,
-						ClientProperties.STRING_ENCODING_CHARSET));
-				
-				/*System.out.println("onUdpTrackerError(): interval = " + ts.getInterval() + 
-						", trackerMessage = " + ts.getTrackerMessage());*/
+						ClientProperties.STRING_ENCODING_CHARSET));				
 			};
 			
 			//Update matching sessions if the originating request was a scrape
 			scheduledUdpScrapes.computeIfPresent(transactionId, (id, scrapes) -> {
-				
-				/*System.out.println("onUdpTrackerError(transaction_id = " + transactionId +
-						"): Removing matching scrapes");*/
-				
 				scrapes.forEach(scrape -> {
 					scrape.setLastScrapeResponse(lastResponse);
 					sessionStatusUpdate.accept(scrape);
@@ -732,12 +719,7 @@ public final class TrackerManager implements TrackerResponseListener, UdpTracker
 		};
 		
 		scheduledRequests.compute(trackerSession, (session, announcement) -> {			
-			if(!isValidTrackerEvent(trackerSession, announceParameters.getTrackerEvent())) {
-				
-				System.out.println(tracker.getUrl() + "Invalid tracker event: last: " 
-						+ trackerSession.getLastAcknowledgedEvent() +
-						", current: " + announceParameters.getTrackerEvent());
-				
+			if(!isValidTrackerEvent(trackerSession, announceParameters.getTrackerEvent())) {				
 				return announcement;
 			}
 			if(announcement != null) {
@@ -851,11 +833,7 @@ public final class TrackerManager implements TrackerResponseListener, UdpTracker
 		}
 	}
 	
-	//TODO: After stopping a session manually, some fields appear to not have been reset until column resize
-	private void resetSessionStateOnStop(final TrackerSession trackerSession) {
-		
-		System.out.println("Torrent has been stopped, resetting tracker session's state");
-		
+	private void resetSessionStateOnStop(final TrackerSession trackerSession) {		
 		scheduledRequests.compute(trackerSession, (session, announcement) -> {
 			announcement.getFuture().cancel(false);
 			return null;

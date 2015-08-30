@@ -82,7 +82,7 @@ public final class UdpDataPacketParser {
 				}
 			}
 			
-			return new UdpTrackerResponse(responseData, UdpTracker.ACTION_ERROR, null);
+			return new UdpTrackerResponse(responseData, UdpTracker.ACTION_ERROR, "No matching message type was found");
 			
 		} catch (final IOException ioe) {
 			return new UdpTrackerResponse(responseData, UdpTracker.ACTION_ERROR, ioe.getMessage());
