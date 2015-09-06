@@ -26,17 +26,22 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javafx.beans.value.ChangeListener;
-
 import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.tracking.Tracker;
 import org.matic.torrent.tracking.TrackerManager;
-import org.matic.torrent.utils.ResourceManager;
+
+import javafx.beans.value.ChangeListener;
 
 public final class QueuedTorrentManager {
 
 	private final Map<QueuedTorrent, ChangeListener<QueuedTorrent.State>> stateChangeListeners = new ConcurrentHashMap<>();
 	private final Map<QueuedTorrent, Set<String>> queuedTorrents = new HashMap<>();
+	
+	private final TrackerManager trackerManager;
+	
+	public QueuedTorrentManager(final TrackerManager trackerManager) {
+		this.trackerManager = trackerManager;
+	}
 
 	/**
 	 * Add a torrent to be managed
@@ -50,11 +55,9 @@ public final class QueuedTorrentManager {
 			return false;
 		}
 		
-		addTorrentStateChangeListener(torrent);
-		
-		final TrackerManager trackerManager = ResourceManager.INSTANCE.getTrackerManager();
+		addTorrentStateChangeListener(torrent);		
 		trackerUrls.forEach(t ->
-			trackerManager.addTracker(t, torrent, torrent.getState() != QueuedTorrent.State.STOPPED));
+			trackerManager.addTracker(t, torrent));
 		
 		return true;
 	}
@@ -70,7 +73,7 @@ public final class QueuedTorrentManager {
 		
 		if(removed) {
 			torrent.stateProperty().removeListener(stateChangeListeners.remove(torrent));
-			ResourceManager.INSTANCE.getTrackerManager().removeTorrent(torrent);
+			trackerManager.removeTorrent(torrent);
 		}
 		
 		return removed;
@@ -97,7 +100,7 @@ public final class QueuedTorrentManager {
 			return;
 		}
 		
-		ResourceManager.INSTANCE.getTrackerManager().issueTorrentEvent(torrent, 
+		trackerManager.issueTorrentEvent(torrent, 
 				newValue == QueuedTorrent.State.ACTIVE? Tracker.Event.STARTED : Tracker.Event.STOPPED);		
 	}
 	

@@ -42,10 +42,7 @@ public final class ClientProperties {
 	public static final String PEER_ID = ClientProperties.generatePeerId();
 	
 	//Port used for incoming peer-2-peer connections
-	public static final int TCP_PORT = 43893;
-	
-	//Port used for UDP communication (tracker and DHT responses)
-	public static final int UDP_PORT = 43893;
+	public static final int TCP_PORT = 43893;	
 	
 	//UTF-8 encoding is used for all string encoding used in the client
 	public static final Charset STRING_ENCODING_CHARSET = StandardCharsets.UTF_8;

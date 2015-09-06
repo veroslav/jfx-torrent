@@ -36,21 +36,21 @@ public final class TrackerSession {
 	private Tracker.Status trackerStatus = Tracker.Status.UNKNOWN;
 	private String trackerMessage = null;
 	
-	private AtomicInteger downloaded = new AtomicInteger(0);
-	private AtomicInteger leechers = new AtomicInteger(0);
-	private AtomicInteger seeders = new AtomicInteger(0);	
+	private final AtomicInteger downloaded = new AtomicInteger(0);
+	private final AtomicInteger leechers = new AtomicInteger(0);
+	private final AtomicInteger seeders = new AtomicInteger(0);	
 			
-	private AtomicLong minInterval = new AtomicLong(Tracker.MIN_INTERVAL_DEFAULT_VALUE);
-	private AtomicLong lastAnnounceResponse = new AtomicLong(0);
-	private AtomicLong lastScrapeResponse = new AtomicLong(0);
-	private AtomicLong interval = new AtomicLong(0);	
+	private final AtomicLong minInterval = new AtomicLong(Tracker.MIN_INTERVAL_DEFAULT_VALUE);
+	private final AtomicLong lastAnnounceResponse = new AtomicLong(0);
+	private final AtomicLong lastScrapeResponse = new AtomicLong(0);
+	private final AtomicLong interval = new AtomicLong(0);	
 		
-	private final int transactionId = ClientProperties.generateUniqueId();
 	private final int key = ClientProperties.generateUniqueId();
+	private final int transactionId = ClientProperties.generateUniqueId();	
 
 	public TrackerSession(final QueuedTorrent queuedTorrent, final Tracker tracker) {
 		this.queuedTorrent = queuedTorrent;
-		this.tracker = tracker;
+		this.tracker = tracker;		
 	}
 	
 	public final synchronized void setTrackerMessage(final String trackerMessage) {

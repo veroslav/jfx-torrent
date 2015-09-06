@@ -50,9 +50,9 @@ import org.matic.torrent.preferences.ApplicationPreferences;
 import org.matic.torrent.preferences.GuiProperties;
 import org.matic.torrent.queue.QueuedTorrent;
 import org.matic.torrent.queue.QueuedTorrentManager;
+import org.matic.torrent.tracking.TrackerManager;
 import org.matic.torrent.utils.PeriodicTask;
 import org.matic.torrent.utils.PeriodicTaskRunner;
-import org.matic.torrent.utils.ResourceManager;
 
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -134,9 +134,6 @@ public final class ApplicationWindow {
 	//Split pane containing filter view and vertical split pane
 	private final SplitPane horizontalSplitPane = new SplitPane();
 	
-	//The manager for handling queued torrents states
-	private final QueuedTorrentManager queuedTorrentManager = new QueuedTorrentManager();
-	
 	private final WindowActionHandler windowActionHandler = new WindowActionHandler();
 	private final FileActionHandler fileActionHandler = new FileActionHandler();
 	
@@ -187,11 +184,20 @@ public final class ApplicationWindow {
 	
 	//A service that periodically executes actions (such as GUI update)
 	private final PeriodicTaskRunner periodicTaskRunner = new PeriodicTaskRunner();
-		
+	
+	//The manager for handling queued torrents states
+	private final QueuedTorrentManager queuedTorrentManager;
+	
+	//An object for managing all of the communication with the available trackers
+	private final TrackerManager trackerManager;	
+	
 	private final Stage stage;
 
-	public ApplicationWindow(final Stage stage) {
-		this.stage = stage;
+	public ApplicationWindow(final Stage stage, final TrackerManager trackerManager,
+			final QueuedTorrentManager queuedTorrentManager) {
+		this.stage = stage;		
+		this.trackerManager = trackerManager;
+		this.queuedTorrentManager = queuedTorrentManager;
 		
 		initComponents();
 	}
@@ -291,8 +297,7 @@ public final class ApplicationWindow {
 			if(showDetailedInfoMenuItem.isSelected()) {
 				//Render tracker statistics if Trackers tab is selected
 				if(detailsTabMap.get(GuiProperties.TRACKERS_TAB_ID).isSelected()) {					
-					ResourceManager.INSTANCE.getTrackerManager().trackerSnapshot(
-						selectedTorrents.get(0).getQueuedTorrent(),
+					trackerManager.trackerSnapshot(selectedTorrents.get(0).getQueuedTorrent(),
 						trackerTable.getTrackerViews());
 					trackerTable.sort();
 				}
@@ -979,9 +984,6 @@ public final class ApplicationWindow {
 		if(isShuttingDown) {
 			//Stop updating periodic tasks
 			periodicTaskRunner.cancel();
-			
-			//Perform resource cleanup before shutdown
-			ResourceManager.INSTANCE.cleanup();
 			
 			//Store any changes to window components
 			storeWindowChanges();

@@ -20,37 +20,60 @@
 
 package org.matic.torrent.queue;
 
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 import javax.xml.bind.DatatypeConverter;
 
+import org.easymock.EasyMock;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.matic.torrent.hash.InfoHash;
+import org.matic.torrent.tracking.TrackerManager;
 
 public final class QueuedTorrentManagerTest {
 
 	private final InfoHash infoHash = new InfoHash(DatatypeConverter.parseHexBinary("12345678901234567890"));
 	private final QueuedTorrent torrent = new QueuedTorrent(infoHash, 1, QueuedTorrent.State.ACTIVE);
-	private final QueuedTorrentManager unitUnderTest = new QueuedTorrentManager();	
+	
+	private TrackerManager trackerManagerMock;
+	private QueuedTorrentManager unitUnderTest;
+	
+	@Before
+	public void setup() {
+		 trackerManagerMock = EasyMock.createMock(TrackerManager.class);
+		 unitUnderTest = new QueuedTorrentManager(trackerManagerMock);
+	}
 	
 	@Test
 	public void testAddSingleTorrent() {
-		final boolean added = unitUnderTest.add(torrent, Collections.emptySet());
+		final String simpleUrl = "a.simple.url";
+		final Set<String> urls = new HashSet<>(Arrays.asList(simpleUrl));
+		
+		EasyMock.expect(trackerManagerMock.addTracker(simpleUrl, torrent)).andReturn(true);
+		EasyMock.replay(trackerManagerMock);
+		
+		final boolean added = unitUnderTest.add(torrent, urls);
+		
+		EasyMock.verify(trackerManagerMock);
+		
 		Assert.assertTrue(added);
 		Assert.assertEquals(1, unitUnderTest.getQueueSize());
 	}
 	
-	/*@Test
+	@Test
 	public void testAddMultipleTorrents() {
 		final QueuedTorrent otherTorrent = new QueuedTorrent(new InfoHash(
-				DatatypeConverter.parseHexBinary("12345678901234567890")), Collections.emptySet(), 1);
-		final boolean addedFirst = unitUnderTest.add(torrent);
-		final boolean addedOther = unitUnderTest.add(otherTorrent);
+				DatatypeConverter.parseHexBinary("12345678901234567891")), 1, QueuedTorrent.State.ACTIVE);
+		final boolean addedFirst = unitUnderTest.add(torrent, Collections.emptySet());
+		final boolean addedOther = unitUnderTest.add(otherTorrent, Collections.emptySet());
 		
 		Assert.assertTrue(addedFirst && addedOther);
 		Assert.assertEquals(2, unitUnderTest.getQueueSize());
-	}*/
+	}
 	
 	@Test
 	public void testAddExistingTorrent() {
@@ -75,22 +98,33 @@ public final class QueuedTorrentManagerTest {
 		unitUnderTest.add(torrent, Collections.emptySet());
 		Assert.assertEquals(1, unitUnderTest.getQueueSize());
 		
+		EasyMock.expect(trackerManagerMock.removeTorrent(torrent)).andReturn(true);
+		EasyMock.replay(trackerManagerMock);
+		
 		final boolean removed = unitUnderTest.remove(torrent);
+		
+		EasyMock.verify(trackerManagerMock);
 		
 		Assert.assertTrue(removed);
 		Assert.assertEquals(0, unitUnderTest.getQueueSize());
 	}
 	
-	/*@Test
+	@Test
 	public void testRemoveOneFromMultipleTorrents() {
 		final QueuedTorrent otherTorrent = new QueuedTorrent(new InfoHash(
-				DatatypeConverter.parseHexBinary("12345678901234567890")), Collections.emptySet(), 1);
-		unitUnderTest.add(torrent);
-		unitUnderTest.add(otherTorrent);
+				DatatypeConverter.parseHexBinary("12345678901234567891")), 1, QueuedTorrent.State.ACTIVE);
+		unitUnderTest.add(torrent, Collections.emptySet());
+		unitUnderTest.add(otherTorrent, Collections.emptySet());
 		
-		final boolean removed = unitUnderTest.remove(otherTorrent.getInfoHash());
+		EasyMock.expect(trackerManagerMock.removeTorrent(otherTorrent)).andReturn(true);
+		EasyMock.replay(trackerManagerMock);
+		
+		final boolean removed = unitUnderTest.remove(otherTorrent);
+		
+		EasyMock.verify(trackerManagerMock);
+		
 		Assert.assertTrue(removed);
 		Assert.assertEquals(1, unitUnderTest.getQueueSize());
-		Assert.assertTrue(unitUnderTest.contains(torrent));
-	}*/
+		Assert.assertTrue(unitUnderTest.find(torrent.getInfoHash()).isPresent());
+	}
 }

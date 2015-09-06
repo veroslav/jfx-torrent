@@ -20,37 +20,61 @@
 
 package org.matic.torrent.tracking;
 
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+
+import javax.xml.bind.DatatypeConverter;
+
+import org.easymock.EasyMock;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.matic.torrent.hash.InfoHash;
+import org.matic.torrent.net.udp.UdpConnectionManager;
+import org.matic.torrent.net.udp.UdpRequest;
+import org.matic.torrent.peer.ClientProperties;
+import org.matic.torrent.queue.QueuedTorrent;
 
 public final class UdpTrackerTest {
 	
-	/*private final TrackableTorrent torrent = new TrackableTorrent(
-			new InfoHash("12345678901234567890"));
+	private final InfoHash infoHash = new InfoHash(DatatypeConverter.parseHexBinary("ABCDEF0123"));
+	private final QueuedTorrent torrent = new QueuedTorrent(infoHash, 1, QueuedTorrent.State.ACTIVE);	
 	private final Tracker.Event trackerEvent = Tracker.Event.STARTED;
 	private final long downloaded = 321;
 	private final long uploaded = 123;	
 	private final long left = 444;
 	
-	private final int transactionId = 6543543; 
+	private final int sessionId = 6543543; 
 	private final long lastResponse = 12214325L;
 	private final long connectionId = 68566L;
 	
-	private final UdpConnectionManager connectionManagerMock = 
-			EasyMock.createMock(UdpConnectionManager.class);
-	private final String trackerUrl = "udp://localhost:44893";
-	private UdpTracker unitUnderTest;
+	private UdpConnectionManager connectionManagerMock;
+	private TrackerSession trackerSession;
+	private UdpTracker unitUnderTest;	
+	private URI trackerUrl;	
 	
 	@Before
 	public final void setup() throws IOException, URISyntaxException {
-		unitUnderTest = new UdpTracker(trackerUrl, connectionManagerMock);
-		unitUnderTest.setConnectionId(connectionId);
-		unitUnderTest.setLastResponse(lastResponse);
+		connectionManagerMock = EasyMock.createMock(UdpConnectionManager.class);		
+		trackerUrl = new URI("udp://localhost:44893");
 		
-		torrent.setTransactionId(transactionId);
+		unitUnderTest = new UdpTracker(trackerUrl, connectionManagerMock);		
+		unitUnderTest.setLastResponse(lastResponse);
+		unitUnderTest.setId(connectionId);
+		
+		trackerSession = new TrackerSession(torrent, unitUnderTest);
 	}
 	
 	@Test
 	public final void testBuildUdpRequest() throws IOException {
-		final UdpRequest udpRequest = unitUnderTest.buildUdpRequest(buildAnnounceRequest());
+		final UdpRequest udpRequest = unitUnderTest.buildAnnounceRequest(
+				new AnnounceParameters(trackerEvent, uploaded, downloaded, left), infoHash, 42, sessionId);
 		
 		Assert.assertNotNull(udpRequest);
 		
@@ -72,7 +96,7 @@ public final class UdpTrackerTest {
 		EasyMock.expect(connectionManagerMock.send(EasyMock.anyObject(UdpRequest.class))).andReturn(true);
 		EasyMock.replay(connectionManagerMock);
 		
-		unitUnderTest.announce(buildAnnounceRequest());
+		unitUnderTest.announce(new AnnounceParameters(trackerEvent, uploaded, downloaded, left), trackerSession);
 		
 		EasyMock.verify(connectionManagerMock);
 	}
@@ -80,7 +104,7 @@ public final class UdpTrackerTest {
 	private void verifyRequestData(final DataInputStream inputStream) throws IOException {
 		Assert.assertEquals(connectionId, inputStream.readLong());
 		Assert.assertEquals(1, inputStream.readInt());
-		Assert.assertEquals(transactionId, inputStream.readInt());
+		Assert.assertEquals(sessionId, inputStream.readInt());
 		
 		final byte[] expectedInfoHash = torrent.getInfoHash().getBytes();
 		final byte[] actualInfoHash = new byte[expectedInfoHash.length];
@@ -99,13 +123,9 @@ public final class UdpTrackerTest {
 		
 		Assert.assertEquals(2, inputStream.readInt());
 		Assert.assertEquals(0, inputStream.readInt());
-		Assert.assertEquals(0, inputStream.readInt());
-		Assert.assertEquals(-1, inputStream.readInt());
+		Assert.assertEquals(42, inputStream.readInt());
+		Assert.assertEquals(200, inputStream.readInt());
 		
-		Assert.assertEquals(43893, inputStream.readShort() & 0xffff);
-	}
-	
-	private AnnounceRequest buildAnnounceRequest() {				 	
-		return new AnnounceRequest(torrent, trackerEvent, uploaded, downloaded, left);
-	}*/
+		Assert.assertEquals(UdpConnectionManager.UDP_TRACKER_PORT, inputStream.readShort() & 0xffff);
+	}	
 }

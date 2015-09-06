@@ -40,6 +40,8 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.matic.torrent.net.NetworkUtilities;
+import org.matic.torrent.preferences.ApplicationPreferences;
+import org.matic.torrent.preferences.NetworkProperties;
 import org.matic.torrent.tracking.Tracker;
 import org.matic.torrent.tracking.listeners.DhtResponseListener;
 import org.matic.torrent.tracking.listeners.UdpTrackerResponseListener;
@@ -54,9 +56,13 @@ import org.matic.torrent.tracking.methods.dht.DhtResponse;
  * @author vedran
  *
  */
-public final class UdpConnectionManager {
+public class UdpConnectionManager {
 	
 	public static final int DEFAULT_UDP_PORT = 45895;
+	public static final int UDP_TRACKER_PORT = Integer.parseInt(ApplicationPreferences.getProperty(
+			NetworkProperties.UDP_TRACKER_PORT, String.valueOf(UdpConnectionManager.DEFAULT_UDP_PORT)));
+	public static final int DHT_PORT = Integer.parseInt(ApplicationPreferences.getProperty(
+			NetworkProperties.UDP_DHT_PORT, String.valueOf(UdpConnectionManager.DEFAULT_UDP_PORT)));
 		
 	private static final int MAX_INPUT_PACKET_SIZE = 1024;
 	private static final int MAX_OUTPUT_PACKET_SIZE = 1024;
@@ -64,6 +70,7 @@ public final class UdpConnectionManager {
 	
 	private static final int REQUEST_EXECUTOR_WORKER_TIMEOUT = 60;		//60 seconds
 	private static final int REQUEST_EXECUTOR_THREAD_POOL_SIZE = 5;	//parallel requests at a time
+	
 	private final ThreadPoolExecutor channelWriterExecutor = new ThreadPoolExecutor(
 			REQUEST_EXECUTOR_THREAD_POOL_SIZE, REQUEST_EXECUTOR_THREAD_POOL_SIZE, 
 			REQUEST_EXECUTOR_WORKER_TIMEOUT, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
@@ -75,10 +82,10 @@ public final class UdpConnectionManager {
 	private final ByteBuffer inputBuffer = ByteBuffer.allocate(MAX_INPUT_PACKET_SIZE);
 	
 	private final ExecutorService connectionManagerExecutor;
-	private Selector connectionSelector = null;
+	private Selector connectionSelector = null;	
 	
 	public UdpConnectionManager() {
-		this.connectionManagerExecutor = Executors.newSingleThreadExecutor();		
+		this.connectionManagerExecutor = Executors.newSingleThreadExecutor();
 		
 		outgoingMessages = new ArrayBlockingQueue<>(MAX_OUTGOING_MESSAGES);
 		trackerListeners = new CopyOnWriteArraySet<>();
@@ -95,11 +102,11 @@ public final class UdpConnectionManager {
 		trackerListeners.remove(listener);
 	}
 	
-	public final void addDHTListener(final DhtResponseListener listener) {		
+	public final void addDhtListener(final DhtResponseListener listener) {		
 		dhtListeners.add(listener);
 	}
 	
-	public final void removeDHTListener(final DhtResponseListener listener) {		
+	public final void removeDhtListener(final DhtResponseListener listener) {		
 		dhtListeners.remove(listener);
 	}
 	
@@ -109,8 +116,9 @@ public final class UdpConnectionManager {
 	 * @param request UDP packet request to send
 	 * @return Whether the request was scheduled
 	 */
-	public boolean send(final UdpRequest request) {	
+	public boolean send(final UdpRequest request) {			
 		final boolean requestAdded = outgoingMessages.offer(request);
+		
 		if(connectionSelector != null) {
 			connectionSelector.wakeup();
 		}
@@ -126,22 +134,22 @@ public final class UdpConnectionManager {
 	public void manage(final String networkInterface, final int listenPort) {
 		connectionManagerExecutor.execute(() -> {
 			try(final DatagramChannel channel = DatagramChannel.open()) {
-				connectionSelector = Selector.open();								
+				connectionSelector = Selector.open();					
 				setChannelOptions(channel, connectionSelector, networkInterface, listenPort);
 				
-				while(true) {
-					if(Thread.currentThread().isInterrupted()) {
+				while(true) {					
+					if(Thread.currentThread().isInterrupted()) {						
 						Thread.interrupted();
 						break;
 					}
-					try {
+					try {						
 						processPendingReadOperations(channel);
 					}
 					catch(final IOException ioe) {
 						System.err.println("Selection processing resulted in an error: " + ioe.getMessage());
 					}
 					//Check for any pending packets to be sent
-					while(!outgoingMessages.isEmpty()) {
+					while(!outgoingMessages.isEmpty()) {						
 						final UdpRequest request =  outgoingMessages.poll();
 						channelWriterExecutor.execute(() -> writeToChannel(channel, request));						
 					}
@@ -149,9 +157,7 @@ public final class UdpConnectionManager {
 			}
 			catch(final IOException ioe) {
 				System.err.println("UDP server was shutdown unexpectedly: " + ioe.getMessage());
-			}			
-			connectionManagerExecutor.shutdown();
-			channelWriterExecutor.shutdown();
+			}								
 		});
 	}
 	
@@ -204,7 +210,7 @@ public final class UdpConnectionManager {
 		else {
 			//Try parsing as a regular UDP tracker response message
 			final UdpTrackerResponse trackerResponse = UdpDataPacketParser.parseTrackerResponse(receivedPacket);
-			if(trackerResponse != null) {
+			if(trackerResponse != null) {				
 				notifyTrackerListenersOnResponse(trackerResponse);
 			}
 		}
@@ -228,8 +234,7 @@ public final class UdpConnectionManager {
 		try {			
 			channel.send(outputBuffer, remoteAddress);			
 		} catch (final IOException ioe) {	
-			notifyListenersOnRequestError(udpRequest, 
-					Tracker.getStatusMessage(Tracker.Status.CONNECTION_TIMEOUT));
+			notifyListenersOnRequestError(udpRequest, Tracker.getStatusMessage(Tracker.Status.CONNECTION_TIMEOUT));
 		}
 	}
 	

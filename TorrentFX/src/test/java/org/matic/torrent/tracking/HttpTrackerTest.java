@@ -20,11 +20,34 @@
 
 package org.matic.torrent.tracking;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.InetAddress;
+import java.util.HashSet;
+import java.util.Set;
+
+import javax.xml.bind.DatatypeConverter;
+
+import org.junit.Assert;
+import org.junit.Test;
+import org.matic.torrent.codec.BinaryEncodedDictionary;
+import org.matic.torrent.codec.BinaryEncodedInteger;
+import org.matic.torrent.codec.BinaryEncodedList;
+import org.matic.torrent.codec.BinaryEncodedString;
+import org.matic.torrent.codec.BinaryEncodingKeyNames;
+import org.matic.torrent.hash.InfoHash;
+import org.matic.torrent.net.pwp.PwpPeer;
+import org.matic.torrent.peer.ClientProperties;
+import org.matic.torrent.queue.QueuedTorrent;
+import org.matic.torrent.utils.UnitConverter;
 
 public final class HttpTrackerTest {
 	
-	/*private final TrackableTorrent torrent = new TrackableTorrent(
-			new InfoHash("12345678901234567890"));	
+	private final InfoHash infoHash = new InfoHash(DatatypeConverter.parseHexBinary("ABCDEF0123")); 
+	private final QueuedTorrent torrent = new QueuedTorrent(infoHash, 1, QueuedTorrent.State.ACTIVE);	
+	private final int key = 42; 
 	
 	//Mandatory response fields
 	private final long incomplete = 77;
@@ -36,62 +59,60 @@ public final class HttpTrackerTest {
 	private final String trackerId = "trackerId";
 	private final Long minInterval = 678L;
 	
-	private final HttpTracker unitUnderTest = new HttpTracker("http://example.com/announce", null);
+	private final HttpTracker unitUnderTest = new HttpTracker("http://example.com/announce");
 
 	@Test
 	public final void testScrapeSupported() {
-		HttpTracker unitUnderTest = new HttpTracker("http://example.com/announce", null);
 		Assert.assertTrue(unitUnderTest.isScrapeSupported());
 		Assert.assertEquals("http://example.com/scrape", unitUnderTest.getScrapeUrl());
 		
-		unitUnderTest = new HttpTracker("http://example.com/x/announce", null);
-		Assert.assertTrue(unitUnderTest.isScrapeSupported());
-		Assert.assertEquals("http://example.com/x/scrape", unitUnderTest.getScrapeUrl());
+		final HttpTracker tracker1 = new HttpTracker("http://example.com/x/announce");
+		Assert.assertTrue(tracker1.isScrapeSupported());
+		Assert.assertEquals("http://example.com/x/scrape", tracker1.getScrapeUrl());
 		
-		unitUnderTest = new HttpTracker("http://example.com/announce.php", null);
-		Assert.assertTrue(unitUnderTest.isScrapeSupported());
-		Assert.assertEquals("http://example.com/scrape.php", unitUnderTest.getScrapeUrl());
+		final HttpTracker tracker2 = new HttpTracker("http://example.com/announce.php");
+		Assert.assertTrue(tracker2.isScrapeSupported());
+		Assert.assertEquals("http://example.com/scrape.php", tracker2.getScrapeUrl());
 		
-		unitUnderTest = new HttpTracker("http://example.com/announce?x2%0644", null);
-		Assert.assertTrue(unitUnderTest.isScrapeSupported());
-		Assert.assertEquals("http://example.com/scrape?x2%0644", unitUnderTest.getScrapeUrl());
+		final HttpTracker tracker3 = new HttpTracker("http://example.com/announce?x2%0644");
+		Assert.assertTrue(tracker3.isScrapeSupported());
+		Assert.assertEquals("http://example.com/scrape?x2%0644", tracker3.getScrapeUrl());
 	}
 	
 	@Test
 	public final void testScrapeUnsupported() {
-		HttpTracker unitUnderTest = new HttpTracker("http://example.com/a", null);
+		HttpTracker unitUnderTest = new HttpTracker("http://example.com/a");
 		Assert.assertFalse(unitUnderTest.isScrapeSupported());
 		
-		unitUnderTest = new HttpTracker("http://example.com/announce?x=2/4", null);
+		unitUnderTest = new HttpTracker("http://example.com/announce?x=2/4");
 		Assert.assertFalse(unitUnderTest.isScrapeSupported());
 		
-		unitUnderTest = new HttpTracker("http://example.com/x%064announce", null);
+		unitUnderTest = new HttpTracker("http://example.com/x%064announce");
 		Assert.assertFalse(unitUnderTest.isScrapeSupported());
 	}
 	
 	@Test
 	public final void testBuildRequestUrl() throws Exception {
-		final AnnounceRequest request = new AnnounceRequest(
-				torrent, Tracker.Event.STARTED, 123, 321, 444);
+		final AnnounceParameters request = new AnnounceParameters(Tracker.Event.STARTED, 123, 321, 444);
 		
 		final StringBuilder urlBuilder = new StringBuilder("http://example.com/announce?info_hash=");
-		urlBuilder.append("12345678901234567890&peer_id=");
+		urlBuilder.append("%ab%cd%ef%01%23&peer_id=");
 		urlBuilder.append(ClientProperties.PEER_ID);
-		urlBuilder.append("&uploaded=123&downloaded=321&left=444&port=");
+		urlBuilder.append("&port=");
 		urlBuilder.append(ClientProperties.TCP_PORT);
-		urlBuilder.append("&compact=1?event=started");
+		urlBuilder.append("&uploaded=123&downloaded=321&left=444&corrupt=0&key=2a&");
+		urlBuilder.append("event=started&numwant=200&compact=1&no_peer_id=1");
 		
 		final String expectedUrl = urlBuilder.toString(); 
-		final String actualUrl = unitUnderTest.buildRequestUrl(request);
+		final String actualUrl = unitUnderTest.buildAnnounceRequestUrl(request, infoHash, key);
 		Assert.assertEquals(expectedUrl, actualUrl);
 	}
 	
 	@Test
-	public final void testExceptionThrownOnResponse() throws IOException {
+	public final void testExceptionThrownOnResponse() throws IOException {		
 		final String errorMessage = "Tracker threw an exception";
 		final InputStream errorStream = new ByteArrayInputStream(
-				errorMessage.getBytes(ClientProperties.STRING_ENCODING_CHARSET));
-		
+				errorMessage.getBytes(ClientProperties.STRING_ENCODING_CHARSET));		
 		final TrackerResponse actualResponse = unitUnderTest.buildErrorResponse(errorStream);
 		
 		Assert.assertEquals(TrackerResponse.Type.TRACKER_ERROR, actualResponse.getType());
@@ -105,7 +126,7 @@ public final class HttpTrackerTest {
 		responseMap.put(BinaryEncodingKeyNames.KEY_FAILURE_REASON, new BinaryEncodedString(
 				failureReason.getBytes(ClientProperties.STRING_ENCODING_CHARSET)));
 		
-		final TrackerResponse actualResponse = unitUnderTest.buildResponse(responseMap, torrent.getInfoHash());
+		final AnnounceResponse actualResponse = unitUnderTest.buildAnnounceResponse(responseMap, infoHash);
 		
 		Assert.assertEquals(TrackerResponse.Type.TRACKER_ERROR, actualResponse.getType());
 		Assert.assertEquals(failureReason, actualResponse.getMessage());
@@ -114,14 +135,14 @@ public final class HttpTrackerTest {
 	@Test
 	public final void testWarningTrackerResponse() {	
 		final Set<PwpPeer> peers = createPeers(0);
-		final TrackerResponse expectedResponse = new TrackerResponse(TrackerResponse.Type.WARNING, 
-				warningMessage, interval, minInterval, trackerId,
+		final AnnounceResponse expectedResponse = new AnnounceResponse(TrackerResponse.Type.WARNING, 
+				warningMessage, interval * 1000, minInterval * 1000, trackerId,
 				complete, incomplete, peers);
 		
-		final BinaryEncodedDictionary responseMap = buildNormalTrackerResponse(TrackerResponse.Type.WARNING,
+		final BinaryEncodedDictionary responseMap = buildNormalTrackerResponse(
 				warningMessage, interval, minInterval, trackerId, complete, incomplete, peers, true);
 		
-		final TrackerResponse actualResponse = unitUnderTest.buildResponse(responseMap, torrent.getInfoHash());
+		final AnnounceResponse actualResponse = unitUnderTest.buildAnnounceResponse(responseMap, torrent.getInfoHash());
 		
 		Assert.assertEquals(expectedResponse, actualResponse);
 	}
@@ -129,14 +150,13 @@ public final class HttpTrackerTest {
 	@Test
 	public final void testNormalTrackerResponseAllOptionalFieldsSet() {
 		final Set<PwpPeer> peers = createPeers(0);
-		final TrackerResponse expectedResponse = new TrackerResponse(TrackerResponse.Type.NORMAL, 
-				null, interval, minInterval, trackerId,
-				complete, incomplete, peers);
+		final AnnounceResponse expectedResponse = new AnnounceResponse(TrackerResponse.Type.OK, null,
+				interval * 1000, minInterval * 1000, trackerId, complete, incomplete, peers);
 		
-		final BinaryEncodedDictionary responseMap = buildNormalTrackerResponse(TrackerResponse.Type.NORMAL,
-				null, interval, minInterval, trackerId, complete, incomplete, peers, true);
+		final BinaryEncodedDictionary responseMap = buildNormalTrackerResponse(null, interval, minInterval,
+				trackerId, complete, incomplete, peers, true);
 		
-		final TrackerResponse actualResponse = unitUnderTest.buildResponse(responseMap, torrent.getInfoHash());
+		final AnnounceResponse actualResponse = unitUnderTest.buildAnnounceResponse(responseMap, torrent.getInfoHash());
 		
 		Assert.assertEquals(expectedResponse, actualResponse);
 	}
@@ -144,26 +164,26 @@ public final class HttpTrackerTest {
 	@Test
 	public final void testNormalTrackerResponseNoOptionalFieldsSet() {
 		final Set<PwpPeer> peers = createPeers(0);
-		final TrackerResponse expectedResponse = new TrackerResponse(TrackerResponse.Type.NORMAL, 
-				null, interval, null, null, complete, incomplete, peers);
+		final AnnounceResponse expectedResponse = new AnnounceResponse(TrackerResponse.Type.OK, 
+				null, interval * 1000, null, null, complete, incomplete, peers);
 		
-		final BinaryEncodedDictionary responseMap = buildNormalTrackerResponse(TrackerResponse.Type.NORMAL,
+		final BinaryEncodedDictionary responseMap = buildNormalTrackerResponse(
 				null, interval, null, null, complete, incomplete, peers, true);
 		
-		final TrackerResponse actualResponse = unitUnderTest.buildResponse(responseMap, torrent.getInfoHash());
+		final AnnounceResponse actualResponse = unitUnderTest.buildAnnounceResponse(responseMap, torrent.getInfoHash());
 		
 		Assert.assertEquals(expectedResponse, actualResponse);
 	}
 	
 	@Test
 	public final void testMissingMandatoryResponseValue() {
-		final TrackerResponse expectedResponse = new TrackerResponse(TrackerResponse.Type.INVALID_RESPONSE, 
+		final AnnounceResponse expectedResponse = new AnnounceResponse(TrackerResponse.Type.INVALID_RESPONSE, 
 				"Missing mandatory response value");
 		final Set<PwpPeer> peers = createPeers(1);
-		final BinaryEncodedDictionary responseMap = buildNormalTrackerResponse(TrackerResponse.Type.NORMAL,
+		final BinaryEncodedDictionary responseMap = buildNormalTrackerResponse(
 				null, null, null, null, complete, incomplete, peers, true);
 		
-		final TrackerResponse actualResponse = unitUnderTest.buildResponse(responseMap, torrent.getInfoHash());
+		final AnnounceResponse actualResponse = unitUnderTest.buildAnnounceResponse(responseMap, torrent.getInfoHash());
 		
 		Assert.assertEquals(expectedResponse, actualResponse);
 	}
@@ -180,14 +200,13 @@ public final class HttpTrackerTest {
 	
 	private void testParsePeers(final boolean peersInAList, final int peerCount) {
 		final Set<PwpPeer> expectedPeers = createPeers(peerCount);
-		final TrackerResponse expectedResponse = new TrackerResponse(TrackerResponse.Type.NORMAL, 
-				null, interval, minInterval, trackerId,
-				complete, incomplete, expectedPeers);
+		final AnnounceResponse expectedResponse = new AnnounceResponse(TrackerResponse.Type.OK, 
+				null, interval * 1000, minInterval * 1000, trackerId, complete, incomplete, expectedPeers);
 		
-		final BinaryEncodedDictionary responseMap = buildNormalTrackerResponse(TrackerResponse.Type.NORMAL,
+		final BinaryEncodedDictionary responseMap = buildNormalTrackerResponse(
 				null, interval, minInterval, trackerId, complete, incomplete, expectedPeers, peersInAList);
 		
-		final TrackerResponse actualResponse = unitUnderTest.buildResponse(responseMap, torrent.getInfoHash());		
+		final AnnounceResponse actualResponse = unitUnderTest.buildAnnounceResponse(responseMap, torrent.getInfoHash());		
 		Assert.assertEquals(expectedResponse, actualResponse);
 		
 		final Set<PwpPeer> actualPeers = actualResponse.getPeers();
@@ -235,10 +254,9 @@ public final class HttpTrackerTest {
 		return peerList;
 	}
 	
-	private BinaryEncodedDictionary buildNormalTrackerResponse(final Type type, 
-			final String warningMessage, final Long interval,
-			final Long minInterval, final String trackerId, 
-			final Long complete, final Long incomplete, final Set<PwpPeer> peers, final boolean peersInAList) {		
+	private BinaryEncodedDictionary buildNormalTrackerResponse(final String warningMessage, final Long interval,
+			final Long minInterval, final String trackerId, final Long complete, final Long incomplete,
+			final Set<PwpPeer> peers, final boolean peersInAList) {		
 		final BinaryEncodedDictionary response = new BinaryEncodedDictionary();
 		response.put(BinaryEncodingKeyNames.KEY_INTERVAL, interval != null? new BinaryEncodedInteger(interval) : null);
 		response.put(BinaryEncodingKeyNames.KEY_COMPLETE, complete != null? new BinaryEncodedInteger(complete) : null);
@@ -252,5 +270,5 @@ public final class HttpTrackerTest {
 		response.put(BinaryEncodingKeyNames.KEY_PEERS, peersInAList? createPeerList(peers) : createPeerString(peers));
 		
 		return response;
-	}*/
+	}
 }

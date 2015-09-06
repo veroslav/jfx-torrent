@@ -32,9 +32,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import org.matic.torrent.hash.InfoHash;
+import org.matic.torrent.net.udp.UdpConnectionManager;
 import org.matic.torrent.net.udp.UdpRequest;
 import org.matic.torrent.peer.ClientProperties;
-import org.matic.torrent.utils.ResourceManager;
 
 public final class UdpTracker extends Tracker {
 		
@@ -60,17 +60,19 @@ public final class UdpTracker extends Tracker {
 	private final AtomicLong connectionId = new AtomicLong(DEFAULT_CONNECTION_ID);
 	private final AtomicInteger connectionAttempts = new AtomicInteger(0);
 	private final AtomicLong lastConnectionAttempt = new AtomicLong(0);
-	
-	private final URI uri;
+		
+	private final UdpConnectionManager udpTrackerConnectionManager;
 	private final int trackerPort;
+	private final URI uri;	
 	
 	/**
 	 * Create a new UDP tracker
 	 * 
 	 * @param uri Valid tracker URI
 	 */
-	protected UdpTracker(final URI uri) {
+	protected UdpTracker(final URI uri, final UdpConnectionManager udpTrackerConnectionManager) {
 		super(uri.toString());		
+		this.udpTrackerConnectionManager = udpTrackerConnectionManager;
 		this.uri = uri;
 		
 		final int urlPort = uri.getPort();
@@ -106,7 +108,7 @@ public final class UdpTracker extends Tracker {
 		final UdpRequest scrapeRequest = buildScrapeRequest(matchingTorrents);
 		
 		if(scrapeRequest != null) {
-			ResourceManager.INSTANCE.getUdpTrackerConnectionManager().send(scrapeRequest);
+			udpTrackerConnectionManager.send(scrapeRequest);
 		}
 	};
 
@@ -121,7 +123,7 @@ public final class UdpTracker extends Tracker {
 				trackerSession.getTransactionId());
 		
 		if(announceRequest != null) {
-			ResourceManager.INSTANCE.getUdpTrackerConnectionManager().send(announceRequest);
+			udpTrackerConnectionManager.send(announceRequest);
 		}
 	}
 	
@@ -144,7 +146,7 @@ public final class UdpTracker extends Tracker {
 			final UdpRequest udpRequest = buildConnectionRequest(transactionId);
 			
 			if(udpRequest != null) {
-				ResourceManager.INSTANCE.getUdpTrackerConnectionManager().send(udpRequest);		
+				udpTrackerConnectionManager.send(udpRequest);		
 			}
 		}
 		else {
@@ -242,7 +244,7 @@ public final class UdpTracker extends Tracker {
 			dos.writeInt(requestEvent != EVENT_STOPPED? NUM_WANTED_PEERS : 0);
 			
 			//port
-			dos.writeShort(ResourceManager.INSTANCE.getUdpTrackerPort());			
+			dos.writeShort(UdpConnectionManager.UDP_TRACKER_PORT);			
 			dos.flush();
 		}
 		catch(final IOException ioe) {
