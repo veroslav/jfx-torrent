@@ -163,22 +163,22 @@ public final class ApplicationWindow {
 	private final StatusBar statusBar = new StatusBar();
 	
 	//Menu item for either showing or hiding the detailed info tab pane
-	private final CheckMenuItem showDetailedInfoMenuItem = new CheckMenuItem("Show Detailed Info");
+	private final CheckMenuItem showDetailedInfoMenuItem = new CheckMenuItem("Show _Detailed Info");
 	
 	//Menu item for selecting either compact or expanded tool bar
-	private final CheckMenuItem showCompactToolbarMenuItem = new CheckMenuItem("Narrow Toolbar");
+	private final CheckMenuItem showCompactToolbarMenuItem = new CheckMenuItem("_Narrow Toolbar");
 	
 	//Menu item for showing or hiding the status bar
-	private final CheckMenuItem showStatusBarMenuItem = new CheckMenuItem("Show Status Bar");
+	private final CheckMenuItem showStatusBarMenuItem = new CheckMenuItem("Show _Status Bar");
 	
 	//Menu item for either showing or hiding the filter view
-	private final CheckMenuItem showFilterViewMenuItem = new CheckMenuItem("Show Sidebar");
+	private final CheckMenuItem showFilterViewMenuItem = new CheckMenuItem("Show Side_bar");
 	
 	//Menu item for showing or hiding the tool bar
-	private final CheckMenuItem showToolbarMenuItem = new CheckMenuItem("Show Toolbar");
+	private final CheckMenuItem showToolbarMenuItem = new CheckMenuItem("Show _Toolbar");
 	
 	//Menu item for showing or hiding the tab icons
-	private final CheckMenuItem showTabIconsMenuItem = new CheckMenuItem("Icons on Tabs");
+	private final CheckMenuItem showTabIconsMenuItem = new CheckMenuItem("_Icons on Tabs");
 	
 	//Mapping between a torrent and it's tracker views
 	private final Map<QueuedTorrent, List<TrackerView>> trackerViewMappings = new HashMap<>();
@@ -648,24 +648,24 @@ public final class ApplicationWindow {
 		final Menu fileMenu = new Menu("_File");
 		fileMenu.setMnemonicParsing(true);
 		
-		final MenuItem addTorrentMenuItem = new MenuItem("Add Torrent...");
+		final MenuItem addTorrentMenuItem = new MenuItem("_Add Torrent...");
 		addTorrentMenuItem.setOnAction(event -> onAddTorrent(fileActionHandler.onFileOpen(stage)));
 		addTorrentMenuItem.setAccelerator(KeyCombination.keyCombination("Ctrl+O"));
 		
-		final MenuItem addTorrentAndChooseDirMenuItem = new MenuItem("Add Torrent (choose save dir)...");
+		final MenuItem addTorrentAndChooseDirMenuItem = new MenuItem("A_dd Torrent (choose save dir)...");
 		addTorrentAndChooseDirMenuItem.setOnAction(event -> fileActionHandler.onFileOpenAndChooseSaveLocation(stage));
 		addTorrentAndChooseDirMenuItem.setAccelerator(KeyCombination.keyCombination("Ctrl+D"));
 		
-		final MenuItem addTorrentFromUrlMenuItem = new MenuItem("Add Torrent from URL...");
+		final MenuItem addTorrentFromUrlMenuItem = new MenuItem("Add Torrent from _URL...");
 		addTorrentFromUrlMenuItem.setOnAction(event -> onAddTorrent(fileActionHandler.onLoadUrl(stage)));
 		addTorrentFromUrlMenuItem.setAccelerator(KeyCombination.keyCombination("Ctrl+U"));
 		
 		final MenuItem addRssFeedMenuItem = new MenuItem("Add RSS Feed...");
 		
-		final MenuItem createTorrentMenuItem = new MenuItem("Create New Torrent...");
+		final MenuItem createTorrentMenuItem = new MenuItem("_Create New Torrent...");
 		createTorrentMenuItem.setAccelerator(KeyCombination.keyCombination("Ctrl+N"));
 		
-		final MenuItem exitMenuItem = new MenuItem("Exit");
+		final MenuItem exitMenuItem = new MenuItem("E_xit");
 		exitMenuItem.setOnAction(this::onShutdown);
 		
 		fileMenu.getItems().addAll(addTorrentMenuItem, addTorrentAndChooseDirMenuItem,
@@ -679,7 +679,7 @@ public final class ApplicationWindow {
 		final Menu optionsMenu = new Menu("_Options");
 		optionsMenu.setMnemonicParsing(true);
 		
-		final MenuItem preferencesMenuItem = new MenuItem("Preferences...");
+		final MenuItem preferencesMenuItem = new MenuItem("_Preferences...");
 		preferencesMenuItem.setOnAction(event -> windowActionHandler.onOptionsWindowShown(stage, fileActionHandler));
 		preferencesMenuItem.setAccelerator(KeyCombination.keyCombination("Ctrl+P"));
 		

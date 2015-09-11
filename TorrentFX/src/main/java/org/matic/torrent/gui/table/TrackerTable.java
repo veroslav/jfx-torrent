@@ -66,13 +66,13 @@ public class TrackerTable {
 	private static final String NAME_COLUMN_NAME = "Name";
 	
 	//Context menu commands	
-	private static final String ENABLE_LOCAL_PEER_DISCOVERY = "Use Local Peer Discovery";
-	private static final String ENABLE_PEER_EXCHANGE = "Use Peer Exchange";
-	private static final String ENABLE_DHT = "Use DHT";
+	private static final String ENABLE_LOCAL_PEER_DISCOVERY = "Use _Local Peer Discovery";
+	private static final String ENABLE_PEER_EXCHANGE = "Use _Peer Exchange";
+	private static final String ENABLE_DHT = "Use _DHT";
 	
-	private static final String REMOVE_TRACKER = "Remove Tracker";
-	private static final String UPDATE_TRACKER = "Update Tracker";
-	private static final String ADD_TRACKER = "Add Tracker...";
+	private static final String REMOVE_TRACKER = "_Remove Tracker";
+	private static final String UPDATE_TRACKER = "_Update Tracker";
+	private static final String ADD_TRACKER = "_Add Tracker...";
 	
 	//Context menu items
 	private final MenuItem removeTrackerMenuItem = new MenuItem(REMOVE_TRACKER);
@@ -193,8 +193,8 @@ public class TrackerTable {
 		enablePeerExchangeMenuItem.setId(ENABLE_PEER_EXCHANGE);
 		enablePeerExchangeMenuItem.setSelected(true);
 		
-		contextMenu.getItems().addAll(addTrackerMenuItem, removeTrackerMenuItem, new SeparatorMenuItem(),
-				updateTrackerMenuItem, enableDhtMenuItem, enableLocalPeerDiscoveryMenuItem,
+		contextMenu.getItems().addAll(updateTrackerMenuItem, removeTrackerMenuItem, new SeparatorMenuItem(),
+				addTrackerMenuItem, enableDhtMenuItem, enableLocalPeerDiscoveryMenuItem,
 				enablePeerExchangeMenuItem);
 		contextMenu.showingProperty().addListener(obs -> {			
 			removeTrackerMenuItem.setDisable(true);
