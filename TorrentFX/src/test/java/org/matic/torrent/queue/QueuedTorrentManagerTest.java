@@ -98,7 +98,7 @@ public final class QueuedTorrentManagerTest {
 		unitUnderTest.add(torrent, Collections.emptySet());
 		Assert.assertEquals(1, unitUnderTest.getQueueSize());
 		
-		EasyMock.expect(trackerManagerMock.removeTorrent(torrent)).andReturn(true);
+		EasyMock.expect(trackerManagerMock.removeTorrent(torrent)).andReturn(1);
 		EasyMock.replay(trackerManagerMock);
 		
 		final boolean removed = unitUnderTest.remove(torrent);
@@ -116,7 +116,7 @@ public final class QueuedTorrentManagerTest {
 		unitUnderTest.add(torrent, Collections.emptySet());
 		unitUnderTest.add(otherTorrent, Collections.emptySet());
 		
-		EasyMock.expect(trackerManagerMock.removeTorrent(otherTorrent)).andReturn(true);
+		EasyMock.expect(trackerManagerMock.removeTorrent(otherTorrent)).andReturn(1);
 		EasyMock.replay(trackerManagerMock);
 		
 		final boolean removed = unitUnderTest.remove(otherTorrent);

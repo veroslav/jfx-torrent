@@ -131,12 +131,17 @@ public class UdpConnectionManager {
 	 * @param networkInterface Network interface on which to listen
 	 * @param listenPort Target port for received UDP packets
 	 */
-	public void manage(final String networkInterface, final int listenPort) {
+	public void manage(final String networkInterface, final int listenPort) {		
+		try {
+			connectionSelector = Selector.open();
+		}
+		catch(final IOException ioe) {
+			System.err.println("Failed to start UDP connection manager due to: " + ioe.getMessage());
+			return;
+		}		
 		connectionManagerExecutor.execute(() -> {
-			try(final DatagramChannel channel = DatagramChannel.open()) {
-				connectionSelector = Selector.open();					
-				setChannelOptions(channel, connectionSelector, networkInterface, listenPort);
-				
+			try(final DatagramChannel channel = DatagramChannel.open()) {								
+				setChannelOptions(channel, connectionSelector, networkInterface, listenPort);				
 				while(true) {					
 					if(Thread.currentThread().isInterrupted()) {						
 						Thread.interrupted();
@@ -150,7 +155,7 @@ public class UdpConnectionManager {
 					}
 					//Check for any pending packets to be sent
 					while(!outgoingMessages.isEmpty()) {						
-						final UdpRequest request =  outgoingMessages.poll();
+						final UdpRequest request = outgoingMessages.poll();
 						channelWriterExecutor.execute(() -> writeToChannel(channel, request));						
 					}
 				}

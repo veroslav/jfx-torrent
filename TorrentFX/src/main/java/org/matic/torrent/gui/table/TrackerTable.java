@@ -21,10 +21,13 @@
 package org.matic.torrent.gui.table;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.matic.torrent.gui.GuiUtils;
 import org.matic.torrent.gui.model.TrackerView;
@@ -34,16 +37,23 @@ import org.matic.torrent.tracking.Tracker;
 import org.matic.torrent.utils.UnitConverter;
 
 import javafx.beans.value.ObservableValue;
+import javafx.collections.ObservableList;
+import javafx.scene.control.CheckMenuItem;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.SelectionMode;
 import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableColumn.CellDataFeatures;
+import javafx.scene.input.KeyCode;
+import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.util.Callback;
 
 public class TrackerTable {	
+	
+	private static final long MIN_USER_REQUESTED_ANNOUNCE_DELAY = 60000;	//60 s
 	
 	//Tracker column header names
 	private static final String MIN_INTERVAL_COLUMN_NAME = "Min Interval";
@@ -55,9 +65,18 @@ public class TrackerTable {
 	private static final String PEERS_COLUMN_NAME = "Peers";
 	private static final String NAME_COLUMN_NAME = "Name";
 	
-	//Context menu commands
+	//Context menu commands	
+	private static final String ENABLE_LOCAL_PEER_DISCOVERY = "Use Local Peer Discovery";
+	private static final String ENABLE_PEER_EXCHANGE = "Use Peer Exchange";
+	private static final String ENABLE_DHT = "Use DHT";
+	
 	private static final String REMOVE_TRACKER = "Remove Tracker";
-	private static final String ADD_TRACKER = "Add Tracker";
+	private static final String UPDATE_TRACKER = "Update Tracker";
+	private static final String ADD_TRACKER = "Add Tracker...";
+	
+	//Context menu items
+	private final MenuItem removeTrackerMenuItem = new MenuItem(REMOVE_TRACKER);
+	private final MenuItem updateTrackerMenuItem = new MenuItem(UPDATE_TRACKER);
 
 	private final TableView<TrackerView> trackerTable = new TableView<>();
 	
@@ -66,8 +85,20 @@ public class TrackerTable {
 	}
 	
 	public final void setContent(final List<TrackerView> trackerViews) {
-		trackerTable.getItems().clear();
+		trackerTable.getItems().clear();		
 		trackerTable.getItems().addAll(trackerViews);
+	}
+	
+	public final boolean addTracker(final TrackerView trackerView) {
+		final ObservableList<TrackerView> tableItems = trackerTable.getItems(); 
+		if(tableItems.contains(trackerView)) {
+			return false;
+		}
+		return tableItems.add(trackerView);
+	}
+	
+	public final boolean removeTracker(final TrackerView trackerView) {
+		return trackerTable.getItems().remove(trackerView);
 	}
 	
 	public final List<TrackerView> getTrackerViews() {
@@ -76,6 +107,37 @@ public class TrackerTable {
 	
 	public void wrapWith(final ScrollPane wrapper) {
 		wrapper.setContent(trackerTable);
+	}
+	
+	/**
+	 * Register a handler for tracker deletion events
+	 * 
+	 * @param handler Target handler
+	 */
+	public final void onTrackerDeletionRequested(final Consumer<Collection<TrackerView>> handler) {	
+		final Runnable deleter = () -> 
+			handler.accept(getDeletableTrackers(trackerTable.getSelectionModel().getSelectedItems()));
+		removeTrackerMenuItem.setOnAction(e -> deleter.run());
+		trackerTable.setOnKeyReleased(e -> {
+			if(e.getCode().equals(KeyCode.DELETE)) {
+				deleter.run();
+			}
+		});
+	}
+	
+	/**
+	 * Register a handler for tracker updating events
+	 * 
+	 * @param handler Target handler
+	 */
+	public final void onTrackerUpdateRequested(final Consumer<Collection<TrackerView>> handler) {
+		updateTrackerMenuItem.setOnAction(e -> {
+			final Collection<TrackerView> updatableTrackers =
+					getUpdatableTrackers(trackerTable.getSelectionModel().getSelectedItems());
+			handler.accept(updatableTrackers);
+			final long currentTime = System.currentTimeMillis();
+			updatableTrackers.forEach(tv -> tv.setLastTrackerResponse(currentTime));
+		});
 	}
 	
 	/**
@@ -99,29 +161,84 @@ public class TrackerTable {
 	
 	private void initComponents() {
 		trackerTable.setPlaceholder(GuiUtils.getEmptyTablePlaceholder());
+		trackerTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 		trackerTable.setTableMenuButtonVisible(false);
 		
 		createColumns();
 		createContextMenu();
 	}
 	
-	private void createContextMenu() {
+	private void createContextMenu() {		
 		final ContextMenu contextMenu = new ContextMenu();
-		
-		final MenuItem removeTrackerMenuItem = new MenuItem(REMOVE_TRACKER);
-		removeTrackerMenuItem.setId(REMOVE_TRACKER);
-		removeTrackerMenuItem.setDisable(true);
 		
 		final MenuItem addTrackerMenuItem = new MenuItem(ADD_TRACKER);
 		addTrackerMenuItem.setId(ADD_TRACKER);
 		addTrackerMenuItem.setDisable(false);
+				
+		removeTrackerMenuItem.setId(REMOVE_TRACKER);
+		removeTrackerMenuItem.setDisable(true);
 		
-		contextMenu.getItems().addAll(addTrackerMenuItem, new SeparatorMenuItem(), removeTrackerMenuItem);		
-		trackerTable.setContextMenu(contextMenu);
+		updateTrackerMenuItem.setId(UPDATE_TRACKER);
+		updateTrackerMenuItem.setDisable(true);
 		
-		trackerTable.getSelectionModel().selectedItemProperty().addListener((obs, oldV, selected) -> {			
-			removeTrackerMenuItem.setDisable(selected == null);
+		final CheckMenuItem enableDhtMenuItem = new CheckMenuItem(ENABLE_DHT);
+		enableDhtMenuItem.setId(ENABLE_DHT);
+		enableDhtMenuItem.setSelected(true);
+		
+		final CheckMenuItem enableLocalPeerDiscoveryMenuItem = new CheckMenuItem(ENABLE_LOCAL_PEER_DISCOVERY);
+		enableLocalPeerDiscoveryMenuItem.setId(ENABLE_LOCAL_PEER_DISCOVERY);
+		enableLocalPeerDiscoveryMenuItem.setSelected(true);
+		
+		final CheckMenuItem enablePeerExchangeMenuItem = new CheckMenuItem(ENABLE_PEER_EXCHANGE);
+		enablePeerExchangeMenuItem.setId(ENABLE_PEER_EXCHANGE);
+		enablePeerExchangeMenuItem.setSelected(true);
+		
+		contextMenu.getItems().addAll(addTrackerMenuItem, removeTrackerMenuItem, new SeparatorMenuItem(),
+				updateTrackerMenuItem, enableDhtMenuItem, enableLocalPeerDiscoveryMenuItem,
+				enablePeerExchangeMenuItem);
+		contextMenu.showingProperty().addListener(obs -> {			
+			removeTrackerMenuItem.setDisable(true);
+			updateTrackerMenuItem.setDisable(true);
 		});
+		trackerTable.setContextMenu(contextMenu);		
+		trackerTable.setRowFactory(table -> {			
+			final TableRow<TrackerView> tableRow = new TableRow<>();
+			tableRow.setContextMenu(contextMenu);			
+			tableRow.setOnContextMenuRequested(cme -> {	
+				final TrackerView trackerView = tableRow.getItem();
+				if(trackerView == null) {
+					return;
+				}
+				final Collection<TrackerView> deletableTrackers = getDeletableTrackers(
+						trackerTable.getSelectionModel().getSelectedItems());
+				removeTrackerMenuItem.setDisable(deletableTrackers.isEmpty());
+				removeTrackerMenuItem.setText(deletableTrackers.size() > 1? REMOVE_TRACKER + "s" : REMOVE_TRACKER);
+							
+				final Collection<TrackerView> updatableTrackers = getUpdatableTrackers(
+						trackerTable.getSelectionModel().getSelectedItems());
+				updateTrackerMenuItem.setDisable(updatableTrackers.isEmpty());
+				updateTrackerMenuItem.setText(updatableTrackers.size() > 1? UPDATE_TRACKER + "s" : UPDATE_TRACKER);
+			});
+			
+			return tableRow;
+		});
+	}
+	
+	private Collection<TrackerView> getUpdatableTrackers(final Collection<TrackerView> selectedRows) {
+		return selectedRows.stream().filter(tv -> {
+			final long currentTime = System.currentTimeMillis();
+			return tv.getTorrentState() == QueuedTorrent.State.ACTIVE &&
+					((currentTime - tv.getLastTrackerResponse()) >= tv.getMinInterval()) &&
+					(currentTime - tv.getLastUserRequestedUpdate() > MIN_USER_REQUESTED_ANNOUNCE_DELAY);
+		}).collect(Collectors.toList());			
+	}
+	
+	private Collection<TrackerView> getDeletableTrackers(final Collection<TrackerView> selectedRows) {
+		return selectedRows.stream().filter(tw -> {			
+			return !(tw.getTrackerName().equals("[DHT]") || 
+					tw.getTrackerName().equals("[Local Peer Discovery]") ||
+					tw.getTrackerName().equals("[Peer Exchange]"));
+		}).collect(Collectors.toList());
 	}
 	
 	private void createColumns() {									

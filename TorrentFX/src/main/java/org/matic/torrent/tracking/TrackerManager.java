@@ -36,6 +36,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -68,7 +69,7 @@ public class TrackerManager implements TrackerResponseListener, UdpTrackerRespon
 	
 	public static final int DEFAULT_REQUEST_SCHEDULER_POOL_SIZE = 1;
 	
-	private static final long REQUEST_DELAY_ON_TRACKER_ERROR = 1200000;  	//Wait for 20 mins on tracker error
+	protected static final long REQUEST_DELAY_ON_TRACKER_ERROR = 1200000;  	//Wait for 20 mins on tracker error
 	private static final long UDP_TRACKER_CONNECTION_ID_TIMEOUT = 60000; 	//60 s		
 	private static final int UDP_TRACKER_RESPONSE_PEER_LENGTH = 6; 			//6 bytes [IP (4) + PORT (2)]
 	private static final int REQUEST_EXECUTOR_WORKER_TIMEOUT = 60000;		//60 seconds
@@ -276,13 +277,13 @@ public class TrackerManager implements TrackerResponseListener, UdpTrackerRespon
 	//TODO: Add method issueScrape(final Tracker tracker)	
 	
 	/**
-	 * Issue an announce to a tracker (either explicitly by the user or when torrent state changes)
+	 * Issue an announce to a tracker when the torrent state changes
 	 * 
 	 * @param trackerSession Matching tracker session
 	 * @param trackerEvent The tracker event to send
 	 * @return Whether request was successful (false if currently not allowed)
 	 */
-	public boolean issueAnnounce(final TrackerSession trackerSession, final Tracker.Event trackerEvent) {		
+	protected boolean issueAnnounce(final TrackerSession trackerSession, final Tracker.Event trackerEvent) {		
 		synchronized(trackerSessions) {			
 			final boolean announceAllowed = announceAllowed(trackerSession, trackerEvent);
 			
@@ -296,6 +297,28 @@ public class TrackerManager implements TrackerResponseListener, UdpTrackerRespon
 			
 			return announceAllowed;
 		}
+	}
+	
+	/**
+	 * Issue a user requested announce to a tracker
+	 * 
+	 * @param trackerUrl Target tracker's URL
+	 * @param torrent Target torrent
+	 * @param trackerEvent The tracker event to send
+	 * @return
+	 */
+	public boolean issueAnnounce(final String trackerUrl,
+			final QueuedTorrent torrent, final Tracker.Event trackerEvent) {
+		synchronized(trackerSessions) {			
+			final Set<TrackerSession> sessions = trackerSessions.get(torrent);
+			if(sessions == null || sessions.isEmpty()) {
+				return false;
+			}
+			final TrackerSession match = sessions.stream().filter(
+					ts -> ts.getTracker().getUrl().equals(trackerUrl)).findFirst().orElse(null);
+			
+			return match == null? false : issueAnnounce(match, trackerEvent);
+		}		
 	}
 	
 	/**
@@ -363,10 +386,14 @@ public class TrackerManager implements TrackerResponseListener, UdpTrackerRespon
 	 */
 	public final boolean removeTracker(final String trackerUrl, final QueuedTorrent torrent) {		
 		synchronized(trackerSessions) {
-			final Set<TrackerSession> match = trackerSessions.get(torrent).stream().filter(
+			final Set<TrackerSession> torrentMatch = trackerSessions.get(torrent);
+			if(torrentMatch == null) {				
+				return false;
+			}
+			final Set<TrackerSession> sessionMatch = torrentMatch.stream().filter(
 					ts -> ts.getTracker().getUrl().equals(trackerUrl)).collect(Collectors.toSet());
 			
-			return stopSessions(match) > 0;
+			return stopSessions(sessionMatch) > 0;
 		}		
 	}
 	
@@ -374,13 +401,13 @@ public class TrackerManager implements TrackerResponseListener, UdpTrackerRespon
 	 * Remove a torrent from all trackers that are tracking it.
 	 * 
 	 * @param torrent Torrent to remove
-	 * @return Whether the torrent was successfully removed
+	 * @return How many tracker sessions were successfully removed
 	 */
-	public boolean removeTorrent(final QueuedTorrent torrent) {		
+	public int removeTorrent(final QueuedTorrent torrent) {		
 		synchronized(trackerSessions) {		
 			//Check if any tracked torrents match supplied info hash
 			final Set<TrackerSession> matchList = trackerSessions.remove(torrent);			
-			return stopSessions(matchList) > 0;					
+			return stopSessions(matchList);					
 		}
 	}
 	
@@ -411,8 +438,25 @@ public class TrackerManager implements TrackerResponseListener, UdpTrackerRespon
 		tcpRequestExecutor.shutdownNow();
 	}
 	
+	protected TrackerSession getTrackerSession(final QueuedTorrent torrent, final Tracker tracker) {
+		return trackerSessions.get(torrent).stream().filter(ts -> ts.getTracker().equals(tracker)).findFirst().orElse(null);
+	}
+	
+	protected Entry<TrackerSession, ScheduledAnnouncement> getScheduledRequest(
+			final QueuedTorrent torrent, final Tracker tracker) {
+		return scheduledRequests.entrySet().stream().filter(e -> {
+			final TrackerSession session = e.getKey();
+			return session.getTorrent().equals(torrent) && session.getTracker().equals(tracker);
+		}).findFirst().orElse(null);
+	}
+	
+	protected TrackerSession getScheduledUdpScrapeEntry(final QueuedTorrent torrent, final Tracker tracker) {
+		return scheduledUdpScrapes.values().stream().flatMap(v -> v.stream()).filter(
+				ts -> ts.getTorrent().equals(torrent) && ts.getTracker().equals(tracker)).findFirst().orElse(null);
+	}
+	
 	private int stopSessions(final Set<TrackerSession> sessions) {
-		if(sessions.isEmpty()) {			
+		if(sessions == null || sessions.isEmpty()) {			
 			return 0;
 		}
 		
@@ -420,11 +464,7 @@ public class TrackerManager implements TrackerResponseListener, UdpTrackerRespon
 		
 		//Remove and issue STOPPED announce to affected tracker(s), if not already STOPPED
 		for(final TrackerSession trackerSession : sessions) {														
-			synchronized(trackerSessions) {
-	
-				/*System.out.println("remove(List<TrackerSession>): Canceling requests for transaction_id = " +
-						trackerSession.getTransactionId());*/
-				
+			synchronized(trackerSessions) {	
 				if(trackerSession.getLastAcknowledgedEvent() != Tracker.Event.STOPPED) {					
 					final AnnounceParameters announceParameters = new AnnounceParameters( 
 							Tracker.Event.STOPPED, 0, 0, 0);
@@ -701,7 +741,7 @@ public class TrackerManager implements TrackerResponseListener, UdpTrackerRespon
 		};
 		
 		scheduledRequests.compute(trackerSession, (session, announcement) -> {			
-			if(!isValidTrackerEvent(trackerSession, announceParameters.getTrackerEvent())) {								
+			if(!isValidTrackerEvent(trackerSession, announceParameters.getTrackerEvent())) {				
 				return announcement;
 			}
 			if(announcement != null) {
@@ -710,14 +750,14 @@ public class TrackerManager implements TrackerResponseListener, UdpTrackerRespon
 			
 			final TrackerRequest trackerRequest = new TrackerRequest(Type.ANNOUNCE, runnable);
 			
-			if(tracker.getType() == Tracker.Type.TCP) {
+			if(tracker.getType() == Tracker.Type.TCP) {				
 				final Future<?> future = delay == 0? requestScheduler.submit(() -> 					
 					sendRequest(tracker, trackerSession.getTransactionId(), trackerRequest, trackerSession)) :
 						requestScheduler.schedule(() -> sendRequest(tracker, trackerSession.getTransactionId(),
 							trackerRequest, trackerSession), delay, TimeUnit.MILLISECONDS);
 				return new ScheduledAnnouncement(announceParameters, future);
 			}
-			else {
+			else {				
 				final Future<?> future = requestScheduler.scheduleAtFixedRate(() -> {
 					trackerSession.setTrackerStatus(Tracker.Status.UPDATING);
 					sendRequest(tracker, trackerSession.getTransactionId(), trackerRequest, trackerSession);					
@@ -731,7 +771,7 @@ public class TrackerManager implements TrackerResponseListener, UdpTrackerRespon
 	}
 	
 	//TODO: Add more flexible scrape request scheduling
-	private void scheduleScrape(final Tracker tracker, final TrackerSession... torrents) {		
+	private void scheduleScrape(final Tracker tracker, final TrackerSession... torrents) {			
 		synchronized(trackerSessions) {
 			if(tracker.isScrapeSupported()) {				
 				final int scrapeTransactionId = ClientProperties.generateUniqueId();
@@ -741,12 +781,12 @@ public class TrackerManager implements TrackerResponseListener, UdpTrackerRespon
 					scheduledUdpScrapes.compute(scrapeTransactionId, (id, sessions) -> {
 						return Arrays.stream(torrents).collect(Collectors.toList());
 					});
-				}				
+				}		
 				
+				//TODO: Use scheduleAtFixedRate() for UDP tracker scrapes
 				final Runnable runnable = () -> tracker.scrape(torrents);
 				final TrackerRequest trackerRequest = new TrackerRequest(Type.SCRAPE, runnable);
-				requestScheduler.submit(() -> sendRequest(
-						tracker, scrapeTransactionId, trackerRequest , torrents));				
+				requestScheduler.submit(() -> sendRequest(tracker, scrapeTransactionId, trackerRequest , torrents));				
 			}
 		}		
 	}
@@ -783,11 +823,7 @@ public class TrackerManager implements TrackerResponseListener, UdpTrackerRespon
 	
 	private void scheduleOnTrackerError(final Tracker tracker, final TrackerSession trackerSession) {
 		synchronized(trackerSessions) {
-			final ScheduledAnnouncement previousAnnouncement = scheduledRequests.computeIfPresent(
-				trackerSession, (session, announcement) -> {							
-					announcement.getFuture().cancel(false);								
-					return announcement;
-			});
+			final ScheduledAnnouncement previousAnnouncement = scheduledRequests.get(trackerSession);
 			if(previousAnnouncement != null) {				
 				final AnnounceParameters oldAnnouncement = previousAnnouncement.getAnnounceParameters();
 				if(isValidTrackerEvent(trackerSession, oldAnnouncement.getTrackerEvent())) {

@@ -38,6 +38,9 @@ import org.matic.torrent.codec.BinaryEncodedList;
 import org.matic.torrent.codec.BinaryEncodedString;
 import org.matic.torrent.codec.BinaryEncodingKeyNames;
 import org.matic.torrent.gui.action.FileActionHandler;
+import org.matic.torrent.gui.action.TabActionHandler;
+import org.matic.torrent.gui.action.TorrentJobActionHandler;
+import org.matic.torrent.gui.action.TrackerTableActionHandler;
 import org.matic.torrent.gui.action.WindowActionHandler;
 import org.matic.torrent.gui.image.ImageUtils;
 import org.matic.torrent.gui.model.TorrentJobView;
@@ -66,7 +69,6 @@ import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckMenuItem;
-import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Label;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
@@ -128,14 +130,19 @@ public final class ApplicationWindow {
 	
 	private static final int TAB_ICON_SIZE = 14;
 	
+	//Action handlers
+	private final WindowActionHandler windowActionHandler = new WindowActionHandler();
+	private final FileActionHandler fileActionHandler = new FileActionHandler();
+	
+	private final TrackerTableActionHandler trackerTableActionHandler = new TrackerTableActionHandler();
+	private final TorrentJobActionHandler torrentJobActionHandler = new TorrentJobActionHandler();
+	private final TabActionHandler tabActionHandler = new TabActionHandler();
+	
 	//Split pane containing torrent job view and detailed info view
 	private final SplitPane verticalSplitPane = new SplitPane();
 	
 	//Split pane containing filter view and vertical split pane
 	private final SplitPane horizontalSplitPane = new SplitPane();
-	
-	private final WindowActionHandler windowActionHandler = new WindowActionHandler();
-	private final FileActionHandler fileActionHandler = new FileActionHandler();
 	
 	//View for filtering torrents according to their status
 	private final TreeView<Node> filterTreeView = new TreeView<>();
@@ -202,7 +209,7 @@ public final class ApplicationWindow {
 		initComponents();
 	}
 	
-	private void initComponents() {
+	private void initComponents() {		
 		setMenuAccelerators();				
 		initDetailedInfoTabPane();
 		
@@ -212,7 +219,11 @@ public final class ApplicationWindow {
 		
 		initStatusBar(mainPane);
 		
-		torrentJobTable.addSelectionListener(this::onTorrentJobSelection);		
+		torrentJobTable.addSelectionListener(this::onTorrentJobSelection);
+		trackerTable.onTrackerDeletionRequested(views ->
+			trackerTableActionHandler.onTrackerDeletion(views, trackerManager, trackerTable));
+		trackerTable.onTrackerUpdateRequested(views ->
+			trackerTableActionHandler.onTrackerUpdate(views, trackerManager));
 		
 		stage.setScene(initScene(mainPane));
 		stage.setOnCloseRequest(this::onShutdown);		
@@ -263,7 +274,8 @@ public final class ApplicationWindow {
 		final Collection<Tab> tabs = buildDetailedInfoTabs(selectedTabId);
 		final ObservableList<Tab> tabList = detailedInfoTabPane.getTabs();
 		tabList.addAll(tabs);
-		addDetailsTabHeaderContextMenu(tabList);
+		
+		tabActionHandler.onTabAction(tabList, TAB_NAMES, detailedInfoTabPane, detailsTabMap);
 	}
 	
 	private void setMenuAccelerators() {
@@ -519,9 +531,13 @@ public final class ApplicationWindow {
 		toolbarButtonsMap.get(TOOLBAR_BUTTON_REMOVE_NAME).setOnAction(
 				event -> onRemoveTorrent());
 		toolbarButtonsMap.get(TOOLBAR_BUTTON_START_NAME).setOnAction(
-				event -> onChangeTorrentState(QueuedTorrent.State.ACTIVE));
+				event -> torrentJobActionHandler.onChangeTorrentState(QueuedTorrent.State.ACTIVE,
+						toolbarButtonsMap.get(TOOLBAR_BUTTON_START_NAME),
+						toolbarButtonsMap.get(TOOLBAR_BUTTON_STOP_NAME), torrentJobTable));
 		toolbarButtonsMap.get(TOOLBAR_BUTTON_STOP_NAME).setOnAction(
-				event -> onChangeTorrentState(QueuedTorrent.State.STOPPED));
+				event -> torrentJobActionHandler.onChangeTorrentState(QueuedTorrent.State.STOPPED,
+						toolbarButtonsMap.get(TOOLBAR_BUTTON_START_NAME),
+						toolbarButtonsMap.get(TOOLBAR_BUTTON_STOP_NAME), torrentJobTable));
 
 		final HBox separatorBox = new HBox();		
 		HBox.setHgrow(separatorBox, Priority.ALWAYS);
@@ -619,85 +635,6 @@ public final class ApplicationWindow {
 
         return tabImageViews.keySet();
     }
-	
-	private void addDetailsTabHeaderContextMenu(final ObservableList<Tab> tabs) {	
-		final ContextMenu tabHeaderContextMenu = new ContextMenu();		
-		final List<String> visibleTabNames = ApplicationPreferences.getCompositePropertyValues(
-				GuiProperties.TAB_VISIBILITY, GuiProperties.DEFAULT_TAB_VISIBILITY);
-				
-		tabHeaderContextMenu.getItems().addAll(tabs.stream().map(t -> {
-			final CheckMenuItem tabMenuItem = new CheckMenuItem(t.getText());	
-			tabMenuItem.setId(t.getId());
-			tabMenuItem.selectedProperty().addListener((obs, oldV, selected) -> {				
-				if(selected && !tabs.contains(t)) {					
-					if(tabs.size() == 1) {						
-						final Tab remainingTab = tabs.get(0);						
-						tabHeaderContextMenu.getItems().stream().filter(
-								mi -> remainingTab.getId().equals(mi.getId())).forEach(mi -> mi.setDisable(false));											
-					}
-					final int insertedTabOrder = TAB_NAMES.indexOf(t.getText());
-					int insertionIndex = 0;
-					for(int i = 0; i < tabs.size(); ++i) {						
-						if(TAB_NAMES.indexOf(tabs.get(i).getId()) > insertedTabOrder) {
-							insertionIndex = i;
-							break;
-						}
-						if(i == tabs.size() - 1) {
-							insertionIndex = tabs.size();
-						}
-					}
-					tabs.add(insertionIndex, t);
-					if(tabs.size() > 1) {
-						tabs.forEach(tb -> tb.getContextMenu().getItems().forEach(mi -> mi.setDisable(false)));	
-					}
-				}
-				else if(!selected && tabs.contains(t)) {					
-					tabs.remove(t);
-					if(tabs.size() == 1) {						
-						final Tab remainingTab = tabs.get(0);						
-						tabHeaderContextMenu.getItems().stream().filter(mi -> 
-							remainingTab.getId().equals(mi.getId())).forEach(mi -> mi.setDisable(true));								
-					}
-				}
-			});
-			final boolean tabVisible = visibleTabNames.contains(t.getId());
-			Platform.runLater(() -> {
-				if(!tabVisible) {
-					tabs.remove(t);
-					if(tabs.size() == 1) {
-						final String singleTabId = tabs.get(0).getId();
-						tabHeaderContextMenu.getItems().stream().filter(mi ->
-						singleTabId.equals(mi.getId())).forEach(mi -> mi.setDisable(true));
-					}
-				}
-			});
-			tabMenuItem.setSelected(tabVisible);
-			t.setContextMenu(tabHeaderContextMenu);
-			return tabMenuItem;
-		}).collect(Collectors.toList()));	
-		
-		final MenuItem resetTabsMenuItem = new MenuItem("Reset");
-		final List<CheckMenuItem> checkMenuItems = tabHeaderContextMenu.getItems().stream().filter(
-				mi -> mi instanceof CheckMenuItem).map(mi -> (CheckMenuItem)mi).collect(Collectors.toList());
-		resetTabsMenuItem.setOnAction(e -> onResetTabs(checkMenuItems));
-		tabHeaderContextMenu.getItems().addAll(new SeparatorMenuItem(), resetTabsMenuItem);
-	}
-	
-	private void onResetTabs(final List<CheckMenuItem> checkMenuItems) {
-		detailedInfoTabPane.getTabs().clear();
-		final Set<String> defaultVisibleTabNames = Arrays.stream(GuiProperties.DEFAULT_TAB_VISIBILITY.split(
-				GuiProperties.COMPOSITE_PROPERTY_VALUE_SEPARATOR)).collect(Collectors.toSet());
-		checkMenuItems.stream().filter(mi -> mi instanceof CheckMenuItem).forEach(cm -> {
-			final CheckMenuItem tabVisibilityCheck = (CheckMenuItem)cm;
-			tabVisibilityCheck.setDisable(false);
-			final String tabId = tabVisibilityCheck.getId();			
-			final boolean tabVisible = defaultVisibleTabNames.contains(tabId);				
-			if(tabVisible) {
-				detailedInfoTabPane.getTabs().add(detailsTabMap.get(tabId));
-			}
-		});
-		checkMenuItems.stream().forEach(cm -> cm.setSelected(defaultVisibleTabNames.contains(cm.getId())));		
-	}
 	
 	private MenuBar buildMenuBar() {
 		final MenuBar menuBar = new MenuBar();
@@ -800,7 +737,7 @@ public final class ApplicationWindow {
 					torrentOptions.getTorrentContents());
 			
 			final ObservableList<TrackerView> trackerViews = FXCollections.observableArrayList(
-					trackerUrls.stream().map(t -> new TrackerView(t, torrentStatus)).collect(Collectors.toList()));
+					trackerUrls.stream().map(t -> new TrackerView(t, queuedTorrent)).collect(Collectors.toList()));
 			
 			queuedTorrentManager.add(queuedTorrent, trackerUrls);
 			trackerViewMappings.put(queuedTorrent, trackerViews);
@@ -808,18 +745,6 @@ public final class ApplicationWindow {
 			torrentJobTable.addJob(jobView);						
 			
 			updateGui();
-		}
-	}
-	
-	private void onChangeTorrentState(final QueuedTorrent.State newStatus) {
-		toolbarButtonsMap.get(TOOLBAR_BUTTON_START_NAME).setDisable(newStatus == QueuedTorrent.State.ACTIVE);
-		toolbarButtonsMap.get(TOOLBAR_BUTTON_STOP_NAME).setDisable(newStatus == QueuedTorrent.State.STOPPED);
-		
-		final ObservableList<TorrentJobView> selectedTorrentJobs = torrentJobTable.getSelectedJobs();
-		
-		if(selectedTorrentJobs.size() > 0) {
-			selectedTorrentJobs.stream().map(
-					TorrentJobView::getQueuedTorrent).forEach(t -> t.setState(newStatus));			
 		}
 	}
 	
@@ -848,6 +773,9 @@ public final class ApplicationWindow {
 			}
 		}
 	}
+	
+	/* TODO: Extract action handling methods to a GuiActionHandler class or similar for each GUI component,
+	 i.e. TrackerTableActionHandler, FileTreeActionHandler, TorrentJobActionHandler and so on */
 	
 	private void onTorrentJobSelection(final TorrentJobView selectedTorrentJob) {
 		final boolean torrentSelected = selectedTorrentJob != null;

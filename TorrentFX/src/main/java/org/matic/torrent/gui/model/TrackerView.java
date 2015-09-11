@@ -41,20 +41,33 @@ public final class TrackerView {
 	private final StringProperty status = new SimpleStringProperty();
 	private final StringProperty trackerName;
 
-	private QueuedTorrent.State torrentState;	
+	private final QueuedTorrent torrent;
+	private long lastUserRequestedUpdate = 0;
 	private long lastTrackerResponse = 0;
 
-	public TrackerView(final String trackerName, final QueuedTorrent.State torrentState) {
+	public TrackerView(final String trackerName, final QueuedTorrent torrent) {
 		this.trackerName = new SimpleStringProperty(trackerName);
-		this.torrentState = torrentState;
+		this.torrent = torrent;
+	}
+	
+	public final long getLastUserRequestedUpdate() {
+		return lastUserRequestedUpdate;
+	}
+
+	public final void setLastUserRequestedUpdate(final long lastUserRequestedUpdate) {
+		this.lastUserRequestedUpdate = lastUserRequestedUpdate;
+	}
+
+	public QueuedTorrent getTorrent() {
+		return torrent;
 	}
 		
 	public QueuedTorrent.State getTorrentState() {
-		return torrentState;
+		return torrent.getState();
 	}
 
 	public void setTorrentState(final QueuedTorrent.State torrentState) {
-		this.torrentState = torrentState;
+		torrent.setState(torrentState);
 	}
 
 	public String getStatus() {
@@ -132,4 +145,37 @@ public final class TrackerView {
 	public final StringProperty trackerNameProperty() {
 		return trackerName;
 	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((trackerName == null) ? 0 : trackerName.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		TrackerView other = (TrackerView) obj;
+		if (trackerName == null) {
+			if (other.trackerName != null)
+				return false;
+		} else if (!trackerName.equals(other.trackerName))
+			return false;
+		return true;
+	}
+
+	@Override
+	public String toString() {
+		return "TrackerView [downloaded=" + downloaded + ", leechers=" + leechers + ", seeds=" + seeds
+				+ ", minInterval=" + minInterval + ", nextUpdate=" + nextUpdate + ", interval=" + interval + ", status="
+				+ status + ", trackerName=" + trackerName + ", torrentState=" + torrent.getState() + ", lastTrackerResponse="
+				+ lastTrackerResponse + "]";
+	}	
 }

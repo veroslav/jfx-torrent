@@ -74,7 +74,7 @@ public final class PwpConnectionManager {
 	private final Set<PwpMessageListener> messageListeners;
 	private final List<PwpMessageRequest> messageRequests;	
 	
-	private final Selector connectionSelector;
+	private Selector connectionSelector;
 	
 	private final String name;
 	private final int maxConnections;
@@ -89,13 +89,10 @@ public final class PwpConnectionManager {
 	 * @param maxConnections Max simultaneous connections served by this connection manager
 	 * @throws IOException If a connection selector can't be opened
 	 */
-	public PwpConnectionManager(final String name, final int listenPort, final int maxConnections) 
-			throws IOException {
+	public PwpConnectionManager(final String name, final int listenPort, final int maxConnections) {
 		this.name = name;
 		this.maxConnections = maxConnections;
 		this.listenPort = listenPort;
-		
-		connectionSelector = Selector.open();
 		
 		ioBuffers = new HashMap<>();
 		activePeers = new HashMap<>();
@@ -156,6 +153,15 @@ public final class PwpConnectionManager {
 	 * @param listenInterface Network interface used to listen for incoming connections
 	 */
 	public final void manage(final String listenInterface) {
+		
+		try {
+			connectionSelector = Selector.open();
+		} 
+		catch (final IOException ioe) {
+			System.err.println("Failed to start PWP connection manager due to: " + ioe.getMessage());
+			return;
+		}
+		
 		connectionManagerExecutor.execute(() -> {
 			try(final ServerSocketChannel serverChannel = ServerSocketChannel.open()) {
 				configureServerChannel(listenInterface, serverChannel);				
@@ -204,19 +210,27 @@ public final class PwpConnectionManager {
 	 */
 	public final void unmanage() {		
 		connectionManagerExecutor.shutdownNow();
-		connectionSelector.wakeup();
+		if(connectionSelector != null) {
+			connectionSelector.wakeup();
+		}
 	}
 	
 	/**
 	 * Send a message to a peer connected on the given connection
 	 * 
 	 * @param messageRequest Message to be sent to receiving peer
+	 * @return Whether message request was added to message sender queue
 	 */
-	public final void send(final PwpMessageRequest messageRequest) {
+	public final boolean send(final PwpMessageRequest messageRequest) {
+		if(connectionSelector == null) {
+			return false;
+		}
+		boolean messageAdded = false;
 		synchronized(messageRequests) {
-			messageRequests.add(messageRequest);
+			messageAdded = messageRequests.add(messageRequest);
 		}
 		connectionSelector.wakeup();
+		return messageAdded;
 	}
 	
 	/**
@@ -224,12 +238,18 @@ public final class PwpConnectionManager {
 	 * Attempt to make a connection to a remote peer
 	 * 
 	 * @param peer A connection request to a remote peer
+	 * @return Whether connection request was added to connection requester queue
 	 */
-	public final void connectTo(final PwpPeer peer) {		
+	public final boolean connectTo(final PwpPeer peer) {	
+		if(connectionSelector == null) {
+			return false;
+		}
+		boolean connectionRequestAdded = false;
 		synchronized (peerConnectionRequestQueue) {
-			peerConnectionRequestQueue.add(peer);			
+			connectionRequestAdded = peerConnectionRequestQueue.add(peer);			
 		}		
 		connectionSelector.wakeup();
+		return connectionRequestAdded;
 	}
 	
 	private void keepActiveConnectionsAlive() {
