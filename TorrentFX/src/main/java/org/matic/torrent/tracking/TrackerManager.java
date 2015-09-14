@@ -346,13 +346,13 @@ public class TrackerManager implements TrackerResponseListener, UdpTrackerRespon
 		
 		synchronized(trackerSessions) {		
 			trackerSessions.putIfAbsent(torrent, new HashSet<>());
-			if(trackerSessions.get(torrent).contains(trackerSession)) {
+			if(trackerSessions.get(torrent).contains(trackerSession)) {				
 				return false;
 			}
 			trackerSessions.compute(torrent, (key, sessions) -> {
 				sessions.add(trackerSession);
 				return sessions;
-			});			
+			});
 			
 			if(tracker.getType() == Tracker.Type.INVALID) {				
 				trackerSession.setTrackerStatus(Tracker.Status.INVALID_URL);				
@@ -385,13 +385,14 @@ public class TrackerManager implements TrackerResponseListener, UdpTrackerRespon
 	 * @return Whether the tracker was removed
 	 */
 	public final boolean removeTracker(final String trackerUrl, final QueuedTorrent torrent) {		
-		synchronized(trackerSessions) {
-			final Set<TrackerSession> torrentMatch = trackerSessions.get(torrent);
-			if(torrentMatch == null) {				
+		synchronized(trackerSessions) {			
+			final Set<TrackerSession> torrentTrackers = trackerSessions.get(torrent);
+			if(torrentTrackers == null || torrentTrackers.isEmpty()) {				
 				return false;
 			}
-			final Set<TrackerSession> sessionMatch = torrentMatch.stream().filter(
-					ts -> ts.getTracker().getUrl().equals(trackerUrl)).collect(Collectors.toSet());
+			final Set<TrackerSession> sessionMatch = torrentTrackers.stream().filter(
+					ts -> ts.getTracker().getUrl().equals(trackerUrl)).collect(Collectors.toSet());			
+			torrentTrackers.removeAll(sessionMatch);
 			
 			return stopSessions(sessionMatch) > 0;
 		}		

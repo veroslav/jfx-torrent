@@ -224,7 +224,9 @@ public final class ApplicationWindow {
 			trackerTableActionHandler.onTrackerDeletion(views, trackerManager, trackerTable));
 		trackerTable.onTrackerUpdateRequested(views ->
 			trackerTableActionHandler.onTrackerUpdate(views, trackerManager));
-		
+		trackerTable.onTrackersAdded(urls -> trackerTableActionHandler.onTrackersAdded(urls, trackerManager,
+			torrentJobTable.getSelectedJobs().get(0).getQueuedTorrent(), trackerTable), stage,
+			torrentJobTable.bindOnEmpty());		
 		stage.setScene(initScene(mainPane));
 		stage.setOnCloseRequest(this::onShutdown);		
 		stage.setTitle("jfxTorrent");        		

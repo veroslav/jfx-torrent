@@ -36,9 +36,9 @@ public final class UnitConverterTest {
 		final long gigaByteCount = megaByteCount * unit;
 		
 		Assert.assertEquals("678 B", UnitConverter.formatByteCount(byteCount));
-		Assert.assertEquals("678,0 KiB", UnitConverter.formatByteCount(kiloByteCount));
-		Assert.assertEquals("678,0 MiB", UnitConverter.formatByteCount(megaByteCount));
-		Assert.assertEquals("678,0 GiB", UnitConverter.formatByteCount(gigaByteCount));
+		Assert.assertTrue(UnitConverter.formatByteCount(kiloByteCount).matches("678[\\.|,]0 KiB"));
+		Assert.assertTrue(UnitConverter.formatByteCount(megaByteCount).matches("678[\\.|,]0 MiB"));
+		Assert.assertTrue(UnitConverter.formatByteCount(gigaByteCount).matches("678[\\.|,]0 GiB"));
 	}
 	
 	@Test

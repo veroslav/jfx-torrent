@@ -30,6 +30,7 @@ import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.preferences.GuiProperties;
 
 import javafx.beans.binding.Bindings;
+import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.ObservableList;
@@ -67,6 +68,15 @@ public final class TorrentJobTable {
 	
 	public boolean contains(final InfoHash torrentInfoHash) {
 		return torrentJobTable.getItems().contains(torrentInfoHash);
+	}
+	
+	/**
+	 * Create a binding that updates the target when this table becomes empty 
+	 * 
+	 * @return Generated boolean binding
+	 */
+	public final BooleanBinding bindOnEmpty() {
+		return Bindings.size(torrentJobTable.getItems()).isEqualTo(0);
 	}
 	
 	public void addJob(final TorrentJobView torrentJob) {

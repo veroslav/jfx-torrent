@@ -25,6 +25,7 @@ import java.util.Optional;
 
 import org.matic.torrent.gui.model.TrackerView;
 import org.matic.torrent.gui.table.TrackerTable;
+import org.matic.torrent.queue.QueuedTorrent;
 import org.matic.torrent.tracking.Tracker;
 import org.matic.torrent.tracking.TrackerManager;
 
@@ -32,8 +33,38 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Alert.AlertType;
 
+/**
+ * A handler for events triggered from the trackers' context menu
+ * 
+ * @author vedran
+ *
+ */
 public class TrackerTableActionHandler {
+	
+	/**
+	 * Add a user entered list of tracker url:s for tracking
+	 * 
+	 * @param urls User entered tracker url:s to add
+	 * @param trackerManager Target tracker manager
+	 * @param torrent Target tracked torrent
+	 * @param trackerTable Tracker table to which to add trackers views
+	 */
+	public final void onTrackersAdded(final Collection<String> urls, final TrackerManager trackerManager,
+			final QueuedTorrent torrent, final TrackerTable trackerTable) {
+		urls.forEach(url -> {
+			final boolean added = trackerManager.addTracker(url, torrent);
+			if(added) {
+				trackerTable.addTracker(new TrackerView(url, torrent));
+			}
+		});
+	}
 
+	/**
+	 * Request a manual tracker update by a user
+	 * 
+	 * @param trackerViews Tracker views to update
+	 * @param trackerManager Target tracker manager
+	 */
 	public final void onTrackerUpdate(final Collection<TrackerView> trackerViews, final TrackerManager trackerManager) {
 		if(trackerViews.isEmpty()) {
 			return;
@@ -42,6 +73,13 @@ public class TrackerTableActionHandler {
 		trackerViews.forEach(tv -> trackerManager.issueAnnounce(tv.getTrackerName(), tv.getTorrent(), Tracker.Event.UPDATE));
 	}
 	
+	/**
+	 * Handle a tracker deletion by the user
+	 * 
+	 * @param trackerViews Tracker views to delete
+	 * @param trackerManager Target tracker manager
+	 * @param trackerTable Tracker table from which to delete trackers views
+	 */
 	public final void onTrackerDeletion(final Collection<TrackerView> trackerViews, final TrackerManager trackerManager,
 			final TrackerTable trackerTable) {		
 		if(trackerViews.isEmpty()) {

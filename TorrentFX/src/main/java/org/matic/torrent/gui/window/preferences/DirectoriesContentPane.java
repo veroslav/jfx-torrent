@@ -264,9 +264,9 @@ public final class DirectoriesContentPane implements CategoryContentPane {
 		final VBox content = new VBox();
 		content.getStyleClass().add("layout-vertical-spacing");		
 		content.getChildren().addAll(
-				GuiUtils.applyBorder(downloadDirectoryPane, "Location of Downloaded Files", BorderType.OPTIONS_WINDOW_BORDER),
-				GuiUtils.applyBorder(torrentDirectoryPane, "Location of .torrents", BorderType.OPTIONS_WINDOW_BORDER),
-				GuiUtils.applyBorder(keyStorePane, "Location of Certificate Key Store", BorderType.OPTIONS_WINDOW_BORDER));
+				GuiUtils.applyBorder(downloadDirectoryPane, "Location of Downloaded Files", BorderType.DEFAULT_WINDOW_BORDER),
+				GuiUtils.applyBorder(torrentDirectoryPane, "Location of .torrents", BorderType.DEFAULT_WINDOW_BORDER),
+				GuiUtils.applyBorder(keyStorePane, "Location of Certificate Key Store", BorderType.DEFAULT_WINDOW_BORDER));
 		
 		final ScrollPane contentScroll = new ScrollPane(content);
 		contentScroll.setHbarPolicy(ScrollBarPolicy.NEVER);

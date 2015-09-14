@@ -29,13 +29,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.matic.torrent.gui.GuiUtils;
-import org.matic.torrent.gui.model.TrackerView;
-import org.matic.torrent.preferences.GuiProperties;
-import org.matic.torrent.queue.QueuedTorrent;
-import org.matic.torrent.tracking.Tracker;
-import org.matic.torrent.utils.UnitConverter;
-
+import javafx.beans.binding.BooleanBinding;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.ObservableList;
 import javafx.scene.control.CheckMenuItem;
@@ -46,10 +40,19 @@ import javafx.scene.control.SelectionMode;
 import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableColumn.CellDataFeatures;
-import javafx.scene.input.KeyCode;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
+import javafx.scene.input.KeyCode;
+import javafx.stage.Window;
 import javafx.util.Callback;
+
+import org.matic.torrent.gui.GuiUtils;
+import org.matic.torrent.gui.model.TrackerView;
+import org.matic.torrent.gui.window.AddTrackerWindow;
+import org.matic.torrent.preferences.GuiProperties;
+import org.matic.torrent.queue.QueuedTorrent;
+import org.matic.torrent.tracking.Tracker;
+import org.matic.torrent.utils.UnitConverter;
 
 public class TrackerTable {	
 	
@@ -77,11 +80,14 @@ public class TrackerTable {
 	//Context menu items
 	private final MenuItem removeTrackerMenuItem = new MenuItem(REMOVE_TRACKER);
 	private final MenuItem updateTrackerMenuItem = new MenuItem(UPDATE_TRACKER);
+	private final MenuItem addTrackerMenuItem = new MenuItem(ADD_TRACKER);
 
 	private final TableView<TrackerView> trackerTable = new TableView<>();
 	
 	public TrackerTable() {
 		initComponents();
+		createColumns();
+		createContextMenu();
 	}
 	
 	public final void setContent(final List<TrackerView> trackerViews) {
@@ -141,6 +147,23 @@ public class TrackerTable {
 	}
 	
 	/**
+	 * Register a handler for tracker additions
+	 * 
+	 * @param handler Target handler
+	 * @param addTrackerWindowOwner Add torrent window owner
+	 * @param disablementBinding When to disable the tracker addition
+	 */
+	public final void onTrackersAdded(final Consumer<Collection<String>> handler,
+			final Window addTrackerWindowOwner, final BooleanBinding disablementBinding) {
+		addTrackerMenuItem.disableProperty().bind(disablementBinding);
+		addTrackerMenuItem.setOnAction(e -> {
+			final AddTrackerWindow addTrackerWindow = new AddTrackerWindow(addTrackerWindowOwner);
+			final Collection<String> trackerUrls = addTrackerWindow.showAndWait();
+			handler.accept(trackerUrls);
+		});
+	}
+	
+	/**
 	 * Sort the table based on the current sort order and latest table entry values
 	 */
 	public final void sort() {
@@ -164,22 +187,17 @@ public class TrackerTable {
 		trackerTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 		trackerTable.setTableMenuButtonVisible(false);
 		
-		createColumns();
-		createContextMenu();
-	}
-	
-	private void createContextMenu() {		
-		final ContextMenu contextMenu = new ContextMenu();
-		
-		final MenuItem addTrackerMenuItem = new MenuItem(ADD_TRACKER);
 		addTrackerMenuItem.setId(ADD_TRACKER);
-		addTrackerMenuItem.setDisable(false);
-				
+		
 		removeTrackerMenuItem.setId(REMOVE_TRACKER);
 		removeTrackerMenuItem.setDisable(true);
 		
 		updateTrackerMenuItem.setId(UPDATE_TRACKER);
-		updateTrackerMenuItem.setDisable(true);
+		updateTrackerMenuItem.setDisable(true);		
+	}
+	
+	private void createContextMenu() {		
+		final ContextMenu contextMenu = new ContextMenu();
 		
 		final CheckMenuItem enableDhtMenuItem = new CheckMenuItem(ENABLE_DHT);
 		enableDhtMenuItem.setId(ENABLE_DHT);
@@ -224,20 +242,22 @@ public class TrackerTable {
 		});
 	}
 	
-	private Collection<TrackerView> getUpdatableTrackers(final Collection<TrackerView> selectedRows) {
+	private Collection<TrackerView> getUpdatableTrackers(final Collection<TrackerView> selectedRows) {		
 		return selectedRows.stream().filter(tv -> {
 			final long currentTime = System.currentTimeMillis();
-			return tv.getTorrentState() == QueuedTorrent.State.ACTIVE &&
+			
+			return tv.getTorrentState() == QueuedTorrent.State.ACTIVE && tv.getNextUpdate() > 0 &&
+					tv.getStatus().equals(Tracker.getStatusMessage(Tracker.Status.WORKING)) &&
 					((currentTime - tv.getLastTrackerResponse()) >= tv.getMinInterval()) &&
 					(currentTime - tv.getLastUserRequestedUpdate() > MIN_USER_REQUESTED_ANNOUNCE_DELAY);
 		}).collect(Collectors.toList());			
 	}
 	
 	private Collection<TrackerView> getDeletableTrackers(final Collection<TrackerView> selectedRows) {
-		return selectedRows.stream().filter(tw -> {			
-			return !(tw.getTrackerName().equals("[DHT]") || 
-					tw.getTrackerName().equals("[Local Peer Discovery]") ||
-					tw.getTrackerName().equals("[Peer Exchange]"));
+		return selectedRows.stream().filter(tv -> {			
+			return !(tv.getTrackerName().equals("[DHT]") || 
+					tv.getTrackerName().equals("[Local Peer Discovery]") ||
+					tv.getTrackerName().equals("[Peer Exchange]"));
 		}).collect(Collectors.toList());
 	}
 	

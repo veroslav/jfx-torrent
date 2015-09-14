@@ -22,6 +22,9 @@ package org.matic.torrent.preferences;
 
 public final class PathProperties {
 	
+	//Standard Java system properties
+	public static final String LINE_SEPARATOR = "line.separator";
+	
 	public static final String COMPLETED_DOWNLOADS = "paths.completed.downloads";	
 	public static final String COMPLETED_TORRENTS = "paths.completed.torrents";
 	public static final String NEW_DOWNLOADS = "paths.new.downloads";
