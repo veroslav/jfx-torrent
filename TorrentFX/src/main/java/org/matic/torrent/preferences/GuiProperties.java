@@ -22,6 +22,68 @@ package org.matic.torrent.preferences;
 
 public final class GuiProperties {
 	
+	public enum SeedingTorrentClickAction {
+		OPEN_FOLDER("Open Folder");
+		
+		private String label;
+		
+		private SeedingTorrentClickAction(final String label) {
+			this.label = label;
+		}
+		
+		@Override
+		public String toString() {
+			return label;
+		}
+	}
+	
+	public enum DownloadingTorrentClickAction {
+		SHOW_PROPERTIES("Show Properties");
+		
+		private String label;
+		
+		private DownloadingTorrentClickAction(final String label) {
+			this.label = label;
+		}
+		
+		@Override
+		public String toString() {
+			return label;
+		}
+	}
+	
+	//CSS properties for Options window
+	public static final String OPTION_CATEGORY_INDENTATION = "option-category-indentation";
+	public static final String HORIZONTAL_LAYOUT_SPACING = "layout-horizontal-spacing";
+	public static final String VERTICAL_LAYOUT_SPACING = "layout-vertical-spacing";
+	
+	//Confirmation options
+	public static final String EXIT_CONFIRMATION_CRITICAL_SEEDER = "gui.confirm.criticalexit";	
+	public static final String DELETE_TORRENT_CONFIRMATION = "gui.confirm.torrentdelete";
+	public static final String DELETE_TRACKER_CONFIRMATION = "gui.confirm.trackerdelete";	
+	public static final String EXIT_CONFIRMATION = "gui.confirm.exit";
+	
+	//Various status and color visibilities
+	public static final String SHOW_SPEED_LIMITS_IN_STATUSBAR = "gui.statusbar.speedlimits";
+	public static final String SHOW_SPEED_IN_TITLEBAR = "gui.titlebar.showspeed";	
+	public static final String ALTERNATE_LIST_ROW_COLOR = "gui.color.alternate";
+	
+	//System Tray options
+	public static final String MINIMIZE_APPLICATION_TO_TRAY = "gui.systemtray.minimize";
+	public static final String BALLOON_NOTIFICATIONS_ON_TRAY = "gui.systemtray.balloon";
+	public static final String ACTIVATE_ON_TRAY_CLICK = "gui.systemtray.clickactivate";
+	public static final String SINGLE_CLICK_ON_TRAY_TO_OPEN = "gui.systemtray.open";
+	public static final String CLOSE_APPLICATION_TO_TRAY = "gui.systemtray.close";	
+	public static final String ALWAYS_SHOW_TRAY = "gui.systemtray.show";		
+	
+	//Torrent addition options
+	public static final String ALLOW_NAME_AND_LOCATION_CHANGE = "gui.addtorrent.namelocationchange";
+	public static final String ACTIVATE_WINDOW_ON_TORRENT_ADDITION = "gui.addtorrent.windowactive";
+	
+	//Mouse action options
+	public static final String CLICK_ON_DOWNLOADING_TORRENT_ACTION = "gui.mouse.click.downloading";
+	public static final String CLICK_ON_SEEDING_TORRENT_ACTION = "gui.mouse.click.seeding";
+	
 	//Tab ID:s	
 	public static final String TRACKERS_TAB_ID = "Trackers";
 	public static final String PIECES_TAB_ID = "Pieces";

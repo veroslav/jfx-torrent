@@ -62,6 +62,7 @@ public final class PreferencesWindow {
 	private final BooleanProperty preferencesChanged = new SimpleBooleanProperty(false);
 	
 	private final DirectoriesContentPane directoriesOptions;
+	private final UISettingsContentPane uiSettingsOptions;
 	
 	private final Dialog<ButtonType> window;
 	
@@ -72,6 +73,7 @@ public final class PreferencesWindow {
 		optionGroupMappings = new HashMap<>();
 		
 		directoriesOptions = new DirectoriesContentPane(owner, fileActionHandler, preferencesChanged);
+		uiSettingsOptions = new UISettingsContentPane(preferencesChanged);
 		
 		window = new Dialog<>();
 		window.initOwner(owner);		
@@ -126,6 +128,7 @@ public final class PreferencesWindow {
 	
 	private void savePreferences() {		
 		directoriesOptions.onSaveContentChanges();
+		uiSettingsOptions.onSaveContentChanges();
 	}
 	
 	private Node layoutContent() {					
@@ -148,7 +151,7 @@ public final class PreferencesWindow {
 	private TreeItem<Node> buildOptionCategories() {		
 		//General option names
 		final String generalOptionName = "General";
-		final String uiSettingsOptionName = "UI Settings";
+		final String uiSettingsOptionName = uiSettingsOptions.getName();
 		final String directoriesOptionName = directoriesOptions.getName();
 		final String connectionOptionName = "Connection";
 		final String bandwidthOptionName = "Bandwidth";
@@ -167,7 +170,7 @@ public final class PreferencesWindow {
 		
 		//General option mappings
 		optionGroupMappings.put(generalOptionName, buildGeneralOptionsView());
-		optionGroupMappings.put(uiSettingsOptionName, buildUiSettingsOptionsView());
+		optionGroupMappings.put(uiSettingsOptionName, uiSettingsOptions.getContentPane());
 		optionGroupMappings.put(directoriesOptionName, directoriesOptions.getContentPane());
 		optionGroupMappings.put(connectionOptionName, buildConnectionOptionsView());
 		optionGroupMappings.put(bandwidthOptionName, buildBandwidthOptionsView());
@@ -219,10 +222,6 @@ public final class PreferencesWindow {
 	
 	private Pane buildGeneralOptionsView() {
 		return new Pane(new Label("GENERAL"));
-	}
-	
-	private Pane buildUiSettingsOptionsView() {
-		return new Pane(new Label("UI SETTINGS"));
 	}
 	
 	private Pane buildConnectionOptionsView() {

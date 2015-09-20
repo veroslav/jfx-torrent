@@ -20,6 +20,13 @@
 
 package org.matic.torrent.gui.window.preferences;
 
+import org.matic.torrent.gui.GuiUtils;
+import org.matic.torrent.gui.GuiUtils.BorderType;
+import org.matic.torrent.gui.action.FileActionHandler;
+import org.matic.torrent.preferences.ApplicationPreferences;
+import org.matic.torrent.preferences.GuiProperties;
+import org.matic.torrent.preferences.PathProperties;
+
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.geometry.Insets;
@@ -33,12 +40,6 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Window;
-
-import org.matic.torrent.gui.GuiUtils;
-import org.matic.torrent.gui.GuiUtils.BorderType;
-import org.matic.torrent.gui.action.FileActionHandler;
-import org.matic.torrent.preferences.ApplicationPreferences;
-import org.matic.torrent.preferences.PathProperties;
 
 public final class DirectoriesContentPane implements CategoryContentPane {
 	
@@ -115,73 +116,15 @@ public final class DirectoriesContentPane implements CategoryContentPane {
 	}
 	
 	private void initComponents(final BooleanProperty preferencesChanged) {
-		loadTorrentsDirectoryField.setDisable(true);
-		storeTorrentsDirectoryField.setDisable(true);
-		moveTorrentsDirectoryField.setDisable(true);
-		completedDirectoryField.setDisable(true);
-		downloadDirectoryField.setDisable(true);		
-		
-		browseLoadTorrentsDirectoryButton.setDisable(true);
-		browseStoreTorrentsDirectoryButton.setDisable(true);
-		browseMoveTorrentsDirectoryButton.setDisable(true);
-		browseCompletedDirectoryButton.setDisable(true);
-		browseDownloadDirectoryButton.setDisable(true);
-		
-		moveFromDefaultCheck.setDisable(true);
-		deleteTorrentsCheck.setDisable(true);
-		
-		completedDirectoryField.setText(ApplicationPreferences.getProperty(PathProperties.COMPLETED_DOWNLOADS, null));
-		moveTorrentsDirectoryField.setText(ApplicationPreferences.getProperty(PathProperties.COMPLETED_TORRENTS, null));
-		keyStoreLocationField.setText(ApplicationPreferences.getProperty(PathProperties.KEY_STORE, System.getProperty("user.home")));
-		loadTorrentsDirectoryField.setText(ApplicationPreferences.getProperty(PathProperties.LOAD_TORRENTS, null));
-		downloadDirectoryField.setText(ApplicationPreferences.getProperty(PathProperties.NEW_DOWNLOADS, null));
-		storeTorrentsDirectoryField.setText(ApplicationPreferences.getProperty(PathProperties.NEW_TORRENTS,
-				PathProperties.DEFAULT_STORE_TORRENTS_PATH));
-				
-		browseLoadTorrentsDirectoryButton.setOnAction(e -> onBrowseForPath(loadTorrentsDirectoryField));			
-		browseStoreTorrentsDirectoryButton.setOnAction(e -> onBrowseForPath(storeTorrentsDirectoryField));		
-		browseMoveTorrentsDirectoryButton.setOnAction(e -> onBrowseForPath(moveTorrentsDirectoryField));					
-		browseCompletedDirectoryButton.setOnAction(e -> onBrowseForPath(completedDirectoryField));					
-		browseDownloadDirectoryButton.setOnAction(e -> onBrowseForPath(downloadDirectoryField));		
-		browseKeyStoreButton.setOnAction(e -> onBrowseForPath(keyStoreLocationField));			
-		
-		storeTorrentsDirectoryField.textProperty().addListener((obs, oldV, newV) -> preferencesChanged.set(true));
-		loadTorrentsDirectoryField.textProperty().addListener((obs, oldV, newV) -> preferencesChanged.set(true));
-		moveTorrentsDirectoryField.textProperty().addListener((obs, oldV, newV) -> preferencesChanged.set(true));
-		completedDirectoryField.textProperty().addListener((obs, oldV, newV) -> preferencesChanged.set(true));
-		downloadDirectoryField.textProperty().addListener((obs, oldV, newV) -> preferencesChanged.set(true));
-		keyStoreLocationField.textProperty().addListener((obs, oldV, newV) -> preferencesChanged.set(true));
-		
-		downloadsDirectoryCheck.selectedProperty().addListener((obs, oldV, newV) -> onDownloadsDirectoryChecked(newV));
-		downloadsDirectoryCheck.setOnAction(e -> {
-			preferencesChanged.set(true);
-			onDownloadsDirectoryChecked(downloadsDirectoryCheck.isSelected());
-			
-		});
-		completedDirectoryCheck.selectedProperty().addListener((obs, oldV, newV) -> onCompletedDirectoryChecked(newV));
-		completedDirectoryCheck.setOnAction(e -> {
-			preferencesChanged.set(true);
-			onCompletedDirectoryChecked(completedDirectoryCheck.isSelected());
-			
-		});
-		storeTorrentsCheck.selectedProperty().addListener((obs, oldV, newV) -> onStoreTorrentsChecked(newV));
-		storeTorrentsCheck.setOnAction(e -> {
-			preferencesChanged.set(true);
-			onStoreTorrentsChecked(storeTorrentsCheck.isSelected());
-		});
-		moveTorrentsCheck.selectedProperty().addListener((obs, oldV, newV) -> onMoveTorrentsChecked(newV));
-		moveTorrentsCheck.setOnAction(e -> {
-			preferencesChanged.set(true);
-			onMoveTorrentsChecked(moveTorrentsCheck.isSelected());			
-		});
-		loadTorrentsCheck.selectedProperty().addListener((obs, oldV, newV) -> onLoadTorrentsChecked(newV));
-		loadTorrentsCheck.setOnAction(e -> {
-			preferencesChanged.set(true);
-			onLoadTorrentsChecked(loadTorrentsCheck.isSelected());			
-		});
-		moveFromDefaultCheck.setOnAction(e -> preferencesChanged.set(true));
-		deleteTorrentsCheck.setOnAction(e -> preferencesChanged.set(true));
-		
+		disableAll();		
+		applyTextValues();				
+		setButtonActions();					
+		addTextFieldListeners(preferencesChanged);		
+		setCheckBoxActions(preferencesChanged);		
+		applyCheckBoxValues();
+	}
+
+	private void applyCheckBoxValues() {
 		final boolean downloadsDirectorySet = ApplicationPreferences.getProperty(
 				PathProperties.NEW_DOWNLOADS_SET, false);
 		downloadsDirectoryCheck.setSelected(downloadsDirectorySet);
@@ -209,6 +152,81 @@ public final class DirectoriesContentPane implements CategoryContentPane {
 		final boolean deleteTorrentsSet = ApplicationPreferences.getProperty(
 				PathProperties.DELETE_LOADED_TORRENTS_SET, false); 
 		deleteTorrentsCheck.setSelected(deleteTorrentsSet);
+	}
+
+	private void setCheckBoxActions(final BooleanProperty preferencesChanged) {
+		downloadsDirectoryCheck.selectedProperty().addListener((obs, oldV, newV) -> onDownloadsDirectoryChecked(newV));
+		downloadsDirectoryCheck.setOnAction(e -> {
+			preferencesChanged.set(true);
+			onDownloadsDirectoryChecked(downloadsDirectoryCheck.isSelected());			
+		});
+		completedDirectoryCheck.selectedProperty().addListener((obs, oldV, newV) -> onCompletedDirectoryChecked(newV));
+		completedDirectoryCheck.setOnAction(e -> {
+			preferencesChanged.set(true);
+			onCompletedDirectoryChecked(completedDirectoryCheck.isSelected());			
+		});
+		storeTorrentsCheck.selectedProperty().addListener((obs, oldV, newV) -> onStoreTorrentsChecked(newV));
+		storeTorrentsCheck.setOnAction(e -> {
+			preferencesChanged.set(true);
+			onStoreTorrentsChecked(storeTorrentsCheck.isSelected());
+		});
+		moveTorrentsCheck.selectedProperty().addListener((obs, oldV, newV) -> onMoveTorrentsChecked(newV));
+		moveTorrentsCheck.setOnAction(e -> {
+			preferencesChanged.set(true);
+			onMoveTorrentsChecked(moveTorrentsCheck.isSelected());			
+		});
+		loadTorrentsCheck.selectedProperty().addListener((obs, oldV, newV) -> onLoadTorrentsChecked(newV));
+		loadTorrentsCheck.setOnAction(e -> {
+			preferencesChanged.set(true);
+			onLoadTorrentsChecked(loadTorrentsCheck.isSelected());			
+		});
+		moveFromDefaultCheck.setOnAction(e -> preferencesChanged.set(true));
+		deleteTorrentsCheck.setOnAction(e -> preferencesChanged.set(true));
+	}
+
+	private void addTextFieldListeners(final BooleanProperty preferencesChanged) {
+		storeTorrentsDirectoryField.textProperty().addListener((obs, oldV, newV) -> preferencesChanged.set(true));
+		loadTorrentsDirectoryField.textProperty().addListener((obs, oldV, newV) -> preferencesChanged.set(true));
+		moveTorrentsDirectoryField.textProperty().addListener((obs, oldV, newV) -> preferencesChanged.set(true));
+		completedDirectoryField.textProperty().addListener((obs, oldV, newV) -> preferencesChanged.set(true));
+		downloadDirectoryField.textProperty().addListener((obs, oldV, newV) -> preferencesChanged.set(true));
+		keyStoreLocationField.textProperty().addListener((obs, oldV, newV) -> preferencesChanged.set(true));
+	}
+
+	private void setButtonActions() {
+		browseLoadTorrentsDirectoryButton.setOnAction(e -> onBrowseForPath(loadTorrentsDirectoryField));			
+		browseStoreTorrentsDirectoryButton.setOnAction(e -> onBrowseForPath(storeTorrentsDirectoryField));		
+		browseMoveTorrentsDirectoryButton.setOnAction(e -> onBrowseForPath(moveTorrentsDirectoryField));					
+		browseCompletedDirectoryButton.setOnAction(e -> onBrowseForPath(completedDirectoryField));					
+		browseDownloadDirectoryButton.setOnAction(e -> onBrowseForPath(downloadDirectoryField));		
+		browseKeyStoreButton.setOnAction(e -> onBrowseForPath(keyStoreLocationField));
+	}
+
+	private void applyTextValues() {
+		completedDirectoryField.setText(ApplicationPreferences.getProperty(PathProperties.COMPLETED_DOWNLOADS, null));
+		moveTorrentsDirectoryField.setText(ApplicationPreferences.getProperty(PathProperties.COMPLETED_TORRENTS, null));
+		keyStoreLocationField.setText(ApplicationPreferences.getProperty(PathProperties.KEY_STORE, System.getProperty("user.home")));
+		loadTorrentsDirectoryField.setText(ApplicationPreferences.getProperty(PathProperties.LOAD_TORRENTS, null));
+		downloadDirectoryField.setText(ApplicationPreferences.getProperty(PathProperties.NEW_DOWNLOADS, null));
+		storeTorrentsDirectoryField.setText(ApplicationPreferences.getProperty(PathProperties.NEW_TORRENTS,
+				PathProperties.DEFAULT_STORE_TORRENTS_PATH));
+	}
+
+	private void disableAll() {
+		loadTorrentsDirectoryField.setDisable(true);
+		storeTorrentsDirectoryField.setDisable(true);
+		moveTorrentsDirectoryField.setDisable(true);
+		completedDirectoryField.setDisable(true);
+		downloadDirectoryField.setDisable(true);		
+		
+		browseLoadTorrentsDirectoryButton.setDisable(true);
+		browseStoreTorrentsDirectoryButton.setDisable(true);
+		browseMoveTorrentsDirectoryButton.setDisable(true);
+		browseCompletedDirectoryButton.setDisable(true);
+		browseDownloadDirectoryButton.setDisable(true);
+		
+		moveFromDefaultCheck.setDisable(true);
+		deleteTorrentsCheck.setDisable(true);
 	}
 	
 	private void onBrowseForPath(final TextField targetPathField) {
@@ -257,13 +275,13 @@ public final class DirectoriesContentPane implements CategoryContentPane {
 		
 		//Key store directory				
 		final HBox keyStorePane = new HBox();
-		keyStorePane.getStyleClass().add("layout-horizontal-spacing");
+		keyStorePane.getStyleClass().add(GuiProperties.HORIZONTAL_LAYOUT_SPACING);
 		keyStorePane.getChildren().addAll(keyStoreLocationField, browseKeyStoreButton);
 												
 		HBox.setHgrow(keyStoreLocationField, Priority.ALWAYS);
 		
 		final VBox content = new VBox();
-		content.getStyleClass().add("layout-vertical-spacing");		
+		content.getStyleClass().add(GuiProperties.VERTICAL_LAYOUT_SPACING);		
 		content.getChildren().addAll(
 				GuiUtils.applyBorder(downloadDirectoryPane, "Location of Downloaded Files", BorderType.DEFAULT_WINDOW_BORDER),
 				GuiUtils.applyBorder(torrentDirectoryPane, "Location of .torrents", BorderType.DEFAULT_WINDOW_BORDER),
@@ -280,13 +298,13 @@ public final class DirectoriesContentPane implements CategoryContentPane {
 	private VBox buildTorrentDirectoryPane() {
 		final HBox browseStoreTorrentDirectoryPane = new HBox();
 		browseStoreTorrentDirectoryPane.getStyleClass().addAll(
-				"option-category-indentation", "layout-horizontal-spacing");
+				GuiProperties.OPTION_CATEGORY_INDENTATION, GuiProperties.HORIZONTAL_LAYOUT_SPACING);
 		browseStoreTorrentDirectoryPane.getChildren().addAll(storeTorrentsDirectoryField, 
 				browseStoreTorrentsDirectoryButton);
 		
 		final HBox browseMoveTorrentDirectoryPane = new HBox();
 		browseMoveTorrentDirectoryPane.getStyleClass().addAll(
-				"option-category-indentation", "layout-horizontal-spacing");
+				GuiProperties.OPTION_CATEGORY_INDENTATION, GuiProperties.HORIZONTAL_LAYOUT_SPACING);
 		browseMoveTorrentDirectoryPane.getChildren().addAll(moveTorrentsDirectoryField, 
 				browseMoveTorrentsDirectoryButton);
 		
@@ -297,7 +315,7 @@ public final class DirectoriesContentPane implements CategoryContentPane {
 		
 		final HBox browseLoadTorrentDirectoryPane = new HBox();
 		browseLoadTorrentDirectoryPane.getStyleClass().addAll(
-				"option-category-indentation", "layout-horizontal-spacing");
+				GuiProperties.OPTION_CATEGORY_INDENTATION, GuiProperties.HORIZONTAL_LAYOUT_SPACING);
 		browseLoadTorrentDirectoryPane.getChildren().addAll(loadTorrentsDirectoryField, 
 				browseLoadTorrentsDirectoryButton);
 		
@@ -306,7 +324,7 @@ public final class DirectoriesContentPane implements CategoryContentPane {
 		HBox.setHgrow(loadTorrentsDirectoryField, Priority.ALWAYS);
 		
 		final VBox torrentDirectoryPane = new VBox();
-		torrentDirectoryPane.getStyleClass().add("layout-vertical-spacing");
+		torrentDirectoryPane.getStyleClass().add(GuiProperties.VERTICAL_LAYOUT_SPACING);
 		torrentDirectoryPane.getChildren().addAll(storeTorrentsCheck, browseStoreTorrentDirectoryPane,
 				moveTorrentsCheck, browseMoveTorrentDirectoryPane, loadTorrentsPane, 
 				browseLoadTorrentDirectoryPane);
@@ -317,13 +335,13 @@ public final class DirectoriesContentPane implements CategoryContentPane {
 	private VBox buildDownloadDirectoryPane() {
 		final HBox browseDownloadDirectoryPane = new HBox();
 		browseDownloadDirectoryPane.getStyleClass().addAll(
-				"option-category-indentation", "layout-horizontal-spacing");
+				GuiProperties.OPTION_CATEGORY_INDENTATION, GuiProperties.HORIZONTAL_LAYOUT_SPACING);
 		browseDownloadDirectoryPane.getChildren().addAll(downloadDirectoryField, 
 				browseDownloadDirectoryButton);
 		
 		final HBox browseCompletedDirectoryPane = new HBox();
 		browseCompletedDirectoryPane.getStyleClass().addAll(
-				"option-category-indentation", "layout-horizontal-spacing");
+				GuiProperties.OPTION_CATEGORY_INDENTATION, GuiProperties.HORIZONTAL_LAYOUT_SPACING);
 		browseCompletedDirectoryPane.getChildren().addAll(completedDirectoryField, 
 				browseCompletedDirectoryButton);	
 		
@@ -331,7 +349,7 @@ public final class DirectoriesContentPane implements CategoryContentPane {
 		HBox.setHgrow(downloadDirectoryField, Priority.ALWAYS);
 		
 		final VBox downloadDirectoryPane = new VBox();
-		downloadDirectoryPane.getStyleClass().add("layout-vertical-spacing");
+		downloadDirectoryPane.getStyleClass().add(GuiProperties.VERTICAL_LAYOUT_SPACING);
 		downloadDirectoryPane.getChildren().addAll(downloadsDirectoryCheck, browseDownloadDirectoryPane,
 				completedDirectoryCheck, browseCompletedDirectoryPane, moveFromDefaultCheck);
 		
