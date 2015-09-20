@@ -20,9 +20,9 @@
 
 package org.matic.torrent.codec;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 /**
  * A dictionary encoded as d<contents>e. The elements of the dictionary are
@@ -40,7 +40,8 @@ public final class BinaryEncodedDictionary implements BinaryEncodable {
 	private final Map<BinaryEncodedString, BinaryEncodable> map;
 	
 	public BinaryEncodedDictionary() {
-		map = new HashMap<>();
+		//Map keys should be sorted in lexicographical order, thus we're using a TreeMap
+		map = new TreeMap<>();
 	}
 	
 	public final void put(final BinaryEncodedString key, final BinaryEncodable value) {
@@ -86,6 +87,21 @@ public final class BinaryEncodedDictionary implements BinaryEncodable {
 
 	@Override
 	public final String toString() {
-		return "BinaryEncodedDictionary [map=" + map + "]";
+		return map.toString();
+	}
+
+	@Override
+	public String toExportableValue() {
+		final StringBuilder value = new StringBuilder();
+		value.append(BEGIN_TOKEN);
+		
+		map.entrySet().forEach(entry -> {
+			value.append(entry.getKey().toExportableValue());
+			value.append(entry.getValue().toExportableValue());
+		});
+		
+		value.append(END_TOKEN);
+		
+		return value.toString();
 	}	
 }

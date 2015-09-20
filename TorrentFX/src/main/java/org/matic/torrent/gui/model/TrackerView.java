@@ -20,14 +20,15 @@
 
 package org.matic.torrent.gui.model;
 
+import org.matic.torrent.queue.QueuedTorrent;
+import org.matic.torrent.tracking.beans.TrackableSessionViewBean;
+
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.LongProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleLongProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
-
-import org.matic.torrent.queue.QueuedTorrent;
 
 public final class TrackerView {
 
@@ -40,34 +41,56 @@ public final class TrackerView {
 
 	private final StringProperty status = new SimpleStringProperty();
 	private final StringProperty trackerName;
+	
+	private final TrackableSessionViewBean trackerViewBean;
 
-	private final QueuedTorrent torrent;
 	private long lastUserRequestedUpdate = 0;
 	private long lastTrackerResponse = 0;
 
-	public TrackerView(final String trackerName, final QueuedTorrent torrent) {
-		this.trackerName = new SimpleStringProperty(trackerName);
-		this.torrent = torrent;
+	public TrackerView(final TrackableSessionViewBean trackerViewBean) {
+		this.trackerViewBean = trackerViewBean;
+		this.trackerName = new SimpleStringProperty(trackerViewBean.getName());
+	}
+	
+	public final void update() {
+		trackerViewBean.updateValues();
+		this.lastTrackerResponse = trackerViewBean.getLastTrackerResponse();
+		setTorrentState(trackerViewBean.getTorrent().getProperties().getState());
+		status.set(trackerViewBean.getStatus());
+		nextUpdate.set(trackerViewBean.getNextUpdate());
+		interval.set(trackerViewBean.getInterval());
+		minInterval.set(trackerViewBean.getMinInterval());		
+		downloaded.set(trackerViewBean.getDownloaded());
+		leechers.set(trackerViewBean.getLeechers());
+		seeds.set(trackerViewBean.getSeeders());		
+	}
+	
+	public final void setLastTrackerResponse(final long lastTrackerResponse) {
+		this.lastTrackerResponse = lastTrackerResponse;
+	}
+	
+	public void setStatus(final String status) {
+		this.status.set(status);
 	}
 	
 	public final long getLastUserRequestedUpdate() {
 		return lastUserRequestedUpdate;
 	}
-
+	
 	public final void setLastUserRequestedUpdate(final long lastUserRequestedUpdate) {
 		this.lastUserRequestedUpdate = lastUserRequestedUpdate;
 	}
 
 	public QueuedTorrent getTorrent() {
-		return torrent;
+		return trackerViewBean.getTorrent();
 	}
 		
 	public QueuedTorrent.State getTorrentState() {
-		return torrent.getState();
+		return trackerViewBean.getTorrent().getProperties().getState();
 	}
-
+	
 	public void setTorrentState(final QueuedTorrent.State torrentState) {
-		torrent.setState(torrentState);
+		this.trackerViewBean.getTorrent().getProperties().setState(torrentState);
 	}
 
 	public String getStatus() {
@@ -78,16 +101,8 @@ public final class TrackerView {
 		return status;
 	}
 
-	public void setStatus(final String status) {
-		this.status.set(status);
-	}
-
 	public long getLastTrackerResponse() {
 		return lastTrackerResponse;
-	}
-
-	public void setLastTrackerResponse(final long lastTrackerResponse) {
-		this.lastTrackerResponse = lastTrackerResponse;
 	}
 
 	public final long getMinInterval() {
@@ -155,7 +170,7 @@ public final class TrackerView {
 	}
 
 	@Override
-	public boolean equals(Object obj) {
+	public boolean equals(final Object obj) {
 		if (this == obj)
 			return true;
 		if (obj == null)
@@ -173,9 +188,12 @@ public final class TrackerView {
 
 	@Override
 	public String toString() {
-		return "TrackerView [downloaded=" + downloaded + ", leechers=" + leechers + ", seeds=" + seeds
-				+ ", minInterval=" + minInterval + ", nextUpdate=" + nextUpdate + ", interval=" + interval + ", status="
-				+ status + ", trackerName=" + trackerName + ", torrentState=" + torrent.getState() + ", lastTrackerResponse="
-				+ lastTrackerResponse + "]";
-	}	
+		return "TrackerView [downloaded=" + downloaded + ", leechers="
+				+ leechers + ", seeds=" + seeds + ", minInterval="
+				+ minInterval + ", nextUpdate=" + nextUpdate + ", interval="
+				+ interval + ", status=" + status + ", trackerName="
+				+ trackerName + ", trackerViewBean=" + trackerViewBean
+				+ ", lastUserRequestedUpdate=" + lastUserRequestedUpdate
+				+ ", lastTrackerResponse=" + lastTrackerResponse + "]";
+	}
 }

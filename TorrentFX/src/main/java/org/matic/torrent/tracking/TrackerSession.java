@@ -23,6 +23,7 @@ package org.matic.torrent.tracking;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.peer.ClientProperties;
 import org.matic.torrent.queue.QueuedTorrent;
 
@@ -137,6 +138,10 @@ public final class TrackerSession {
 		return key;
 	}
 	
+	public InfoHash getInfoHash() {
+		return queuedTorrent.getMetaData().getInfoHash();
+	}
+	
 	public QueuedTorrent getTorrent() {
 		return queuedTorrent;
 	}
@@ -197,6 +202,6 @@ public final class TrackerSession {
 	@Override
 	public String toString() {
 		return "TrackerSession [infoHash=" + queuedTorrent + ", tracker=" + tracker
-				+ "]";
+				+ ", downloaded = " + downloaded + ", leechers = " + leechers + ", seeders = " + seeders + "]";
 	}
 }

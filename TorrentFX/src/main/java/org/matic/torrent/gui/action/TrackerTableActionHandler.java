@@ -51,12 +51,8 @@ public class TrackerTableActionHandler {
 	 */
 	public final void onTrackersAdded(final Collection<String> urls, final TrackerManager trackerManager,
 			final QueuedTorrent torrent, final TrackerTable trackerTable) {
-		urls.forEach(url -> {
-			final boolean added = trackerManager.addTracker(url, torrent);
-			if(added) {
-				trackerTable.addTracker(new TrackerView(url, torrent));
-			}
-		});
+		urls.forEach(url -> trackerTable.addTracker(new TrackerView(
+				trackerManager.addTracker(url, torrent))));
 	}
 
 	/**

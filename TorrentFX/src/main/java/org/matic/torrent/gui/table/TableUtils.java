@@ -195,7 +195,7 @@ public final class TableUtils {
 	 * @param columnResizer Resetter of columns' widths and order
 	 */
 	public static <T> void addTableHeaderContextMenus(final ObservableList<? extends TableColumnBase<T, ?>> columns,
-			final TableState<T> tableState, final BiConsumer<String, Double> columnResizer) {			
+			final TableState<T> tableState, final BiConsumer<String, Double> columnResizer) {		
 		final ContextMenu headerContextMenu = new ContextMenu();			
 		final Map<String, CheckMenuItem> menuItemMapping = new HashMap<>();
 		
@@ -204,7 +204,10 @@ public final class TableUtils {
 			columnVisibleMenuItem.setId(c.getId());
 			columnVisibleMenuItem.setSelected(true);
 			menuItemMapping.put(c.getId(), columnVisibleMenuItem);
+			
+			//TODO: Fix workaround (listener) for https://bugs.openjdk.java.net/browse/JDK-8136468 (jre 8u60)
 			c.visibleProperty().bind(columnVisibleMenuItem.selectedProperty());			
+			
 			c.setContextMenu(headerContextMenu);			
 			
 			columnVisibleMenuItem.selectedProperty().addListener((obs, oldV, selected) -> {				
@@ -238,7 +241,7 @@ public final class TableUtils {
 		final List<CheckMenuItem> checkMenuItems = headerContextMenu.getItems().stream().map(
 				mi -> mi instanceof CheckMenuItem? (CheckMenuItem)mi : null).filter(Objects::nonNull).collect(Collectors.toList());
 		
-		final MenuItem resetHeadersMenuItem = new MenuItem("Reset");
+		final MenuItem resetHeadersMenuItem = new MenuItem("_Reset");
 		resetHeadersMenuItem.setOnAction(e -> TableUtils.resetTableHeader(columns, checkMenuItems, tableState, columnResizer));		
 		headerContextMenu.getItems().addAll(new SeparatorMenuItem(), resetHeadersMenuItem);
 	}

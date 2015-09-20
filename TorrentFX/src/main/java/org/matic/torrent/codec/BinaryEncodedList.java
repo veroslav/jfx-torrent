@@ -85,6 +85,17 @@ public final class BinaryEncodedList implements BinaryEncodable {
 
 	@Override
 	public final String toString() {
-		return "BinaryEncodedList [list=" + list + "]";
+		return list.toString();
+	}
+
+	@Override
+	public String toExportableValue() {
+		final StringBuilder value = new StringBuilder();
+		
+		value.append(BEGIN_TOKEN);
+		list.forEach(e -> value.append(e.toExportableValue()));
+		value.append(END_TOKEN);
+		
+		return value.toString();
 	}	
 }

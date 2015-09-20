@@ -52,9 +52,9 @@ public abstract class Tracker {
 	private static final String STATUS_CONNECTION_TIMEOUT_MESSAGE = "connect timeout";
 	private static final String STATUS_TRACKER_ERROR_MESSAGE = "tracker error";
 	private static final String STATUS_INVALID_URL_MESSAGE = "invalid url";
-	private static final String STATUS_UPDATING_MESSAGE = "updating...";
+	public static final String STATUS_UPDATING_MESSAGE = "updating...";
 	private static final String STATUS_SCRAPE_OK_MESSAGE = "scrape ok";
-	private static final String STATUS_WORKING_MESSAGE = "working";
+	public static final String STATUS_WORKING_MESSAGE = "working";
 	
 	protected static final int NUM_WANTED_PEERS = 200;
 	

@@ -95,6 +95,13 @@ public class TrackerTable {
 		trackerTable.getItems().addAll(trackerViews);
 	}
 	
+	/**
+	 * Update tracker view beans with the latest tracker statistics
+	 */
+	public final void updateContent() {
+		trackerTable.getItems().forEach(TrackerView::update);
+	}
+	
 	public final boolean addTracker(final TrackerView trackerView) {
 		final ObservableList<TrackerView> tableItems = trackerTable.getItems(); 
 		if(tableItems.contains(trackerView)) {
@@ -105,10 +112,6 @@ public class TrackerTable {
 	
 	public final boolean removeTracker(final TrackerView trackerView) {
 		return trackerTable.getItems().remove(trackerView);
-	}
-	
-	public final List<TrackerView> getTrackerViews() {
-		return trackerTable.getItems();
 	}
 	
 	public void wrapWith(final ScrollPane wrapper) {
@@ -137,7 +140,7 @@ public class TrackerTable {
 	 * @param handler Target handler
 	 */
 	public final void onTrackerUpdateRequested(final Consumer<Collection<TrackerView>> handler) {
-		updateTrackerMenuItem.setOnAction(e -> {
+		updateTrackerMenuItem.setOnAction(e -> {			
 			final Collection<TrackerView> updatableTrackers =
 					getUpdatableTrackers(trackerTable.getSelectionModel().getSelectedItems());
 			handler.accept(updatableTrackers);
@@ -188,16 +191,16 @@ public class TrackerTable {
 		trackerTable.setTableMenuButtonVisible(false);
 		
 		addTrackerMenuItem.setId(ADD_TRACKER);
+	}
+	
+	private void createContextMenu() {		
+		final ContextMenu contextMenu = new ContextMenu();
 		
 		removeTrackerMenuItem.setId(REMOVE_TRACKER);
 		removeTrackerMenuItem.setDisable(true);
 		
 		updateTrackerMenuItem.setId(UPDATE_TRACKER);
-		updateTrackerMenuItem.setDisable(true);		
-	}
-	
-	private void createContextMenu() {		
-		final ContextMenu contextMenu = new ContextMenu();
+		updateTrackerMenuItem.setDisable(true);
 		
 		final CheckMenuItem enableDhtMenuItem = new CheckMenuItem(ENABLE_DHT);
 		enableDhtMenuItem.setId(ENABLE_DHT);
@@ -242,10 +245,9 @@ public class TrackerTable {
 		});
 	}
 	
-	private Collection<TrackerView> getUpdatableTrackers(final Collection<TrackerView> selectedRows) {		
+	private Collection<TrackerView> getUpdatableTrackers(final Collection<TrackerView> selectedRows) {
 		return selectedRows.stream().filter(tv -> {
 			final long currentTime = System.currentTimeMillis();
-			
 			return tv.getTorrentState() == QueuedTorrent.State.ACTIVE && tv.getNextUpdate() > 0 &&
 					tv.getStatus().equals(Tracker.getStatusMessage(Tracker.Status.WORKING)) &&
 					((currentTime - tv.getLastTrackerResponse()) >= tv.getMinInterval()) &&
@@ -278,26 +280,27 @@ public class TrackerTable {
 	
 	private LinkedHashMap<String, TableColumn<TrackerView, ?>> buildColumnMappings() {
 		final Function<TrackerView, String> updateInValueConverter = tv -> {			
-			if(tv.getTorrentState() == QueuedTorrent.State.STOPPED) {
+			if(tv.getTorrent().getProperties().getState() == QueuedTorrent.State.STOPPED) {
 				return "";
 			}
-			final long nextUpdateValue = tv.getNextUpdate();
-			if(nextUpdateValue < 1000) {
-				return Tracker.getStatusMessage(Tracker.Status.UPDATING);					
-			}
+			final long nextUpdateValue = tv.getNextUpdate();			
+			
+			if(nextUpdateValue < 1000 || (nextUpdateValue > 0 && "".equals(tv.getStatus()))) {
+				return Tracker.STATUS_UPDATING_MESSAGE;					
+			}		
 			else {
 				return UnitConverter.formatMillisToTime(nextUpdateValue);
-			}			
+			}
 		}; 		
 		
 		final Function<TrackerView, String> intervalValueConverter = tv -> {
 			final long interval = tv.getInterval(); 
-			return (tv.getTorrentState() != QueuedTorrent.State.STOPPED) && (interval > 0)?
+			return (tv.getTorrent().getProperties().getState() != QueuedTorrent.State.STOPPED) && (interval > 0)?
 					UnitConverter.formatMillisToTime(interval) : "";
 		};
 		
 		final Function<TrackerView, String> minIntervalValueConverter = tv -> {
-			return tv.getTorrentState() != QueuedTorrent.State.STOPPED? 
+			return tv.getTorrent().getProperties().getState() != QueuedTorrent.State.STOPPED? 
 					UnitConverter.formatMillisToTime(tv.getMinInterval()) : "";
 		};
 		

@@ -29,13 +29,7 @@ import java.security.MessageDigest;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.matic.torrent.codec.BinaryDecoder;
-import org.matic.torrent.codec.BinaryDecoderException;
-import org.matic.torrent.codec.BinaryEncodedDictionary;
-import org.matic.torrent.codec.BinaryEncodedInteger;
-import org.matic.torrent.codec.BinaryEncodedList;
-import org.matic.torrent.codec.BinaryEncodedString;
-import org.matic.torrent.codec.BinaryEncodingKeyNames;
+import org.matic.torrent.exception.BinaryDecoderException;
 
 public final class BinaryDecoderTest {
 	
@@ -169,21 +163,5 @@ public final class BinaryDecoderTest {
 	public final void testIncorrectStringLength() throws Exception {
 		final String metaData = "d18:key5:valuee";
 		unitUnderTest.decode(new ByteArrayInputStream(metaData.getBytes()));
-	}
-
-	@Test
-	public final void testStringEncoding() throws Exception {
-		final String metaData = "d8:encoding6:UTF-166:pieces6:blablae";
-		
-		final BinaryEncodedDictionary contents = unitUnderTest.decode(
-				new ByteArrayInputStream(metaData.getBytes()));
-		
-		final BinaryEncodedString encodingValue = (BinaryEncodedString)(contents.get(
-				new BinaryEncodedString("encoding".getBytes())));
-		final BinaryEncodedString piecesValue = (BinaryEncodedString)(contents.get(
-				new BinaryEncodedString("pieces".getBytes())));
-		
-		assertEquals("UTF-8", encodingValue.getEncoding());
-		assertEquals("UTF-16", piecesValue.getEncoding());
 	}
 }

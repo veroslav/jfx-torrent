@@ -20,71 +20,34 @@
 
 package org.matic.torrent.queue;
 
-import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.SimpleObjectProperty;
-
-import javax.xml.bind.DatatypeConverter;
-
-import org.matic.torrent.hash.InfoHash;
-
-public final class QueuedTorrent implements Comparable<QueuedTorrent> {
-
+public final class QueuedTorrent {
+	
 	public enum State {
 		ACTIVE, STOPPED, ERROR
 	}
-	
-	private final InfoHash infoHash;
-	
-	private final ObjectProperty<State> state;	
-	
-	//TODO: Move priority handling to QueuedTorrentManager
-	private int priority;
 
-	public QueuedTorrent(final InfoHash infoHash, final int priority, final State state) {
-		this.state = new SimpleObjectProperty<>(state);
-		this.infoHash = infoHash;
-		this.priority = priority;
+	private final QueuedTorrentMetaData metaData;
+	private final QueuedTorrentProgress properties;
+	
+	public QueuedTorrent(final QueuedTorrentMetaData metaData, final QueuedTorrentProgress properties) {		
+		this.metaData = metaData;
+		this.properties = properties;		
 	}
 	
-	public void setState(final State state) {
-		this.state.set(state);
+	public final QueuedTorrentMetaData getMetaData() {
+		return metaData;
 	}
 	
-	public State getState() {
-		return state.get();
-	}
-	
-	public ObjectProperty<State> stateProperty() {
-		return state;
-	}
-	
-	public InfoHash getInfoHash() {
-		return infoHash;
-	}
-	
-	public final int getPriority() {
-		return priority;
-	}
-	
-	@Override
-	public int compareTo(final QueuedTorrent other) {
-		if(priority < other.priority) {
-			return -1;
-		}
-		if(priority > other.priority) {
-			return 1;
-		}
-		return DatatypeConverter.printHexBinary(infoHash.getBytes())
-				.compareTo(DatatypeConverter.printHexBinary(other.infoHash.getBytes()));
+	public final QueuedTorrentProgress getProperties() {
+		return properties;
 	}
 
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result
-				+ ((infoHash == null) ? 0 : infoHash.hashCode());
-		result = prime * result + priority;		
+		result = prime * result + ((metaData == null) ? 0 : metaData.hashCode());
+		result = prime * result + ((properties == null) ? 0 : properties.hashCode());
 		return result;
 	}
 
@@ -97,11 +60,16 @@ public final class QueuedTorrent implements Comparable<QueuedTorrent> {
 		if (getClass() != obj.getClass())
 			return false;
 		QueuedTorrent other = (QueuedTorrent) obj;
-		if (infoHash == null) {
-			if (other.infoHash != null)
+		if (metaData == null) {
+			if (other.metaData != null)
 				return false;
-		} else if (!infoHash.equals(other.infoHash))
+		} else if (!metaData.equals(other.metaData))
 			return false;		
+		if (properties == null) {
+			if (other.properties != null)
+				return false;
+		} else if (!properties.equals(other.properties))
+			return false;
 		return true;
-	}
+	}	
 }

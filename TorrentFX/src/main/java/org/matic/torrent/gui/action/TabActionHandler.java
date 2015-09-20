@@ -97,7 +97,7 @@ public class TabActionHandler {
 			return tabMenuItem;
 		}).collect(Collectors.toList()));	
 		
-		final MenuItem resetTabsMenuItem = new MenuItem("Reset");
+		final MenuItem resetTabsMenuItem = new MenuItem("_Reset");
 		final List<CheckMenuItem> checkMenuItems = tabHeaderContextMenu.getItems().stream().filter(
 				mi -> mi instanceof CheckMenuItem).map(mi -> (CheckMenuItem)mi).collect(Collectors.toList());
 		resetTabsMenuItem.setOnAction(e -> onResetTabs(checkMenuItems, tabPane, tabMap));

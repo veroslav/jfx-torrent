@@ -23,7 +23,6 @@ package org.matic.torrent.gui.window;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,27 +32,28 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.controlsfx.control.StatusBar;
-import org.matic.torrent.codec.BinaryEncodedDictionary;
-import org.matic.torrent.codec.BinaryEncodedList;
-import org.matic.torrent.codec.BinaryEncodedString;
-import org.matic.torrent.codec.BinaryEncodingKeyNames;
 import org.matic.torrent.gui.action.FileActionHandler;
 import org.matic.torrent.gui.action.TabActionHandler;
 import org.matic.torrent.gui.action.TorrentJobActionHandler;
 import org.matic.torrent.gui.action.TrackerTableActionHandler;
 import org.matic.torrent.gui.action.WindowActionHandler;
 import org.matic.torrent.gui.image.ImageUtils;
+import org.matic.torrent.gui.model.TorrentFileEntry;
 import org.matic.torrent.gui.model.TorrentJobView;
 import org.matic.torrent.gui.model.TrackerView;
 import org.matic.torrent.gui.table.TorrentJobTable;
 import org.matic.torrent.gui.table.TrackerTable;
 import org.matic.torrent.gui.tree.TorrentContentTree;
 import org.matic.torrent.hash.InfoHash;
+import org.matic.torrent.io.StateKeeper;
+import org.matic.torrent.peer.ClientProperties;
 import org.matic.torrent.preferences.ApplicationPreferences;
 import org.matic.torrent.preferences.GuiProperties;
 import org.matic.torrent.queue.QueuedTorrent;
 import org.matic.torrent.queue.QueuedTorrentManager;
+import org.matic.torrent.queue.QueuedTorrentMetaData;
 import org.matic.torrent.tracking.TrackerManager;
+import org.matic.torrent.tracking.beans.TrackerSessionViewBean;
 import org.matic.torrent.utils.PeriodicTask;
 import org.matic.torrent.utils.PeriodicTaskRunner;
 
@@ -226,10 +226,13 @@ public final class ApplicationWindow {
 			trackerTableActionHandler.onTrackerUpdate(views, trackerManager));
 		trackerTable.onTrackersAdded(urls -> trackerTableActionHandler.onTrackersAdded(urls, trackerManager,
 			torrentJobTable.getSelectedJobs().get(0).getQueuedTorrent(), trackerTable), stage,
-			torrentJobTable.bindOnEmpty());		
+			torrentJobTable.bindOnEmpty());
+		
+		loadStoredTorrents();
+		
 		stage.setScene(initScene(mainPane));
 		stage.setOnCloseRequest(this::onShutdown);		
-		stage.setTitle("jfxTorrent");        		
+		stage.setTitle(ClientProperties.CLIENT_NAME);        		
 		stage.show();
 		
 		initPeriodicTaskRunner();
@@ -309,10 +312,9 @@ public final class ApplicationWindow {
 		if(!selectedTorrents.isEmpty()) {
 			//Render Detailed Info pane contents only if it is visible
 			if(showDetailedInfoMenuItem.isSelected()) {
-				//Render tracker statistics if Trackers tab is selected
+				//Update and render tracker statistics if Trackers tab is selected
 				if(detailsTabMap.get(GuiProperties.TRACKERS_TAB_ID).isSelected()) {					
-					trackerManager.trackerSnapshot(selectedTorrents.get(0).getQueuedTorrent(),
-						trackerTable.getTrackerViews());
+					trackerTable.updateContent();
 					trackerTable.sort();
 				}
 			}
@@ -699,55 +701,52 @@ public final class ApplicationWindow {
 		return helpMenu;
 	}
 	
-	private void onAddTorrent(final TorrentOptions torrentOptions) {		
-		if(torrentOptions != null) {
-			final InfoHash torrentInfoHash = torrentOptions.getInfoHash();
-			if(queuedTorrentManager.find(torrentInfoHash).isPresent()) {
-				final Alert existingTorrentAlert = new Alert(AlertType.ERROR,
-						"The torrent already exists.\n" +
-								"Would you like to load trackers from it?",
-								ButtonType.OK, ButtonType.CANCEL);
-				existingTorrentAlert.setTitle("Existing torrent file");
-				existingTorrentAlert.setHeaderText(null);
-				existingTorrentAlert.showAndWait();			
-				return;
-			}
-			
-			final BinaryEncodedDictionary metaData = torrentOptions.getMetaData();
-			final BinaryEncodedString announceUrl = (BinaryEncodedString)metaData.get(
-					BinaryEncodingKeyNames.KEY_ANNOUNCE);
-			final BinaryEncodedList announceList = (BinaryEncodedList)metaData.get(
-					BinaryEncodingKeyNames.KEY_ANNOUNCE_LIST);
-			
-			final Set<String> trackerUrls = new HashSet<>();
-			
-			if(announceUrl != null) {
-				final String trackerUrl = announceUrl.toString(); 
-				trackerUrls.add(trackerUrl);
-			}
-			if(announceList != null) {
-				announceList.stream().flatMap(l -> ((BinaryEncodedList)l).stream())
-					.forEach(url -> trackerUrls.add(url.toString()));
-			}
-			
-			final InfoHash infoHash = torrentOptions.getInfoHash();
-			final QueuedTorrent.State torrentStatus = torrentOptions.isStartTorrent()? 
-					QueuedTorrent.State.ACTIVE : QueuedTorrent.State.STOPPED;
-			final QueuedTorrent queuedTorrent = new QueuedTorrent(infoHash, 1, torrentStatus);
-			
-			final TorrentJobView jobView = new TorrentJobView(queuedTorrent, torrentOptions.getName(), 
-					torrentOptions.getTorrentContents());
-			
-			final ObservableList<TrackerView> trackerViews = FXCollections.observableArrayList(
-					trackerUrls.stream().map(t -> new TrackerView(t, queuedTorrent)).collect(Collectors.toList()));
-			
-			queuedTorrentManager.add(queuedTorrent, trackerUrls);
-			trackerViewMappings.put(queuedTorrent, trackerViews);
-			trackerTable.setContent(trackerViews);
-			torrentJobTable.addJob(jobView);						
-			
-			updateGui();
+	private void onAddTorrent(final AddedTorrentOptions torrentOptions) {
+		if(torrentOptions == null) {
+			return;
 		}
+		
+		final QueuedTorrentMetaData metaData = torrentOptions.getMetaData();
+		final InfoHash infoHash = metaData.getInfoHash();
+		if(queuedTorrentManager.find(infoHash).isPresent()) {
+			final Alert existingTorrentAlert = new Alert(AlertType.ERROR,
+					"The torrent already exists.\n" +
+							"Would you like to load trackers from it?",
+							ButtonType.OK, ButtonType.CANCEL);
+			existingTorrentAlert.setTitle("Existing torrent file");
+			existingTorrentAlert.setHeaderText(null);
+			existingTorrentAlert.showAndWait();			
+			return;
+		}
+
+		final QueuedTorrent queuedTorrent = new QueuedTorrent(metaData, torrentOptions.getProperties());
+		
+		final StateKeeper stateKeeper = new StateKeeper();
+		stateKeeper.store(queuedTorrent);
+		
+		loadTorrent(queuedTorrent, torrentOptions.getTorrentContents());
+		
+		updateGui();
+	}
+	
+	private void loadStoredTorrents() {
+		final StateKeeper stateKeeper = new StateKeeper();
+		final Set<QueuedTorrent> loadedTorrents = stateKeeper.loadAll();
+		
+		//TODO: Init torrent contents somehow and pass them instead of null
+		loadedTorrents.forEach(t -> loadTorrent(t, null));
+	}
+	
+	private void loadTorrent(final QueuedTorrent queuedTorrent, final TreeItem<TorrentFileEntry> contents) {
+		final TorrentJobView jobView = new TorrentJobView(queuedTorrent,
+				queuedTorrent.getProperties().getName(), contents);		
+		final Set<TrackerSessionViewBean> trackerSessionViewBeans = queuedTorrentManager.add(queuedTorrent);
+		final ObservableList<TrackerView> trackerViews = FXCollections.observableArrayList(
+				trackerSessionViewBeans.stream().map(TrackerView::new).collect(Collectors.toList()));
+					
+		trackerViewMappings.put(queuedTorrent, trackerViews);
+		trackerTable.setContent(trackerViews);
+		torrentJobTable.addJob(jobView);								
 	}
 	
 	private void onRemoveTorrent() {
@@ -761,6 +760,9 @@ public final class ApplicationWindow {
 			confirmDeleteAlert.setHeaderText(null);
 			final Optional<ButtonType> answer = confirmDeleteAlert.showAndWait();
 			if(answer.isPresent() && answer.get() == ButtonType.OK) {
+				
+				//TODO: Delete .torrent and .state
+				
 				selectedTorrentJobs.stream().map(
 						TorrentJobView::getQueuedTorrent).forEach(queuedTorrentManager::remove);
 				torrentJobTable.deleteJobs(selectedTorrentJobs);
@@ -786,10 +788,10 @@ public final class ApplicationWindow {
 			trackerTable.setContent(trackerViewMappings.get(selectedTorrentJob.getQueuedTorrent()));
 			updateGui();
 		}
-		toolbarButtonsMap.get(TOOLBAR_BUTTON_START_NAME).setDisable(
-				!torrentSelected || selectedTorrentJob.getQueuedTorrent().getState() == QueuedTorrent.State.ACTIVE);
-		toolbarButtonsMap.get(TOOLBAR_BUTTON_STOP_NAME).setDisable(
-				!torrentSelected || selectedTorrentJob.getQueuedTorrent().getState() == QueuedTorrent.State.STOPPED);
+		toolbarButtonsMap.get(TOOLBAR_BUTTON_START_NAME).setDisable(!torrentSelected ||
+				selectedTorrentJob.getQueuedTorrent().getProperties().getState() == QueuedTorrent.State.ACTIVE);
+		toolbarButtonsMap.get(TOOLBAR_BUTTON_STOP_NAME).setDisable(!torrentSelected ||
+				selectedTorrentJob.getQueuedTorrent().getProperties().getState() == QueuedTorrent.State.STOPPED);
 		
 		final Button removeButton = toolbarButtonsMap.get(TOOLBAR_BUTTON_REMOVE_NAME);	
 		final ImageView buttonImageView = (ImageView)removeButton.getGraphic();

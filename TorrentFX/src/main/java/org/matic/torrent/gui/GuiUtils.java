@@ -55,7 +55,7 @@ public final class GuiUtils {
 			break;
 		case ADD_NEW_TORRENT_BORDER:
 			border = border.outerPadding(10, 0, 10, 0).innerPadding(13, 10, 5, 8);
-			break;			
+			break;
 		}
 		
 		return border.buildAll();		

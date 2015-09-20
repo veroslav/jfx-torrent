@@ -19,42 +19,10 @@
 */
 package org.matic.torrent.tracking;
 
-import static org.easymock.EasyMock.*;
-
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-
-import javax.xml.bind.DatatypeConverter;
-
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.matic.torrent.hash.InfoHash;
-import org.matic.torrent.net.pwp.PwpPeer;
-import org.matic.torrent.net.udp.UdpConnectionManager;
-import org.matic.torrent.net.udp.UdpTrackerResponse;
-import org.matic.torrent.peer.ClientProperties;
-import org.matic.torrent.queue.QueuedTorrent;
-import org.matic.torrent.tracking.listeners.PeerFoundListener;
 
 public final class TrackerManagerTest {
 	
-	private final InfoHash infoHash = new InfoHash(DatatypeConverter.parseHexBinary("ABCDEF0123")); 
+	/*private final InfoHash infoHash = new InfoHash(DatatypeConverter.parseHexBinary("ABCDEF0123")); 
 	private final QueuedTorrent torrent = new QueuedTorrent(infoHash, 1, QueuedTorrent.State.ACTIVE);
 		
 	private UdpConnectionManager udpConnectionManagerMock = createMock(UdpConnectionManager.class);	
@@ -738,5 +706,5 @@ public final class TrackerManagerTest {
 		Assert.assertEquals(0, removedCount);
 		
 		verify(requestSchedulerMock, peerFoundListenerMock);
-	}
+	}*/
 }

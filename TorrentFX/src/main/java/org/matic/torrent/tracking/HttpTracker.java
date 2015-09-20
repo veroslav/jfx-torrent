@@ -42,13 +42,13 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.matic.torrent.codec.BinaryDecoder;
-import org.matic.torrent.codec.BinaryDecoderException;
 import org.matic.torrent.codec.BinaryEncodable;
 import org.matic.torrent.codec.BinaryEncodedDictionary;
 import org.matic.torrent.codec.BinaryEncodedInteger;
 import org.matic.torrent.codec.BinaryEncodedList;
 import org.matic.torrent.codec.BinaryEncodedString;
 import org.matic.torrent.codec.BinaryEncodingKeyNames;
+import org.matic.torrent.exception.BinaryDecoderException;
 import org.matic.torrent.hash.HashUtilities;
 import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.net.NetworkUtilities;
@@ -162,12 +162,12 @@ public final class HttpTracker extends Tracker {
 	@Override
 	protected final void announce(final AnnounceParameters announceParameters, final TrackerSession trackerSession) {		
 		final String requestUrl = buildAnnounceRequestUrl(announceParameters,
-				trackerSession.getTorrent().getInfoHash(), trackerSession.getKey());
+				trackerSession.getInfoHash(), trackerSession.getKey());
 		final TrackerResponse trackerResponse = requestUrl == null? new TrackerResponse(
 				TrackerResponse.Type.INVALID_URL, "Unsupported encoding") : sendRequest(requestUrl);
 				
 		final AnnounceResponse announceResponse = trackerResponse.getType() == TrackerResponse.Type.OK?
-				buildAnnounceResponse(trackerResponse.getResponseData(), trackerSession.getTorrent().getInfoHash()) :
+				buildAnnounceResponse(trackerResponse.getResponseData(), trackerSession.getInfoHash()) :
 					new AnnounceResponse(trackerResponse.getType(), trackerResponse.getMessage());
 		
 		if(trackerResponse.getType() == TrackerResponse.Type.OK) {
@@ -198,7 +198,7 @@ public final class HttpTracker extends Tracker {
 		result.append("?");
 		
 		result.append(Arrays.stream(trackerSessions).map(ts -> "info_hash=" + HashUtilities.urlEncodeBytes(
-				ts.getTorrent().getInfoHash().getBytes())).collect(Collectors.joining("&")));
+				ts.getInfoHash().getBytes())).collect(Collectors.joining("&")));
 
 		return result.toString();
 	}
@@ -251,7 +251,7 @@ public final class HttpTracker extends Tracker {
 	}
 	
 	//TODO: Add proxy support for the request
-	private TrackerResponse sendRequest(final String url) {							
+	private TrackerResponse sendRequest(final String url) {		
 		try {			
 			final URL targetUrl = new URL(url);
 			
@@ -317,7 +317,7 @@ public final class HttpTracker extends Tracker {
 		
 		Arrays.stream(trackerSessions).forEach(ts -> {
 			final BinaryEncodedDictionary scrapeInfo = (BinaryEncodedDictionary)files.get(
-					new BinaryEncodedString(ts.getTorrent().getInfoHash().getBytes()));
+					new BinaryEncodedString(ts.getInfoHash().getBytes()));
 			if(scrapeInfo != null) {
 				final BinaryEncodedInteger complete = (BinaryEncodedInteger)scrapeInfo.get(
 						BinaryEncodingKeyNames.KEY_COMPLETE);

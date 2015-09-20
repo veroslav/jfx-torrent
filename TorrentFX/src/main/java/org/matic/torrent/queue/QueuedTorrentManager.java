@@ -20,15 +20,19 @@
 
 package org.matic.torrent.queue;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.matic.torrent.hash.InfoHash;
+import org.matic.torrent.io.StateKeeper;
 import org.matic.torrent.tracking.Tracker;
 import org.matic.torrent.tracking.TrackerManager;
+import org.matic.torrent.tracking.beans.TrackerSessionViewBean;
 
 import javafx.beans.value.ChangeListener;
 
@@ -40,26 +44,30 @@ public final class QueuedTorrentManager {
 	private final TrackerManager trackerManager;
 	
 	public QueuedTorrentManager(final TrackerManager trackerManager) {
-		this.trackerManager = trackerManager;
+		this.trackerManager = trackerManager;		
 	}
 
 	/**
 	 * Add a torrent to be managed
 	 * 
 	 * @param torrent Target torrent
-	 * @param trackerUrls Torrent's trackers
-	 * @return Whether this torrent was successfully added
+	 * @return A set of view beans for the newly created tracker sessions 
 	 */
-	public boolean add(final QueuedTorrent torrent, final Set<String> trackerUrls) {
-		if(queuedTorrents.putIfAbsent(torrent, trackerUrls) != null) {
-			return false;
+	public Set<TrackerSessionViewBean> add(final QueuedTorrent torrent) {		
+		final Set<String> trackerUrls = torrent.getProperties().getTrackerUrls();
+		
+		synchronized(queuedTorrents) {
+			if(queuedTorrents.putIfAbsent(torrent, trackerUrls) != null) {
+				return Collections.emptySet();
+			}			
 		}
 		
-		addTorrentStateChangeListener(torrent);		
-		trackerUrls.forEach(t ->
-			trackerManager.addTracker(t, torrent));
+		addTorrentStateChangeListener(torrent);	
 		
-		return true;
+		final Set<TrackerSessionViewBean> sessionViewBeans = new HashSet<>();
+		trackerUrls.forEach(t -> sessionViewBeans.add(trackerManager.addTracker(t, torrent)));
+		
+		return sessionViewBeans;
 	}
 	
 	/**
@@ -72,7 +80,7 @@ public final class QueuedTorrentManager {
 		final boolean removed = queuedTorrents.remove(torrent) != null;
 		
 		if(removed) {
-			torrent.stateProperty().removeListener(stateChangeListeners.remove(torrent));
+			torrent.getProperties().stateProperty().removeListener(stateChangeListeners.remove(torrent));
 			trackerManager.removeTorrent(torrent);
 		}
 		
@@ -86,7 +94,21 @@ public final class QueuedTorrentManager {
 	 * @return Optionally found torrent
 	 */
 	public Optional<QueuedTorrent> find(final InfoHash infoHash) {
-		return queuedTorrents.keySet().stream().filter(t -> t.getInfoHash().equals(infoHash)).findFirst();
+		return queuedTorrents.keySet().stream().filter(t -> t.getMetaData().getInfoHash().equals(infoHash)).findFirst();
+	}
+	
+	/**
+	 * Store the torrents' progress and properties when shutting down the client 
+	 */
+	public final void storeState() {
+		synchronized(queuedTorrents) {
+			final Set<QueuedTorrent> torrents = queuedTorrents.keySet();
+		
+			if(!torrents.isEmpty()) {
+				final StateKeeper stateKeeper = new StateKeeper();
+				torrents.forEach(stateKeeper::store);
+			}
+		}
 	}
 	
 	protected int getQueueSize() {
@@ -108,6 +130,6 @@ public final class QueuedTorrentManager {
 		final ChangeListener<QueuedTorrent.State> stateChangeListener = 
 				(obs, oldV, newV) -> onTorrentStateChanged(torrent, oldV, newV);
 		stateChangeListeners.put(torrent, stateChangeListener);
-		torrent.stateProperty().addListener(stateChangeListener);
+		torrent.getProperties().stateProperty().addListener(stateChangeListener);
 	}
 }

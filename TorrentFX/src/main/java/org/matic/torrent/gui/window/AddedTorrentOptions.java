@@ -23,8 +23,14 @@ package org.matic.torrent.gui.window;
 import javafx.scene.control.TreeItem;
 
 import org.matic.torrent.codec.BinaryEncodedDictionary;
+import org.matic.torrent.codec.BinaryEncodedList;
+import org.matic.torrent.codec.BinaryEncodedString;
+import org.matic.torrent.codec.BinaryEncodingKeyNames;
 import org.matic.torrent.gui.model.TorrentFileEntry;
-import org.matic.torrent.hash.InfoHash;
+import org.matic.torrent.queue.QueuedTorrent;
+import org.matic.torrent.queue.QueuedTorrent.State;
+import org.matic.torrent.queue.QueuedTorrentMetaData;
+import org.matic.torrent.queue.QueuedTorrentProgress;
 
 /**
  * A bean containing all of the options selected by the user, during the addition of
@@ -33,13 +39,12 @@ import org.matic.torrent.hash.InfoHash;
  * @author vedran
  *
  */
-public final class TorrentOptions {
+public final class AddedTorrentOptions {
 	
 	private final TreeItem<TorrentFileEntry> torrentContents;
-	private final BinaryEncodedDictionary metaData;
-	
-	private final InfoHash infoHash;
-			
+	private final QueuedTorrentProgress progress;
+	private final QueuedTorrentMetaData metaData;
+
 	private final boolean createSubfolder;
 	private final boolean skipHashCheck;
 	private final boolean addToTopQueue;
@@ -49,12 +54,11 @@ public final class TorrentOptions {
 	private final String name;
 	private final String path;
 
-	public TorrentOptions(final BinaryEncodedDictionary metaData, final InfoHash infoHash, 
+	public AddedTorrentOptions(final BinaryEncodedDictionary metaData, 
 			final TreeItem<TorrentFileEntry> torrentContents, final String name, final String path,
 			final String label, final boolean startTorrent, final boolean createSubfolder, 
 			final boolean addToTopQueue, final boolean skipHashCheck) {
-		this.metaData = metaData;
-		this.infoHash = infoHash;
+		this.metaData = new QueuedTorrentMetaData(metaData);
 		this.torrentContents = torrentContents;
 		this.name = name;
 		this.path = path;
@@ -64,46 +68,62 @@ public final class TorrentOptions {
 		this.createSubfolder = createSubfolder;
 		this.addToTopQueue = addToTopQueue;
 		this.skipHashCheck = skipHashCheck;
+		
+		final BinaryEncodedDictionary state = new BinaryEncodedDictionary();
+		populateState(state);
+		
+		progress = new QueuedTorrentProgress(state);
 	}
 	
-	public BinaryEncodedDictionary getMetaData() {
+	public final QueuedTorrentMetaData getMetaData() {
 		return metaData;
 	}
 	
-	public InfoHash getInfoHash() {
-		return infoHash;
+	public final QueuedTorrentProgress getProperties() {
+		return progress;
 	}
-
+	
 	public final TreeItem<TorrentFileEntry> getTorrentContents() {
 		return torrentContents;
 	}
-
-	public final boolean isCreateSubfolder() {
+	
+	public final boolean shouldCreateSubfolder() {
 		return createSubfolder;
 	}
-
-	public final boolean isSkipHashCheck() {
-		return skipHashCheck;
-	}
-
-	public final boolean isAddToTopQueue() {
+	
+	public final boolean shouldAddToTopQueue() {
 		return addToTopQueue;
 	}
-
-	public final boolean isStartTorrent() {
-		return startTorrent;
+	
+	public final boolean shouldSkipHashCheck() {
+		return skipHashCheck;
 	}
-
-	public final String getLabel() {
-		return label;
-	}
-
-	public final String getName() {
-		return name;
-	}
-
-	public final String getPath() {
-		return path;
+	
+	private void populateState(final BinaryEncodedDictionary state) {
+		if(name != null) {
+			state.put(BinaryEncodingKeyNames.KEY_NAME, new BinaryEncodedString(name));
+		}
+		if(path != null) {
+			state.put(BinaryEncodingKeyNames.KEY_PATH, new BinaryEncodedString(path));
+		}
+		if(label != null) {
+			state.put(BinaryEncodingKeyNames.STATE_KEY_LABEL, new BinaryEncodedString(label));
+		}
+		
+		final QueuedTorrent.State targetState = startTorrent? State.ACTIVE : State.STOPPED;
+		state.put(BinaryEncodingKeyNames.STATE_KEY_TORRENT_STATE, new BinaryEncodedString(targetState.name()));
+		
+		final BinaryEncodedList trackerList = new BinaryEncodedList();
+		metaData.getAnnounceList().stream().flatMap(l -> ((BinaryEncodedList)l).stream()).forEach(
+				u -> trackerList.add(new BinaryEncodedString(u.toString())));
+		
+		final String announceUrl = metaData.getAnnounceUrl();
+		
+		if(announceUrl != null) {		
+			trackerList.add(new BinaryEncodedString(announceUrl));
+		}
+		
+		state.put(BinaryEncodingKeyNames.KEY_ANNOUNCE_LIST, trackerList);
 	}
 
 	@Override
@@ -111,9 +131,7 @@ public final class TorrentOptions {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + (addToTopQueue ? 1231 : 1237);
-		result = prime * result + (createSubfolder ? 1231 : 1237);
-		result = prime * result
-				+ ((infoHash == null) ? 0 : infoHash.hashCode());
+		result = prime * result + (createSubfolder ? 1231 : 1237);		
 		result = prime * result + ((label == null) ? 0 : label.hashCode());
 		result = prime * result
 				+ ((metaData == null) ? 0 : metaData.hashCode());
@@ -134,16 +152,11 @@ public final class TorrentOptions {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		TorrentOptions other = (TorrentOptions) obj;
+		AddedTorrentOptions other = (AddedTorrentOptions) obj;
 		if (addToTopQueue != other.addToTopQueue)
 			return false;
 		if (createSubfolder != other.createSubfolder)
-			return false;
-		if (infoHash == null) {
-			if (other.infoHash != null)
-				return false;
-		} else if (!infoHash.equals(other.infoHash))
-			return false;
+			return false;		
 		if (label == null) {
 			if (other.label != null)
 				return false;
@@ -179,9 +192,8 @@ public final class TorrentOptions {
 	@Override
 	public String toString() {
 		return "AddNewTorrentOptions [torrentContents=" + torrentContents
-				+ ", metaData=" + metaData + ", infoHash=" + infoHash
-				+ ", createSubfolder=" + createSubfolder + ", skipHashCheck="
-				+ skipHashCheck + ", addToTopQueue=" + addToTopQueue
+				+ ", metaData=" + metaData + ", createSubfolder=" + createSubfolder
+				+ ", skipHashCheck=" + skipHashCheck + ", addToTopQueue=" + addToTopQueue
 				+ ", startTorrent=" + startTorrent + ", label=" + label
 				+ ", name=" + name + ", path=" + path + "]";
 	}

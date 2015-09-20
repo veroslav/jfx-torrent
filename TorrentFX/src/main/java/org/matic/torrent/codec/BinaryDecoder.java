@@ -27,6 +27,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.zip.GZIPInputStream;
 
+import org.matic.torrent.exception.BinaryDecoderException;
+
 /**
  * A parser and decoder for binary encoded data types. Input can be read from 
  * a torrent meta file or directly from a (GZip compressed) stream. 
@@ -92,22 +94,20 @@ public final class BinaryDecoder {
 			if(BinaryEncodingKeyNames.KEY_INFO.equals(key)) {
 				messageDigest.reset();
 				value = decodeGenericType(input, true);
-				final BinaryEncodedString infoHash = new BinaryEncodedString(
-						messageDigest.digest(), BinaryEncodedString.ENCODING_UTF8);
+				final BinaryEncodedString infoHash = new BinaryEncodedString(messageDigest.digest());
 				dictionary.put(BinaryEncodingKeyNames.KEY_INFO_HASH, infoHash);
 			}
 			else {
 				value = decodeGenericType(input, copyDictionary);
 			}
 			
-			if(BinaryEncodingKeyNames.KEY_PIECES.equals(key)) {
+			/*if(BinaryEncodingKeyNames.KEY_PIECES.equals(key)) {
 				final BinaryEncodedString encoding = (BinaryEncodedString)(
 						dictionary.get(BinaryEncodingKeyNames.KEY_ENCODING));
-				if(encoding != null && !BinaryEncodedString.ENCODING_UTF8.equals(encoding.toString())) {
-					value = new BinaryEncodedString(((BinaryEncodedString)value).getBytes(), 
-							encoding.toString());					
+				if(encoding != null && !StandardCharsets.UTF_8.name().equals(encoding.toString())) {
+					value = (BinaryEncodedString)value;					
 				}
-			}
+			}*/
 						
 			dictionary.put(key, value);
 			
@@ -280,7 +280,7 @@ public final class BinaryDecoder {
 			messageDigest.update(rawValue);
 		}
 		
-		BinaryEncodedString string = new BinaryEncodedString(rawValue, BinaryEncodedString.ENCODING_UTF8);
+		final BinaryEncodedString string = new BinaryEncodedString(rawValue);
 		input.mark(Integer.MAX_VALUE);
 		
 		return string;

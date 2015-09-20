@@ -32,6 +32,7 @@ public final class ClientProperties {
 		Windows, Mac, Linux
 	}
 	
+	public static final String CLIENT_NAME = "jfxTorrent";
 	private static final String CLIENT_IDENTIFIER = "-jX0001-";
 	private static final String OS_PROPERTY_NAME = "os.name";
 	

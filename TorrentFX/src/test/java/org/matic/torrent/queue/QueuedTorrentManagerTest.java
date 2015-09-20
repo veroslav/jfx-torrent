@@ -20,23 +20,10 @@
 
 package org.matic.torrent.queue;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-
-import javax.xml.bind.DatatypeConverter;
-
-import org.easymock.EasyMock;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.matic.torrent.hash.InfoHash;
-import org.matic.torrent.tracking.TrackerManager;
 
 public final class QueuedTorrentManagerTest {
 
-	private final InfoHash infoHash = new InfoHash(DatatypeConverter.parseHexBinary("12345678901234567890"));
+	/*private final InfoHash infoHash = new InfoHash(DatatypeConverter.parseHexBinary("12345678901234567890"));
 	private final QueuedTorrent torrent = new QueuedTorrent(infoHash, 1, QueuedTorrent.State.ACTIVE);
 	
 	private TrackerManager trackerManagerMock;
@@ -126,5 +113,5 @@ public final class QueuedTorrentManagerTest {
 		Assert.assertTrue(removed);
 		Assert.assertEquals(1, unitUnderTest.getQueueSize());
 		Assert.assertTrue(unitUnderTest.find(torrent.getInfoHash()).isPresent());
-	}
+	}*/
 }

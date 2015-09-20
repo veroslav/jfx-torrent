@@ -135,7 +135,8 @@ public final class DirectoriesContentPane implements CategoryContentPane {
 		keyStoreLocationField.setText(ApplicationPreferences.getProperty(PathProperties.KEY_STORE, System.getProperty("user.home")));
 		loadTorrentsDirectoryField.setText(ApplicationPreferences.getProperty(PathProperties.LOAD_TORRENTS, null));
 		downloadDirectoryField.setText(ApplicationPreferences.getProperty(PathProperties.NEW_DOWNLOADS, null));
-		storeTorrentsDirectoryField.setText(ApplicationPreferences.getProperty(PathProperties.NEW_TORRENTS, null));
+		storeTorrentsDirectoryField.setText(ApplicationPreferences.getProperty(PathProperties.NEW_TORRENTS,
+				PathProperties.DEFAULT_STORE_TORRENTS_PATH));
 				
 		browseLoadTorrentsDirectoryButton.setOnAction(e -> onBrowseForPath(loadTorrentsDirectoryField));			
 		browseStoreTorrentsDirectoryButton.setOnAction(e -> onBrowseForPath(storeTorrentsDirectoryField));		

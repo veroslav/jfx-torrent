@@ -20,32 +20,10 @@
 
 package org.matic.torrent.tracking;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.InetAddress;
-import java.util.HashSet;
-import java.util.Set;
-
-import javax.xml.bind.DatatypeConverter;
-
-import org.junit.Assert;
-import org.junit.Test;
-import org.matic.torrent.codec.BinaryEncodedDictionary;
-import org.matic.torrent.codec.BinaryEncodedInteger;
-import org.matic.torrent.codec.BinaryEncodedList;
-import org.matic.torrent.codec.BinaryEncodedString;
-import org.matic.torrent.codec.BinaryEncodingKeyNames;
-import org.matic.torrent.hash.InfoHash;
-import org.matic.torrent.net.pwp.PwpPeer;
-import org.matic.torrent.peer.ClientProperties;
-import org.matic.torrent.queue.QueuedTorrent;
-import org.matic.torrent.utils.UnitConverter;
 
 public final class HttpTrackerTest {
 	
-	private final InfoHash infoHash = new InfoHash(DatatypeConverter.parseHexBinary("ABCDEF0123")); 
+	/*private final InfoHash infoHash = new InfoHash(DatatypeConverter.parseHexBinary("ABCDEF0123")); 
 	private final QueuedTorrent torrent = new QueuedTorrent(infoHash, 1, QueuedTorrent.State.ACTIVE);	
 	private final int key = 42; 
 	
@@ -270,5 +248,5 @@ public final class HttpTrackerTest {
 		response.put(BinaryEncodingKeyNames.KEY_PEERS, peersInAList? createPeerList(peers) : createPeerString(peers));
 		
 		return response;
-	}
+	}*/
 }

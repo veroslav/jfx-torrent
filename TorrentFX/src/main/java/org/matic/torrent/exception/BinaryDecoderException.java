@@ -18,7 +18,7 @@
 *
 */
 
-package org.matic.torrent.codec;
+package org.matic.torrent.exception;
 
 /**
  * A class representing an exception thrown when binary encoded data decoder

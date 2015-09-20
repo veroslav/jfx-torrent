@@ -62,7 +62,6 @@ import org.matic.torrent.codec.BinaryEncodingKeyNames;
 import org.matic.torrent.gui.GuiUtils;
 import org.matic.torrent.gui.GuiUtils.BorderType;
 import org.matic.torrent.gui.tree.TorrentContentTree;
-import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.io.DiskUtilities;
 import org.matic.torrent.utils.UnitConverter;
 
@@ -171,15 +170,12 @@ public final class AddNewTorrentWindow {
 		initComponents();
 	}
 	
-	public final TorrentOptions showAndWait() {
+	public final AddedTorrentOptions showAndWait() {
 		final Optional<ButtonType> result = window.showAndWait();
 		torrentContentTree.storeColumnStates(false);
 		
-		if(result.isPresent() && result.get() == ButtonType.OK) {
-			final byte[] infoHashBytes = ((BinaryEncodedString)torrentMetaData.get(
-					BinaryEncodingKeyNames.KEY_INFO_HASH)).getBytes();
-			final InfoHash infoHash = new InfoHash(infoHashBytes);			
-			return new TorrentOptions(torrentMetaData, infoHash, torrentContentTree.getContent(), 
+		if(result.isPresent() && result.get() == ButtonType.OK) {			
+			return new AddedTorrentOptions(torrentMetaData, torrentContentTree.getContent(), 
 					nameTextField.getText(), savePathCombo.getValue(), labelCombo.getValue(),
 					startTorrentCheckbox.isSelected(), createSubFolderCheckbox.isSelected(),
 					addToTopQueueCheckbox.isSelected(), skipHashCheckbox.isSelected());

@@ -20,49 +20,49 @@
 
 package org.matic.torrent.codec;
 
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 /**
  * A byte string, encoded as <length>:<contents>. The length is encoded in base 10,
- * but must be non-negative (zero is allowed); the contents are just the bytes that
- * make up the string.
+ * but must be non-negative (zero is allowed), while the String contents itself are
+ * UTF-8 encoded.
  * 
  * @author vedran
  *
  */
-public final class BinaryEncodedString implements BinaryEncodable {
-			
-	protected static final String ENCODING_UTF8 = "UTF-8";
+public final class BinaryEncodedString implements BinaryEncodable, Comparable<BinaryEncodedString> {	
 	protected static final char SEPARATOR_TOKEN = ':';
 	
-	private final String encoding;
-	private final byte[] value;	
-	
-	public BinaryEncodedString(final byte[] value) {
-		this(value, BinaryEncodedString.ENCODING_UTF8);
-	}
+	private final String value;
+	private final byte[] bytes;
 
-	public BinaryEncodedString(final byte[] value, final String encoding) {
-		this.value = Arrays.copyOf(value, value.length);
-		this.encoding = encoding;
+	public BinaryEncodedString(final byte[] value) {
+		this.bytes = Arrays.copyOf(value, value.length);
+		this.value = new String(value, StandardCharsets.UTF_8);
+	}
+	
+	public BinaryEncodedString(final String value) {
+		this(value.getBytes(StandardCharsets.UTF_8));
 	}
 	
 	public final byte[] getBytes() {
-		return Arrays.copyOf(value, value.length);
+		return Arrays.copyOf(bytes, bytes.length);
 	}
 	
-	public final String getEncoding() {
-		return encoding;
+	public final String getValue() {
+		return value.toString();
 	}
-
+	
+	public final int getLength() {
+		return value.length();
+	}
+	
 	@Override
 	public final int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result
-				+ ((encoding == null) ? 0 : encoding.hashCode());
-		result = prime * result + Arrays.hashCode(value);
+		result = prime * result + ((value == null) ? 0 : value.hashCode());
 		return result;
 	}
 
@@ -75,23 +75,31 @@ public final class BinaryEncodedString implements BinaryEncodable {
 		if (getClass() != obj.getClass())
 			return false;
 		BinaryEncodedString other = (BinaryEncodedString) obj;
-		if (encoding == null) {
-			if (other.encoding != null)
+		if (value == null) {
+			if (other.value != null)
 				return false;
-		} else if (!encoding.equals(other.encoding))
-			return false;
-		if (!Arrays.equals(value, other.value))
+		} else if (!value.equals(other.value))
 			return false;
 		return true;
 	}
 
 	@Override
 	public final String toString() {
-		try {
-			return new String(value, encoding);
-		} 
-		catch (final UnsupportedEncodingException uee) {
-			return null;
-		}
+		return value;
+	}
+
+	@Override
+	public final int compareTo(final BinaryEncodedString other) {
+		return value.compareTo(other.value);
+	}
+
+	@Override
+	public String toExportableValue() {
+		final StringBuilder result = new StringBuilder();
+		result.append(value.length());
+		result.append(SEPARATOR_TOKEN);
+		result.append(value);
+		
+		return result.toString();
 	}	
 }

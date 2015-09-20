@@ -38,7 +38,7 @@ public class TorrentJobActionHandler {
 		
 		if(selectedTorrentJobs.size() > 0) {
 			selectedTorrentJobs.stream().map(
-					TorrentJobView::getQueuedTorrent).forEach(t -> t.setState(newStatus));			
+					TorrentJobView::getQueuedTorrent).forEach(t -> t.getProperties().setState(newStatus));			
 		}
 	}
 }

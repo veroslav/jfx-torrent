@@ -66,6 +66,17 @@ public final class BinaryEncodedInteger implements BinaryEncodable {
 
 	@Override
 	public final String toString() {
-		return "BinaryEncodedInteger [value=" + value + "]";
-	}	
+		return String.valueOf(value);
+	}
+
+	@Override
+	public String toExportableValue() {
+		final StringBuilder result = new StringBuilder();
+		
+		result.append(BEGIN_TOKEN);
+		result.append(String.valueOf(value));
+		result.append(END_TOKEN);
+		
+		return result.toString();
+	}
 }

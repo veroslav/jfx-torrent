@@ -28,4 +28,7 @@ package org.matic.torrent.codec;
  * @author vedran
  *
  */
-public interface BinaryEncodable {}
+public interface BinaryEncodable {
+	
+	String toExportableValue();
+}

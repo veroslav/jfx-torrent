@@ -42,7 +42,7 @@ public final class TorrentJobView {
 			final TreeItem<TorrentFileEntry> torrentContents) {
 		this.torrentContentTree = torrentContents;
 		this.fileName = fileName;
-		this.priority = new SimpleIntegerProperty(queuedTorrent.getPriority());
+		this.priority = new SimpleIntegerProperty(queuedTorrent.getProperties().getPriority());
 		
 		this.queuedTorrent = queuedTorrent;
 	}

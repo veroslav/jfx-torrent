@@ -64,6 +64,6 @@ public final class InfoHash {
 
 	@Override
 	public String toString() {
-		return "InfoHash [infoHash=" + DatatypeConverter.printHexBinary(infoHash) + "]";
+		return DatatypeConverter.printHexBinary(infoHash).toLowerCase();
 	}	
 }
