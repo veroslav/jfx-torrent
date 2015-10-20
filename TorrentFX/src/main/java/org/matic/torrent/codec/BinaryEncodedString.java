@@ -20,6 +20,9 @@
 
 package org.matic.torrent.codec;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
@@ -93,13 +96,19 @@ public final class BinaryEncodedString implements BinaryEncodable, Comparable<Bi
 		return value.compareTo(other.value);
 	}
 
+	/**
+	 * @see BinaryEncodable#toExportableValue()
+	 */
 	@Override
-	public String toExportableValue() {
-		final StringBuilder result = new StringBuilder();
-		result.append(value.length());
-		result.append(SEPARATOR_TOKEN);
-		result.append(value);
+	public byte[] toExportableValue() throws IOException {
+		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		final DataOutputStream dos = new DataOutputStream(baos);
 		
-		return result.toString();
+		dos.write(String.valueOf(bytes.length).getBytes(StandardCharsets.UTF_8));
+		dos.write(SEPARATOR_TOKEN);
+		dos.write(bytes);		
+		dos.flush();
+		
+		return baos.toByteArray();
 	}	
 }

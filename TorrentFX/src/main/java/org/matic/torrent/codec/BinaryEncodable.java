@@ -20,6 +20,8 @@
 
 package org.matic.torrent.codec;
 
+import java.io.IOException;
+
 /**
  * A marker interface for all of the binary encoded types. These types are:
  * strings, integers, lists and dictionaries. The torrent meta data files
@@ -30,5 +32,11 @@ package org.matic.torrent.codec;
  */
 public interface BinaryEncodable {
 	
-	String toExportableValue();
+	/**
+	 * Get the value of a BinaryEncodable as an array of bytes
+	 * 
+	 * @return Value's bytes
+	 * @throws IOException If an error occurs during conversion to bytes
+	 */
+	byte[] toExportableValue() throws IOException;
 }

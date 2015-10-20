@@ -20,18 +20,19 @@
 
 package org.matic.torrent.queue;
 
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
-
-import org.matic.torrent.codec.BinaryEncodedDictionary;
-import org.matic.torrent.codec.BinaryEncodedList;
-import org.matic.torrent.codec.BinaryEncodedString;
-import org.matic.torrent.codec.BinaryEncodingKeyNames;
 
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleObjectProperty;
+
+import org.matic.torrent.codec.BinaryEncodedDictionary;
+import org.matic.torrent.codec.BinaryEncodedList;
+import org.matic.torrent.codec.BinaryEncodedString;
+import org.matic.torrent.codec.BinaryEncodingKeyNames;
 
 public class QueuedTorrentProgress {
 	
@@ -99,8 +100,7 @@ public class QueuedTorrentProgress {
 		return state;
 	}
 
-	@Override
-	public final String toString() {		
+	public final byte[] toExportableValue() throws IOException {		
 		return torrentState.toExportableValue();
 	}
 }

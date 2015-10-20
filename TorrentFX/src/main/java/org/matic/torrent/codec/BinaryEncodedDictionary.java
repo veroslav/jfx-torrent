@@ -20,6 +20,9 @@
 
 package org.matic.torrent.codec;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -90,18 +93,24 @@ public final class BinaryEncodedDictionary implements BinaryEncodable {
 		return map.toString();
 	}
 
+	/**
+	 * @see BinaryEncodable#toExportableValue()
+	 */
 	@Override
-	public String toExportableValue() {
-		final StringBuilder value = new StringBuilder();
-		value.append(BEGIN_TOKEN);
+	public byte[] toExportableValue() throws IOException {		
+		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		final DataOutputStream dos = new DataOutputStream(baos);
 		
-		map.entrySet().forEach(entry -> {
-			value.append(entry.getKey().toExportableValue());
-			value.append(entry.getValue().toExportableValue());
-		});
+		dos.write(BEGIN_TOKEN);
 		
-		value.append(END_TOKEN);
+		for(final Map.Entry<BinaryEncodedString, BinaryEncodable> entry : map.entrySet()) {
+			dos.write(entry.getKey().toExportableValue());
+			dos.write(entry.getValue().toExportableValue());
+		}
 		
-		return value.toString();
+		dos.write(END_TOKEN);
+		dos.flush();
+		
+		return baos.toByteArray();
 	}	
 }

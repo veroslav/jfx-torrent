@@ -19,6 +19,8 @@
 */
 package org.matic.torrent.queue;
 
+import java.io.IOException;
+
 import org.matic.torrent.codec.BinaryEncodedDictionary;
 import org.matic.torrent.codec.BinaryEncodedList;
 import org.matic.torrent.codec.BinaryEncodedString;
@@ -63,9 +65,7 @@ public class QueuedTorrentMetaData {
 		return result;*/
 	}
 
-	@Override
-	public final String toString() {
+	public final byte[] toExportableValue() throws IOException {
 		return metaData.toExportableValue();
 	}
-	
 }

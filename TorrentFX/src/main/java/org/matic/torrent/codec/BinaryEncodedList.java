@@ -20,6 +20,9 @@
 
 package org.matic.torrent.codec;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
@@ -88,14 +91,21 @@ public final class BinaryEncodedList implements BinaryEncodable {
 		return list.toString();
 	}
 
+	/**
+	 * @see BinaryEncodable#toExportableValue()
+	 */
 	@Override
-	public String toExportableValue() {
-		final StringBuilder value = new StringBuilder();
+	public byte[] toExportableValue() throws IOException {
+		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		final DataOutputStream dos = new DataOutputStream(baos);		
 		
-		value.append(BEGIN_TOKEN);
-		list.forEach(e -> value.append(e.toExportableValue()));
-		value.append(END_TOKEN);
+		dos.write(BEGIN_TOKEN);		
+		for(final BinaryEncodable element : list) {
+			dos.write(element.toExportableValue());
+		}
+		dos.write(END_TOKEN);
+		dos.flush();
 		
-		return value.toString();
+		return baos.toByteArray();
 	}	
 }

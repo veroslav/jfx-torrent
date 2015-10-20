@@ -20,6 +20,11 @@
 
 package org.matic.torrent.codec;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+
 /**
  * An integer encoded as i<number in base 10 notation>e. Leading zeros are not allowed.
  * Negative values are encoded by prefixing the number with a minus sign.
@@ -69,14 +74,20 @@ public final class BinaryEncodedInteger implements BinaryEncodable {
 		return String.valueOf(value);
 	}
 
+	/**
+	 * @see BinaryEncodable#toExportableValue()
+	 */
 	@Override
-	public String toExportableValue() {
-		final StringBuilder result = new StringBuilder();
+	public byte[] toExportableValue() throws IOException {
+		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		final DataOutputStream dos = new DataOutputStream(baos);
 		
-		result.append(BEGIN_TOKEN);
-		result.append(String.valueOf(value));
-		result.append(END_TOKEN);
+		dos.write(BEGIN_TOKEN);
+		dos.write(String.valueOf(value).getBytes(StandardCharsets.UTF_8));
+		dos.write(END_TOKEN);
 		
-		return result.toString();
+		dos.flush();
+		
+		return baos.toByteArray();
 	}
 }

@@ -20,13 +20,11 @@
 package org.matic.torrent.io;
 
 import java.io.BufferedInputStream;
-import java.io.BufferedWriter;
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -67,9 +65,8 @@ public class StateKeeper {
 			return true;
 		}
 		
-		try(final BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
-				new FileOutputStream(metaDataFileLocation), StandardCharsets.UTF_8))) {			
-				writer.write(metaData.toString());
+		try(final BufferedOutputStream writer = new BufferedOutputStream(new FileOutputStream(metaDataFileLocation))) {			
+				writer.write(metaData.toExportableValue());
 				writer.flush();
 		}
 		catch(final IOException ioe) {
@@ -79,10 +76,9 @@ public class StateKeeper {
 	}
 
 	private final boolean storeState(final QueuedTorrentProgress state, final String infoHash) {	
-		try(final BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
-				new FileOutputStream(targetPath + infoHash.toString() +
-						STATE_FILE_EXTENSION), StandardCharsets.UTF_8))) {				
-				writer.write(state.toString());
+		try(final BufferedOutputStream writer = new BufferedOutputStream(new FileOutputStream(
+				targetPath + infoHash.toString() + STATE_FILE_EXTENSION))) {				
+				writer.write(state.toExportableValue());
 				writer.flush();
 		}
 		catch(final IOException ioe) {
