@@ -21,37 +21,7 @@
 package org.matic.torrent.preferences;
 
 public final class GuiProperties {
-	
-	public enum SeedingTorrentClickAction {
-		OPEN_FOLDER("Open Folder");
-		
-		private String label;
-		
-		private SeedingTorrentClickAction(final String label) {
-			this.label = label;
-		}
-		
-		@Override
-		public String toString() {
-			return label;
-		}
-	}
-	
-	public enum DownloadingTorrentClickAction {
-		SHOW_PROPERTIES("Show Properties");
-		
-		private String label;
-		
-		private DownloadingTorrentClickAction(final String label) {
-			this.label = label;
-		}
-		
-		@Override
-		public String toString() {
-			return label;
-		}
-	}
-	
+
 	//CSS properties for Options window
 	public static final String OPTION_CATEGORY_INDENTATION = "option-category-indentation";
 	public static final String HORIZONTAL_LAYOUT_SPACING = "layout-horizontal-spacing";

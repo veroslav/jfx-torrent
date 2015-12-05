@@ -22,26 +22,26 @@ package org.matic.torrent.gui.window.preferences;
 
 import org.matic.torrent.gui.GuiUtils;
 import org.matic.torrent.gui.GuiUtils.BorderType;
+import org.matic.torrent.gui.action.values.DownloadingTorrentClickAction;
+import org.matic.torrent.gui.action.values.SeedingTorrentClickAction;
 import org.matic.torrent.preferences.ApplicationPreferences;
 import org.matic.torrent.preferences.GuiProperties;
-import org.matic.torrent.preferences.GuiProperties.DownloadingTorrentClickAction;
-import org.matic.torrent.preferences.GuiProperties.SeedingTorrentClickAction;
 import org.matic.torrent.preferences.TransferProperties;
 
 import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.SimpleBooleanProperty;
 import javafx.collections.FXCollections;
-import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.ScrollPane.ScrollBarPolicy;
-import javafx.scene.layout.HBox;
+import javafx.scene.layout.ColumnConstraints;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
-public class UISettingsContentPane implements CategoryContentPane {
+public class UISettingsContentPane extends CategoryContentPane {
 	
 	private static final String UI_SETTINGS_CONTENT_PANE_NAME = "UI Settings";
 		
@@ -55,29 +55,27 @@ public class UISettingsContentPane implements CategoryContentPane {
 	private final CheckBox confirmOnExitCheck = new CheckBox("Show confirmation dialog on exit");
 	
 	//System Tray options
-	private final CheckBox minimizeToTrayCheck = new CheckBox("Minimize button minimizes application to tray");
-	private final CheckBox showBalloonNotificationCheck = new CheckBox("Show balloon notification in tray");
-	private final CheckBox closeToTrayCheck = new CheckBox("Close button closes application to tray");	
+	private final CheckBox showBalloonNotificationCheck = new CheckBox("Show balloon notifications in tray");
 	private final CheckBox openOnTrayClickCheck = new CheckBox("Single click on tray icon to open");
+	private final CheckBox minimizeToTrayCheck = new CheckBox("Minimize button minimizes to tray");			
 	private final CheckBox activateOnTrayClickCheck = new CheckBox("Always activate when clicked");
+	private final CheckBox closeToTrayCheck = new CheckBox("Close button closes to tray");
 	private final CheckBox showTrayIconCheck = new CheckBox("Always show tray icon");
 	
-	//Torrent addition options
-	private final CheckBox showChangeNameAndLocationCheck = new CheckBox(
-			"Show options to change the name and location of the torrent data");
+	//Torrent addition options	
 	private final CheckBox dontDownloadAutomaticallyCheck = new CheckBox("Don't start the download automatically");
 	private final CheckBox activateProgramWindowCheck = new CheckBox("Activate the program window");
+	private final CheckBox showChangeNameAndLocationCheck = new CheckBox(
+			"Show options to change the name and location of the torrent data");
 	
 	//Double Click action options
 	private final ComboBox<DownloadingTorrentClickAction> downloadingTorrentOptionsComboBox = new ComboBox<>();
 	private final ComboBox<SeedingTorrentClickAction> seedingTorrentOptionsComboBox = new ComboBox<>();
 	
-	private final BooleanProperty preferencesChanged = new SimpleBooleanProperty(false);
-	
 	private final ScrollPane contentPane;
 	
 	public UISettingsContentPane(final BooleanProperty preferencesChanged) {
-		this.preferencesChanged.bind(preferencesChanged);
+		super(UI_SETTINGS_CONTENT_PANE_NAME, preferencesChanged);
 		initComponents(preferencesChanged);
 		contentPane = buildUISettingsOptionsView();
 	}
@@ -132,11 +130,6 @@ public class UISettingsContentPane implements CategoryContentPane {
 		return contentPane;
 	}
 
-	@Override
-	public final String getName() {
-		return UI_SETTINGS_CONTENT_PANE_NAME;
-	}
-	
 	private void initComponents(final BooleanProperty preferencesChanged) {
 		downloadingTorrentOptionsComboBox.setItems(
 				FXCollections.observableArrayList(DownloadingTorrentClickAction.values()));
@@ -168,22 +161,22 @@ public class UISettingsContentPane implements CategoryContentPane {
 	}
 	
 	private void setCheckBoxActions(final BooleanProperty preferencesChanged) {
+		confirmCriticalSeederExitCheck.setOnAction(e -> preferencesChanged.set(true));
+		dontDownloadAutomaticallyCheck.setOnAction(e -> preferencesChanged.set(true));
+		showChangeNameAndLocationCheck.setOnAction(e -> preferencesChanged.set(true));
+		showBalloonNotificationCheck.setOnAction(e -> preferencesChanged.set(true));
+		speedLimitsInStatusBarCheck.setOnAction(e -> preferencesChanged.set(true));
+		activateProgramWindowCheck.setOnAction(e -> preferencesChanged.set(true));
 		confirmTorrentDeleteCheck.setOnAction(e -> preferencesChanged.set(true));
 		confirmTrackerDeleteCheck.setOnAction(e -> preferencesChanged.set(true));
-		confirmOnExitCheck.setOnAction(e -> preferencesChanged.set(true));
+		activateOnTrayClickCheck.setOnAction(e -> preferencesChanged.set(true));
 		alternateListColorCheck.setOnAction(e -> preferencesChanged.set(true));
 		speedInTitleBarCheck.setOnAction(e -> preferencesChanged.set(true));
-		speedLimitsInStatusBarCheck.setOnAction(e -> preferencesChanged.set(true));
-		confirmCriticalSeederExitCheck.setOnAction(e -> preferencesChanged.set(true));
-		minimizeToTrayCheck.setOnAction(e -> preferencesChanged.set(true));
-		showTrayIconCheck.setOnAction(e -> preferencesChanged.set(true));
-		closeToTrayCheck.setOnAction(e -> preferencesChanged.set(true));
 		openOnTrayClickCheck.setOnAction(e -> preferencesChanged.set(true));
-		showBalloonNotificationCheck.setOnAction(e -> preferencesChanged.set(true));
-		activateOnTrayClickCheck.setOnAction(e -> preferencesChanged.set(true));
-		dontDownloadAutomaticallyCheck.setOnAction(e -> preferencesChanged.set(true));
-		activateProgramWindowCheck.setOnAction(e -> preferencesChanged.set(true));
-		showChangeNameAndLocationCheck.setOnAction(e -> preferencesChanged.set(true));
+		minimizeToTrayCheck.setOnAction(e -> preferencesChanged.set(true));
+		confirmOnExitCheck.setOnAction(e -> preferencesChanged.set(true));		
+		showTrayIconCheck.setOnAction(e -> preferencesChanged.set(true));
+		closeToTrayCheck.setOnAction(e -> preferencesChanged.set(true));		
 	}
 	
 	private void applyCheckBoxValues() {
@@ -275,51 +268,58 @@ public class UISettingsContentPane implements CategoryContentPane {
 		return contentScroll;
 	}
 	
-	private VBox buildDisplayOptionsPane() {
-		final VBox displayOptionsPane = new VBox();
-		displayOptionsPane.getStyleClass().add(GuiProperties.VERTICAL_LAYOUT_SPACING);
-		displayOptionsPane.getChildren().addAll(confirmTorrentDeleteCheck, confirmTrackerDeleteCheck,
-				confirmOnExitCheck, alternateListColorCheck, speedInTitleBarCheck,
-				speedLimitsInStatusBarCheck, confirmCriticalSeederExitCheck);
+	private Node buildDisplayOptionsPane() {		
+	    final GridPane displayOptionsPane = buildGridPane();	    
+		displayOptionsPane.add(confirmTorrentDeleteCheck, 0, 0);
+		displayOptionsPane.add(confirmTrackerDeleteCheck, 1, 0);
+		displayOptionsPane.add(confirmOnExitCheck, 0, 1);
+		displayOptionsPane.add(alternateListColorCheck, 1, 1);
+		displayOptionsPane.add(speedInTitleBarCheck, 0, 2);
+		displayOptionsPane.add(speedLimitsInStatusBarCheck, 1, 2);
+		displayOptionsPane.add(confirmCriticalSeederExitCheck, 0, 3, 2, 1);
 		
 		return displayOptionsPane;
 	}
 	
-	private VBox buildSystemTrayOptionsPane() {
-		final VBox systemTrayOptionsPane = new VBox();
-		systemTrayOptionsPane.getStyleClass().add(GuiProperties.VERTICAL_LAYOUT_SPACING);
-		systemTrayOptionsPane.getChildren().addAll(minimizeToTrayCheck, showTrayIconCheck,
-				closeToTrayCheck, openOnTrayClickCheck, showBalloonNotificationCheck,
-				activateOnTrayClickCheck);
+	private Node buildSystemTrayOptionsPane() {		
+		final GridPane systemTrayOptionsPane = buildGridPane();
+		systemTrayOptionsPane.add(minimizeToTrayCheck, 0, 0);
+		systemTrayOptionsPane.add(showTrayIconCheck, 1, 0);
+		systemTrayOptionsPane.add(closeToTrayCheck, 0, 1);
+		systemTrayOptionsPane.add(openOnTrayClickCheck, 1, 1);
+		systemTrayOptionsPane.add(showBalloonNotificationCheck, 0, 2);
+		systemTrayOptionsPane.add(activateOnTrayClickCheck, 1, 2);
 		
 		return systemTrayOptionsPane;
 	}
 	
-	private VBox buildOnTorrentAdditionOptionsPane() {
-		final VBox torrentAdditionOptionsPane = new VBox();
-		torrentAdditionOptionsPane.getStyleClass().add(GuiProperties.VERTICAL_LAYOUT_SPACING);
-		torrentAdditionOptionsPane.getChildren().addAll(dontDownloadAutomaticallyCheck,
-				activateProgramWindowCheck, showChangeNameAndLocationCheck);
-		
+	private Node buildOnTorrentAdditionOptionsPane() {
+		final GridPane torrentAdditionOptionsPane = buildGridPane();		
+		torrentAdditionOptionsPane.add(dontDownloadAutomaticallyCheck, 0, 0);
+		torrentAdditionOptionsPane.add(activateProgramWindowCheck, 1, 0);
+		torrentAdditionOptionsPane.add(showChangeNameAndLocationCheck, 0, 1, 2, 1);
+				
 		return torrentAdditionOptionsPane;
 	}
 	
-	private VBox buildDoubleClickActionsOptionPane() {			
-		final Label seedingTorrentsLabel = new Label("For seeding torrents: ");
-		final HBox seedingTorrentsOptions = new HBox();
+	private Node buildDoubleClickActionsOptionPane() {		
+		final ColumnConstraints firstColumn = new ColumnConstraints();	    
+		firstColumn.setPercentWidth(40);
 		
-		seedingTorrentsOptions.getChildren().addAll(seedingTorrentsLabel, seedingTorrentOptionsComboBox);		
-		seedingTorrentsOptions.setAlignment(Pos.CENTER_LEFT);
+		final GridPane doubleClickOptionsPane = new GridPane();
+		doubleClickOptionsPane.getColumnConstraints().addAll(firstColumn);
+		doubleClickOptionsPane.setVgap(10);
 		
-		final Label downloadingTorrentsLabel = new Label("For downloading torrents: ");
-		final HBox downloadingTorrentsOptions = new HBox();
+		doubleClickOptionsPane.add(new Label("For seeding torrents: "), 0, 0);
+		doubleClickOptionsPane.add(seedingTorrentOptionsComboBox, 1, 0);
+		doubleClickOptionsPane.add(new Label("For downloading torrents: "), 0, 1);
+		doubleClickOptionsPane.add(downloadingTorrentOptionsComboBox, 1, 1);
 		
-		downloadingTorrentsOptions.getChildren().addAll(downloadingTorrentsLabel, downloadingTorrentOptionsComboBox);
-		downloadingTorrentsOptions.setAlignment(Pos.CENTER_LEFT);
+		seedingTorrentOptionsComboBox.setMaxWidth(Double.POSITIVE_INFINITY);
+		downloadingTorrentOptionsComboBox.setMaxWidth(Double.POSITIVE_INFINITY);
 		
-		final VBox doubleClickOptionsPane = new VBox();
-		doubleClickOptionsPane.getStyleClass().add(GuiProperties.VERTICAL_LAYOUT_SPACING);
-		doubleClickOptionsPane.getChildren().addAll(seedingTorrentsOptions, downloadingTorrentsOptions);
+		GridPane.setHgrow(seedingTorrentOptionsComboBox, Priority.ALWAYS);
+		GridPane.setHgrow(downloadingTorrentOptionsComboBox, Priority.ALWAYS);
 		
 		return doubleClickOptionsPane;
 	}

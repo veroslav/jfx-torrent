@@ -20,7 +20,11 @@
 
 package org.matic.torrent.gui.window.preferences;
 
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.layout.ColumnConstraints;
+import javafx.scene.layout.GridPane;
 
 /**
  * Common pane for all category panes in the preferences window
@@ -28,24 +32,48 @@ import javafx.scene.control.ScrollPane;
  * @author vedran
  *
  */
-public interface CategoryContentPane {
+public abstract class CategoryContentPane {
+	
+	protected final BooleanProperty preferencesChanged = new SimpleBooleanProperty(false);
+	private final String paneName;
+	
+	protected CategoryContentPane(final String paneName, final BooleanProperty preferencesChanged) {
+		this.preferencesChanged.bind(preferencesChanged);
+		this.paneName = paneName;
+	}
 
 	/**
 	 * Save all changes made by user, if any, since last content save
 	 */
-	public void onSaveContentChanges();
+	public abstract void onSaveContentChanges();
 	
 	/**
 	 * Return a pane holding all of the option components for this category
 	 * 
 	 * @return
 	 */
-	public ScrollPane getContentPane();
+	public abstract ScrollPane getContentPane();
 	
 	/**
 	 * Return this category name (used as the category title)
 	 * 
 	 * @return
 	 */
-	public String getName();
+	public String getName() {
+		return paneName;
+	}
+	
+	protected GridPane buildGridPane() {
+		final ColumnConstraints firstColumn = new ColumnConstraints();
+		final ColumnConstraints secondColumn = new ColumnConstraints();
+	    
+		firstColumn.setPercentWidth(50);	     
+	    secondColumn.setPercentWidth(50);
+	    
+	    final GridPane gridPane = new GridPane();
+	    gridPane.getColumnConstraints().addAll(firstColumn, secondColumn);
+		gridPane.setVgap(10);
+		
+		return gridPane;
+	}
 }

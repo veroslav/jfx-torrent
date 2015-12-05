@@ -61,8 +61,7 @@ public final class PreferencesWindow {
 	//Whether any of the preferences has been changed by the user
 	private final BooleanProperty preferencesChanged = new SimpleBooleanProperty(false);
 	
-	private final DirectoriesContentPane directoriesOptions;
-	private final UISettingsContentPane uiSettingsOptions;
+	private final CategoryContentPane[] categoryContentPanes = new CategoryContentPane[3];
 	
 	private final Dialog<ButtonType> window;
 	
@@ -71,9 +70,10 @@ public final class PreferencesWindow {
 	
 	public PreferencesWindow(final Window owner, final FileActionHandler fileActionHandler) {
 		optionGroupMappings = new HashMap<>();
-		
-		directoriesOptions = new DirectoriesContentPane(owner, fileActionHandler, preferencesChanged);
-		uiSettingsOptions = new UISettingsContentPane(preferencesChanged);
+				
+		categoryContentPanes[0] = new UISettingsContentPane(preferencesChanged);
+		categoryContentPanes[1] = new DirectoriesContentPane(owner, fileActionHandler, preferencesChanged);
+		categoryContentPanes[2] = new BitTorrentContentPane(preferencesChanged);
 		
 		window = new Dialog<>();
 		window.initOwner(owner);		
@@ -126,9 +126,8 @@ public final class PreferencesWindow {
 		window.getDialogPane().setContent(contentLayout);
 	}
 	
-	private void savePreferences() {		
-		directoriesOptions.onSaveContentChanges();
-		uiSettingsOptions.onSaveContentChanges();
+	private void savePreferences() {	
+		Arrays.stream(categoryContentPanes).forEach(CategoryContentPane::onSaveContentChanges);		
 	}
 	
 	private Node layoutContent() {					
@@ -141,7 +140,7 @@ public final class PreferencesWindow {
 		mainLayout.setDividerPosition(0, 0.50);
 		mainLayout.getItems().addAll(optionCategoriesTreeView, optionCardLayout);
 		
-		mainLayout.setPrefSize(750, 500);
+		mainLayout.setPrefSize(770, 500);
 		categoryNameLabel.prefWidthProperty().bind(mainLayout.widthProperty());
         
         SplitPane.setResizableWithParent(optionCategoriesTreeView, Boolean.FALSE);
@@ -151,11 +150,11 @@ public final class PreferencesWindow {
 	private TreeItem<Node> buildOptionCategories() {		
 		//General option names
 		final String generalOptionName = "General";
-		final String uiSettingsOptionName = uiSettingsOptions.getName();
-		final String directoriesOptionName = directoriesOptions.getName();
+		final String uiSettingsOptionName = categoryContentPanes[0].getName();
+		final String directoriesOptionName = categoryContentPanes[1].getName();
 		final String connectionOptionName = "Connection";
 		final String bandwidthOptionName = "Bandwidth";
-		final String bitTorrentOptionName = "BitTorrent";
+		final String bitTorrentOptionName = categoryContentPanes[2].getName();
 		final String transferCapOptionName = "Transfer Cap";
 		final String queueingOptionName = "Queueing";
 		final String schedulerOptionName = "Scheduler";
@@ -170,11 +169,11 @@ public final class PreferencesWindow {
 		
 		//General option mappings
 		optionGroupMappings.put(generalOptionName, buildGeneralOptionsView());
-		optionGroupMappings.put(uiSettingsOptionName, uiSettingsOptions.getContentPane());
-		optionGroupMappings.put(directoriesOptionName, directoriesOptions.getContentPane());
+		optionGroupMappings.put(uiSettingsOptionName, categoryContentPanes[0].getContentPane());
+		optionGroupMappings.put(directoriesOptionName, categoryContentPanes[1].getContentPane());
 		optionGroupMappings.put(connectionOptionName, buildConnectionOptionsView());
 		optionGroupMappings.put(bandwidthOptionName, buildBandwidthOptionsView());
-		optionGroupMappings.put(bitTorrentOptionName, buildBitTorrentOptionsView());
+		optionGroupMappings.put(bitTorrentOptionName, categoryContentPanes[2].getContentPane());
 		optionGroupMappings.put(transferCapOptionName, buildTransferCapOptionsView());
 		optionGroupMappings.put(queueingOptionName, buildQueueingOptionsView());
 		optionGroupMappings.put(schedulerOptionName, buildSchedulerOptionsView());
@@ -230,10 +229,6 @@ public final class PreferencesWindow {
 	
 	private Pane buildBandwidthOptionsView() {
 		return new Pane(new Label("BANDWIDTH"));
-	}
-	
-	private Pane buildBitTorrentOptionsView() {
-		return new Pane(new Label("BITTORRENT"));
 	}
 	
 	private Pane buildTransferCapOptionsView() {

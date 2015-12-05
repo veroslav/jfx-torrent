@@ -28,7 +28,6 @@ import org.matic.torrent.preferences.GuiProperties;
 import org.matic.torrent.preferences.PathProperties;
 
 import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.SimpleBooleanProperty;
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
@@ -41,7 +40,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Window;
 
-public final class DirectoriesContentPane implements CategoryContentPane {
+public final class DirectoriesContentPane extends CategoryContentPane {
 	
 	private static final String DIRECTORIES_CONTENT_PANE_NAME = "Directories";
 
@@ -67,17 +66,15 @@ public final class DirectoriesContentPane implements CategoryContentPane {
 	private final CheckBox deleteTorrentsCheck = new CheckBox("Delete loaded .torrents");	
 	private final CheckBox storeTorrentsCheck = new CheckBox("Store .torrents in:");			
 	
-	private final ScrollPane contentPane;
-	
-	private final BooleanProperty preferencesChanged = new SimpleBooleanProperty(false);
+	private final ScrollPane contentPane;	
 	private final FileActionHandler fileActionHandler;
 	private final Window owner;
 	
 	public DirectoriesContentPane(final Window owner, final FileActionHandler fileActionHandler, 
 			final BooleanProperty preferencesChanged) {
+		super(DIRECTORIES_CONTENT_PANE_NAME, preferencesChanged);
 		this.owner = owner;
 		this.fileActionHandler = fileActionHandler;
-		this.preferencesChanged.bind(preferencesChanged);
 		initComponents(preferencesChanged);
 		contentPane = buildDirectoriesOptionsView();
 	}
@@ -103,16 +100,11 @@ public final class DirectoriesContentPane implements CategoryContentPane {
 					moveFromDefaultCheck.isSelected());
 			ApplicationPreferences.setProperty(PathProperties.DELETE_LOADED_TORRENTS_SET, deleteTorrentsCheck.isSelected());
 		}
-	};
+	}
 	
 	@Override
 	public final ScrollPane getContentPane() {
 		return contentPane;
-	}
-	
-	@Override
-	public final String getName() {
-		return DIRECTORIES_CONTENT_PANE_NAME;
 	}
 	
 	private void initComponents(final BooleanProperty preferencesChanged) {
