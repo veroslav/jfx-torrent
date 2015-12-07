@@ -133,7 +133,6 @@ public final class TableUtils {
 	 * @param columnSizeProperty
 	 * @param defaultColumnSizeValues
 	 * @param columnOrderProperty
-	 * @param defaultColumnOrderings
 	 * @return Loaded column states
 	 */
 	public static <T> TableState<T> loadColumnStates(final LinkedHashMap<String, ? extends TableColumnBase<T, ?>> columnMappings,
@@ -204,13 +203,10 @@ public final class TableUtils {
 			columnVisibleMenuItem.setId(c.getId());
 			columnVisibleMenuItem.setSelected(true);
 			menuItemMapping.put(c.getId(), columnVisibleMenuItem);
-			
-			//TODO: Fix workaround (listener) for https://bugs.openjdk.java.net/browse/JDK-8136468 (jre 8u60)
-			c.visibleProperty().bind(columnVisibleMenuItem.selectedProperty());			
-			
 			c.setContextMenu(headerContextMenu);			
 			
-			columnVisibleMenuItem.selectedProperty().addListener((obs, oldV, selected) -> {				
+			columnVisibleMenuItem.selectedProperty().addListener((obs, oldV, selected) -> {
+				c.setVisible(selected);
 				final List<? extends TableColumnBase<T, ?>> visibleColumnHeaders = 
 						TableUtils.getVisibleColumnHeaders(columns);
 				

@@ -46,5 +46,5 @@ public final class PathProperties {
 	public static final String DELETE_LOADED_TORRENTS_SET = "paths.load.torrents.delete";
 	
 	public static final String DEFAULT_STORE_TORRENTS_PATH = System.getProperty("user.home") + File.separator +
-			ClientProperties.CLIENT_NAME + File.separator;
+			"." + ClientProperties.CLIENT_NAME + File.separator;
 }
