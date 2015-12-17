@@ -61,7 +61,7 @@ public final class PreferencesWindow {
 	//Whether any of the preferences has been changed by the user
 	private final BooleanProperty preferencesChanged = new SimpleBooleanProperty(false);
 	
-	private final CategoryContentPane[] categoryContentPanes = new CategoryContentPane[3];
+	private final CategoryContentPane[] categoryContentPanes = new CategoryContentPane[4];
 	
 	private final Dialog<ButtonType> window;
 	
@@ -70,10 +70,11 @@ public final class PreferencesWindow {
 	
 	public PreferencesWindow(final Window owner, final FileActionHandler fileActionHandler) {
 		optionGroupMappings = new HashMap<>();
-				
+		
 		categoryContentPanes[0] = new UISettingsContentPane(preferencesChanged);
 		categoryContentPanes[1] = new DirectoriesContentPane(owner, fileActionHandler, preferencesChanged);
 		categoryContentPanes[2] = new BitTorrentContentPane(preferencesChanged);
+		categoryContentPanes[3] = new UiExtrasContentPane(preferencesChanged, owner.getScene());
 		
 		window = new Dialog<>();
 		window.initOwner(owner);		
@@ -169,11 +170,11 @@ public final class PreferencesWindow {
 		
 		//General option mappings
 		optionGroupMappings.put(generalOptionName, buildGeneralOptionsView());
-		optionGroupMappings.put(uiSettingsOptionName, categoryContentPanes[0].getContentPane());
-		optionGroupMappings.put(directoriesOptionName, categoryContentPanes[1].getContentPane());
+		optionGroupMappings.put(uiSettingsOptionName, categoryContentPanes[0].build());
+		optionGroupMappings.put(directoriesOptionName, categoryContentPanes[1].build());
 		optionGroupMappings.put(connectionOptionName, buildConnectionOptionsView());
 		optionGroupMappings.put(bandwidthOptionName, buildBandwidthOptionsView());
-		optionGroupMappings.put(bitTorrentOptionName, categoryContentPanes[2].getContentPane());
+		optionGroupMappings.put(bitTorrentOptionName, categoryContentPanes[2].build());
 		optionGroupMappings.put(transferCapOptionName, buildTransferCapOptionsView());
 		optionGroupMappings.put(queueingOptionName, buildQueueingOptionsView());
 		optionGroupMappings.put(schedulerOptionName, buildSchedulerOptionsView());
@@ -181,7 +182,7 @@ public final class PreferencesWindow {
 		
 		//Advanced option mappings
 		optionGroupMappings.put(advancedOptionName, buildAdvancedOptionsView());
-		optionGroupMappings.put(uiExtrasOptionName, buildUiExtrasOptionsView());
+		optionGroupMappings.put(uiExtrasOptionName, categoryContentPanes[3].build());
 		optionGroupMappings.put(diskCacheOptionName, buildDiskCacheOptionsView());
 		optionGroupMappings.put(webUiOptionName, buildWebUiOptionsView());
 		optionGroupMappings.put(runProgramOptionName, buildRunProgramOptionsView());
@@ -249,10 +250,6 @@ public final class PreferencesWindow {
 	
 	private Pane buildAdvancedOptionsView() {
 		return new Pane(new Label("ADVANCED"));
-	}
-	
-	private Pane buildUiExtrasOptionsView() {
-		return new Pane(new Label("UI EXTRAS"));
 	}
 	
 	private Pane buildDiskCacheOptionsView() {

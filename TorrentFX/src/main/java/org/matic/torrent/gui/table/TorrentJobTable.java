@@ -120,6 +120,7 @@ public final class TorrentJobTable {
 		emptyTorrentListPlaceholder.visibleProperty().bind(Bindings.isEmpty(torrentJobTable.getItems()));
 		
 		final BorderPane placeholderPane = new BorderPane();
+		placeholderPane.getStyleClass().add("empty-placeholder");
 		placeholderPane.setPadding(new Insets(15, 0, 0, 40));
 		placeholderPane.setLeft(emptyTorrentListPlaceholder);
 		

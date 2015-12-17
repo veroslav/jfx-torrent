@@ -203,9 +203,9 @@ public final class TableUtils {
 			columnVisibleMenuItem.setId(c.getId());
 			columnVisibleMenuItem.setSelected(true);
 			menuItemMapping.put(c.getId(), columnVisibleMenuItem);
-			c.setContextMenu(headerContextMenu);			
+			c.setContextMenu(headerContextMenu);
 			
-			columnVisibleMenuItem.selectedProperty().addListener((obs, oldV, selected) -> {
+			columnVisibleMenuItem.selectedProperty().addListener((obs, oldV, selected) -> {	
 				c.setVisible(selected);
 				final List<? extends TableColumnBase<T, ?>> visibleColumnHeaders = 
 						TableUtils.getVisibleColumnHeaders(columns);

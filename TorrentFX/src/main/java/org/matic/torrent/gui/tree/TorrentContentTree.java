@@ -91,7 +91,7 @@ public final class TorrentContentTree {
 	public TorrentContentTree(final BinaryEncodedDictionary infoDictionary,
 			final boolean showProgressDetailColumns) {		
 		selectedFilesSize = new SimpleLongProperty();		 
-		fileEntryTree = new TreeTableView<TorrentFileEntry>();
+		fileEntryTree = new TreeTableView<>();
 		initComponents(infoDictionary, showProgressDetailColumns);
 	}
 	
@@ -347,7 +347,7 @@ public final class TorrentContentTree {
 		final TreeTableColumn<TorrentFileEntry, Long> longValueColumn = new TreeTableColumn<TorrentFileEntry, Long>(columnName);
 		longValueColumn.setId(columnName);
 		longValueColumn.setGraphic(TableUtils.buildColumnHeader(longValueColumn, style));
-		longValueColumn.setCellValueFactory(new TreeItemPropertyValueFactory<TorrentFileEntry, Long>(propertyName));
+		longValueColumn.setCellValueFactory(new TreeItemPropertyValueFactory<>(propertyName));
 		longValueColumn.setCellFactory(column -> new TreeTableCell<TorrentFileEntry, Long>() {
 			final Label valueLabel = new Label();			
 			
@@ -381,7 +381,7 @@ public final class TorrentContentTree {
 				new TreeTableColumn<TorrentFileEntry, Integer>(PRIORITY_COLUMN_NAME);
 		priorityColumn.setId(PRIORITY_COLUMN_NAME);
 		priorityColumn.setGraphic(TableUtils.buildColumnHeader(priorityColumn, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME));
-		priorityColumn.setCellValueFactory(new TreeItemPropertyValueFactory<TorrentFileEntry, Integer>("priority"));
+		priorityColumn.setCellValueFactory(new TreeItemPropertyValueFactory<>("priority"));
 		priorityColumn.setCellFactory(column -> new TreeTableCell<TorrentFileEntry, Integer>() {
 			final Label valueLabel = new Label();			
 			@Override
@@ -412,9 +412,8 @@ public final class TorrentContentTree {
 		final TreeTableColumn<TorrentFileEntry, String> pathColumn =
 				new TreeTableColumn<TorrentFileEntry, String>(PATH_COLUMN_NAME);
 		pathColumn.setId(PATH_COLUMN_NAME);		
-		pathColumn.setCellValueFactory(new TreeItemPropertyValueFactory<TorrentFileEntry, String>("path"));
+		pathColumn.setCellValueFactory(new TreeItemPropertyValueFactory<>("path"));
 		pathColumn.setGraphic(TableUtils.buildColumnHeader(pathColumn, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME));
-		pathColumn.setVisible(false);		
 		
 		return pathColumn;
 	}
@@ -423,7 +422,7 @@ public final class TorrentContentTree {
 		final TreeTableColumn<TorrentFileEntry, Double> progressColumn = 
 				new TreeTableColumn<TorrentFileEntry, Double>(PROGRESS_COLUMN_NAME);
 		progressColumn.setId(PROGRESS_COLUMN_NAME);
-		progressColumn.setCellValueFactory(new TreeItemPropertyValueFactory<TorrentFileEntry, Double>("progress"));
+		progressColumn.setCellValueFactory(new TreeItemPropertyValueFactory<>("progress"));
 		progressColumn.setGraphic(TableUtils.buildColumnHeader(progressColumn, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME));
 		progressColumn.setCellFactory(column -> new ProgressBarTreeTableCell<TorrentFileEntry>() {			
 			@Override
@@ -466,7 +465,7 @@ public final class TorrentContentTree {
 			final TorrentFileEntry fileEntry = p.getValue().getValue();
 			final FileNameColumnModel columnModel = new FileNameColumnModel(
 					treeItem.isLeaf(), fileEntry.nameProperty().get());
-			return new ReadOnlyObjectWrapper<FileNameColumnModel>(columnModel);
+			return new ReadOnlyObjectWrapper<>(columnModel);
 		});			
 		fileNameColumn.setCellFactory(column -> new CheckBoxTreeTableCell<
 				TorrentFileEntry, FileNameColumnModel>() {	
@@ -493,8 +492,8 @@ public final class TorrentContentTree {
 					final Image image = treeItem.isLeaf()? fileEntry.getImage() : (treeItem.isExpanded()? 
 							ImageUtils.FOLDER_OPENED_IMAGE: ImageUtils.FOLDER_CLOSED_IMAGE);
 					
-					final ImageView imageView = ImageUtils.colorImage(image, Color.DARKOLIVEGREEN, 
-							ImageUtils.CROPPED_MARGINS_IMAGE_VIEW, 
+					final ImageView imageView = ImageUtils.createImageView(image,
+							ImageUtils.CROPPED_MARGINS_IMAGE_VIEW,
 							ImageUtils.FILE_TYPE_IMAGE_SIZE, ImageUtils.FILE_TYPE_IMAGE_SIZE);
 					
 					final CheckBox selectionCheckBox = new CheckBox();					
@@ -507,6 +506,7 @@ public final class TorrentContentTree {
 							selectionCheckBox.indeterminateProperty());																					
 					
 					fileNameLabel.setText(fileEntry.nameProperty().get());
+					ImageUtils.colorize(imageView, Color.DARKOLIVEGREEN);
 					fileNameLabel.setGraphic(imageView);
 					
 					final HBox checkBoxPane = new HBox();			

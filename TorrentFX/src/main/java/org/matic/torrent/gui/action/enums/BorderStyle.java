@@ -18,25 +18,9 @@
 *
 */
 
-package org.matic.torrent.gui.action.values;
+package org.matic.torrent.gui.action.enums;
 
-/**
- * Available protocol encryption options for BitTorrent traffic 
- * 
- * @author Vedran Matic
- *
- */
-public enum EncryptionMode {
-	DISABLED("Disabled");
-	
-	private String label;
-	
-	EncryptionMode(final String label) {
-		this.label = label;
-	}
-	
-	@Override
-	public String toString() {
-		return label;
-	}
+public enum BorderStyle {
+
+	COMPACT, AMPLE
 }

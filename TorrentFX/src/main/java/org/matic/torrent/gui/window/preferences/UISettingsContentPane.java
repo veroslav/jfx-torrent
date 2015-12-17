@@ -20,10 +20,10 @@
 
 package org.matic.torrent.gui.window.preferences;
 
-import org.matic.torrent.gui.GuiUtils;
-import org.matic.torrent.gui.GuiUtils.BorderType;
-import org.matic.torrent.gui.action.values.DownloadingTorrentClickAction;
-import org.matic.torrent.gui.action.values.SeedingTorrentClickAction;
+import org.matic.torrent.gui.action.enums.BorderStyle;
+import org.matic.torrent.gui.action.enums.DownloadingTorrentClickAction;
+import org.matic.torrent.gui.action.enums.SeedingTorrentClickAction;
+import org.matic.torrent.gui.custom.TitledBorderPane;
 import org.matic.torrent.preferences.ApplicationPreferences;
 import org.matic.torrent.preferences.GuiProperties;
 import org.matic.torrent.preferences.TransferProperties;
@@ -72,12 +72,14 @@ public class UISettingsContentPane extends CategoryContentPane {
 	private final ComboBox<DownloadingTorrentClickAction> downloadingTorrentOptionsComboBox = new ComboBox<>();
 	private final ComboBox<SeedingTorrentClickAction> seedingTorrentOptionsComboBox = new ComboBox<>();
 	
-	private final ScrollPane contentPane;
-	
 	public UISettingsContentPane(final BooleanProperty preferencesChanged) {
 		super(UI_SETTINGS_CONTENT_PANE_NAME, preferencesChanged);
 		initComponents(preferencesChanged);
-		contentPane = buildUISettingsOptionsView();
+	}
+	
+	@Override
+	protected Node build() {
+		return buildUISettingsOptionsView();
 	}
 
 	@Override
@@ -125,19 +127,12 @@ public class UISettingsContentPane extends CategoryContentPane {
 		}
 	}
 
-	@Override
-	public final ScrollPane getContentPane() {
-		return contentPane;
-	}
-
 	private void initComponents(final BooleanProperty preferencesChanged) {
 		downloadingTorrentOptionsComboBox.setItems(
 				FXCollections.observableArrayList(DownloadingTorrentClickAction.values()));
-		downloadingTorrentOptionsComboBox.getSelectionModel().select(0);
 		
 		seedingTorrentOptionsComboBox.setItems(
 				FXCollections.observableArrayList(SeedingTorrentClickAction.values()));
-		seedingTorrentOptionsComboBox.getSelectionModel().select(0);
 		
 		setComboBoxActions(preferencesChanged);
 		setCheckBoxActions(preferencesChanged);
@@ -245,15 +240,15 @@ public class UISettingsContentPane extends CategoryContentPane {
 		speedInTitleBarCheck.setSelected(speedInTitleBarSet);
 	}
 	
-	private ScrollPane buildUISettingsOptionsView() {
-		final Node displayOptions = GuiUtils.applyBorder(buildDisplayOptionsPane(),
-				"Display Options", BorderType.DEFAULT_WINDOW_BORDER);
-		final Node systemTrayOptions = GuiUtils.applyBorder(buildSystemTrayOptionsPane(),
-				"System Tray", BorderType.DEFAULT_WINDOW_BORDER);
-		final Node torrentAdditionOptions = GuiUtils.applyBorder(buildOnTorrentAdditionOptionsPane(),
-				"When Adding Torrents", BorderType.DEFAULT_WINDOW_BORDER);
-		final Node doubleClickActionsOptions = GuiUtils.applyBorder(buildDoubleClickActionsOptionPane(),
-				"Actions for Double Click", BorderType.DEFAULT_WINDOW_BORDER);
+	private Node buildUISettingsOptionsView() {
+		final TitledBorderPane displayOptions = new TitledBorderPane(
+				"Display Options", buildDisplayOptionsPane(), BorderStyle.COMPACT);
+		final TitledBorderPane systemTrayOptions = new TitledBorderPane(
+				"System Tray", buildSystemTrayOptionsPane(), BorderStyle.COMPACT);
+		final TitledBorderPane torrentAdditionOptions = new TitledBorderPane(
+				"When Adding Torrents", buildOnTorrentAdditionOptionsPane(), BorderStyle.COMPACT);
+		final TitledBorderPane doubleClickActionsOptions = new TitledBorderPane(
+				"Actions for Double Click", buildDoubleClickActionsOptionPane(), BorderStyle.COMPACT);
 		
 		final VBox content = new VBox();
 		content.getStyleClass().add(GuiProperties.VERTICAL_LAYOUT_SPACING);

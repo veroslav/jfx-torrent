@@ -27,6 +27,16 @@ import java.nio.file.Paths;
 import java.util.Optional;
 import java.util.TimeZone;
 
+import org.matic.torrent.codec.BinaryEncodedDictionary;
+import org.matic.torrent.codec.BinaryEncodedInteger;
+import org.matic.torrent.codec.BinaryEncodedString;
+import org.matic.torrent.codec.BinaryEncodingKeyNames;
+import org.matic.torrent.gui.action.enums.BorderStyle;
+import org.matic.torrent.gui.custom.TitledBorderPane;
+import org.matic.torrent.gui.tree.TorrentContentTree;
+import org.matic.torrent.io.DiskUtilities;
+import org.matic.torrent.utils.UnitConverter;
+
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -54,16 +64,6 @@ import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Window;
-
-import org.matic.torrent.codec.BinaryEncodedDictionary;
-import org.matic.torrent.codec.BinaryEncodedInteger;
-import org.matic.torrent.codec.BinaryEncodedString;
-import org.matic.torrent.codec.BinaryEncodingKeyNames;
-import org.matic.torrent.gui.GuiUtils;
-import org.matic.torrent.gui.GuiUtils.BorderType;
-import org.matic.torrent.gui.tree.TorrentContentTree;
-import org.matic.torrent.io.DiskUtilities;
-import org.matic.torrent.utils.UnitConverter;
 
 /**
  * A window showing contents of a torrent to be opened and added to a list of torrents
@@ -364,8 +364,8 @@ public final class AddNewTorrentWindow {
 		
 		BorderPane.setMargin(northPane, new Insets(0, 0, 10, 0));
 		
-		final Node borderedTorrentContentsPane = GuiUtils.applyBorder(
-				torrentContentsPane, "Torrent Contents", BorderType.ADD_NEW_TORRENT_BORDER);
+		final TitledBorderPane borderedTorrentContentsPane = new TitledBorderPane(
+				"Torrent Contents", torrentContentsPane, BorderStyle.AMPLE);
 				
 		return borderedTorrentContentsPane;
 	}
@@ -379,16 +379,17 @@ public final class AddNewTorrentWindow {
 		
 		final VBox saveOptionsPane = new VBox(10);
 		saveOptionsPane.getChildren().addAll(saveLocationPane, createSubFolderCheckbox);
-				
-		final Node borderedSaveOptionsPane = GuiUtils.applyBorder(
-				saveOptionsPane, "Save In", BorderType.ADD_NEW_TORRENT_BORDER);
+
+		final TitledBorderPane borderedSaveOptionsPane = new TitledBorderPane(
+				"Save In", saveOptionsPane, BorderStyle.AMPLE);
 		
 		return borderedSaveOptionsPane;
 	}
 	
 	private Node buildNamePane() {
-		final StackPane namePane = new StackPane(nameTextField);		
-		final Node borderedNamePane = GuiUtils.applyBorder(namePane, "Name", BorderType.ADD_NEW_TORRENT_BORDER);
+		final StackPane namePane = new StackPane(nameTextField);				
+		final TitledBorderPane borderedNamePane = new TitledBorderPane(
+				"Name", namePane, BorderStyle.AMPLE);
 		
 		return borderedNamePane;
 	}
@@ -418,9 +419,9 @@ public final class AddNewTorrentWindow {
 		torrentOptionsPane.add(addToTopQueueCheckbox, 1, 1);
 		
 		GridPane.setHgrow(labelPane, Priority.ALWAYS);
-		
-		final Node borderedTorrentOptionsPane = GuiUtils.applyBorder(
-				torrentOptionsPane, "Torrent Options", BorderType.ADD_NEW_TORRENT_BORDER);
+
+		final TitledBorderPane borderedTorrentOptionsPane = new TitledBorderPane(
+				"Torrent Options", torrentOptionsPane, BorderStyle.AMPLE);
 		
 		return borderedTorrentOptionsPane;
 	}

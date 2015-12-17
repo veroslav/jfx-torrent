@@ -22,7 +22,7 @@ package org.matic.torrent.gui.window.preferences;
 
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
-import javafx.scene.control.ScrollPane;
+import javafx.scene.Node;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 
@@ -46,13 +46,13 @@ public abstract class CategoryContentPane {
 	 * Save all changes made by user, if any, since last content save
 	 */
 	public abstract void onSaveContentChanges();
-	
+
 	/**
-	 * Return a pane holding all of the option components for this category
+	 * Build a pane that holds all of the content for this category
 	 * 
 	 * @return
 	 */
-	public abstract ScrollPane getContentPane();
+	protected abstract Node build();
 	
 	/**
 	 * Return this category name (used as the category title)

@@ -19,9 +19,9 @@
 */
 package org.matic.torrent.gui.window.preferences;
 
-import org.matic.torrent.gui.GuiUtils;
-import org.matic.torrent.gui.GuiUtils.BorderType;
-import org.matic.torrent.gui.action.values.EncryptionMode;
+import org.matic.torrent.gui.action.enums.BorderStyle;
+import org.matic.torrent.gui.action.enums.EncryptionMode;
+import org.matic.torrent.gui.custom.TitledBorderPane;
 import org.matic.torrent.preferences.ApplicationPreferences;
 import org.matic.torrent.preferences.BitTorrentProperties;
 import org.matic.torrent.preferences.GuiProperties;
@@ -61,12 +61,14 @@ public class BitTorrentContentPane extends CategoryContentPane {
 	private final CheckBox anonymousModeCheck = new CheckBox("Enable anonymous mode");	
 	private final ComboBox<EncryptionMode> encryptionModeComboBox = new ComboBox<>();
 	
-	private final ScrollPane contentPane;
-	
 	public BitTorrentContentPane(final BooleanProperty preferencesChanged) {
 		super(BITTORRENT_CONTENT_PANE_NAME, preferencesChanged);
 		initComponents(preferencesChanged);
-		contentPane = buildOptionsView();
+	}
+	
+	@Override
+	protected Node build() {
+		return buildOptionsView();
 	}
 
 	@Override
@@ -103,16 +105,10 @@ public class BitTorrentContentPane extends CategoryContentPane {
 					reportedTrackerIpField.getText().trim());
 		}
 	}
-
-	@Override
-	public ScrollPane getContentPane() {
-		return contentPane;
-	}
 	
 	private void initComponents(final BooleanProperty preferencesChanged) {
 		encryptionModeComboBox.setItems(FXCollections.observableArrayList(EncryptionMode.values()));
 		encryptionModeComboBox.setMaxWidth(Double.POSITIVE_INFINITY);
-		encryptionModeComboBox.getSelectionModel().select(0);
 		
 		setComboBoxActions(preferencesChanged);
 		setCheckBoxActions(preferencesChanged);
@@ -182,14 +178,14 @@ public class BitTorrentContentPane extends CategoryContentPane {
 		anonymousModeCheck.setSelected(enableAnonimousModeSet);
 	}
 	
-	private ScrollPane buildOptionsView() {
-		final Node basicOptions = GuiUtils.applyBorder(buildBasicOptionsPane(),
-				"Basic BitTorrent Features", BorderType.DEFAULT_WINDOW_BORDER);
-		final Node trackerOptions = GuiUtils.applyBorder(buildTrackerOptionsPane(),
-				"Tracker Features", BorderType.DEFAULT_WINDOW_BORDER);
-		final Node encryptionOptions = GuiUtils.applyBorder(buildEncryptionOptionsPane(),
-				"Protocol Encryption", BorderType.DEFAULT_WINDOW_BORDER);
-		
+	private Node buildOptionsView() {
+		final TitledBorderPane basicOptions = new TitledBorderPane(
+				"Basic BitTorrent Features", buildBasicOptionsPane(), BorderStyle.COMPACT);
+		final TitledBorderPane trackerOptions = new TitledBorderPane(
+				"Tracker Features", buildTrackerOptionsPane(), BorderStyle.COMPACT);
+		final TitledBorderPane encryptionOptions = new TitledBorderPane(
+				"Protocol Encryption", buildEncryptionOptionsPane(), BorderStyle.COMPACT);
+						
 		final VBox content = new VBox();
 		content.getStyleClass().add(GuiProperties.VERTICAL_LAYOUT_SPACING);
 		content.getChildren().addAll(basicOptions, trackerOptions, encryptionOptions);

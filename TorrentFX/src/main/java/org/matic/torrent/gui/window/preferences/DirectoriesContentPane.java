@@ -20,15 +20,16 @@
 
 package org.matic.torrent.gui.window.preferences;
 
-import org.matic.torrent.gui.GuiUtils;
-import org.matic.torrent.gui.GuiUtils.BorderType;
 import org.matic.torrent.gui.action.FileActionHandler;
+import org.matic.torrent.gui.action.enums.BorderStyle;
+import org.matic.torrent.gui.custom.TitledBorderPane;
 import org.matic.torrent.preferences.ApplicationPreferences;
 import org.matic.torrent.preferences.GuiProperties;
 import org.matic.torrent.preferences.PathProperties;
 
 import javafx.beans.property.BooleanProperty;
 import javafx.geometry.Insets;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ScrollPane;
@@ -66,7 +67,6 @@ public final class DirectoriesContentPane extends CategoryContentPane {
 	private final CheckBox deleteTorrentsCheck = new CheckBox("Delete loaded .torrents");	
 	private final CheckBox storeTorrentsCheck = new CheckBox("Store .torrents in:");			
 	
-	private final ScrollPane contentPane;	
 	private final FileActionHandler fileActionHandler;
 	private final Window owner;
 	
@@ -76,7 +76,11 @@ public final class DirectoriesContentPane extends CategoryContentPane {
 		this.owner = owner;
 		this.fileActionHandler = fileActionHandler;
 		initComponents(preferencesChanged);
-		contentPane = buildDirectoriesOptionsView();
+	}
+	
+	@Override
+	protected Node build() {
+		return buildDirectoriesOptionsView();
 	}
 	
 	@Override
@@ -100,11 +104,6 @@ public final class DirectoriesContentPane extends CategoryContentPane {
 					moveFromDefaultCheck.isSelected());
 			ApplicationPreferences.setProperty(PathProperties.DELETE_LOADED_TORRENTS_SET, deleteTorrentsCheck.isSelected());
 		}
-	}
-	
-	@Override
-	public final ScrollPane getContentPane() {
-		return contentPane;
 	}
 	
 	private void initComponents(final BooleanProperty preferencesChanged) {
@@ -257,7 +256,7 @@ public final class DirectoriesContentPane extends CategoryContentPane {
 		moveFromDefaultCheck.setDisable(!isChecked);
 	}
 	
-	private ScrollPane buildDirectoriesOptionsView() {		
+	private Node buildDirectoriesOptionsView() {		
 		//Downloaded files directory				
 		final VBox downloadDirectoryPane = buildDownloadDirectoryPane();		
 		VBox.setMargin(moveFromDefaultCheck, new Insets(0, 0, 0, 25));
@@ -275,9 +274,9 @@ public final class DirectoriesContentPane extends CategoryContentPane {
 		final VBox content = new VBox();
 		content.getStyleClass().add(GuiProperties.VERTICAL_LAYOUT_SPACING);		
 		content.getChildren().addAll(
-				GuiUtils.applyBorder(downloadDirectoryPane, "Location of Downloaded Files", BorderType.DEFAULT_WINDOW_BORDER),
-				GuiUtils.applyBorder(torrentDirectoryPane, "Location of .torrents", BorderType.DEFAULT_WINDOW_BORDER),
-				GuiUtils.applyBorder(keyStorePane, "Location of Certificate Key Store", BorderType.DEFAULT_WINDOW_BORDER));
+				new TitledBorderPane("Location of Downloaded Files", downloadDirectoryPane, BorderStyle.COMPACT),
+				new TitledBorderPane("Location of .torrents", torrentDirectoryPane, BorderStyle.COMPACT),
+				new TitledBorderPane("Location of Certificate Key Store", keyStorePane, BorderStyle.COMPACT));
 		
 		final ScrollPane contentScroll = new ScrollPane(content);
 		contentScroll.setHbarPolicy(ScrollBarPolicy.NEVER);

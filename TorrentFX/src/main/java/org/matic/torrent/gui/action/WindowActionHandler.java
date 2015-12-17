@@ -30,6 +30,7 @@ import javafx.scene.control.ButtonType;
 import javafx.stage.Window;
 
 import org.matic.torrent.gui.window.preferences.PreferencesWindow;
+import org.matic.torrent.peer.ClientProperties;
 import org.matic.torrent.preferences.ApplicationPreferences;
 import org.matic.torrent.preferences.GuiProperties;
 
@@ -103,7 +104,8 @@ public final class WindowActionHandler {
 	private boolean handleWindowClosing(final Window owner) {
 		final Alert confirmAlert = new Alert(AlertType.CONFIRMATION);
 		confirmAlert.initOwner(owner);
-		confirmAlert.setContentText("Are you sure you want to exit jfxTorrent?");
+		confirmAlert.setContentText("Are you sure you want to exit " +
+				ClientProperties.CLIENT_NAME + "?");
 		confirmAlert.setTitle("Confirm Exit");				
 		confirmAlert.setHeaderText(null);
 		

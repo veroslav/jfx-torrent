@@ -25,15 +25,15 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import org.matic.torrent.gui.action.enums.BorderStyle;
+import org.matic.torrent.gui.custom.TitledBorderPane;
+import org.matic.torrent.preferences.PathProperties;
+
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.TextArea;
 import javafx.stage.Window;
-
-import org.matic.torrent.gui.GuiUtils;
-import org.matic.torrent.gui.GuiUtils.BorderType;
-import org.matic.torrent.preferences.PathProperties;
 
 /**
  * A window shown when the user chooses to add tracker(s)
@@ -78,7 +78,7 @@ public class AddTrackerWindow {
 		trackerInputArea.textProperty().addListener((obs, oldV, newV) -> okButton.setDisable(newV.isEmpty()));
 		
 		window.setResizable(true);		
-		window.getDialogPane().setContent(GuiUtils.applyBorder(trackerInputArea,
-				"List of trackers to add", BorderType.DEFAULT_WINDOW_BORDER));
+		window.getDialogPane().setContent(new TitledBorderPane(
+				"List of trackers to add", trackerInputArea, BorderStyle.COMPACT));
 	}
 }

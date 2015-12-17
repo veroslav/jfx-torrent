@@ -31,12 +31,13 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import org.controlsfx.control.StatusBar;
 import org.matic.torrent.gui.action.FileActionHandler;
 import org.matic.torrent.gui.action.TabActionHandler;
 import org.matic.torrent.gui.action.TorrentJobActionHandler;
 import org.matic.torrent.gui.action.TrackerTableActionHandler;
 import org.matic.torrent.gui.action.WindowActionHandler;
+import org.matic.torrent.gui.action.enums.ApplicationTheme;
+import org.matic.torrent.gui.custom.StatusBar;
 import org.matic.torrent.gui.image.ImageUtils;
 import org.matic.torrent.gui.model.TorrentFileEntry;
 import org.matic.torrent.gui.model.TorrentJobView;
@@ -59,6 +60,7 @@ import org.matic.torrent.utils.PeriodicTaskRunner;
 
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.event.Event;
 import javafx.geometry.Orientation;
@@ -105,22 +107,9 @@ import javafx.util.Duration;
  */
 public final class ApplicationWindow {
 	
-	private static final String TOOLBAR_BUTTON_ADD_FROM_URL_NAME = "Add Torrent from URL";
-	private static final String TOOLBAR_BUTTON_ADD_RSS_FEED_NAME = "Add RSS Feed";
-	private static final String TOOLBAR_BUTTON_OPTIONS_NAME = "Preferences";
-	private static final String TOOLBAR_BUTTON_START_NAME = "Start Torrent";
-	private static final String TOOLBAR_BUTTON_PAUSE_NAME = "Pause Torrent";
-	private static final String TOOLBAR_BUTTON_STOP_NAME = "Stop Torrent";
-	private static final String TOOLBAR_BUTTON_ADD_NAME = "Add Torrent";
-	private static final String TOOLBAR_BUTTON_REMOVE_NAME = "Remove";	
-	
 	private static final List<String> TAB_NAMES = Arrays.asList(GuiProperties.FILES_TAB_ID,
 			GuiProperties.INFO_TAB_ID, GuiProperties.PEERS_TAB_ID, GuiProperties.TRACKERS_TAB_ID,
-			GuiProperties.PIECES_TAB_ID, GuiProperties.SPEED_TAB_ID, GuiProperties.LOGGER_TAB_ID);        
-    private static final String[] TAB_IMAGE_PATHS = {ImageUtils.FOLDER_OPEN_IMAGE_LOCATION,
-    		"/images/appbar.information.circle.png", "/images/appbar.group.png",
-    		"/images/appbar.location.circle.png", "/images/appbar.input.keyboard.png",
-    		"/images/appbar.graph.line.png", "/images/appbar.lines.horizontal.4.png"};
+			GuiProperties.PIECES_TAB_ID, GuiProperties.SPEED_TAB_ID, GuiProperties.LOGGER_TAB_ID);            
 		
 	private static final Color TOOLBAR_BUTTON_COLOR = Color.rgb(46, 46, 46);
 	private static final Color REMOVE_BUTTON_COLOR = Color.rgb(165,57,57);
@@ -183,7 +172,7 @@ public final class ApplicationWindow {
 	//Mapping between a torrent and it's tracker views
 	private final Map<QueuedTorrent, List<TrackerView>> trackerViewMappings = new HashMap<>();
 	
-	//Mapping between toolbar's buttons and their names
+	//Mapping between toolbar's buttons and their icon paths
 	private final Map<String, Button> toolbarButtonsMap = new HashMap<>();
 	
 	//Mapping between details tabs and their names
@@ -239,6 +228,7 @@ public final class ApplicationWindow {
 	}
 	
 	private void initStatusBar(final BorderPane contentPane) {
+		statusBar.getStyleClass().add("status-bar");
 		final boolean statusBarShown = ApplicationPreferences.getProperty(
     			GuiProperties.STATUSBAR_VISIBLE, GuiProperties.DEFAULT_STATUSBAR_VISIBLE);
 		showStatusBarMenuItem.setSelected(statusBarShown);
@@ -253,8 +243,13 @@ public final class ApplicationWindow {
 		final double windowHeight = ApplicationPreferences.getProperty(
 				GuiProperties.APPLICATION_WINDOW_HEIGHT, GuiProperties.DEFAULT_APPLICATION_WINDOW_HEIGHT);
 		
-		final Scene scene = new Scene(contentPane, windowWidth, windowHeight);		
-		scene.getStylesheets().add("/ui-style.css");
+		final Scene scene = new Scene(contentPane, windowWidth, windowHeight);	
+		
+		final String themeName = ApplicationPreferences.getProperty(
+				GuiProperties.APPLICATION_THEME, ApplicationTheme.LIGHT.name().toLowerCase());
+		scene.getStylesheets().add(GuiProperties.THEME_STYLESHEET_PATH_TEMPLATE.replace("?", themeName)
+				+ GuiProperties.THEME_UI_STYLE_CSS);
+		scene.getStylesheets().addListener((ListChangeListener<String>) l -> onStylesheetChanged(l));
 		
 		final double windowXPosition = ApplicationPreferences.getProperty(
 				GuiProperties.APPLICATION_WINDOW_POSITION_X, GuiProperties.DEFAULT_APPLICATION_WINDOW_POSITION);
@@ -407,8 +402,8 @@ public final class ApplicationWindow {
         initFilterTreeView();
          
         horizontalSplitPane.getStyleClass().add(borderlessSplitPaneStyle);
-        horizontalSplitPane.setOrientation(Orientation.HORIZONTAL);
-        horizontalSplitPane.getItems().addAll(filterTreeView, centerPane); 
+        horizontalSplitPane.setOrientation(Orientation.HORIZONTAL);        
+        horizontalSplitPane.getItems().addAll(filterTreeView, centerPane);
         
         final double horizontalDividerPosition = ApplicationPreferences.getProperty(
         		GuiProperties.HORIZONTAL_DIVIDER_POSITION, GuiProperties.DEFAULT_HORIZONTAL_DIVIDER_POSITION);        
@@ -473,8 +468,8 @@ public final class ApplicationWindow {
 		centerPane.setTop(!showCompact || isToolbarHidden? null : toolbar); 
 		toolbar.setId(showCompact? centerPane.getId() : mainPane.getId());
 		
-		final Button pauseButton = toolbarButtonsMap.get(TOOLBAR_BUTTON_PAUSE_NAME);
-		final Button rssButton = toolbarButtonsMap.get(TOOLBAR_BUTTON_ADD_RSS_FEED_NAME);
+		final Button pauseButton = toolbarButtonsMap.get(ImageUtils.PAUSE_ICON_LOCATION);
+		final Button rssButton = toolbarButtonsMap.get(ImageUtils.RSS_ICON_LOCATION);
 		final ObservableList<Node> toolbarButtons = toolbar.getItems();
 		    		
 		if(showCompact) {
@@ -482,10 +477,10 @@ public final class ApplicationWindow {
 		}
 		else if(!isExpandedToolbar(toolbar)) {
 			//Add Pause button after Start Torrent and RSS button after Add from URL button respectively
-			final int rssButtonIndex = toolbarButtons.indexOf(toolbarButtonsMap.get(TOOLBAR_BUTTON_ADD_FROM_URL_NAME));
+			final int rssButtonIndex = toolbarButtons.indexOf(toolbarButtonsMap.get(ImageUtils.LINK_ICON_LOCATION));
 			toolbarButtons.add(rssButtonIndex + 1, rssButton);
 			
-			final int downloadButtonIndex = toolbarButtons.indexOf(toolbarButtonsMap.get(TOOLBAR_BUTTON_START_NAME));    			    			
+			final int downloadButtonIndex = toolbarButtons.indexOf(toolbarButtonsMap.get(ImageUtils.DOWNLOAD_ICON_LOCATION));    			    			
 			toolbarButtons.add(downloadButtonIndex + 1, pauseButton);    			
 		}		
 	}
@@ -502,47 +497,50 @@ public final class ApplicationWindow {
 	
 	private boolean isExpandedToolbar(final ToolBar toolbar) {
 		final ObservableList<Node> toolbarButtons = toolbar.getItems();
-		return toolbarButtons.contains(toolbarButtonsMap.get(TOOLBAR_BUTTON_PAUSE_NAME)) &&
-				toolbarButtons.contains(toolbarButtonsMap.get(TOOLBAR_BUTTON_ADD_RSS_FEED_NAME));
+		return toolbarButtons.contains(toolbarButtonsMap.get(ImageUtils.PAUSE_ICON_LOCATION)) &&
+				toolbarButtons.contains(toolbarButtonsMap.get(ImageUtils.RSS_ICON_LOCATION));
 	}
 	
 	private ToolBar buildToolbar() {				
-		final String[] buttonUrls = new String[]{ImageUtils.ADD_IMAGE_LOCATION,
-				ImageUtils.LINK_IMAGE_LOCATION, ImageUtils.RSS_DARK_IMAGE_LOCATION,
-				ImageUtils.NEW_IMAGE_LOCATION, ImageUtils.DELETE_IMAGE_LOCATION,
-				ImageUtils.DOWNLOAD_IMAGE_LOCATION, ImageUtils.PAUSE_IMAGE_LOCATION,
-				ImageUtils.STOP_IMAGE_LOCATION, ImageUtils.UP_IMAGE_LOCATION,
-				ImageUtils.DOWN_IMAGE_LOCATION, ImageUtils.LOCK_IMAGE_LOCATION,
-				ImageUtils.MONITOR_IMAGE_LOCATION, ImageUtils.SETTINGS_IMAGE_LOCATION};
+		final String[] buttonUrls = new String[]{ImageUtils.ADD_ICON_LOCATION,
+				ImageUtils.LINK_ICON_LOCATION, ImageUtils.RSS_ICON_LOCATION,
+				ImageUtils.NEW_ICON_LOCATION, ImageUtils.DELETE_ICON_LOCATION,
+				ImageUtils.DOWNLOAD_ICON_LOCATION, ImageUtils.PAUSE_ICON_LOCATION,
+				ImageUtils.STOP_ICON_LOCATION, ImageUtils.UP_ICON_LOCATION,
+				ImageUtils.DOWN_ICON_LOCATION, ImageUtils.LOCK_ICON_LOCATION,
+				ImageUtils.REMOTE_ICON_LOCATION, ImageUtils.SETTINGS_ICON_LOCATION};
 		
-		final String[] buttonIds = {TOOLBAR_BUTTON_ADD_NAME, TOOLBAR_BUTTON_ADD_FROM_URL_NAME, TOOLBAR_BUTTON_ADD_RSS_FEED_NAME,
-				"Create New Torrent", TOOLBAR_BUTTON_REMOVE_NAME, TOOLBAR_BUTTON_START_NAME, TOOLBAR_BUTTON_PAUSE_NAME,
-				TOOLBAR_BUTTON_STOP_NAME, "Move Up Queue", "Move Down Queue", "Unlock Bundle", "Remote", TOOLBAR_BUTTON_OPTIONS_NAME};
+		final String[] buttonNames = {"Add Torrent", "Add Torrent from URL", "Add RSS Feed",
+				"Create New Torrent", "Remove", "Start Torrent", "Pause Torrent",
+				"Stop Torrent", "Move Up Queue", "Move Down Queue", "Unlock Bundle", "Remote", "Preferences"};
 		
 		final boolean[] buttonStates = {false, false, false, false, true, true, true, true, true, true, true, false, false};
 		
 		final Button[] toolbarButtons = new Button[buttonUrls.length];
 		for(int i = 0; i < toolbarButtons.length; ++i) {
-			toolbarButtons[i] = buildToolbarButton(buttonUrls[i], buttonIds[i], buttonStates[i]);
+			toolbarButtons[i] = buildToolbarButton(buttonUrls[i], buttonNames[i], buttonStates[i]);
 		}
 		
-		toolbarButtonsMap.get(TOOLBAR_BUTTON_ADD_NAME).setOnAction(
+		toolbarButtonsMap.get(ImageUtils.ADD_ICON_LOCATION).setOnAction(
 				event -> onAddTorrent(fileActionHandler.onFileOpen(stage)));
-		toolbarButtonsMap.get(TOOLBAR_BUTTON_ADD_FROM_URL_NAME).setOnAction(
+		toolbarButtonsMap.get(ImageUtils.LINK_ICON_LOCATION).setOnAction(
 				event -> onAddTorrent(fileActionHandler.onLoadUrl(stage)));
-		toolbarButtonsMap.get(TOOLBAR_BUTTON_OPTIONS_NAME).setOnAction(
+		toolbarButtonsMap.get(ImageUtils.SETTINGS_ICON_LOCATION).setOnAction(
 				event -> windowActionHandler.onOptionsWindowShown(stage, fileActionHandler));
-		toolbarButtonsMap.get(TOOLBAR_BUTTON_REMOVE_NAME).setOnAction(
+		toolbarButtonsMap.get(ImageUtils.DELETE_ICON_LOCATION).setOnAction(
 				event -> onRemoveTorrent());
-		toolbarButtonsMap.get(TOOLBAR_BUTTON_START_NAME).setOnAction(
+		toolbarButtonsMap.get(ImageUtils.DOWNLOAD_ICON_LOCATION).setOnAction(
 				event -> torrentJobActionHandler.onChangeTorrentState(QueuedTorrent.State.ACTIVE,
-						toolbarButtonsMap.get(TOOLBAR_BUTTON_START_NAME),
-						toolbarButtonsMap.get(TOOLBAR_BUTTON_STOP_NAME), torrentJobTable));
-		toolbarButtonsMap.get(TOOLBAR_BUTTON_STOP_NAME).setOnAction(
+						toolbarButtonsMap.get(ImageUtils.DOWNLOAD_ICON_LOCATION),
+						toolbarButtonsMap.get(ImageUtils.STOP_ICON_LOCATION), torrentJobTable));
+		toolbarButtonsMap.get(ImageUtils.STOP_ICON_LOCATION).setOnAction(
 				event -> torrentJobActionHandler.onChangeTorrentState(QueuedTorrent.State.STOPPED,
-						toolbarButtonsMap.get(TOOLBAR_BUTTON_START_NAME),
-						toolbarButtonsMap.get(TOOLBAR_BUTTON_STOP_NAME), torrentJobTable));
+						toolbarButtonsMap.get(ImageUtils.DOWNLOAD_ICON_LOCATION),
+						toolbarButtonsMap.get(ImageUtils.STOP_ICON_LOCATION), torrentJobTable));
 
+		final String themeName = ApplicationPreferences.getProperty(GuiProperties.APPLICATION_THEME, "light");
+		updateToolbarIcons(toolbarButtonsMap, GuiProperties.THEME_STYLESHEET_PATH_TEMPLATE.replace("?", themeName));
+		
 		final HBox separatorBox = new HBox();		
 		HBox.setHgrow(separatorBox, Priority.ALWAYS);
 		
@@ -553,22 +551,27 @@ public final class ApplicationWindow {
 				buildToolbarSeparator(), toolbarButtons[10], buildToolbarSeparator(), separatorBox,
 				buildToolbarSeparator(), toolbarButtons[11], toolbarButtons[12]};
 		
-		final ToolBar toolBar = new ToolBar(toolbarContents);
+		final ToolBar toolBar = new ToolBar(toolbarContents);		
 		return toolBar;
 	}
 	
-	private Button buildToolbarButton(final String imagePath, final String id, final boolean disabled) {
-		final ImageView imageView = ImageUtils.colorImage(new Image(
-				getClass().getResourceAsStream(imagePath)), TOOLBAR_BUTTON_COLOR, 
-				ImageUtils.CROPPED_MARGINS_IMAGE_VIEW, 
-				ImageUtils.TOOLBAR_BUTTON_IMAGE_SIZE, ImageUtils.TOOLBAR_BUTTON_IMAGE_SIZE);
-		
-		final Button button = new Button(null, imageView);		
+	private void updateToolbarIcons(final Map<String, Button> buttonMap, final String iconPath) {
+		buttonMap.entrySet().forEach(buttonLocation -> {			
+			final ImageView imageView = ImageUtils.createImageView(new Image(
+					getClass().getResourceAsStream(iconPath + buttonLocation.getKey())),
+					ImageUtils.CROPPED_MARGINS_IMAGE_VIEW, ImageUtils.TOOLBAR_BUTTON_IMAGE_SIZE,
+					ImageUtils.TOOLBAR_BUTTON_IMAGE_SIZE);			
+			buttonLocation.getValue().setGraphic(imageView);
+		});
+	}
+	
+	private Button buildToolbarButton(final String iconPath, final String tooltip, final boolean disabled) {			
+		final Button button = new Button();
 		button.getStyleClass().add("toolbar-button");		
-		button.setTooltip(new Tooltip(id));		
+		button.setTooltip(new Tooltip(tooltip));		
 		button.setDisable(disabled);		
 
-		toolbarButtonsMap.put(id, button);				
+		toolbarButtonsMap.put(iconPath, button);				
 		return button;
 	}
 	
@@ -594,8 +597,13 @@ public final class ApplicationWindow {
     			GuiProperties.TAB_ICONS_VISIBLE, GuiProperties.DEFAULT_TAB_ICONS_VISIBLE);
         showTabIconsMenuItem.setSelected(tabIconsShown);
         
+        final String[] tabIconPaths = {ImageUtils.TAB_FILES_ICON_LOCATION,
+        		ImageUtils.TAB_INFO_ICON_LOCATION, ImageUtils.TAB_PEERS_ICON_LOCATION,
+        		ImageUtils.TAB_TRACKERS_ICON_LOCATION, ImageUtils.TAB_PIECES_ICON_LOCATION,
+        		ImageUtils.TAB_SPEED_ICON_LOCATION, ImageUtils.TAB_LOGGER_ICON_LOCATION};
+        
         for(int i = 0; i < TAB_NAMES.size(); ++i) {  
-        	final Image tabImage = new Image(getClass().getResourceAsStream(TAB_IMAGE_PATHS[i]));
+        	final Image tabImage = new Image(getClass().getResourceAsStream(tabIconPaths[i]));
         	final String tabName = TAB_NAMES.get(i);
         	final Tab tab = new Tab(tabName);
         	tab.setId(tabName);
@@ -605,16 +613,22 @@ public final class ApplicationWindow {
 			}
         	tab.setOnSelectionChanged(event -> {
         		final Color tabImageColor = tab.isSelected()? TAB_SELECTED_IMAGE_COLOR : TAB_DEFAULT_IMAGE_COLOR;
-        		final ImageView imageView = ImageUtils.colorImage(tabImage, tabImageColor, 
-        				ImageUtils.CROPPED_MARGINS_IMAGE_VIEW, TAB_ICON_SIZE, TAB_ICON_SIZE);
+        		
+        		final ImageView imageView = ImageUtils.createImageView(tabImage,
+        				ImageUtils.CROPPED_MARGINS_IMAGE_VIEW, TAB_ICON_SIZE, TAB_ICON_SIZE);        		
+        		ImageUtils.colorize(imageView, tabImageColor);
+        		
         		tabImageViews.put(tab, imageView);    
         		if(showTabIconsMenuItem.isSelected()) {
         			tab.setGraphic(imageView);
         		}
         		updateGui();
-        	});       		        
-        	tabImageViews.put(tab, ImageUtils.colorImage(tabImage, Color.rgb(162, 170, 156), 
-					ImageUtils.CROPPED_MARGINS_IMAGE_VIEW, TAB_ICON_SIZE, TAB_ICON_SIZE));
+        	});       	
+        	final ImageView imageView = ImageUtils.createImageView(tabImage,
+        			ImageUtils.CROPPED_MARGINS_IMAGE_VIEW, TAB_ICON_SIZE, TAB_ICON_SIZE);        	        	
+        	ImageUtils.colorize(imageView, Color.rgb(162, 170, 156));
+        	
+        	tabImageViews.put(tab, imageView);
         	detailsTabMap.put(tabName, tab);
         }
         
@@ -749,6 +763,18 @@ public final class ApplicationWindow {
 		torrentJobTable.addJob(jobView);								
 	}
 	
+	private void onStylesheetChanged(final ListChangeListener.Change<? extends String> change) {		
+		if(change.next()) {
+			final Optional<? extends String> selectedTheme = change.getAddedSubList().stream().filter(
+					s -> s.startsWith("/themes/")).findFirst();
+			if(selectedTheme.isPresent()) {				
+				final String stylesheetName = selectedTheme.get();
+				updateToolbarIcons(toolbarButtonsMap, stylesheetName.substring(
+						0, stylesheetName.lastIndexOf(GuiProperties.THEME_UI_STYLE_CSS)));
+			}
+		}
+	}
+	
 	private void onRemoveTorrent() {
 		final ObservableList<TorrentJobView> selectedTorrentJobs = torrentJobTable.getSelectedJobs();
 		
@@ -788,21 +814,19 @@ public final class ApplicationWindow {
 			trackerTable.setContent(trackerViewMappings.get(selectedTorrentJob.getQueuedTorrent()));
 			updateGui();
 		}
-		toolbarButtonsMap.get(TOOLBAR_BUTTON_START_NAME).setDisable(!torrentSelected ||
+		toolbarButtonsMap.get(ImageUtils.DOWNLOAD_ICON_LOCATION).setDisable(!torrentSelected ||
 				selectedTorrentJob.getQueuedTorrent().getProperties().getState() == QueuedTorrent.State.ACTIVE);
-		toolbarButtonsMap.get(TOOLBAR_BUTTON_STOP_NAME).setDisable(!torrentSelected ||
+		toolbarButtonsMap.get(ImageUtils.STOP_ICON_LOCATION).setDisable(!torrentSelected ||
 				selectedTorrentJob.getQueuedTorrent().getProperties().getState() == QueuedTorrent.State.STOPPED);
 		
-		final Button removeButton = toolbarButtonsMap.get(TOOLBAR_BUTTON_REMOVE_NAME);	
+		final Button removeButton = toolbarButtonsMap.get(ImageUtils.DELETE_ICON_LOCATION);	
 		final ImageView buttonImageView = (ImageView)removeButton.getGraphic();
 		
 		removeButton.setDisable(!torrentSelected);
 		final Color buttonImageColor = removeButton.isDisabled()? 
 				TOOLBAR_BUTTON_COLOR : REMOVE_BUTTON_COLOR; 
-		
-		removeButton.setGraphic(ImageUtils.colorImage(buttonImageView.getImage(), buttonImageColor, 
-				ImageUtils.CROPPED_MARGINS_IMAGE_VIEW, (int)buttonImageView.getFitWidth(), 
-				(int)buttonImageView.getFitHeight()));
+		ImageUtils.colorize(buttonImageView, buttonImageColor);		
+		removeButton.setGraphic(buttonImageView);		
 	}
 
 	private void storeWindowChanges() {

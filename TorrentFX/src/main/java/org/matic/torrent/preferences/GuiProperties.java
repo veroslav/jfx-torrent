@@ -21,6 +21,11 @@
 package org.matic.torrent.preferences;
 
 public final class GuiProperties {
+	
+	//Theme properties
+	public static final String THEME_STYLESHEET_PATH_TEMPLATE = "/themes/?";
+	public static final String THEME_UI_STYLE_CSS = "/ui-style.css";
+	public static final String APPLICATION_THEME = "gui.theme";
 
 	//CSS properties for Options window
 	public static final String OPTION_CATEGORY_INDENTATION = "option-category-indentation";

@@ -18,14 +18,14 @@
 *
 */
 
-package org.matic.torrent.gui.action.values;
+package org.matic.torrent.gui.action.enums;
 
-public enum SeedingTorrentClickAction {
-	OPEN_FOLDER("Open Folder");
+public enum DownloadingTorrentClickAction {
+	SHOW_PROPERTIES("Show Properties");
 	
-	private String label;
+	private final String label;
 	
-	SeedingTorrentClickAction(final String label) {
+	DownloadingTorrentClickAction(final String label) {
 		this.label = label;
 	}
 	

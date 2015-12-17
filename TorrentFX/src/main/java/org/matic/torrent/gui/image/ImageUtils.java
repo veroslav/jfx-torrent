@@ -39,46 +39,57 @@ import javafx.scene.shape.Rectangle;
 import org.matic.torrent.gui.window.ApplicationWindow;
 
 public final class ImageUtils {
-			
-	public static final String ARROW_DOWN_IMAGE_LOCATION = "/images/appbar.arrow.down.up.png";
-	public static final String FOLDER_OPEN_IMAGE_LOCATION = "/images/appbar.folder.open.png";
-	public static final String FOLDER_CLOSED_IMAGE_LOCATION = "/images/appbar.folder.png";
-	public static final String PAUSE_IMAGE_LOCATION = "/images/appbar.control.pause.png";
-	public static final String LOCK_IMAGE_LOCATION = "/images/appbar.unlock.keyhole.png";
-	public static final String SETTINGS_IMAGE_LOCATION = "/images/appbar.settings.png";
-	public static final String STOP_IMAGE_LOCATION = "/images/appbar.control.stop.png";
-	public static final String RSS_DARK_IMAGE_LOCATION = "/images/appbar.rss.dark.png";	
-	public static final String DOWNLOAD_IMAGE_LOCATION = "/images/appbar.download.png";
-	public static final String DOWN_IMAGE_LOCATION = "/images/appbar.chevron.down.png";
-	public static final String MONITOR_IMAGE_LOCATION = "/images/appbar.monitor.png";
-	public static final String LABEL_IMAGE_LOCATION = "/images/appbar.tag.label.png";
-	public static final String UP_IMAGE_LOCATION = "/images/appbar.chevron.up.png";
-	public static final String DELETE_IMAGE_LOCATION = "/images/appbar.delete.png";	
-	public static final String NEW_IMAGE_LOCATION = "/images/appbar.page.new.png";
-	public static final String LINK_IMAGE_LOCATION = "/images/appbar.link.png";
-	public static final String ADD_IMAGE_LOCATION = "/images/appbar.add.png";
-	public static final String RSS_IMAGE_LOCATION = "/images/appbar.rss.png";
+	
+	//Side bar specific icons
+	public static final String SIDEBAR_ARROW_UP_DOWN_ICON_LOCATION = "/icons/sidebar_downloading.png";
+	public static final String SIDEBAR_LABEL_ICON_LOCATION = "/icons/sidebar_label.png";
+	public static final String SIDEBAR_RSS_ICON_LOCATION = "/icons/sidebar_rss.png";
+	
+	public static final String FOLDER_OPEN_ICON_LOCATION = "/icons/toolbar_open.png";
+	public static final String FOLDER_CLOSED_ICON_LOCATION = "/icons/folder_closed.png";
+	public static final String PAUSE_ICON_LOCATION = "/icons/toolbar_pause.png";
+	public static final String LOCK_ICON_LOCATION = "/icons/toolbar_unlock.png";
+	public static final String SETTINGS_ICON_LOCATION = "/icons/toolbar_settings.png";
+	public static final String STOP_ICON_LOCATION = "/icons/toolbar_stop.png";	
+	public static final String DOWNLOAD_ICON_LOCATION = "/icons/toolbar_download.png";
+	public static final String DOWN_ICON_LOCATION = "/icons/toolbar_down.png";
+	public static final String REMOTE_ICON_LOCATION = "/icons/toolbar_remote.png";	
+	public static final String UP_ICON_LOCATION = "/icons/toolbar_up.png";
+	public static final String DELETE_ICON_LOCATION = "/icons/toolbar_delete.png";	
+	public static final String NEW_ICON_LOCATION = "/icons/toolbar_new.png";
+	public static final String LINK_ICON_LOCATION = "/icons/toolbar_link.png";
+	public static final String ADD_ICON_LOCATION = "/icons/toolbar_open.png";
+	public static final String RSS_ICON_LOCATION = "/icons/toolbar_rss.png";
 	
 	public static final int TOOLBAR_BUTTON_IMAGE_SIZE = 18;
 	public static final int CATEGORY_LIST_IMAGE_SIZE = 25;
 	public static final int FILE_TYPE_IMAGE_SIZE = 15;
+	
+	//Detailed info tab's icon paths
+	public static final String TAB_FILES_ICON_LOCATION = "/icons/tab_files.png";
+	public static final String TAB_INFO_ICON_LOCATION = "/icons/tab_information.png";
+	public static final String TAB_PEERS_ICON_LOCATION = "/icons/tab_peers.png";
+	public static final String TAB_TRACKERS_ICON_LOCATION = "/icons/tab_trackers.png";
+	public static final String TAB_PIECES_ICON_LOCATION = "/icons/tab_pieces.png";
+	public static final String TAB_SPEED_ICON_LOCATION = "/icons/tab_speed.png";
+	public static final String TAB_LOGGER_ICON_LOCATION = "/icons/tab_logger.png";
 	
 	//Image area where the margins not containing the image itself have been cropped
 	public static final Rectangle2D CROPPED_MARGINS_IMAGE_VIEW = new Rectangle2D(16, 12, 44, 46);
 
 	//Folder opened/closed images
 	public static final Image FOLDER_CLOSED_IMAGE = new Image(
-			ApplicationWindow.class.getResourceAsStream(FOLDER_CLOSED_IMAGE_LOCATION));
+			ApplicationWindow.class.getResourceAsStream("/themes/dark" + FOLDER_CLOSED_ICON_LOCATION));
 	public static final Image FOLDER_OPENED_IMAGE = new Image(
-			ApplicationWindow.class.getResourceAsStream(FOLDER_OPEN_IMAGE_LOCATION));
+			ApplicationWindow.class.getResourceAsStream("/themes/dark" + FOLDER_OPEN_ICON_LOCATION));
 	
 	//Filter list category images
 	public static final Image DOWNLOADS_IMAGE = new Image(
-			ApplicationWindow.class.getResourceAsStream(ARROW_DOWN_IMAGE_LOCATION), 25, 25, true, true);
+			ApplicationWindow.class.getResourceAsStream(SIDEBAR_ARROW_UP_DOWN_ICON_LOCATION), 25, 25, true, true);
 	public static final Image LABEL_IMAGE = new Image(
-			ApplicationWindow.class.getResourceAsStream(LABEL_IMAGE_LOCATION), 25, 25, true, true);
+			ApplicationWindow.class.getResourceAsStream(SIDEBAR_LABEL_ICON_LOCATION), 25, 25, true, true);
 	public static final Image RSS_IMAGE = new Image(
-			ApplicationWindow.class.getResourceAsStream(RSS_IMAGE_LOCATION), 25, 25, true, true);	
+			ApplicationWindow.class.getResourceAsStream(SIDEBAR_RSS_ICON_LOCATION), 25, 25, true, true);	
 	
 	//File type mapping names
 	private static final String FILE_TYPE_IMAGE = "file_type_image";
@@ -119,24 +130,24 @@ public final class ImageUtils {
 				"com", "exe")));
 		
 		FILE_IMAGE_MAPPINGS.put(FILE_TYPE_IMAGE, new Image(
-				ApplicationWindow.class.getResourceAsStream("/images/appbar.image.png")));
+				ApplicationWindow.class.getResourceAsStream("/icons/filetype_image.png")));
 		FILE_IMAGE_MAPPINGS.put(FILE_TYPE_VIDEO, new Image(
-				ApplicationWindow.class.getResourceAsStream("/images/appbar.movie.clapper.png")));
+				ApplicationWindow.class.getResourceAsStream("/icons/filetype_video.png")));
 		FILE_IMAGE_MAPPINGS.put(FILE_TYPE_SUBTITLE, new Image(
-				ApplicationWindow.class.getResourceAsStream("/images/appbar.notification.png")));
+				ApplicationWindow.class.getResourceAsStream("/icons/filetype_subtitle.png")));
 		FILE_IMAGE_MAPPINGS.put(FILE_TYPE_MUSIC, new Image(
-				ApplicationWindow.class.getResourceAsStream("/images/appbar.music.png")));
+				ApplicationWindow.class.getResourceAsStream("/icons/filetype_music.png")));
 		FILE_IMAGE_MAPPINGS.put(FILE_TYPE_PDF, new Image(
-				ApplicationWindow.class.getResourceAsStream("/images/appbar.adobe.acrobat.png")));
+				ApplicationWindow.class.getResourceAsStream("/icons/filetype_pdf.png")));
 		FILE_IMAGE_MAPPINGS.put(FILE_TYPE_PACKAGE, new Image(
-				ApplicationWindow.class.getResourceAsStream("/images/appbar.present.png")));
+				ApplicationWindow.class.getResourceAsStream("/icons/filetype_package.png")));
 		FILE_IMAGE_MAPPINGS.put(FILE_TYPE_EBOOK, new Image(
-				ApplicationWindow.class.getResourceAsStream("/images/appbar.book.open.png")));
+				ApplicationWindow.class.getResourceAsStream("/icons/filetype_ebook.png")));
 		FILE_IMAGE_MAPPINGS.put(FILE_TYPE_EXECUTABLE, new Image(
-				ApplicationWindow.class.getResourceAsStream("/images/appbar.cog.png")));
+				ApplicationWindow.class.getResourceAsStream("/icons/filetype_executable.png")));
 		
 		FILE_IMAGE_MAPPINGS.put(FILE_TYPE_GENERIC, new Image(
-				ApplicationWindow.class.getResourceAsStream("/images/appbar.page.small.png")));
+				ApplicationWindow.class.getResourceAsStream("/icons/filetype_generic.png")));
 	}
 	
 	/**
@@ -155,37 +166,43 @@ public final class ImageUtils {
 	}
 	
 	/**
-	 * Given a monochrome image, apply a color to it
+	 * Create a view of an image
 	 * 
-	 * @param image Target monochrome image
-	 * @param color Target new image color
-	 * @param viewPort Part of the image to color
+	 * @param image Target image
+	 * @param viewPort Part of the image to use
 	 * @param imageWidth Resulting image width
 	 * @param imageHeight Resulting image height
-	 * 
-	 * @return Colorized image
+	 * @return Targeted view of the image
 	 */
-	public static ImageView colorImage(final Image image, final Paint color, 
-			final Rectangle2D viewPort, final int imageWidth, final int imageHeight) {		
+	public static ImageView createImageView(final Image image, final Rectangle2D viewPort,
+			final int imageWidth, final int imageHeight) {
 		final ImageView monochromeImageView = new ImageView(image);
 		
 		monochromeImageView.setFitWidth(imageWidth);
     	monochromeImageView.setFitHeight(imageHeight);
 		
 		final Rectangle clip = new Rectangle(0, 0, imageWidth, imageHeight);
-		monochromeImageView.setClip(clip);
-    	
-    	final ColorAdjust monochrome = new ColorAdjust();
-        monochrome.setSaturation(-1.0);
-        monochrome.setBrightness(0.75);
-        
-        final Blend selectionColorBlend = new Blend(BlendMode.SRC_ATOP,
-                monochrome, new ColorInput(0, 0, imageWidth, imageHeight, color));
-        
-    	monochromeImageView.setEffect(selectionColorBlend);    	
-    	monochromeImageView.setViewport(viewPort);
+		monochromeImageView.setClip(clip);    	
+        monochromeImageView.setViewport(viewPort);
     	monochromeImageView.setSmooth(true);
     	
 		return monochromeImageView;
+	}
+	
+	/**
+	 * Given a monochrome image, apply a color to it
+	 * 
+	 * @param imageView A view to the target monochrome image
+	 * @param color Target new image color
+	 */
+	public static void colorize(final ImageView imageView, final Paint color) {		
+		final ColorAdjust monochrome = new ColorAdjust();
+        monochrome.setSaturation(-1.0);
+        monochrome.setBrightness(0.75);
+
+		final Blend selectionColorBlend = new Blend(BlendMode.SRC_ATOP,
+				monochrome, new ColorInput(0, 0, imageView.getFitWidth(),
+						imageView.getFitHeight(), color));	        
+		imageView.setEffect(selectionColorBlend);			
 	}
 }
