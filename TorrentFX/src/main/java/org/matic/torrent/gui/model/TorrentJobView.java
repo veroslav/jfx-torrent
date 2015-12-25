@@ -23,26 +23,22 @@ package org.matic.torrent.gui.model;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.matic.torrent.queue.QueuedTorrent;
+
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
-import javafx.scene.control.TreeItem;
-
-import org.matic.torrent.queue.QueuedTorrent;
 
 public final class TorrentJobView {
 	
 	private final List<TrackerView> trackerContents = new ArrayList<>();
-	private final TreeItem<TorrentFileEntry> torrentContentTree;
 	private final QueuedTorrent queuedTorrent;
 	private final String fileName;
 	
 	private final IntegerProperty priority;
 
-	public TorrentJobView(final QueuedTorrent queuedTorrent, final String fileName,
-			final TreeItem<TorrentFileEntry> torrentContents) {
-		this.torrentContentTree = torrentContents;
+	public TorrentJobView(final QueuedTorrent queuedTorrent, final String fileName) {		
 		this.fileName = fileName;
-		this.priority = new SimpleIntegerProperty(queuedTorrent.getProperties().getPriority());
+		this.priority = new SimpleIntegerProperty(queuedTorrent.getProgress().getPriority());
 		
 		this.queuedTorrent = queuedTorrent;
 	}
@@ -61,10 +57,6 @@ public final class TorrentJobView {
 	
 	public String getFileName() {
 		return fileName;
-	}
-	
-	public TreeItem<TorrentFileEntry> getTorrentContents() {
-		return torrentContentTree;
 	}
 	
 	public final List<TrackerView> getTrackerContents() {

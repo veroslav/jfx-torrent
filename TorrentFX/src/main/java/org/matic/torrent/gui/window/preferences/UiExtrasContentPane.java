@@ -17,7 +17,6 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-
 package org.matic.torrent.gui.window.preferences;
 
 import org.matic.torrent.gui.action.enums.ApplicationTheme;
@@ -88,7 +87,8 @@ public class UiExtrasContentPane extends CategoryContentPane {
 	
 	private Node buildUiExtrasOptionsView() {
 		final TitledBorderPane themeOptions = new TitledBorderPane(
-				"Theme Options", buildThemeOptionsPane(), BorderStyle.COMPACT);
+				"Theme Options", buildThemeOptionsPane(), BorderStyle.COMPACT,
+				TitledBorderPane.SECONDARY_BORDER_COLOR_STYLE);
 		
 		final VBox content = new VBox();
 		content.getStyleClass().add(GuiProperties.VERTICAL_LAYOUT_SPACING);

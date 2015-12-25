@@ -242,13 +242,17 @@ public class UISettingsContentPane extends CategoryContentPane {
 	
 	private Node buildUISettingsOptionsView() {
 		final TitledBorderPane displayOptions = new TitledBorderPane(
-				"Display Options", buildDisplayOptionsPane(), BorderStyle.COMPACT);
+				"Display Options", buildDisplayOptionsPane(), BorderStyle.COMPACT,
+				TitledBorderPane.SECONDARY_BORDER_COLOR_STYLE);
 		final TitledBorderPane systemTrayOptions = new TitledBorderPane(
-				"System Tray", buildSystemTrayOptionsPane(), BorderStyle.COMPACT);
+				"System Tray", buildSystemTrayOptionsPane(), BorderStyle.COMPACT,
+				TitledBorderPane.SECONDARY_BORDER_COLOR_STYLE);
 		final TitledBorderPane torrentAdditionOptions = new TitledBorderPane(
-				"When Adding Torrents", buildOnTorrentAdditionOptionsPane(), BorderStyle.COMPACT);
+				"When Adding Torrents", buildOnTorrentAdditionOptionsPane(), BorderStyle.COMPACT,
+				TitledBorderPane.SECONDARY_BORDER_COLOR_STYLE);
 		final TitledBorderPane doubleClickActionsOptions = new TitledBorderPane(
-				"Actions for Double Click", buildDoubleClickActionsOptionPane(), BorderStyle.COMPACT);
+				"Actions for Double Click", buildDoubleClickActionsOptionPane(), BorderStyle.COMPACT,
+				TitledBorderPane.SECONDARY_BORDER_COLOR_STYLE);
 		
 		final VBox content = new VBox();
 		content.getStyleClass().add(GuiProperties.VERTICAL_LAYOUT_SPACING);

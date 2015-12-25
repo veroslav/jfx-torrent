@@ -36,9 +36,11 @@ import org.matic.torrent.codec.BinaryDecoder;
 import org.matic.torrent.codec.BinaryEncodedDictionary;
 import org.matic.torrent.exception.BinaryDecoderException;
 import org.matic.torrent.gui.window.AddedTorrentOptions;
+import org.matic.torrent.gui.tree.FileTreeViewer;
 import org.matic.torrent.gui.window.AddNewTorrentWindow;
 import org.matic.torrent.gui.window.UrlLoaderWindow;
 import org.matic.torrent.gui.window.UrlLoaderWindowOptions;
+import org.matic.torrent.queue.QueuedTorrentMetaData;
 
 /**
  * Handle file related action events, such as opening and loading files.
@@ -47,7 +49,7 @@ import org.matic.torrent.gui.window.UrlLoaderWindowOptions;
  */
 public final class FileActionHandler {
 
-	public AddedTorrentOptions onFileOpen(final Window owner) {
+	public AddedTorrentOptions onFileOpen(final Window owner, final FileTreeViewer fileTreeViewer) {
 		final String torrentPath = getTorrentPath(owner);
 		if(torrentPath != null) {
 			final BinaryDecoder metaDataDecoder = new BinaryDecoder();
@@ -65,7 +67,7 @@ public final class FileActionHandler {
 				errorAlert.showAndWait();
 				return null;
 			}			
-			return addNewTorrentJob(owner, metaDataDictionary);			
+			return addNewTorrentJob(owner, new QueuedTorrentMetaData(metaDataDictionary), fileTreeViewer);			
 		}
 		return null;
 	}
@@ -82,13 +84,14 @@ public final class FileActionHandler {
 		}
 	}
 	
-	public final AddedTorrentOptions onLoadUrl(final Window owner) {
+	public final AddedTorrentOptions onLoadUrl(final Window owner, final FileTreeViewer fileTreeViewer) {
 		final UrlLoaderWindow urlLoaderWindow = new UrlLoaderWindow(owner);
 		final UrlLoaderWindowOptions urlLoaderWindowOptions = urlLoaderWindow.showAndWait();
 		
 		if(urlLoaderWindowOptions != null && 
 				urlLoaderWindowOptions.getUrlType() == UrlLoaderWindow.ResourceType.URL) {						
-			return addNewTorrentJob(owner, urlLoaderWindowOptions.getTorrentMetaData());
+			return addNewTorrentJob(owner, new QueuedTorrentMetaData(
+					urlLoaderWindowOptions.getTorrentMetaData()), fileTreeViewer);
 		}				
 		return null;
 	}
@@ -103,9 +106,10 @@ public final class FileActionHandler {
 		return selectedLocation != null? selectedLocation.getAbsolutePath() : null;
 	}
 	
-	private AddedTorrentOptions addNewTorrentJob(final Window owner, final BinaryEncodedDictionary metaData) {
+	private AddedTorrentOptions addNewTorrentJob(final Window owner,
+			final QueuedTorrentMetaData metaData, final FileTreeViewer fileTreeViewer) {
 		final AddNewTorrentWindow addNewTorrentWindow = new AddNewTorrentWindow(
-				owner, metaData, false);
+				owner, metaData, fileTreeViewer);
 		return addNewTorrentWindow.showAndWait();
 	}
 	

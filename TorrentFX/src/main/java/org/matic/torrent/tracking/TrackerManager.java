@@ -112,7 +112,7 @@ public class TrackerManager implements TrackerResponseListener, UdpTrackerRespon
 		
 		synchronized(trackerSessions) {		
 			if(trackerSessions.containsKey(trackerSession.getTorrent())) {
-				if(trackerSession.getTorrent().getProperties().getState() == QueuedTorrent.State.STOPPED) {
+				if(trackerSession.getTorrent().getProgress().getState() == QueuedTorrent.State.STOPPED) {
 					//Cancel any scheduled requests as we have STOPPED					
 					resetSessionStateOnStop(trackerSession);					
 					return;
@@ -137,7 +137,7 @@ public class TrackerManager implements TrackerResponseListener, UdpTrackerRespon
 					scheduleAnnouncement(trackerSession, announceParameters, REQUEST_DELAY_ON_TRACKER_ERROR);
 				}
 				else {					
-					if(trackerSession.getTorrent().getProperties().getState() == QueuedTorrent.State.STOPPED) {
+					if(trackerSession.getTorrent().getProgress().getState() == QueuedTorrent.State.STOPPED) {
 						resetSessionStateOnStop(trackerSession);
 						return;
 					}
@@ -175,7 +175,7 @@ public class TrackerManager implements TrackerResponseListener, UdpTrackerRespon
 			trackerSession.setDownloaded(scrapeStat.getDownloaded());
 			trackerSession.setLastScrapeResponse(responseTime);
 			
-			if(trackerSession.getTorrent().getProperties().getState() == QueuedTorrent.State.STOPPED) {
+			if(trackerSession.getTorrent().getProgress().getState() == QueuedTorrent.State.STOPPED) {
 				trackerSession.setTrackerStatus(Tracker.Status.SCRAPE_OK);
 			}
 		});
@@ -308,7 +308,7 @@ public class TrackerManager implements TrackerResponseListener, UdpTrackerRespon
 				return viewBean;
 			}
 			
-			if(torrent.getProperties().getState() == QueuedTorrent.State.ACTIVE) {				
+			if(torrent.getProgress().getState() == QueuedTorrent.State.ACTIVE) {				
 				final AnnounceParameters announceParameters = new AnnounceParameters( 
 						Tracker.Event.STARTED, 0, 0, 0);
 				scheduleAnnouncement(trackerSession, announceParameters, 0);

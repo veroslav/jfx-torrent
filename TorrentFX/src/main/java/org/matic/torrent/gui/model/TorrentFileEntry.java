@@ -79,7 +79,7 @@ public final class TorrentFileEntry {
 	}
 	
 	public final void setSelected(final boolean selected) {		
-		this.selected.set(selected);	
+		this.selected.set(selected);
 	}
 	
 	public final boolean isSelected() {	
@@ -90,8 +90,8 @@ public final class TorrentFileEntry {
 		return size.get();
 	}
 	
-	public final void updateSize(final long additionalSize) {
-		size.set(size.get() + additionalSize);
+	public final void updateSize(final long sizeDiff) {
+		size.set(size.get() + sizeDiff);
 	}
 	
 	public void setFirstPiece(final long firstPiece) {

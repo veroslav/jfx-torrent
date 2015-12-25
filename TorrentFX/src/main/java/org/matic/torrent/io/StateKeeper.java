@@ -33,6 +33,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.matic.torrent.codec.BinaryDecoder;
+import org.matic.torrent.codec.BinaryEncodingKeyNames;
 import org.matic.torrent.exception.BinaryDecoderException;
 import org.matic.torrent.preferences.ApplicationPreferences;
 import org.matic.torrent.preferences.PathProperties;
@@ -45,54 +46,47 @@ public class StateKeeper {
 	private static final String TORRENT_FILE_EXTENSION = ".torrent";
 	private static final String STATE_FILE_EXTENSION = ".state";
 	
-	private final String targetPath;
-	
-	public StateKeeper() {	
-		final String path = ApplicationPreferences.getProperty(PathProperties.NEW_TORRENTS,
-				PathProperties.DEFAULT_STORE_TORRENTS_PATH);
-		this.targetPath = path.endsWith(File.separator)? path : path + File.separator;
-	}
-	
-	public final void store(final QueuedTorrent torrent) {
-		storeMetaData(torrent.getMetaData());
-		storeState(torrent.getProperties(), torrent.getMetaData().getInfoHash().toString().toLowerCase());
-	}
-	
-	private final boolean storeMetaData(final QueuedTorrentMetaData metaData) {
-		final String metaDataFileLocation = targetPath + metaData.getInfoHash().toString() + TORRENT_FILE_EXTENSION;
+	/**
+	 * Delete a torrent's meta data (.torrent) and state (.state) files from the disk
+	 * 
+	 * @param torrent Torrent to delete
+	 * @throws IOException If the files to delete can't be found
+	 */
+	public static void delete(final QueuedTorrent torrent) throws IOException {		
+		//TODO: Don't use default target path, as the torrent might have been re-located.
+		final Path targetPath = Paths.get(StateKeeper.buildTargetPath());
+		final Path torrentFilePath = Paths.get(targetPath.toString(),
+				torrent.getMetaData().getInfoHash().toString() + TORRENT_FILE_EXTENSION);
+		final Path stateFilePath = Paths.get(targetPath.toString(),
+				torrent.getMetaData().getInfoHash().toString() + STATE_FILE_EXTENSION);
 		
-		if(Files.exists(Paths.get(metaDataFileLocation))) {
-			return true;
-		}
-		
-		try(final BufferedOutputStream writer = new BufferedOutputStream(new FileOutputStream(metaDataFileLocation))) {			
-				writer.write(metaData.toExportableValue());
-				writer.flush();
-		}
-		catch(final IOException ioe) {
-			return false;
-		}
-		return true;
-	}
-
-	private final boolean storeState(final QueuedTorrentProgress state, final String infoHash) {	
-		try(final BufferedOutputStream writer = new BufferedOutputStream(new FileOutputStream(
-				targetPath + infoHash.toString() + STATE_FILE_EXTENSION))) {				
-				writer.write(state.toExportableValue());
-				writer.flush();
-		}
-		catch(final IOException ioe) {
-			return false;
-		}
-		return true;
+		Files.deleteIfExists(torrentFilePath);
+		Files.deleteIfExists(stateFilePath);
 	}
 	
-	public final Set<QueuedTorrent> loadAll() {
+	/**
+	 * Save a torrent's meta data (.torrent) and state (.state) files to the disk
+	 * 
+	 * @param torrent Torrent to save
+	 */
+	public static void store(final QueuedTorrent torrent) {
+		final String targetPath = StateKeeper.buildTargetPath(); 
+		storeMetaData(torrent.getMetaData(), targetPath);
+		storeState(torrent.getProgress(),
+				torrent.getMetaData().getInfoHash().toString().toLowerCase(), targetPath);
+	}
+	
+	/**
+	 * Load all of the torrents and their state data from their disk location
+	 * 
+	 * @return Loaded torrents
+	 */
+	public static Set<QueuedTorrent> loadAll() {
 		final Set<QueuedTorrent> loadedTorrents = new HashSet<>();
 		final BinaryDecoder decoder = new BinaryDecoder();
 		
 		final Set<String> torrentNames = new HashSet<>();
-		final Path path = Paths.get(targetPath);		
+		final Path path = Paths.get(StateKeeper.buildTargetPath());		
 		
 		try {
 			Files.createDirectories(path);
@@ -102,8 +96,8 @@ public class StateKeeper {
 		}
 		
 		try(final DirectoryStream<Path> directoryStream = Files.newDirectoryStream(path)) {
-			directoryStream.forEach(p -> {
-				if(p.endsWith(TORRENT_FILE_EXTENSION)) {
+			directoryStream.forEach(p -> {				
+				if(p.toString().endsWith(TORRENT_FILE_EXTENSION)) {
 					final String filePath = p.toString();					
 					final int suffixIndex = filePath.lastIndexOf('.');
 					torrentNames.add(filePath.substring(0, suffixIndex)); 
@@ -116,11 +110,11 @@ public class StateKeeper {
 		}
 			
 		torrentNames.forEach(n -> {	
-			final Path metaDataPath = Paths.get(targetPath + n + File.separator + TORRENT_FILE_EXTENSION);
-			final Path statePath = Paths.get(targetPath + n + File.separator + STATE_FILE_EXTENSION);
+			final String metaDataPath = n + TORRENT_FILE_EXTENSION;
+			final String statePath = n + STATE_FILE_EXTENSION;
 			
 			QueuedTorrentMetaData metaData = null;			
-			try(final BufferedInputStream bis = new BufferedInputStream(new FileInputStream(metaDataPath.toFile()))) {
+			try(final BufferedInputStream bis = new BufferedInputStream(new FileInputStream(metaDataPath))) {
 				metaData = new QueuedTorrentMetaData(decoder.decode(bis));
 			}		
 			catch(final IOException | BinaryDecoderException e) {
@@ -128,7 +122,7 @@ public class StateKeeper {
 			}
 			
 			QueuedTorrentProgress progress = null;
-			try(final BufferedInputStream bis = new BufferedInputStream(new FileInputStream(statePath.toFile()))) {
+			try(final BufferedInputStream bis = new BufferedInputStream(new FileInputStream(statePath))) {
 				progress = new QueuedTorrentProgress(decoder.decode(bis));
 			}		
 			catch(final IOException | BinaryDecoderException e) {
@@ -138,5 +132,42 @@ public class StateKeeper {
 		});
 		
 		return loadedTorrents;
+	}
+	
+	private static String buildTargetPath() {
+		final String path = ApplicationPreferences.getProperty(PathProperties.NEW_TORRENTS,
+				PathProperties.DEFAULT_STORE_TORRENTS_PATH);
+		return path.endsWith(File.separator)? path : path + File.separator;
+	}
+	
+	private static boolean storeMetaData(final QueuedTorrentMetaData metaData, final String targetPath) {
+		final String metaDataFileLocation = targetPath + metaData.getInfoHash().toString() + TORRENT_FILE_EXTENSION;
+		
+		if(Files.exists(Paths.get(metaDataFileLocation))) {
+			return true;
+		}
+		
+		metaData.getInfoDictionary().remove(BinaryEncodingKeyNames.KEY_INFO_HASH);
+		
+		try(final BufferedOutputStream writer = new BufferedOutputStream(new FileOutputStream(metaDataFileLocation))) {			
+				writer.write(metaData.toExportableValue());
+				writer.flush();
+		}
+		catch(final IOException ioe) {
+			return false;
+		}
+		return true;
+	}
+
+	private static boolean storeState(final QueuedTorrentProgress state, final String infoHash, final String targetPath) {	
+		try(final BufferedOutputStream writer = new BufferedOutputStream(new FileOutputStream(
+				targetPath + infoHash.toString() + STATE_FILE_EXTENSION))) {				
+				writer.write(state.toExportableValue());
+				writer.flush();
+		}
+		catch(final IOException ioe) {
+			return false;
+		}
+		return true;
 	}
 }

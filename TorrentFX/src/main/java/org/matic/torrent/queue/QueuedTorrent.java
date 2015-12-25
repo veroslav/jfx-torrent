@@ -27,19 +27,19 @@ public final class QueuedTorrent {
 	}
 
 	private final QueuedTorrentMetaData metaData;
-	private final QueuedTorrentProgress properties;
+	private final QueuedTorrentProgress progress;
 	
-	public QueuedTorrent(final QueuedTorrentMetaData metaData, final QueuedTorrentProgress properties) {		
+	public QueuedTorrent(final QueuedTorrentMetaData metaData, final QueuedTorrentProgress progress) {		
 		this.metaData = metaData;
-		this.properties = properties;		
+		this.progress = progress;		
 	}
 	
 	public final QueuedTorrentMetaData getMetaData() {
 		return metaData;
 	}
 	
-	public final QueuedTorrentProgress getProperties() {
-		return properties;
+	public final QueuedTorrentProgress getProgress() {
+		return progress;
 	}
 
 	@Override
@@ -47,7 +47,7 @@ public final class QueuedTorrent {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((metaData == null) ? 0 : metaData.hashCode());
-		result = prime * result + ((properties == null) ? 0 : properties.hashCode());
+		result = prime * result + ((progress == null) ? 0 : progress.hashCode());
 		return result;
 	}
 
@@ -65,10 +65,10 @@ public final class QueuedTorrent {
 				return false;
 		} else if (!metaData.equals(other.metaData))
 			return false;		
-		if (properties == null) {
-			if (other.properties != null)
+		if (progress == null) {
+			if (other.progress != null)
 				return false;
-		} else if (!properties.equals(other.properties))
+		} else if (!progress.equals(other.progress))
 			return false;
 		return true;
 	}	

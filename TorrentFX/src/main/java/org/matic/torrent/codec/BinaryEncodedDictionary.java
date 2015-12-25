@@ -55,6 +55,10 @@ public final class BinaryEncodedDictionary implements BinaryEncodable {
 		return map.get(key);
 	}
 	
+	public final BinaryEncodable remove(final BinaryEncodedString key) {
+		return map.remove(key);
+	}
+	
 	public final Set<BinaryEncodedString> keys() {
 		return map.keySet();
 	}

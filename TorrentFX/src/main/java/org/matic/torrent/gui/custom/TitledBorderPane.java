@@ -29,9 +29,6 @@ import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.layout.StackPane;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 /**
  * A container for a {@link Node} with a title displayed on the surrounding border
  * 
@@ -39,6 +36,9 @@ import java.util.stream.Collectors;
  *
  */
 public final class TitledBorderPane extends StackPane {
+	
+	public static final String PRIMARY_BORDER_COLOR_STYLE = "-fx-background-color:-fx-base;";
+	public static final String SECONDARY_BORDER_COLOR_STYLE = "-fx-background-color:-fx-background;";
 
 	private final ObjectProperty<Pos>  titleAlignment = new SimpleObjectProperty<>();
 	
@@ -48,11 +48,14 @@ public final class TitledBorderPane extends StackPane {
 	 * @param title Surrounding border's title
 	 * @param contentNode Pane contents
 	 * @param style Border properties, such as spacing and padding
+	 * @param titleColorStyle Title label background color
 	 */
-	public TitledBorderPane(final String title, final Node contentNode, final BorderStyle style) {
+	public TitledBorderPane(final String title, final Node contentNode,
+			final BorderStyle style, final String titleColorStyle) {
 	    final Label titleLabel = new Label();
-	    titleLabel.setText(title);
-	    titleLabel.getStyleClass().add("titled-border-title");
+	    titleLabel.setText(title + " ");
+	    titleLabel.getStyleClass().add("titled-border-title");	
+	    titleLabel.setStyle(titleColorStyle);
 
 	    titleAlignment.addListener(obs -> StackPane.setAlignment(titleLabel, titleAlignment.get()));
 
@@ -63,6 +66,6 @@ public final class TitledBorderPane extends StackPane {
 	    contentNode.getStyleClass().add("titled-border-" + style.name().toLowerCase() + "-content");
 	    contentPane.getChildren().setAll(contentNode);
 	    
-	    titleAlignment.set(Pos.TOP_LEFT);
+	    titleAlignment.set(Pos.TOP_LEFT);	   
 	  }
 }

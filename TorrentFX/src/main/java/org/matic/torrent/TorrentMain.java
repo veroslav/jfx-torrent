@@ -56,7 +56,7 @@ public final class TorrentMain extends Application {
 	 * 
 	 * @param args Application parameters
 	 */
-	public static void main(final String[] args) throws Exception {
+	public static void main(final String[] args) throws Exception {		
 		//Init threaded resources
 		TorrentMain.startup();
 		

@@ -54,11 +54,11 @@ public final class AddedTorrentOptions {
 	private final String name;
 	private final String path;
 
-	public AddedTorrentOptions(final BinaryEncodedDictionary metaData, 
+	public AddedTorrentOptions(final QueuedTorrentMetaData metaData, 
 			final TreeItem<TorrentFileEntry> torrentContents, final String name, final String path,
 			final String label, final boolean startTorrent, final boolean createSubfolder, 
 			final boolean addToTopQueue, final boolean skipHashCheck) {
-		this.metaData = new QueuedTorrentMetaData(metaData);
+		this.metaData = metaData;
 		this.torrentContents = torrentContents;
 		this.name = name;
 		this.path = path;
@@ -79,7 +79,7 @@ public final class AddedTorrentOptions {
 		return metaData;
 	}
 	
-	public final QueuedTorrentProgress getProperties() {
+	public final QueuedTorrentProgress getProgress() {
 		return progress;
 	}
 	

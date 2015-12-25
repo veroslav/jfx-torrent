@@ -55,7 +55,7 @@ public final class TrackerView {
 	public final void update() {
 		trackerViewBean.updateValues();
 		this.lastTrackerResponse = trackerViewBean.getLastTrackerResponse();
-		setTorrentState(trackerViewBean.getTorrent().getProperties().getState());
+		setTorrentState(trackerViewBean.getTorrent().getProgress().getState());
 		status.set(trackerViewBean.getStatus());
 		nextUpdate.set(trackerViewBean.getNextUpdate());
 		interval.set(trackerViewBean.getInterval());
@@ -86,11 +86,11 @@ public final class TrackerView {
 	}
 		
 	public QueuedTorrent.State getTorrentState() {
-		return trackerViewBean.getTorrent().getProperties().getState();
+		return trackerViewBean.getTorrent().getProgress().getState();
 	}
 	
 	public void setTorrentState(final QueuedTorrent.State torrentState) {
-		this.trackerViewBean.getTorrent().getProperties().setState(torrentState);
+		this.trackerViewBean.getTorrent().getProgress().setState(torrentState);
 	}
 
 	public String getStatus() {

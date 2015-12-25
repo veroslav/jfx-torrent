@@ -21,6 +21,9 @@ package org.matic.torrent.gui.tree;
 
 import java.util.Arrays;
 
+import org.matic.torrent.gui.model.TorrentFileEntry;
+import org.matic.torrent.queue.FilePriority;
+
 import javafx.scene.control.CheckBoxTreeItem;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Menu;
@@ -30,9 +33,6 @@ import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.TreeTableRow;
-
-import org.matic.torrent.gui.model.TorrentFileEntry;
-import org.matic.torrent.queue.FilePriority;
 
 public final class TorrentContentTreeRow extends TreeTableRow<TorrentFileEntry> {
 	private final ContextMenu contextMenu = new ContextMenu();
@@ -55,10 +55,10 @@ public final class TorrentContentTreeRow extends TreeTableRow<TorrentFileEntry> 
 			new RadioMenuItem(FilePriority.HIGH.toString()),
 			new RadioMenuItem(FilePriority.HIGHEST.toString())				
 	};
-	private final TorrentContentTree torrentContentTree;
+	private final FileTreeViewer fileTreeViewer;
 	
-	public TorrentContentTreeRow(final TorrentContentTree torrentContentTree) {
-		this.torrentContentTree = torrentContentTree;
+	public TorrentContentTreeRow(final FileTreeViewer fileTreeViewer) {
+		this.fileTreeViewer = fileTreeViewer;
 		
 		for(int i = 0; i < priorityMenuItems.length; ++i) {
 			priorityMenuItems[i].setId(String.valueOf(i));
@@ -109,10 +109,10 @@ public final class TorrentContentTreeRow extends TreeTableRow<TorrentFileEntry> 
 		
 		selectMenuItem.setOnAction(evt -> onSelectAction());
 		unselectMenuItem.setOnAction(evt -> onUnselectAction());
-		selectAllMenuItem.setOnAction(evt -> torrentContentTree.selectAllEntries());
-		selectNoneMenuItem.setOnAction(evt -> torrentContentTree.unselectAllEntries());
-		expandFolderTreeMenuItem.setOnAction(evt -> torrentContentTree.onExpandFolderTree(getTreeItem()));
-		collapseFolderTreeMenuItem.setOnAction(evt -> torrentContentTree.onCollapseTreeItem(getTreeItem()));
+		selectAllMenuItem.setOnAction(evt -> fileTreeViewer.selectAllEntries());
+		selectNoneMenuItem.setOnAction(evt -> fileTreeViewer.unselectAllEntries());
+		expandFolderTreeMenuItem.setOnAction(evt -> fileTreeViewer.onExpandFolderTree(getTreeItem()));
+		collapseFolderTreeMenuItem.setOnAction(evt -> fileTreeViewer.onCollapseTreeItem(getTreeItem()));
 	}
 	
 	private void onUnselectAction() {
@@ -146,11 +146,11 @@ public final class TorrentContentTreeRow extends TreeTableRow<TorrentFileEntry> 
 			}
 								
 			if(!treeItem.isLeaf()) {
-				torrentContentTree.onUpdateChildrenPriority(treeItem, newPriorityValue);
+				fileTreeViewer.onUpdateChildrenPriority(treeItem, newPriorityValue);
 			}
 			treeItem.getValue().priorityProperty().set(newPriorityValue);
-			torrentContentTree.onUpdateParentPriority(treeItem.getParent());
-			torrentContentTree.selectItem(treeItem);
+			fileTreeViewer.onUpdateParentPriority(treeItem.getParent());
+			fileTreeViewer.selectItem(treeItem);
 		}
 	}
 }

@@ -144,6 +144,7 @@ public final class TableUtils {
 		//Previously stored column state changes
 		final List<String> columnVisibility = ApplicationPreferences.getCompositePropertyValues(
 				columnVisibilityProperty, defaultColumnVisibilityValues);
+		
 		final List<Double> columnSizes = ApplicationPreferences.getCompositePropertyValues(
 				columnSizeProperty, defaultColumnSizeValues)
 				.stream().map(Double::parseDouble).collect(Collectors.toList());

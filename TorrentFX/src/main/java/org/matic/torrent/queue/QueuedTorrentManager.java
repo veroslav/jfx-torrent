@@ -54,7 +54,7 @@ public final class QueuedTorrentManager {
 	 * @return A set of view beans for the newly created tracker sessions 
 	 */
 	public Set<TrackerSessionViewBean> add(final QueuedTorrent torrent) {		
-		final Set<String> trackerUrls = torrent.getProperties().getTrackerUrls();
+		final Set<String> trackerUrls = torrent.getProgress().getTrackerUrls();
 		
 		synchronized(queuedTorrents) {
 			if(queuedTorrents.putIfAbsent(torrent, trackerUrls) != null) {
@@ -80,7 +80,7 @@ public final class QueuedTorrentManager {
 		final boolean removed = queuedTorrents.remove(torrent) != null;
 		
 		if(removed) {
-			torrent.getProperties().stateProperty().removeListener(stateChangeListeners.remove(torrent));
+			torrent.getProgress().stateProperty().removeListener(stateChangeListeners.remove(torrent));
 			trackerManager.removeTorrent(torrent);
 		}
 		
@@ -105,8 +105,7 @@ public final class QueuedTorrentManager {
 			final Set<QueuedTorrent> torrents = queuedTorrents.keySet();
 		
 			if(!torrents.isEmpty()) {
-				final StateKeeper stateKeeper = new StateKeeper();
-				torrents.forEach(stateKeeper::store);
+				torrents.forEach(StateKeeper::store);
 			}
 		}
 	}
@@ -130,6 +129,6 @@ public final class QueuedTorrentManager {
 		final ChangeListener<QueuedTorrent.State> stateChangeListener = 
 				(obs, oldV, newV) -> onTorrentStateChanged(torrent, oldV, newV);
 		stateChangeListeners.put(torrent, stateChangeListener);
-		torrent.getProperties().stateProperty().addListener(stateChangeListener);
+		torrent.getProgress().stateProperty().addListener(stateChangeListener);
 	}
 }

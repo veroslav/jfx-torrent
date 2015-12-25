@@ -22,20 +22,28 @@ package org.matic.torrent.queue;
 import java.io.IOException;
 
 import org.matic.torrent.codec.BinaryEncodedDictionary;
+import org.matic.torrent.codec.BinaryEncodedInteger;
 import org.matic.torrent.codec.BinaryEncodedList;
 import org.matic.torrent.codec.BinaryEncodedString;
 import org.matic.torrent.codec.BinaryEncodingKeyNames;
 import org.matic.torrent.hash.InfoHash;
 
+/**
+ * A convenience class that provides easier access to a torrent's meta data
+ * 
+ * @author Vedran Matic
+ *
+ */
 public class QueuedTorrentMetaData {
 
+	private final BinaryEncodedDictionary infoDictionary;
 	private final BinaryEncodedDictionary metaData;
 	
 	private final InfoHash infoHash;
 	
 	public QueuedTorrentMetaData(final BinaryEncodedDictionary metaData) {
 		this.metaData = metaData;
-		
+		this.infoDictionary = (BinaryEncodedDictionary)metaData.get(BinaryEncodingKeyNames.KEY_INFO);
 		this.infoHash = new InfoHash(((BinaryEncodedString)metaData.get(
 				BinaryEncodingKeyNames.KEY_INFO_HASH)).getBytes());
 	}
@@ -45,7 +53,7 @@ public class QueuedTorrentMetaData {
 	}
 	
 	public final BinaryEncodedDictionary getInfoDictionary() {
-		return (BinaryEncodedDictionary)metaData.get(BinaryEncodingKeyNames.KEY_INFO);
+		return infoDictionary;
 	}
 	
 	public final String getAnnounceUrl() {
@@ -55,14 +63,32 @@ public class QueuedTorrentMetaData {
 	
 	public final BinaryEncodedList getAnnounceList() {
 		final BinaryEncodedList announceList = (BinaryEncodedList)metaData.get(BinaryEncodingKeyNames.KEY_ANNOUNCE_LIST);
-		return announceList == null? new BinaryEncodedList() : announceList;
-		/*final Set<String> result = new HashSet<>();
-		
-		if(urls != null) {
-			urls.stream().flatMap(l -> ((BinaryEncodedList)l).stream()).forEach(url -> result.add(url.toString()));
-		}
-		
-		return result;*/
+		return announceList == null? new BinaryEncodedList() : announceList;		
+	}
+	
+	public final BinaryEncodedString getComment() {
+		return (BinaryEncodedString)metaData.get(BinaryEncodingKeyNames.KEY_COMMENT);
+	}
+	
+	public final BinaryEncodedInteger getCreationDate() {
+		return (BinaryEncodedInteger)metaData.get(BinaryEncodingKeyNames.KEY_CREATION_DATE);
+	}
+	
+	public final BinaryEncodedList getFiles() {
+		return (BinaryEncodedList)infoDictionary.get(BinaryEncodingKeyNames.KEY_FILES);
+	}
+	
+	public final BinaryEncodedInteger getLength() {
+		return (BinaryEncodedInteger)infoDictionary.get(BinaryEncodingKeyNames.KEY_LENGTH);
+	}
+	
+	public final String getName() {
+		return infoDictionary.get(BinaryEncodingKeyNames.KEY_NAME).toString();
+	}
+	
+	public final BinaryEncodedInteger getPieceLength() {
+		//TODO: Use real value below
+		return new BinaryEncodedInteger(16000);
 	}
 
 	public final byte[] toExportableValue() throws IOException {

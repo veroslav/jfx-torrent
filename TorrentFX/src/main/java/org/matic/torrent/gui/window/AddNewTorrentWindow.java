@@ -27,14 +27,17 @@ import java.nio.file.Paths;
 import java.util.Optional;
 import java.util.TimeZone;
 
-import org.matic.torrent.codec.BinaryEncodedDictionary;
 import org.matic.torrent.codec.BinaryEncodedInteger;
 import org.matic.torrent.codec.BinaryEncodedString;
-import org.matic.torrent.codec.BinaryEncodingKeyNames;
 import org.matic.torrent.gui.action.enums.BorderStyle;
 import org.matic.torrent.gui.custom.TitledBorderPane;
-import org.matic.torrent.gui.tree.TorrentContentTree;
+import org.matic.torrent.gui.model.TorrentFileEntry;
+import org.matic.torrent.gui.table.TableUtils;
+import org.matic.torrent.gui.tree.FileTreeViewer;
+import org.matic.torrent.gui.tree.TreeTableUtils;
 import org.matic.torrent.io.DiskUtilities;
+import org.matic.torrent.preferences.GuiProperties;
+import org.matic.torrent.queue.QueuedTorrentMetaData;
 import org.matic.torrent.utils.UnitConverter;
 
 import javafx.geometry.HPos;
@@ -50,6 +53,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
+import javafx.scene.control.TreeTableView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
@@ -58,8 +62,6 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
-import javafx.scene.text.FontSmoothingType;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import javafx.stage.DirectoryChooser;
@@ -95,8 +97,9 @@ public final class AddNewTorrentWindow {
 	private final Text diskSpaceText;
 	private final Text fileSizeText;
 	
-	private final BinaryEncodedDictionary torrentMetaData;
-	private final TorrentContentTree torrentContentTree;
+	private final TreeTableView<TorrentFileEntry> fileView = new TreeTableView<>();
+	private final QueuedTorrentMetaData metaData;		
+	private final FileTreeViewer fileTreeViewer;
 	
 	private final Dialog<ButtonType> window;
 		
@@ -105,21 +108,15 @@ public final class AddNewTorrentWindow {
 	private final String comment;
 	
 	private Optional<Long> availableDiskSpace;
-	private long fileSelectionLength;
 
-	public AddNewTorrentWindow(final Window owner, final BinaryEncodedDictionary torrentMetaData,
-			final boolean addProgressDetailColumns) {	
+	public AddNewTorrentWindow(final Window owner, final QueuedTorrentMetaData metaData,
+			final FileTreeViewer fileTreeViewer) {	
 		
-		final BinaryEncodedInteger creationDateInSeconds = (BinaryEncodedInteger)torrentMetaData.get(
-				BinaryEncodingKeyNames.KEY_CREATION_DATE);
+		final BinaryEncodedInteger creationDateInSeconds = metaData.getCreationDate();
 		creationDate = creationDateInSeconds != null? UnitConverter.formatMillisToDate(
 				creationDateInSeconds.getValue() * 1000, TimeZone.getDefault()) : "";
-				
-		final BinaryEncodedDictionary infoDictionary = ((BinaryEncodedDictionary)torrentMetaData.get(
-						BinaryEncodingKeyNames.KEY_INFO));
 		
-		this.torrentMetaData = torrentMetaData;
-		this.torrentContentTree = new TorrentContentTree(infoDictionary, addProgressDetailColumns);
+		this.metaData = metaData;
 		
 		final Path savePath = Paths.get(System.getProperty("user.home"));
 		availableDiskSpace = DiskUtilities.getAvailableDiskSpace(savePath);
@@ -127,9 +124,14 @@ public final class AddNewTorrentWindow {
 		savePathCombo = new ComboBox<String>();
 		savePathCombo.getItems().add(savePath.toString());		
 		
-		final BinaryEncodedString metaDataComment = (BinaryEncodedString)torrentMetaData.get(BinaryEncodingKeyNames.KEY_COMMENT);
+		final BinaryEncodedString metaDataComment = metaData.getComment();
 		comment = metaDataComment != null? metaDataComment.toString() : "";
-		fileName = infoDictionary.get(BinaryEncodingKeyNames.KEY_NAME).toString();
+		fileName = metaData.getName();
+		
+		this.fileTreeViewer = fileTreeViewer;
+		
+		//TODO: Pass an empty QueuedTorrentProgress as param below?
+		fileView.setRoot(this.fileTreeViewer.createView(fileView, metaData, null));
 		
 		window = new Dialog<>();
 		window.initOwner(owner);
@@ -141,24 +143,20 @@ public final class AddNewTorrentWindow {
 		skipHashCheckbox = new CheckBox("Skip hash check");
 				
 		diskSpaceText = new Text();
-		fileSizeText = new Text();		
+		fileSizeText = new Text();			
+		fileSizeText.getStyleClass().add("text");
+		
 		fileSizeLabel = new TextFlow();
 		
-		fileSizeText.setFontSmoothingType(FontSmoothingType.LCD);		
-		diskSpaceText.setFontSmoothingType(FontSmoothingType.LCD);
 		fileSizeLabel.getChildren().addAll(fileSizeText, diskSpaceText);	
 		
 		labelCombo = new ComboBox<String>();
 		advancedButton = new Button("Advanced...");
 		
-		fileSelectionLength = torrentContentTree.getRootFileEntry().getSize();
-		updateDiskUsageLabel();
-						
-		torrentContentTree.fileSelectionSize().addListener((observable, oldValue, newValue) -> {
-			fileSelectionLength = newValue.longValue();
-			updateDiskUsageLabel();
-		});		
-				
+		updateDiskUsageLabel();		
+		fileView.getRoot().getValue().sizeProperty().addListener((obs, oldV, newV) -> updateDiskUsageLabel());
+		//fileView.getRoot().getValue().selectedProperty().addListener((obs, oldV, newV) -> updateDiskUsageLabel());
+		
 		nameTextField = new TextField(fileName);		
 		
 		collapseAllButton = new Button("Collapse All");
@@ -172,16 +170,16 @@ public final class AddNewTorrentWindow {
 	
 	public final AddedTorrentOptions showAndWait() {
 		final Optional<ButtonType> result = window.showAndWait();
-		torrentContentTree.storeColumnStates(false);
+		storeColumnStates();
+		fileTreeViewer.restoreDefault();
 		
 		if(result.isPresent() && result.get() == ButtonType.OK) {			
-			return new AddedTorrentOptions(torrentMetaData, torrentContentTree.getContent(), 
+			return new AddedTorrentOptions(metaData, fileView.getRoot(), 
 					nameTextField.getText(), savePathCombo.getValue(), labelCombo.getValue(),
 					startTorrentCheckbox.isSelected(), createSubFolderCheckbox.isSelected(),
 					addToTopQueueCheckbox.isSelected(), skipHashCheckbox.isSelected());
-		}
-		
-		return null;
+		}		
+		return null;		
 	}
 	
 	private void initComponents() {				
@@ -203,18 +201,21 @@ public final class AddNewTorrentWindow {
 		browseButton.setOnAction(event -> onBrowseForTargetDirectory());
 		
 		selectAllButton.setOnAction(event -> {
-			torrentContentTree.selectAllEntries();
+			fileTreeViewer.selectAllEntries();
 			selectAllButton.requestFocus();
 		});
 		
 		selectNoneButton.setOnAction(event -> {
-			torrentContentTree.unselectAllEntries();
+			fileTreeViewer.unselectAllEntries();
 			selectNoneButton.requestFocus();
 		});
 		
-		collapseAllButton.setOnAction(event -> torrentContentTree.collapseAll());
-		expandAllButton.setOnAction(event -> torrentContentTree.expandAll());
-        
+		collapseAllButton.setOnAction(event -> fileTreeViewer.collapseAll());
+		expandAllButton.setOnAction(event -> fileTreeViewer.expandAll());
+		
+		TreeTableUtils.addFileListingViewColumns(fileView, false);		
+		TreeTableUtils.setupFileListingView(fileView, fileTreeViewer);
+		
 		window.setHeaderText(null);
 		window.setTitle(fileName + " - Add New Torrent");
 		
@@ -225,8 +226,9 @@ public final class AddNewTorrentWindow {
 	}
 	
 	private void updateDiskUsageLabel() {
-		final long totalFilesLength = torrentContentTree.getRootFileEntry().getSize();
+		final long totalFilesLength = metaData.getLength().getValue();
 		final StringBuilder fileSizeBuilder = new StringBuilder();
+		final long fileSelectionLength = fileView.getRoot().getValue().getSize();
 		fileSizeBuilder.append(UnitConverter.formatByteCount(fileSelectionLength));
 		
 		if(fileSelectionLength < totalFilesLength) {
@@ -249,18 +251,18 @@ public final class AddNewTorrentWindow {
 				diskSpaceBuilder.append(UnitConverter.formatByteCount(Math.abs(remainingDiskSpace)));
 				diskSpaceBuilder.append(" too short)");
 				diskSpaceText.setText(diskSpaceBuilder.toString());
-				diskSpaceText.setFill(Color.RED);
+				diskSpaceText.setStyle("text-error-color");
 			}
 			else {
 				diskSpaceBuilder.append(UnitConverter.formatByteCount(remainingDiskSpace));
 				diskSpaceBuilder.append(")");
 				diskSpaceText.setText(diskSpaceBuilder.toString());
-				diskSpaceText.setFill(Color.BLACK);
+				diskSpaceText.getStyleClass().add("text");
 			}	
 		} catch(final IOException ioe) {
 			diskSpaceBuilder.append("can't be calculated)");
 			diskSpaceText.setText(diskSpaceBuilder.toString());
-			diskSpaceText.setFill(Color.RED);
+			diskSpaceText.setStyle("text-error-color");
 		}
 	}
 	
@@ -353,7 +355,7 @@ public final class AddNewTorrentWindow {
 		northPane.getChildren().addAll(labelPane, buttonsPane);
 		
 		final ScrollPane torrentContentsScroll = new ScrollPane();
-		torrentContentTree.wrapWith(torrentContentsScroll);
+		torrentContentsScroll.setContent(fileView);
 		torrentContentsScroll.setFitToWidth(true);
 		torrentContentsScroll.setFitToHeight(true);
 		
@@ -364,8 +366,8 @@ public final class AddNewTorrentWindow {
 		
 		BorderPane.setMargin(northPane, new Insets(0, 0, 10, 0));
 		
-		final TitledBorderPane borderedTorrentContentsPane = new TitledBorderPane(
-				"Torrent Contents", torrentContentsPane, BorderStyle.AMPLE);
+		final TitledBorderPane borderedTorrentContentsPane = new TitledBorderPane("Torrent Contents",
+				torrentContentsPane, BorderStyle.AMPLE, TitledBorderPane.PRIMARY_BORDER_COLOR_STYLE);
 				
 		return borderedTorrentContentsPane;
 	}
@@ -380,16 +382,16 @@ public final class AddNewTorrentWindow {
 		final VBox saveOptionsPane = new VBox(10);
 		saveOptionsPane.getChildren().addAll(saveLocationPane, createSubFolderCheckbox);
 
-		final TitledBorderPane borderedSaveOptionsPane = new TitledBorderPane(
-				"Save In", saveOptionsPane, BorderStyle.AMPLE);
+		final TitledBorderPane borderedSaveOptionsPane = new TitledBorderPane("Save In",
+				saveOptionsPane, BorderStyle.AMPLE, TitledBorderPane.PRIMARY_BORDER_COLOR_STYLE);
 		
 		return borderedSaveOptionsPane;
 	}
 	
 	private Node buildNamePane() {
 		final StackPane namePane = new StackPane(nameTextField);				
-		final TitledBorderPane borderedNamePane = new TitledBorderPane(
-				"Name", namePane, BorderStyle.AMPLE);
+		final TitledBorderPane borderedNamePane = new TitledBorderPane("Name",
+				namePane, BorderStyle.AMPLE, TitledBorderPane.PRIMARY_BORDER_COLOR_STYLE);
 		
 		return borderedNamePane;
 	}
@@ -420,9 +422,16 @@ public final class AddNewTorrentWindow {
 		
 		GridPane.setHgrow(labelPane, Priority.ALWAYS);
 
-		final TitledBorderPane borderedTorrentOptionsPane = new TitledBorderPane(
-				"Torrent Options", torrentOptionsPane, BorderStyle.AMPLE);
+		final TitledBorderPane borderedTorrentOptionsPane = new TitledBorderPane("Torrent Options",
+				torrentOptionsPane, BorderStyle.AMPLE, TitledBorderPane.PRIMARY_BORDER_COLOR_STYLE);
 		
 		return borderedTorrentOptionsPane;
+	}
+	
+	private void storeColumnStates() {
+		TableUtils.storeColumnStates(fileView.getColumns(), GuiProperties.INFO_COLUMN_VISIBILITY,
+				GuiProperties.DEFAULT_INFO_COLUMN_VISIBILITIES, GuiProperties.INFO_COLUMN_SIZE,
+				GuiProperties.DEFAULT_INFO_COLUMN_SIZES, GuiProperties.INFO_COLUMN_ORDER,
+				GuiProperties.DEFAULT_INFO_COLUMN_ORDER);
 	}
 }

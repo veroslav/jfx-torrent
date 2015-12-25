@@ -78,7 +78,7 @@ public class AddTrackerWindow {
 		trackerInputArea.textProperty().addListener((obs, oldV, newV) -> okButton.setDisable(newV.isEmpty()));
 		
 		window.setResizable(true);		
-		window.getDialogPane().setContent(new TitledBorderPane(
-				"List of trackers to add", trackerInputArea, BorderStyle.COMPACT));
+		window.getDialogPane().setContent(new TitledBorderPane("List of trackers to add",
+				trackerInputArea, BorderStyle.COMPACT, TitledBorderPane.SECONDARY_BORDER_COLOR_STYLE));
 	}
 }

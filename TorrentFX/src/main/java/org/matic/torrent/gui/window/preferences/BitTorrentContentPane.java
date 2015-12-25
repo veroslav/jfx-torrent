@@ -180,11 +180,14 @@ public class BitTorrentContentPane extends CategoryContentPane {
 	
 	private Node buildOptionsView() {
 		final TitledBorderPane basicOptions = new TitledBorderPane(
-				"Basic BitTorrent Features", buildBasicOptionsPane(), BorderStyle.COMPACT);
+				"Basic BitTorrent Features", buildBasicOptionsPane(), BorderStyle.COMPACT,
+				TitledBorderPane.SECONDARY_BORDER_COLOR_STYLE);
 		final TitledBorderPane trackerOptions = new TitledBorderPane(
-				"Tracker Features", buildTrackerOptionsPane(), BorderStyle.COMPACT);
+				"Tracker Features", buildTrackerOptionsPane(), BorderStyle.COMPACT,
+				TitledBorderPane.SECONDARY_BORDER_COLOR_STYLE);
 		final TitledBorderPane encryptionOptions = new TitledBorderPane(
-				"Protocol Encryption", buildEncryptionOptionsPane(), BorderStyle.COMPACT);
+				"Protocol Encryption", buildEncryptionOptionsPane(), BorderStyle.COMPACT,
+				TitledBorderPane.SECONDARY_BORDER_COLOR_STYLE);
 						
 		final VBox content = new VBox();
 		content.getStyleClass().add(GuiProperties.VERTICAL_LAYOUT_SPACING);

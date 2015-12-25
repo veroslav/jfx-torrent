@@ -3,8 +3,11 @@
 	src: url("fonts/16023_FUTURAN.ttf");
 }*/
 
+/*Custom color definitions*/
 * {
-    -ui-style-primary: red;
+	-primary-color: #2A2B2C;	
+	-error-text-color: red;
+	-primary-text-color: #EEEEEE;	
 }
 
 .borderless-split-pane {
@@ -35,7 +38,7 @@
 }
 
 .empty-placeholder {
-	-fx-background-color: #4A4B4D;	
+	-fx-background-color: -fx-background;	
 }
 
 .empty-torrent-list-text {
@@ -132,12 +135,12 @@
 .menu-button:hover .label, .menu-button:showing .label,
 .menu-bar .menu-item:focused .label,
 .context-menu .menu-item:focused .label {
-	-fx-text-fill: #EEEEEE;			
+	-fx-text-fill: -primary-text-color;			
 }
 
 .menu-bar .label, .menu-bar .menu-item .label,
 .context-menu .menu-item .label {
-	-fx-text-fill: #EEEEEE;
+	-fx-text-fill: -primary-text-color;
 }
 
 .menu-bar .menu-item:focused,
@@ -152,7 +155,7 @@
 }
 
 .menu-item .mnemonic-underline {
-    -fx-stroke: -fx-text-base-color;
+    -fx-stroke: -primary-text-color;
 }
 
 .context-menu {
@@ -182,8 +185,8 @@
 
 .option-category-selection-list {
 	-fx-min-width: 130;		
-	-fx-background-color: #2A2B2C;
-	-fx-control-inner-background: #2A2B2C;	
+	/*-fx-background-color: -primary-color;*/
+	-fx-control-inner-background: -fx-base;	
 }
 
 .option-category-selection-list .tree-cell:selected .text {
@@ -268,8 +271,8 @@
 
 .root {
 	-fx-accent: #036192;
-	-fx-background-color: #2A2B2C;
-	-fx-base: #2A2B2C;
+	-fx-background-color: -primary-color;
+	-fx-base: -primary-color;
 	-fx-faint-focus-color: transparent;
 	-fx-focus-color: linear-gradient(to bottom, derive(-fx-text-box-border, -10%), 
 			-fx-text-box-border),
@@ -293,7 +296,7 @@
 }
 
 .status-bar-label {	
-	-fx-background-color: #2A2B2C;
+	-fx-background-color: -fx-base;
 	-fx-border-color: transparent;		
 }
 
@@ -318,7 +321,8 @@
 }
 
 .table-view, .tree-table-view {
-	-fx-background-insets: 2;	
+	-fx-background-insets: 2;
+	-fx-background-color: -fx-background;	
 }
 
 .table-view .column-header, .table-view .filler,
@@ -353,11 +357,11 @@
 
 .text {
     -fx-font-smoothing-type: lcd;     
-    -fx-fill: #EEEEEE; 
+    -fx-fill: -primary-text-color; 
 }
 
 .text-field {
-	-fx-background-color: #2A2B2C;
+	-fx-background-color: -fx-base;
 	-fx-border-color: gray; 
 	-fx-text-fill: #eaeaea;
 }
@@ -366,8 +370,6 @@
   -fx-translate-x:  4;
   -fx-translate-y: -10;
   -fx-padding: 0 0 0 4;
-  -fx-background-color: -fx-background;
-  /*-fx-background-color: -ui-style-primary;*/
 }
 
 .titled-border-compact {
@@ -421,7 +423,7 @@
 }
 
 .toolbar-button:pressed {
-	-fx-background-color: #2A2B2C;
+	-fx-background-color: -fx-base;
 }
 
 .toolbar-separator .line {

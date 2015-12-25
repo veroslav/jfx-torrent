@@ -24,6 +24,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -59,6 +60,10 @@ public final class BinaryEncodedList implements BinaryEncodable {
 	
 	public Stream<BinaryEncodable> stream() {
 		return list.stream();
+	}
+	
+	public Iterator<BinaryEncodable> iterator() {
+		return list.iterator();
 	}
 
 	@Override

@@ -51,7 +51,7 @@ public class TrackerSessionViewBean extends TrackableSessionViewBean {
 				trackerSession.getTracker().getLastResponse() : trackerSession.getLastAnnounceResponse();
 		nextUpdateValue = trackerSession.getInterval() - (System.currentTimeMillis() - lastTrackerResponse);
 		
-		final QueuedTorrent.State torrentState = trackerSession.getTorrent().getProperties().getState();
+		final QueuedTorrent.State torrentState = trackerSession.getTorrent().getProgress().getState();
 		final String trackerMessage = trackerSession.getTrackerMessage();
 		final String statusMessage = trackerMessage != null && !trackerMessage.equals(TRACKER_MESSAGE_NULL)?
 				trackerMessage : Tracker.getStatusMessage(trackerStatus);

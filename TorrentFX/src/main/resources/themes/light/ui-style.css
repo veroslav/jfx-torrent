@@ -1,3 +1,9 @@
+/*Custom color definitions*/
+* {	
+	-error-text-color: red;
+	-primary-text-color: -fx-text-base-color;	
+}
+
 .borderless-split-pane {
 	-fx-padding: 0;
 }
@@ -224,6 +230,7 @@
 
 .root {
 	-fx-accent: #3399FF;
+	-fx-background-color: -fx-base;
 	-fx-faint-focus-color: transparent;
 	-fx-focus-color: linear-gradient(to bottom, derive(-fx-text-box-border, -10%), 
 			-fx-text-box-border),
@@ -241,8 +248,13 @@
 }
 
 .status-bar {	
-	-fx-padding:4;
-	-fx-pref-height: 20;
+	-fx-pref-height: 20;	
+	-fx-background-color: #DDDDDD;
+}
+
+.status-bar-label {	
+	-fx-background-color: -fx-base;
+	-fx-border-color: transparent;		
 }
 
 .tab {	
@@ -296,13 +308,14 @@
 
 .text{
     -fx-font-smoothing-type: lcd;
+    -fx-fill:-primary-text-color;
 }
 
 .titled-border-title {
   -fx-translate-x:  4;
   -fx-translate-y: -10;
   -fx-padding: 0 0 0 4;
-  -fx-background-color: -fx-background;
+  /*-fx-background-color: -fx-background;*/
 }
 
 .titled-border-compact {
