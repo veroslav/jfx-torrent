@@ -334,6 +334,7 @@ public final class UrlLoaderWindow {
 	
 	private void showErrorMessage(final String message) {
 		final Alert invalidUrlAlert = new Alert(AlertType.ERROR);
+		invalidUrlAlert.initOwner(window.getOwner());
 		invalidUrlAlert.setContentText(message);
 		invalidUrlAlert.setTitle(WINDOW_TITLE);
 		invalidUrlAlert.setHeaderText(null);

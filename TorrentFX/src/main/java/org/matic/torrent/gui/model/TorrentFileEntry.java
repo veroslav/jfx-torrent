@@ -52,22 +52,24 @@ public final class TorrentFileEntry {
 	
 	private final LongProperty pieceCount;
 	private final LongProperty firstPiece;
+	private final LongProperty selectionSize;
 	private final LongProperty size;
 	private final LongProperty done;
 	
 	private final Image fileImage;
 	
 	public TorrentFileEntry(final String name, final String path, 
-			final long size, final Image fileImage) {
+			final long size, final boolean selected, final Image fileImage) {
 		this.priority = new SimpleIntegerProperty(FilePriority.NORMAL.getValue());
 		this.progress = new SimpleDoubleProperty();
 		
-		this.selected = new SimpleBooleanProperty(false);
+		this.selected = new SimpleBooleanProperty(selected);		
 		this.name = new SimpleStringProperty(name);
 		this.path = new SimpleStringProperty(path);
 		
 		this.pieceCount = new SimpleLongProperty();
 		this.firstPiece = new SimpleLongProperty();
+		this.selectionSize = new SimpleLongProperty(selected? size : 0);
 		this.size = new SimpleLongProperty(size);
 		this.done = new SimpleLongProperty();
 		
@@ -90,8 +92,12 @@ public final class TorrentFileEntry {
 		return size.get();
 	}
 	
-	public final void updateSize(final long sizeDiff) {
-		size.set(size.get() + sizeDiff);
+	public final long getSelectionSize() {
+		return selectionSize.get();
+	}
+	
+	public final void updateSelectionSize(final long sizeDiff) {
+		selectionSize.set(selectionSize.get() + sizeDiff);
 	}
 	
 	public void setFirstPiece(final long firstPiece) {
@@ -141,11 +147,15 @@ public final class TorrentFileEntry {
 	public final LongProperty sizeProperty() {
 		return size;
 	}
+	
+	public final LongProperty selectionSizeProperty() {
+		return selectionSize;
+	}
 
 	@Override
 	public String toString() {
 		return "TorrentContentModel [selected=" + selected + ", name=" + name
-				+ ", path=" + path + ", size=" + size + "]";
+				+ ", path=" + path + ", size=" + selectionSize + "]";
 	}	
 }
 

@@ -20,7 +20,7 @@
 
 package org.matic.torrent.codec;
 
-public final class BinaryEncodingKeyNames {
+public final class BinaryEncodingKeys {
 	
 	//STORED STATE SPECIFIC PROPERTY KEYS
 	public static final BinaryEncodedString STATE_KEY_TORRENT_STATE = new BinaryEncodedString("state");
@@ -44,9 +44,10 @@ public final class BinaryEncodingKeyNames {
 	public static final BinaryEncodedString KEY_PORT =  new BinaryEncodedString("port");
 	public static final BinaryEncodedString KEY_IP =  new BinaryEncodedString("ip");		
 	
-	//TORRENT META FILE KEYS
+	//TORRENT META FILE KEYS	
 	public static final BinaryEncodedString KEY_ANNOUNCE_LIST = new BinaryEncodedString("announce-list");
 	public static final BinaryEncodedString KEY_CREATION_DATE = new BinaryEncodedString("creation date");
+	public static final BinaryEncodedString KEY_PIECE_LENGTH = new BinaryEncodedString("piece length");
 	public static final BinaryEncodedString KEY_ENCODING =  new BinaryEncodedString("encoding");
 	public static final BinaryEncodedString KEY_ANNOUNCE = new BinaryEncodedString("announce");	
 	public static final BinaryEncodedString KEY_COMMENT =  new BinaryEncodedString("comment");

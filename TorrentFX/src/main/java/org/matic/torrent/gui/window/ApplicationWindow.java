@@ -32,6 +32,36 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import org.matic.torrent.gui.action.FileActionHandler;
+import org.matic.torrent.gui.action.TabActionHandler;
+import org.matic.torrent.gui.action.TorrentJobActionHandler;
+import org.matic.torrent.gui.action.TrackerTableActionHandler;
+import org.matic.torrent.gui.action.WindowActionHandler;
+import org.matic.torrent.gui.action.enums.ApplicationTheme;
+import org.matic.torrent.gui.custom.StatusBar;
+import org.matic.torrent.gui.image.ImageUtils;
+import org.matic.torrent.gui.model.TorrentFileEntry;
+import org.matic.torrent.gui.model.TorrentJobView;
+import org.matic.torrent.gui.model.TrackerView;
+import org.matic.torrent.gui.table.TableUtils;
+import org.matic.torrent.gui.table.TorrentJobTable;
+import org.matic.torrent.gui.table.TrackerTable;
+import org.matic.torrent.gui.tree.FileTreeViewer;
+import org.matic.torrent.gui.tree.TreeTableUtils;
+import org.matic.torrent.hash.InfoHash;
+import org.matic.torrent.io.StateKeeper;
+import org.matic.torrent.peer.ClientProperties;
+import org.matic.torrent.preferences.ApplicationPreferences;
+import org.matic.torrent.preferences.CssProperties;
+import org.matic.torrent.preferences.GuiProperties;
+import org.matic.torrent.queue.QueuedTorrent;
+import org.matic.torrent.queue.QueuedTorrentManager;
+import org.matic.torrent.queue.QueuedTorrentMetaData;
+import org.matic.torrent.tracking.TrackerManager;
+import org.matic.torrent.tracking.beans.TrackerSessionViewBean;
+import org.matic.torrent.utils.PeriodicTask;
+import org.matic.torrent.utils.PeriodicTaskRunner;
+
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
@@ -74,35 +104,6 @@ import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
-import org.matic.torrent.gui.action.FileActionHandler;
-import org.matic.torrent.gui.action.TabActionHandler;
-import org.matic.torrent.gui.action.TorrentJobActionHandler;
-import org.matic.torrent.gui.action.TrackerTableActionHandler;
-import org.matic.torrent.gui.action.WindowActionHandler;
-import org.matic.torrent.gui.action.enums.ApplicationTheme;
-import org.matic.torrent.gui.custom.StatusBar;
-import org.matic.torrent.gui.image.ImageUtils;
-import org.matic.torrent.gui.model.TorrentFileEntry;
-import org.matic.torrent.gui.model.TorrentJobView;
-import org.matic.torrent.gui.model.TrackerView;
-import org.matic.torrent.gui.table.TableUtils;
-import org.matic.torrent.gui.table.TorrentJobTable;
-import org.matic.torrent.gui.table.TrackerTable;
-import org.matic.torrent.gui.tree.FileTreeViewer;
-import org.matic.torrent.gui.tree.TreeTableUtils;
-import org.matic.torrent.hash.InfoHash;
-import org.matic.torrent.io.StateKeeper;
-import org.matic.torrent.peer.ClientProperties;
-import org.matic.torrent.preferences.ApplicationPreferences;
-import org.matic.torrent.preferences.GuiProperties;
-import org.matic.torrent.queue.QueuedTorrent;
-import org.matic.torrent.queue.QueuedTorrentManager;
-import org.matic.torrent.queue.QueuedTorrentMetaData;
-import org.matic.torrent.tracking.TrackerManager;
-import org.matic.torrent.tracking.beans.TrackerSessionViewBean;
-import org.matic.torrent.utils.PeriodicTask;
-import org.matic.torrent.utils.PeriodicTaskRunner;
-
 /**
  * A main application window, showing all of the GUI components.
  * 
@@ -114,14 +115,6 @@ public final class ApplicationWindow {
 	private static final List<String> TAB_NAMES = Arrays.asList(GuiProperties.FILES_TAB_ID,
 			GuiProperties.INFO_TAB_ID, GuiProperties.PEERS_TAB_ID, GuiProperties.TRACKERS_TAB_ID,
 			GuiProperties.PIECES_TAB_ID, GuiProperties.SPEED_TAB_ID, GuiProperties.LOGGER_TAB_ID);            
-		
-	private static final Color TOOLBAR_BUTTON_COLOR = Color.rgb(46, 46, 46);
-	private static final Color REMOVE_BUTTON_COLOR = Color.rgb(165,57,57);
-	
-	private static final Color TAB_SELECTED_IMAGE_COLOR = Color.rgb(102, 162, 54);
-	private static final Color TAB_DEFAULT_IMAGE_COLOR = Color.rgb(162, 170, 156);
-	
-	private static final int TAB_ICON_SIZE = 14;
 	
 	//Action handlers
 	private final WindowActionHandler windowActionHandler = new WindowActionHandler();
@@ -217,7 +210,7 @@ public final class ApplicationWindow {
 		
 		torrentJobTable.addSelectionListener(this::onTorrentJobSelection);
 		trackerTable.onTrackerDeletionRequested(views ->
-			trackerTableActionHandler.onTrackerDeletion(views, trackerManager, trackerTable));
+			trackerTableActionHandler.onTrackerDeletion(views, trackerManager, trackerTable, stage));
 		trackerTable.onTrackerUpdateRequested(views ->
 			trackerTableActionHandler.onTrackerUpdate(views, trackerManager));
 		trackerTable.onTrackersAdded(urls -> trackerTableActionHandler.onTrackersAdded(urls, trackerManager,
@@ -238,7 +231,7 @@ public final class ApplicationWindow {
 	}
 	
 	private void initStatusBar(final BorderPane contentPane) {
-		statusBar.getStyleClass().add("status-bar");
+		statusBar.getStyleClass().add(CssProperties.STATUS_BAR);
 		final boolean statusBarShown = ApplicationPreferences.getProperty(
     			GuiProperties.STATUSBAR_VISIBLE, GuiProperties.DEFAULT_STATUSBAR_VISIBLE);
 		showStatusBarMenuItem.setSelected(statusBarShown);
@@ -332,7 +325,7 @@ public final class ApplicationWindow {
 	}
 	
 	private void initFilterTreeView() {
-		filterTreeView.getStyleClass().add("filter-list-view");
+		filterTreeView.getStyleClass().add(CssProperties.FILTER_LIST_VIEW);
 		filterTreeView.setRoot(buildFilterTreeViewItems());
 		filterTreeView.setShowRoot(false);
 		filterTreeView.getSelectionModel().select(0);
@@ -343,32 +336,32 @@ public final class ApplicationWindow {
 		final List<TreeItem<Node>> torrentNodeElements = Arrays.asList("Downloading (0)",
 				"Seeding (0)", "Completed (0)", "Active (0)", "Inactive (0)").stream().map(labelName -> {
 			final Label label = new Label(labelName);
-			label.getStyleClass().add("filter-list-child-cell");
+			label.getStyleClass().add(CssProperties.FILTER_LIST_CHILD_CELL);
 			return new TreeItem<Node>(label);
 		}).collect(Collectors.toList());
 		
 		final List<TreeItem<Node>> labelsNodeElements = Arrays.asList("No Label (0)").stream().map(labelName -> {
 			final Label label = new Label(labelName);
-			label.getStyleClass().add("filter-list-child-cell");
+			label.getStyleClass().add(CssProperties.FILTER_LIST_CHILD_CELL);
 			return new TreeItem<Node>(label);
 		}).collect(Collectors.toList());
 		
 		final Label torrentsRootLabel = new Label("Torrents (0)");
-		torrentsRootLabel.getStyleClass().add("filter-list-root-cell");
+		torrentsRootLabel.getStyleClass().add(CssProperties.FILTER_LIST_ROOT_CELL);
 		torrentsRootLabel.setGraphic(new ImageView(ImageUtils.DOWNLOADS_IMAGE));
 		final TreeItem<Node> torrentsRootNode = new TreeItem<>(torrentsRootLabel);
 		torrentsRootNode.setExpanded(true);
 		torrentsRootNode.getChildren().addAll(torrentNodeElements);
 		
 		final Label labelsRootLabel = new Label("Labels");
-		labelsRootLabel.getStyleClass().add("filter-list-root-cell");
+		labelsRootLabel.getStyleClass().add(CssProperties.FILTER_LIST_ROOT_CELL);
 		labelsRootLabel.setGraphic(new ImageView(ImageUtils.LABEL_IMAGE));
 		final TreeItem<Node> labelsRootNode = new TreeItem<>(labelsRootLabel);
 		labelsRootNode.setExpanded(true);
 		labelsRootNode.getChildren().addAll(labelsNodeElements);
 		
 		final Label rssFeedsRootLabel = new Label("Feeds (0)");
-		rssFeedsRootLabel.getStyleClass().add("filter-list-root-cell-no-children");
+		rssFeedsRootLabel.getStyleClass().add(CssProperties.FILTER_LIST_ROOT_CELL_WITHOUT_CHILDREN);
 		rssFeedsRootLabel.setGraphic(new ImageView(ImageUtils.RSS_IMAGE));
 		final TreeItem<Node> rssFeedsRootNode = new TreeItem<>(rssFeedsRootLabel);
 		rssFeedsRootNode.setExpanded(true);
@@ -390,11 +383,10 @@ public final class ApplicationWindow {
 	}
 	
 	private Pane buildContentPane() {
-		final String borderlessSplitPaneStyle = "borderless-split-pane";
 		final BorderPane mainPane = new BorderPane();		
 		final ToolBar toolbar = buildToolbar();				
 		
-		verticalSplitPane.getStyleClass().add(borderlessSplitPaneStyle);
+		verticalSplitPane.getStyleClass().add(CssProperties.SPLIT_PANE);
         verticalSplitPane.setOrientation(Orientation.VERTICAL);     
         verticalSplitPane.getItems().addAll(buildTorrentJobTable(), detailedInfoTabPane);        
         
@@ -416,7 +408,7 @@ public final class ApplicationWindow {
         	showCompactToolbar(mainPane, centerPane, toolbar, showCompact));
         initFilterTreeView();
          
-        horizontalSplitPane.getStyleClass().add(borderlessSplitPaneStyle);
+        horizontalSplitPane.getStyleClass().add(CssProperties.SPLIT_PANE);
         horizontalSplitPane.setOrientation(Orientation.HORIZONTAL);        
         horizontalSplitPane.getItems().addAll(filterTreeView, centerPane);
         
@@ -541,9 +533,13 @@ public final class ApplicationWindow {
 		toolbarButtonsMap.get(ImageUtils.LINK_ICON_LOCATION).setOnAction(
 				event -> onAddTorrent(fileActionHandler.onLoadUrl(stage, fileTreeViewer)));
 		toolbarButtonsMap.get(ImageUtils.SETTINGS_ICON_LOCATION).setOnAction(
-				event -> windowActionHandler.onOptionsWindowShown(stage, fileActionHandler));
-		toolbarButtonsMap.get(ImageUtils.DELETE_ICON_LOCATION).setOnAction(
-				event -> onRemoveTorrent());
+				event -> windowActionHandler.onOptionsWindowShown(stage, fileActionHandler));	
+		
+		final Button deleteButton = toolbarButtonsMap.get(ImageUtils.DELETE_ICON_LOCATION);
+		deleteButton.setOnAction(event -> onDeleteTorrent());
+		deleteButton.disableProperty().addListener((obs, oldV, newV) -> 
+			onDeleteButtonStateChanged(deleteButton, newV));
+		
 		toolbarButtonsMap.get(ImageUtils.DOWNLOAD_ICON_LOCATION).setOnAction(
 				event -> torrentJobActionHandler.onChangeTorrentState(QueuedTorrent.State.ACTIVE,
 						toolbarButtonsMap.get(ImageUtils.DOWNLOAD_ICON_LOCATION),
@@ -554,7 +550,7 @@ public final class ApplicationWindow {
 						toolbarButtonsMap.get(ImageUtils.STOP_ICON_LOCATION), torrentJobTable));
 
 		final String themeName = ApplicationPreferences.getProperty(GuiProperties.APPLICATION_THEME, "light");
-		updateToolbarIcons(toolbarButtonsMap, GuiProperties.THEME_STYLESHEET_PATH_TEMPLATE.replace("?", themeName));
+		refreshToolbarIcons(toolbarButtonsMap, themeName);		
 		
 		final HBox separatorBox = new HBox();		
 		HBox.setHgrow(separatorBox, Priority.ALWAYS);
@@ -570,19 +566,24 @@ public final class ApplicationWindow {
 		return toolBar;
 	}
 	
-	private void updateToolbarIcons(final Map<String, Button> buttonMap, final String iconPath) {
-		buttonMap.entrySet().forEach(buttonLocation -> {			
+	private void refreshToolbarIcons(final Map<String, Button> buttonMap, final String themeName) {
+		final String iconPath = GuiProperties.THEME_STYLESHEET_PATH_TEMPLATE.replace("?", themeName);
+		buttonMap.entrySet().forEach(buttonLocation -> {				
 			final ImageView imageView = ImageUtils.createImageView(new Image(
 					getClass().getResourceAsStream(iconPath + buttonLocation.getKey())),
-					ImageUtils.CROPPED_MARGINS_IMAGE_VIEW, ImageUtils.TOOLBAR_BUTTON_IMAGE_SIZE,
-					ImageUtils.TOOLBAR_BUTTON_IMAGE_SIZE);			
+					ImageUtils.CROPPED_MARGINS_IMAGE_VIEW, ImageUtils.ICON_SIZE_TOOLBAR,
+					ImageUtils.ICON_SIZE_TOOLBAR);						
 			buttonLocation.getValue().setGraphic(imageView);
 		});
+		final Button deleteButton = buttonMap.get(ImageUtils.DELETE_ICON_LOCATION);
+		if(!deleteButton.isDisabled()) {
+			ImageUtils.colorize((ImageView)deleteButton.getGraphic(), ImageUtils.BUTTON_COLOR_DELETE);
+		}
 	}
 	
 	private Button buildToolbarButton(final String iconPath, final String tooltip, final boolean disabled) {			
 		final Button button = new Button();
-		button.getStyleClass().add("toolbar-button");		
+		button.getStyleClass().add(CssProperties.TOOLBAR_BUTTON);		
 		button.setTooltip(new Tooltip(tooltip));		
 		button.setDisable(disabled);		
 
@@ -592,7 +593,7 @@ public final class ApplicationWindow {
 	
 	private Separator buildToolbarSeparator() {
 		final Separator separator = new Separator(Orientation.VERTICAL);
-		separator.getStyleClass().add("toolbar-separator");
+		separator.getStyleClass().add(CssProperties.TOOLBAR_SEPARATOR);
 		separator.setDisable(true);
 		return separator;
 	}
@@ -627,10 +628,10 @@ public final class ApplicationWindow {
 				detailedInfoTabPane.getSelectionModel().select(tab);        		
 			}
         	tab.setOnSelectionChanged(event -> {
-        		final Color tabImageColor = tab.isSelected()? TAB_SELECTED_IMAGE_COLOR : TAB_DEFAULT_IMAGE_COLOR;
+        		final Color tabImageColor = tab.isSelected()? ImageUtils.ICON_COLOR : ImageUtils.INACTIVE_TAB_COLOR;
         		
         		final ImageView imageView = ImageUtils.createImageView(tabImage,
-        				ImageUtils.CROPPED_MARGINS_IMAGE_VIEW, TAB_ICON_SIZE, TAB_ICON_SIZE);        		
+        				ImageUtils.CROPPED_MARGINS_IMAGE_VIEW, ImageUtils.ICON_SIZE_TAB, ImageUtils.ICON_SIZE_TAB);        		
         		ImageUtils.colorize(imageView, tabImageColor);
         		
         		tabImageViews.put(tab, imageView);    
@@ -640,7 +641,7 @@ public final class ApplicationWindow {
         		updateGui();
         	});       	
         	final ImageView imageView = ImageUtils.createImageView(tabImage,
-        			ImageUtils.CROPPED_MARGINS_IMAGE_VIEW, TAB_ICON_SIZE, TAB_ICON_SIZE);        	        	
+        			ImageUtils.CROPPED_MARGINS_IMAGE_VIEW, ImageUtils.ICON_SIZE_TAB, ImageUtils.ICON_SIZE_TAB);        	        	
         	ImageUtils.colorize(imageView, Color.rgb(162, 170, 156));
         	
         	tabImageViews.put(tab, imageView);
@@ -742,6 +743,7 @@ public final class ApplicationWindow {
 					"The torrent already exists.\n" +
 							"Would you like to load trackers from it?",
 							ButtonType.OK, ButtonType.CANCEL);
+			existingTorrentAlert.initOwner(stage);
 			existingTorrentAlert.setTitle("Existing torrent file");
 			existingTorrentAlert.setHeaderText(null);
 			existingTorrentAlert.showAndWait();			
@@ -787,20 +789,21 @@ public final class ApplicationWindow {
 			final Optional<? extends String> selectedTheme = change.getAddedSubList().stream().filter(
 					s -> s.startsWith("/themes/")).findFirst();
 			if(selectedTheme.isPresent()) {				
-				final String stylesheetName = selectedTheme.get();
-				updateToolbarIcons(toolbarButtonsMap, stylesheetName.substring(
-						0, stylesheetName.lastIndexOf(GuiProperties.THEME_UI_STYLE_CSS)));
+				final String stylesheetName = selectedTheme.get();				
+				refreshToolbarIcons(toolbarButtonsMap, stylesheetName.substring(
+						"/themes".length() + 1, stylesheetName.lastIndexOf(GuiProperties.THEME_UI_STYLE_CSS)));
 			}
 		}
 	}
 	
-	private void onRemoveTorrent() {
+	private void onDeleteTorrent() {
 		final ObservableList<TorrentJobView> selectedTorrentJobs = torrentJobTable.getSelectedJobs();
 		
 		if(selectedTorrentJobs.size() > 0) {
 			final Alert confirmDeleteAlert = new Alert(AlertType.WARNING,
 					"Are you sure you want to delete selected torrent(s)?",
 							ButtonType.OK, ButtonType.CANCEL);
+			confirmDeleteAlert.initOwner(stage);
 			confirmDeleteAlert.setTitle("Delete torrent");
 			confirmDeleteAlert.setHeaderText(null);
 			final Optional<ButtonType> answer = confirmDeleteAlert.showAndWait();
@@ -813,6 +816,7 @@ public final class ApplicationWindow {
 							} catch (final IOException ioe) {
 								final Alert deleteErrorAlert = new Alert(AlertType.ERROR,
 										"Failed to delete torrent from the disk.", ButtonType.OK);
+								deleteErrorAlert.initOwner(stage);
 								deleteErrorAlert.setTitle("Delete torrent");
 								deleteErrorAlert.setHeaderText(null);
 								deleteErrorAlert.showAndWait();
@@ -821,7 +825,7 @@ public final class ApplicationWindow {
 				torrentJobTable.deleteJobs(selectedTorrentJobs);
 				final ObservableList<TorrentJobView> newSelection = torrentJobTable.getSelectedJobs();
 				if(newSelection.isEmpty()) {
-					fileTreeViewer.clear();
+					fileTreeViewer.hide();
 					trackerTable.setContent(FXCollections.emptyObservableList());
 				}
 				else {
@@ -848,14 +852,18 @@ public final class ApplicationWindow {
 		toolbarButtonsMap.get(ImageUtils.STOP_ICON_LOCATION).setDisable(!torrentSelected ||
 				selectedTorrentJob.getQueuedTorrent().getProgress().getState() == QueuedTorrent.State.STOPPED);
 		
-		final Button removeButton = toolbarButtonsMap.get(ImageUtils.DELETE_ICON_LOCATION);	
-		final ImageView buttonImageView = (ImageView)removeButton.getGraphic();
-		
-		removeButton.setDisable(!torrentSelected);
-		final Color buttonImageColor = removeButton.isDisabled()? 
-				TOOLBAR_BUTTON_COLOR : REMOVE_BUTTON_COLOR; 
-		ImageUtils.colorize(buttonImageView, buttonImageColor);		
-		removeButton.setGraphic(buttonImageView);		
+		final Button removeButton = toolbarButtonsMap.get(ImageUtils.DELETE_ICON_LOCATION);			
+		removeButton.setDisable(!torrentSelected);				
+	}
+	
+	private void onDeleteButtonStateChanged(final Button deleteButton, final boolean disabled) {		
+		final ImageView deleteButtonIcon = (ImageView)deleteButton.getGraphic();
+		if(disabled) {
+			deleteButtonIcon.setEffect(null);
+		}
+		else {
+			ImageUtils.colorize(deleteButtonIcon, ImageUtils.BUTTON_COLOR_DELETE);
+		}		
 	}
 
 	private void storeWindowChanges() {

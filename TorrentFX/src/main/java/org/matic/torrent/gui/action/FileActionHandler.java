@@ -60,6 +60,7 @@ public final class FileActionHandler {
 			}
 			catch (final IOException | BinaryDecoderException e) {
 				final Alert errorAlert = new Alert(AlertType.WARNING);
+				errorAlert.initOwner(owner);
 				errorAlert.setTitle("Invalid torrent file");
 				errorAlert.setContentText("Unable to load " + Paths.get(torrentPath).getFileName() + "\n"
 						+ "The torrent file appears to be invalid.");

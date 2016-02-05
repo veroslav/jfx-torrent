@@ -1,10 +1,10 @@
 .dialog-pane {
-    -fx-background-color: #2A2B2C;
+    -fx-background-color: #2A2B2C;    
 }
 
-.dialog-pane .label {
-    -fx-text-fill: #EEEEEE;
-}
+/*.dialog-pane .label {
+    -fx-text-fill: #EEEEEE;    
+}*/
 
 .dialog-pane .button:default {
 	-fx-background-color: linear-gradient(#4EA1FE 0%, #4B9CFE 29%, #4B9CFE 30%, #408CFE 100%);

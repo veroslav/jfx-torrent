@@ -33,12 +33,18 @@ import javafx.scene.effect.ColorAdjust;
 import javafx.scene.effect.ColorInput;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Rectangle;
 
 import org.matic.torrent.gui.window.ApplicationWindow;
 
 public final class ImageUtils {
+	
+	//Custom icon/image colors
+	public static final Color INACTIVE_TAB_COLOR = Color.rgb(162, 170, 156);
+	public static final Color BUTTON_COLOR_DELETE = Color.rgb(165,57,57);	
+	public static final Color ICON_COLOR = Color.rgb(102, 162, 54);	
 	
 	//Side bar specific icons
 	public static final String SIDEBAR_ARROW_UP_DOWN_ICON_LOCATION = "/icons/sidebar_downloading.png";
@@ -60,10 +66,11 @@ public final class ImageUtils {
 	public static final String LINK_ICON_LOCATION = "/icons/toolbar_link.png";
 	public static final String ADD_ICON_LOCATION = "/icons/toolbar_open.png";
 	public static final String RSS_ICON_LOCATION = "/icons/toolbar_rss.png";
-	
-	public static final int TOOLBAR_BUTTON_IMAGE_SIZE = 18;
-	public static final int CATEGORY_LIST_IMAGE_SIZE = 25;
-	public static final int FILE_TYPE_IMAGE_SIZE = 15;
+		
+	public static final int ICON_SIZE_CATEGORY_LIST = 25;	
+	public static final int ICON_SIZE_FILE_TYPE = 15;
+	public static final int ICON_SIZE_TOOLBAR = 18;
+	public static final int ICON_SIZE_TAB = 14;
 	
 	//Detailed info tab's icon paths
 	public static final String TAB_FILES_ICON_LOCATION = "/icons/tab_files.png";
@@ -85,11 +92,14 @@ public final class ImageUtils {
 	
 	//Filter list category images
 	public static final Image DOWNLOADS_IMAGE = new Image(
-			ApplicationWindow.class.getResourceAsStream(SIDEBAR_ARROW_UP_DOWN_ICON_LOCATION), 25, 25, true, true);
+			ApplicationWindow.class.getResourceAsStream(SIDEBAR_ARROW_UP_DOWN_ICON_LOCATION),
+			ICON_SIZE_CATEGORY_LIST, ICON_SIZE_CATEGORY_LIST, true, true);
 	public static final Image LABEL_IMAGE = new Image(
-			ApplicationWindow.class.getResourceAsStream(SIDEBAR_LABEL_ICON_LOCATION), 25, 25, true, true);
+			ApplicationWindow.class.getResourceAsStream(SIDEBAR_LABEL_ICON_LOCATION),
+			ICON_SIZE_CATEGORY_LIST, ICON_SIZE_CATEGORY_LIST, true, true);
 	public static final Image RSS_IMAGE = new Image(
-			ApplicationWindow.class.getResourceAsStream(SIDEBAR_RSS_ICON_LOCATION), 25, 25, true, true);	
+			ApplicationWindow.class.getResourceAsStream(SIDEBAR_RSS_ICON_LOCATION),
+			ICON_SIZE_CATEGORY_LIST, ICON_SIZE_CATEGORY_LIST, true, true);	
 	
 	//File type mapping names
 	private static final String FILE_TYPE_IMAGE = "file_type_image";

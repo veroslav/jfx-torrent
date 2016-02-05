@@ -32,7 +32,7 @@ import javafx.beans.property.SimpleObjectProperty;
 import org.matic.torrent.codec.BinaryEncodedDictionary;
 import org.matic.torrent.codec.BinaryEncodedList;
 import org.matic.torrent.codec.BinaryEncodedString;
-import org.matic.torrent.codec.BinaryEncodingKeyNames;
+import org.matic.torrent.codec.BinaryEncodingKeys;
 
 public class QueuedTorrentProgress {
 	
@@ -45,27 +45,27 @@ public class QueuedTorrentProgress {
 		this.torrentState = torrentState;
 		
 		final String stateValue = ((BinaryEncodedString)torrentState.get(
-				BinaryEncodingKeyNames.STATE_KEY_TORRENT_STATE)).toString();
+				BinaryEncodingKeys.STATE_KEY_TORRENT_STATE)).toString();
 		this.state = new SimpleObjectProperty<>(QueuedTorrent.State.valueOf(stateValue));
 	}
 	
 	public final String getName() {
-		return torrentState.get(BinaryEncodingKeyNames.KEY_NAME).toString();
+		return torrentState.get(BinaryEncodingKeys.KEY_NAME).toString();
 	}
 	
 	public final void setName(final String name) {
-		torrentState.put(BinaryEncodingKeyNames.KEY_NAME, new BinaryEncodedString(name));
+		torrentState.put(BinaryEncodingKeys.KEY_NAME, new BinaryEncodedString(name));
 	}
 	
 	public final void addTrackerUrls(final Set<String> trackerUrls) {		
 		final BinaryEncodedList trackerList = new BinaryEncodedList();		
 		trackerUrls.forEach(t -> trackerList.add(new BinaryEncodedString(t)));		
-		torrentState.put(BinaryEncodingKeyNames.KEY_ANNOUNCE_LIST, trackerList);
+		torrentState.put(BinaryEncodingKeys.KEY_ANNOUNCE_LIST, trackerList);
 	}
 	
 	public final Set<String> getTrackerUrls() {
 		final BinaryEncodedList trackerList = (BinaryEncodedList)torrentState.get(
-				BinaryEncodingKeyNames.KEY_ANNOUNCE_LIST);
+				BinaryEncodingKeys.KEY_ANNOUNCE_LIST);
 		
 		final Set<String> trackerUrls = new HashSet<>();
 		

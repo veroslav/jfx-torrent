@@ -308,20 +308,19 @@
 
 .text{
     -fx-font-smoothing-type: lcd;
-    -fx-fill:-primary-text-color;
+    /*-fx-fill:-primary-text-color;*/
 }
 
 .titled-border-title {
   -fx-translate-x:  4;
   -fx-translate-y: -10;
   -fx-padding: 0 0 0 4;
-  /*-fx-background-color: -fx-background;*/
 }
 
 .titled-border-compact {
   -fx-content-display: top;
   -fx-border-insets: 10 0 0 0;
-  -fx-border-color: #DDDDDD;
+  -fx-border-color: #CCCCCC;
   -fx-border-width: 1;
 }
 
@@ -332,7 +331,7 @@
 .titled-border-ample {
   -fx-content-display: top;
   -fx-border-insets: 10 0 10 0;
-  -fx-border-color: #DDDDDD;
+  -fx-border-color: #CCCCCC;
   -fx-border-width: 1;
 }
 

@@ -91,24 +91,16 @@ public final class BinaryDecoder {
 			
 			BinaryEncodable value = null;
 			
-			if(BinaryEncodingKeyNames.KEY_INFO.equals(key)) {
+			if(BinaryEncodingKeys.KEY_INFO.equals(key)) {
 				messageDigest.reset();
 				value = decodeGenericType(input, true);
 				final BinaryEncodedString infoHash = new BinaryEncodedString(messageDigest.digest());
-				dictionary.put(BinaryEncodingKeyNames.KEY_INFO_HASH, infoHash);
+				dictionary.put(BinaryEncodingKeys.KEY_INFO_HASH, infoHash);
 			}
 			else {
 				value = decodeGenericType(input, copyDictionary);
 			}
-			
-			/*if(BinaryEncodingKeyNames.KEY_PIECES.equals(key)) {
-				final BinaryEncodedString encoding = (BinaryEncodedString)(
-						dictionary.get(BinaryEncodingKeyNames.KEY_ENCODING));
-				if(encoding != null && !StandardCharsets.UTF_8.name().equals(encoding.toString())) {
-					value = (BinaryEncodedString)value;					
-				}
-			}*/
-						
+					
 			dictionary.put(key, value);
 			
 			currentByte = input.read();

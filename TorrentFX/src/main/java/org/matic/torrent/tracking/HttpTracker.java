@@ -47,7 +47,7 @@ import org.matic.torrent.codec.BinaryEncodedDictionary;
 import org.matic.torrent.codec.BinaryEncodedInteger;
 import org.matic.torrent.codec.BinaryEncodedList;
 import org.matic.torrent.codec.BinaryEncodedString;
-import org.matic.torrent.codec.BinaryEncodingKeyNames;
+import org.matic.torrent.codec.BinaryEncodingKeys;
 import org.matic.torrent.exception.BinaryDecoderException;
 import org.matic.torrent.hash.HashUtilities;
 import org.matic.torrent.hash.InfoHash;
@@ -306,7 +306,7 @@ public final class HttpTracker extends Tracker {
 	
 	protected ScrapeResponse buildScrapeResponse(final BinaryEncodedDictionary responseMap,
 			final TrackerSession... trackerSessions) {
-		final BinaryEncodedDictionary files = (BinaryEncodedDictionary)responseMap.get(BinaryEncodingKeyNames.KEY_FILES);
+		final BinaryEncodedDictionary files = (BinaryEncodedDictionary)responseMap.get(BinaryEncodingKeys.KEY_FILES);
 		
 		if(!validateMandatoryResponseValues(files)) {			
 			return new ScrapeResponse(TrackerResponse.Type.INVALID_RESPONSE, 
@@ -320,18 +320,18 @@ public final class HttpTracker extends Tracker {
 					new BinaryEncodedString(ts.getInfoHash().getBytes()));
 			if(scrapeInfo != null) {
 				final BinaryEncodedInteger complete = (BinaryEncodedInteger)scrapeInfo.get(
-						BinaryEncodingKeyNames.KEY_COMPLETE);
+						BinaryEncodingKeys.KEY_COMPLETE);
 				final BinaryEncodedInteger downloaded = (BinaryEncodedInteger)scrapeInfo.get(
-						BinaryEncodingKeyNames.KEY_DOWNLOADED);
+						BinaryEncodingKeys.KEY_DOWNLOADED);
 				final BinaryEncodedInteger incomplete = (BinaryEncodedInteger)scrapeInfo.get(
-						BinaryEncodingKeyNames.KEY_INCOMPLETE);				
+						BinaryEncodingKeys.KEY_INCOMPLETE);				
 				
 				if(!validateMandatoryResponseValues(complete, downloaded, incomplete)) {
 					return;
 				}
 				
 				final BinaryEncodedString name = (BinaryEncodedString)scrapeInfo.get(
-						BinaryEncodingKeyNames.KEY_NAME);
+						BinaryEncodingKeys.KEY_NAME);
 				
 				final ScrapeStatistics scrapeStat = new ScrapeStatistics((int)complete.getValue(),
 						(int)downloaded.getValue(), (int)incomplete.getValue(),
@@ -341,12 +341,12 @@ public final class HttpTracker extends Tracker {
 		});
 		
 		final BinaryEncodedString failureReason = (BinaryEncodedString)responseMap.get(
-				BinaryEncodingKeyNames.KEY_FAILURE_REASON);
+				BinaryEncodingKeys.KEY_FAILURE_REASON);
 		
 		final Map<String, String> flags = new HashMap<>();
 		
 		final BinaryEncodedDictionary flagsDictionary = (BinaryEncodedDictionary)responseMap.get(
-				BinaryEncodingKeyNames.KEY_FLAGS);
+				BinaryEncodingKeys.KEY_FLAGS);
 		
 		if(flagsDictionary != null) {
 			flagsDictionary.keys().forEach(key -> flags.put(key.toString(), flagsDictionary.get(key).toString()));
@@ -358,22 +358,22 @@ public final class HttpTracker extends Tracker {
 	
 	protected AnnounceResponse buildAnnounceResponse(final BinaryEncodedDictionary responseMap, final InfoHash infoHash) {
 		final BinaryEncodedString failureReason = (BinaryEncodedString)responseMap.get(
-				BinaryEncodingKeyNames.KEY_FAILURE_REASON);
+				BinaryEncodingKeys.KEY_FAILURE_REASON);
 		
 		if(failureReason != null) {
 			return new AnnounceResponse(TrackerResponse.Type.TRACKER_ERROR, failureReason.toString());
 		}
 		
-		final BinaryEncodable peerList = responseMap.get(BinaryEncodingKeyNames.KEY_PEERS);
+		final BinaryEncodable peerList = responseMap.get(BinaryEncodingKeys.KEY_PEERS);
 		
 		final BinaryEncodedInteger interval = ((BinaryEncodedInteger)responseMap.get(
-				BinaryEncodingKeyNames.KEY_INTERVAL));
+				BinaryEncodingKeys.KEY_INTERVAL));
 		
 		final BinaryEncodedInteger complete = ((BinaryEncodedInteger)responseMap.get(
-				BinaryEncodingKeyNames.KEY_COMPLETE));
+				BinaryEncodingKeys.KEY_COMPLETE));
 		
 		final BinaryEncodedInteger incomplete = ((BinaryEncodedInteger)responseMap.get(
-				BinaryEncodingKeyNames.KEY_INCOMPLETE));
+				BinaryEncodingKeys.KEY_INCOMPLETE));
 		
 		if(!validateMandatoryResponseValues(peerList, interval, complete, incomplete)) {			
 			return new AnnounceResponse(TrackerResponse.Type.INVALID_RESPONSE, 
@@ -385,18 +385,18 @@ public final class HttpTracker extends Tracker {
 		final long completeValue = complete.getValue();
 		
 		final BinaryEncodedString warningMessage = (BinaryEncodedString)responseMap.get(
-				BinaryEncodingKeyNames.KEY_WARNING_MESSAGE);
+				BinaryEncodingKeys.KEY_WARNING_MESSAGE);
 		
 		final TrackerResponse.Type responseType = warningMessage != null? 
 				TrackerResponse.Type.WARNING : TrackerResponse.Type.OK;
 		final String trackerMessage = warningMessage != null? warningMessage.toString() : null;
 		
 		final BinaryEncodedInteger minInterval = (BinaryEncodedInteger)responseMap.get(
-				BinaryEncodingKeyNames.KEY_MIN_INTERVAL);
+				BinaryEncodingKeys.KEY_MIN_INTERVAL);
 		final Long minIntervalValue = minInterval != null? minInterval.getValue() * 1000 : null;
 		
 		final BinaryEncodedString trackerId = (BinaryEncodedString)responseMap.get(
-				BinaryEncodingKeyNames.KEY_TRACKER_ID);
+				BinaryEncodingKeys.KEY_TRACKER_ID);
 		final String trackerIdValue = trackerId != null? trackerId.toString() : null;
 		
 		final Set<PwpPeer> peers = extractPeers(peerList, infoHash);
@@ -414,8 +414,8 @@ public final class HttpTracker extends Tracker {
 		return peerList.stream().map(p -> {
 			final BinaryEncodedDictionary peerInfo = (BinaryEncodedDictionary)p;
 			//TODO: Extract peer id, do we need it?
-			final String peerIp = ((BinaryEncodedString)peerInfo.get(BinaryEncodingKeyNames.KEY_IP)).toString();
-			final long peerPort = ((BinaryEncodedInteger)peerInfo.get(BinaryEncodingKeyNames.KEY_PORT)).getValue();
+			final String peerIp = ((BinaryEncodedString)peerInfo.get(BinaryEncodingKeys.KEY_IP)).toString();
+			final long peerPort = ((BinaryEncodedInteger)peerInfo.get(BinaryEncodingKeys.KEY_PORT)).getValue();
 			return new PwpPeer(peerIp, (int)peerPort, infoHash);
 		}).collect(Collectors.toSet());
 	}

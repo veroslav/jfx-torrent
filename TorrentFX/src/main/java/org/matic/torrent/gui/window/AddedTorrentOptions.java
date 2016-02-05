@@ -25,7 +25,7 @@ import javafx.scene.control.TreeItem;
 import org.matic.torrent.codec.BinaryEncodedDictionary;
 import org.matic.torrent.codec.BinaryEncodedList;
 import org.matic.torrent.codec.BinaryEncodedString;
-import org.matic.torrent.codec.BinaryEncodingKeyNames;
+import org.matic.torrent.codec.BinaryEncodingKeys;
 import org.matic.torrent.gui.model.TorrentFileEntry;
 import org.matic.torrent.queue.QueuedTorrent;
 import org.matic.torrent.queue.QueuedTorrent.State;
@@ -101,17 +101,17 @@ public final class AddedTorrentOptions {
 	
 	private void populateState(final BinaryEncodedDictionary state) {
 		if(name != null) {
-			state.put(BinaryEncodingKeyNames.KEY_NAME, new BinaryEncodedString(name));
+			state.put(BinaryEncodingKeys.KEY_NAME, new BinaryEncodedString(name));
 		}
 		if(path != null) {
-			state.put(BinaryEncodingKeyNames.KEY_PATH, new BinaryEncodedString(path));
+			state.put(BinaryEncodingKeys.KEY_PATH, new BinaryEncodedString(path));
 		}
 		if(label != null) {
-			state.put(BinaryEncodingKeyNames.STATE_KEY_LABEL, new BinaryEncodedString(label));
+			state.put(BinaryEncodingKeys.STATE_KEY_LABEL, new BinaryEncodedString(label));
 		}
 		
 		final QueuedTorrent.State targetState = startTorrent? State.ACTIVE : State.STOPPED;
-		state.put(BinaryEncodingKeyNames.STATE_KEY_TORRENT_STATE, new BinaryEncodedString(targetState.name()));
+		state.put(BinaryEncodingKeys.STATE_KEY_TORRENT_STATE, new BinaryEncodedString(targetState.name()));
 		
 		final BinaryEncodedList trackerList = new BinaryEncodedList();
 		metaData.getAnnounceList().stream().flatMap(l -> ((BinaryEncodedList)l).stream()).forEach(
@@ -123,7 +123,7 @@ public final class AddedTorrentOptions {
 			trackerList.add(new BinaryEncodedString(announceUrl));
 		}
 		
-		state.put(BinaryEncodingKeyNames.KEY_ANNOUNCE_LIST, trackerList);
+		state.put(BinaryEncodingKeys.KEY_ANNOUNCE_LIST, trackerList);
 	}
 
 	@Override

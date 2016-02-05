@@ -32,7 +32,10 @@ import org.matic.torrent.preferences.PathProperties;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Dialog;
+import javafx.scene.control.DialogPane;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
+import javafx.scene.layout.Pane;
 import javafx.stage.Window;
 
 /**
@@ -69,16 +72,27 @@ public class AddTrackerWindow {
 		return result;
 	}
 	
-	private void initComponents() {
-		window.setHeaderText(null);
+	private void initComponents() {		
 		window.setTitle(WINDOW_TITLE);		
-		window.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+		window.setResizable(true);
 		
-		final Button okButton = (Button)window.getDialogPane().lookupButton(ButtonType.OK);
+		final DialogPane windowPane = window.getDialogPane(); 
+		windowPane.getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+		
+		final Button okButton = (Button)windowPane.lookupButton(ButtonType.OK);
 		trackerInputArea.textProperty().addListener((obs, oldV, newV) -> okButton.setDisable(newV.isEmpty()));
 		
-		window.setResizable(true);		
-		window.getDialogPane().setContent(new TitledBorderPane("List of trackers to add",
-				trackerInputArea, BorderStyle.COMPACT, TitledBorderPane.SECONDARY_BORDER_COLOR_STYLE));
+		final ScrollPane inputAreaScroll = new ScrollPane(trackerInputArea);		
+		inputAreaScroll.setFitToHeight(true);
+		inputAreaScroll.setFitToWidth(true);
+		
+		final TitledBorderPane titledTrackerPane = new TitledBorderPane("List of trackers to add",
+				inputAreaScroll, BorderStyle.COMPACT, TitledBorderPane.PRIMARY_BORDER_COLOR_STYLE);
+		
+		final Pane trackerInputPane = new Pane(titledTrackerPane);		
+		titledTrackerPane.prefWidthProperty().bind(trackerInputPane.widthProperty());
+		titledTrackerPane.prefHeightProperty().bind(trackerInputPane.heightProperty());
+		
+		windowPane.setContent(trackerInputPane);
 	}
 }

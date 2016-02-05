@@ -123,7 +123,7 @@ public class UISettingsContentPane extends CategoryContentPane {
 			ApplicationPreferences.setProperty(GuiProperties.CLICK_ON_DOWNLOADING_TORRENT_ACTION,
 					downloadingTorrentOptionsComboBox.getSelectionModel().getSelectedItem().name());
 			ApplicationPreferences.setProperty(GuiProperties.CLICK_ON_SEEDING_TORRENT_ACTION,
-					seedingTorrentOptionsComboBox.getSelectionModel().getSelectedItem().name());
+					seedingTorrentOptionsComboBox.getSelectionModel().getSelectedItem().name());			
 		}
 	}
 

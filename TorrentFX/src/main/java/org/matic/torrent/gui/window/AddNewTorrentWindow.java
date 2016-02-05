@@ -36,6 +36,7 @@ import org.matic.torrent.gui.table.TableUtils;
 import org.matic.torrent.gui.tree.FileTreeViewer;
 import org.matic.torrent.gui.tree.TreeTableUtils;
 import org.matic.torrent.io.DiskUtilities;
+import org.matic.torrent.preferences.CssProperties;
 import org.matic.torrent.preferences.GuiProperties;
 import org.matic.torrent.queue.QueuedTorrentMetaData;
 import org.matic.torrent.utils.UnitConverter;
@@ -154,7 +155,7 @@ public final class AddNewTorrentWindow {
 		advancedButton = new Button("Advanced...");
 		
 		updateDiskUsageLabel();		
-		fileView.getRoot().getValue().sizeProperty().addListener((obs, oldV, newV) -> updateDiskUsageLabel());
+		fileView.getRoot().getValue().selectionSizeProperty().addListener((obs, oldV, newV) -> updateDiskUsageLabel());
 		//fileView.getRoot().getValue().selectedProperty().addListener((obs, oldV, newV) -> updateDiskUsageLabel());
 		
 		nameTextField = new TextField(fileName);		
@@ -226,9 +227,10 @@ public final class AddNewTorrentWindow {
 	}
 	
 	private void updateDiskUsageLabel() {
-		final long totalFilesLength = metaData.getLength().getValue();
+		final TorrentFileEntry fileEntry = fileView.getRoot().getValue();
+		final long totalFilesLength = fileEntry.getSize();
 		final StringBuilder fileSizeBuilder = new StringBuilder();
-		final long fileSelectionLength = fileView.getRoot().getValue().getSize();
+		final long fileSelectionLength = fileEntry.getSelectionSize();
 		fileSizeBuilder.append(UnitConverter.formatByteCount(fileSelectionLength));
 		
 		if(fileSelectionLength < totalFilesLength) {
@@ -251,7 +253,7 @@ public final class AddNewTorrentWindow {
 				diskSpaceBuilder.append(UnitConverter.formatByteCount(Math.abs(remainingDiskSpace)));
 				diskSpaceBuilder.append(" too short)");
 				diskSpaceText.setText(diskSpaceBuilder.toString());
-				diskSpaceText.setStyle("text-error-color");
+				diskSpaceText.setStyle(CssProperties.ERROR_TEXT_COLOR);
 			}
 			else {
 				diskSpaceBuilder.append(UnitConverter.formatByteCount(remainingDiskSpace));
@@ -262,7 +264,7 @@ public final class AddNewTorrentWindow {
 		} catch(final IOException ioe) {
 			diskSpaceBuilder.append("can't be calculated)");
 			diskSpaceText.setText(diskSpaceBuilder.toString());
-			diskSpaceText.setStyle("text-error-color");
+			diskSpaceText.setStyle(CssProperties.ERROR_TEXT_COLOR);
 		}
 	}
 	

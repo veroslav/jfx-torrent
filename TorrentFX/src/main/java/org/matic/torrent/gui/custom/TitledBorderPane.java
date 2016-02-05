@@ -21,6 +21,7 @@
 package org.matic.torrent.gui.custom;
 
 import org.matic.torrent.gui.action.enums.BorderStyle;
+import org.matic.torrent.preferences.CssProperties;
 
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -54,7 +55,7 @@ public final class TitledBorderPane extends StackPane {
 			final BorderStyle style, final String titleColorStyle) {
 	    final Label titleLabel = new Label();
 	    titleLabel.setText(title + " ");
-	    titleLabel.getStyleClass().add("titled-border-title");	
+	    titleLabel.getStyleClass().add(CssProperties.BORDER_TITLE);	
 	    titleLabel.setStyle(titleColorStyle);
 
 	    titleAlignment.addListener(obs -> StackPane.setAlignment(titleLabel, titleAlignment.get()));

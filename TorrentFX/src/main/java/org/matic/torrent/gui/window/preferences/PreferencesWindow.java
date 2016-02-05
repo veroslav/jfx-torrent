@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.matic.torrent.gui.action.FileActionHandler;
+import org.matic.torrent.preferences.CssProperties;
 
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -88,7 +89,7 @@ public final class PreferencesWindow {
 	private void initComponents() {				
 		final Node contentLayout = layoutContent();
 		optionCategoriesTreeView.setMinWidth(130);
-		optionCategoriesTreeView.getStyleClass().add("option-category-selection-list");
+		optionCategoriesTreeView.getStyleClass().add(CssProperties.OPTION_CATEGORY_LIST);
 		optionCategoriesTreeView.setRoot(buildOptionCategories());
 		optionCategoriesTreeView.setShowRoot(false);		
 		optionCategoriesTreeView.getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) -> {
@@ -99,7 +100,7 @@ public final class PreferencesWindow {
 		});
 		optionCategoriesTreeView.getSelectionModel().select(2);	
 		
-		categoryNameLabel.getStyleClass().add("option-category-label");
+		categoryNameLabel.getStyleClass().add(CssProperties.OPTION_CATEGORY_TITLE);
 		categoryNameLabel.setText(((Label)optionCategoriesTreeView.getSelectionModel()
 				.getSelectedItem().getValue()).getText());
 		
@@ -192,7 +193,7 @@ public final class PreferencesWindow {
 				transferCapOptionName, queueingOptionName, schedulerOptionName, remoteOptionName).stream()
 				.map(name -> {					
 					final Label nameLabel = new Label(name);
-					nameLabel.getStyleClass().add("option-category-selection-cell");
+					nameLabel.getStyleClass().add(CssProperties.OPTION_CATEGORY_LIST_CELL);
 					return new TreeItem<Node>(nameLabel);
 				}).collect(Collectors.toList());
 		
@@ -200,13 +201,13 @@ public final class PreferencesWindow {
 				diskCacheOptionName, webUiOptionName, runProgramOptionName).stream()
 				.map(name -> {
 					final Label nameLabel = new Label(name);
-					nameLabel.getStyleClass().add("option-category-selection-cell");
+					nameLabel.getStyleClass().add(CssProperties.OPTION_CATEGORY_LIST_CELL);
 					return new TreeItem<Node>(nameLabel);
 				}).collect(Collectors.toList());
 				
 		
 		final Label advancedNameLabel = new Label(advancedOptionName);
-		advancedNameLabel.getStyleClass().add("option-category-selection-root-cell");
+		advancedNameLabel.getStyleClass().add(CssProperties.OPTION_CATEGORY_LIST__ROOT_CELL);
 		
 		final TreeItem<Node> advancedOptionsNodes = new TreeItem<Node>(advancedNameLabel);
 		advancedOptionsNodes.setExpanded(false);

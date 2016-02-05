@@ -31,7 +31,7 @@ import org.matic.torrent.codec.BinaryEncodable;
 import org.matic.torrent.codec.BinaryEncodedDictionary;
 import org.matic.torrent.codec.BinaryEncodedInteger;
 import org.matic.torrent.codec.BinaryEncodedList;
-import org.matic.torrent.codec.BinaryEncodingKeyNames;
+import org.matic.torrent.codec.BinaryEncodingKeys;
 import org.matic.torrent.gui.image.ImageUtils;
 import org.matic.torrent.gui.model.TorrentFileEntry;
 import org.matic.torrent.hash.InfoHash;
@@ -54,29 +54,56 @@ public final class FileTreeViewer {
 	private final Map<InfoHash, TreeItem<TorrentFileEntry>> fileViews = new HashMap<>();
 	
 	private final TreeTableView<TorrentFileEntry> defaultTree;
-	private TreeTableView<TorrentFileEntry> currentTree;	
+	private TreeTableView<TorrentFileEntry> currentTree;
 	
+	/**
+	 * Create a viewer with a tree renderer that will display the tree data
+	 * 
+	 * @param defaultTree Tree view renderer
+	 */
 	public FileTreeViewer(final TreeTableView<TorrentFileEntry> defaultTree) {
 		this.defaultTree = this.currentTree = defaultTree;		
 	}
-	
+		
+	/**
+	 * Switch back to the default tree view renderer
+	 */
 	public void restoreDefault() {
 		currentTree = defaultTree;
 	}
 	
+	/**
+	 * Add a new view to be managed
+	 * 
+	 * @param id Matching torrent's info hash (used as the identifier)
+	 * @param view View to add
+	 */
 	public void attach(final InfoHash id, final TreeItem<TorrentFileEntry> view) {
 		fileViews.put(id, view);
 	}
 	
+	/**
+	 * Remove a managed view
+	 * 
+	 * @param id Target torrent's info hash (used as the identifier)
+	 */
 	public void detach(final InfoHash id) {
 		fileViews.remove(id);
 	}
 	
+	/**
+	 * Set current tree view
+	 * 
+	 * @param id Target torrent's info hash (used as the identifier) 
+	 */
 	public void show(final InfoHash id) {
 		currentTree.setRoot(fileViews.get(id));
 	}
 	
-	public void clear() {
+	/**
+	 * Hide current view contents
+	 */
+	public void hide() {
 		currentTree.setRoot(null);
 	}
 	
@@ -118,6 +145,11 @@ public final class FileTreeViewer {
 		onExpandFolderTree(currentTree.getRoot());
 	}
 	
+	/**
+	 * Handler for collapsing of a tree item
+	 * 
+	 * @param targetItem Collapsed tree item
+	 */
 	protected void onCollapseTreeItem(final TreeItem<TorrentFileEntry> targetItem) {
 		TreeItem<TorrentFileEntry> treeItem = targetItem;
 		if(treeItem.isLeaf()) {
@@ -132,6 +164,11 @@ public final class FileTreeViewer {
 		onCollapseFolderTree(treeItem);
 	}
 	
+	/**
+	 * Handler for a tree item expansion
+	 * 
+	 * @param targetItem Expanded tree item
+	 */
 	protected void onExpandFolderTree(final TreeItem<TorrentFileEntry> treeItem) {		
 		if(treeItem.isLeaf()) {
 			return;
@@ -140,10 +177,20 @@ public final class FileTreeViewer {
 		treeItem.setExpanded(true);		
 	}
 	
+	/**
+	 * Select a tree item
+	 * 
+	 * @param treeItem Tree item to select
+	 */
 	protected void selectItem(final CheckBoxTreeItem<TorrentFileEntry> treeItem) {
 		currentTree.getSelectionModel().select(treeItem);
 	}
 	
+	/**
+	 * Update the parent(s) when a child's priority changes
+	 * 
+	 * @param treeItem A child for which the priority has been changed
+	 */
 	protected void onUpdateParentPriority(final TreeItem<TorrentFileEntry> treeItem) {
 		if(treeItem == currentTree.getRoot()) {
 			return;
@@ -157,6 +204,12 @@ public final class FileTreeViewer {
 		onUpdateParentPriority(treeItem.getParent());
 	}
 	
+	/**
+	 * Update the children when their parent's priority changes
+	 * 
+	 * @param parent Parent for which the priority has been changed
+	 * @param priority New priority
+	 */
 	protected void onUpdateChildrenPriority(final TreeItem<TorrentFileEntry> parent, final int priority) {
 		parent.getChildren().forEach(c -> {
 			final CheckBoxTreeItem<TorrentFileEntry> child = (CheckBoxTreeItem<TorrentFileEntry>)c; 			
@@ -178,6 +231,14 @@ public final class FileTreeViewer {
 		treeItem.setExpanded(false);		
 	}
 	
+	/**
+	 * Create a file tree view from a torrent's meta data and current state
+	 * 
+	 * @param fileTree Action handler tree for the created view
+	 * @param metaData Torrent's meta data
+	 * @param progress Torrent's progress state
+	 * @return A view to the torrent's data
+	 */
 	public TreeItem<TorrentFileEntry> createView(final TreeTableView<TorrentFileEntry> fileTree,
 			final QueuedTorrentMetaData metaData, final QueuedTorrentProgress progress) {						
 		currentTree = fileTree;
@@ -206,16 +267,16 @@ public final class FileTreeViewer {
 		final String fileName = metaData.getName();
 		final long fileLength = metaData.getLength().getValue();
 		final TorrentFileEntry fileEntry = new TorrentFileEntry(fileName, ". (current path)", 
-				fileLength, ImageUtils.getFileTypeImage(fileName));
+				fileLength, true, ImageUtils.getFileTypeImage(fileName));
 		fileEntry.setPieceCount((long)Math.ceil(fileLength / metaData.getPieceLength().getValue()));
 		
 		final TreeItem<TorrentFileEntry> treeItem = initTreeItem(fileEntry);		
 		final CheckBoxTreeItem<TorrentFileEntry> root = new CheckBoxTreeItem<>(new TorrentFileEntry(
-				"root", ". (current path)", fileLength, null));			
+				"root", ". (current path)", fileLength, true, null));			
 		root.getChildren().add(treeItem);
 		
 		fileEntry.selectedProperty().addListener((obs, oldV, newV) ->
-			root.getValue().updateSize(newV? fileLength : -fileLength));
+			root.getValue().updateSelectionSize(newV? fileLength : -fileLength));
 		
 		return root;
 	}
@@ -223,7 +284,7 @@ public final class FileTreeViewer {
 	private TreeItem<TorrentFileEntry> buildMultiFileTree(final QueuedTorrentMetaData metaData,
 			final QueuedTorrentProgress progress) {		
 		final String fileName = metaData.getName();
-		final TorrentFileEntry fileDirEntry = new TorrentFileEntry(fileName, ". (current path)", 0L, null);					
+		final TorrentFileEntry fileDirEntry = new TorrentFileEntry(fileName, ". (current path)", 0L, true, null);					
 		final CheckBoxTreeItem<TorrentFileEntry> fileDirTreeItem = new CheckBoxTreeItem<>(fileDirEntry);
 		final TorrentEntryNode<TreeItem<TorrentFileEntry>> fileDirNode = new TorrentEntryNode<>(fileName, fileDirTreeItem);
 		
@@ -236,9 +297,9 @@ public final class FileTreeViewer {
 		while(fileIterator.hasNext()) {
 			final BinaryEncodedDictionary fileDictionary = (BinaryEncodedDictionary)fileIterator.next();																
 			final long fileLength = ((BinaryEncodedInteger)fileDictionary.get(
-					BinaryEncodingKeyNames.KEY_LENGTH)).getValue();
+					BinaryEncodingKeys.KEY_LENGTH)).getValue();
 									
-			final BinaryEncodedList filePaths = (BinaryEncodedList)fileDictionary.get(BinaryEncodingKeyNames.KEY_PATH);
+			final BinaryEncodedList filePaths = (BinaryEncodedList)fileDictionary.get(BinaryEncodingKeys.KEY_PATH);
 			TorrentEntryNode<TreeItem<TorrentFileEntry>> currentNode = fileDirNode;
 			final StringBuilder pathBuilder = new StringBuilder("./");
 			final int filePathSize = filePaths.size();
@@ -248,7 +309,7 @@ public final class FileTreeViewer {
 				final String pathName = filePaths.get(i).toString();
 				pathBuilder.append(pathName);
 				if(!currentNode.contains(pathName)) {										
-					final TorrentFileEntry fileEntry = new TorrentFileEntry(pathName, pathBuilder.toString(), 0L, null);
+					final TorrentFileEntry fileEntry = new TorrentFileEntry(pathName, pathBuilder.toString(), 0L, true, null);
 					final TreeItem<TorrentFileEntry> treeItem = initTreeItem(fileEntry);
 					currentNode.getData().getChildren().add(treeItem);		
 					
@@ -265,7 +326,7 @@ public final class FileTreeViewer {
 			//Process the file itself when we get here (last element on the path)
 			final String leafName = filePaths.get(filePathSize-1).toString();			
 			final TorrentFileEntry fileEntry = new TorrentFileEntry(leafName, pathBuilder.toString(), 
-					fileLength, ImageUtils.getFileTypeImage(leafName));
+					fileLength, false, ImageUtils.getFileTypeImage(leafName));
 			
 			fileEntry.setFirstPiece((long)Math.floor(fileLengthRead / metaData.getPieceLength().getValue()));
 			fileLengthRead += fileLength;
@@ -280,8 +341,9 @@ public final class FileTreeViewer {
 			//Update file sizes for all of the childNode's parents in the tree
 			final Consumer<CheckBoxTreeItem<TorrentFileEntry>> fileSizePropagation = item -> 
 				fileEntry.selectedProperty().addListener((obs, oldV, newV) -> 
-					item.getValue().updateSize(newV? fileLength : -fileLength));
+					item.getValue().updateSelectionSize(newV? fileLength : -fileLength));
 			applyOnParents(treeItem, fileSizePropagation);
+			fileEntry.setSelected(true);
 		}
 		return fileDirTreeItem;
 	}
@@ -289,7 +351,7 @@ public final class FileTreeViewer {
 	private TreeItem<TorrentFileEntry> initTreeItem(final TorrentFileEntry fileEntry) {		
 		final CheckBoxTreeItem<TorrentFileEntry> treeItem = new CheckBoxTreeItem<>(fileEntry);
 		treeItem.selectedProperty().bindBidirectional(fileEntry.selectedProperty());
-		treeItem.setSelected(true);
+		treeItem.setSelected(fileEntry.isSelected());
 		addTreeItemListener(treeItem);
 		
 		return treeItem;
@@ -298,7 +360,11 @@ public final class FileTreeViewer {
 	private void addTreeItemListener(final CheckBoxTreeItem<TorrentFileEntry> treeItem) {
 		treeItem.selectedProperty().addListener((observable, oldValue, newValue) -> {			
 			if(treeItem.isLeaf()) {
-				treeItem.getValue().setSelected(newValue);				
+				treeItem.getValue().setSelected(newValue);
+				
+				/*final long fileSize = treeItem.getValue().sizeProperty().get();
+				final long affectedFileSize = (newValue? -fileSize: fileSize);
+				selectedFilesSize.set(selectedFilesSize.get() - affectedFileSize);*/
 			}		
 			treeItem.getValue().priorityProperty().set(newValue? 
 					FilePriority.NORMAL.getValue() : FilePriority.SKIP.getValue());

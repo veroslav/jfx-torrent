@@ -31,6 +31,7 @@ import org.matic.torrent.gui.image.ImageUtils;
 import org.matic.torrent.gui.model.TorrentFileEntry;
 import org.matic.torrent.gui.table.TableState;
 import org.matic.torrent.gui.table.TableUtils;
+import org.matic.torrent.preferences.CssProperties;
 import org.matic.torrent.preferences.GuiProperties;
 import org.matic.torrent.queue.FilePriority;
 import org.matic.torrent.utils.UnitConverter;
@@ -52,7 +53,6 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
-import javafx.scene.paint.Color;
 
 public class TreeTableUtils {
 
@@ -226,7 +226,7 @@ public class TreeTableUtils {
 					super.addEventFilter(MouseEvent.MOUSE_CLICKED, evt ->
 						treeTableView.getSelectionModel().select(super.getTreeTableRow().getIndex()));
 					
-					super.getStyleClass().add("progress-bar-stopped");
+					super.getStyleClass().add(CssProperties.PROGRESSBAR_STOPPED);
 					super.setItem(fileContent.progressProperty().doubleValue());
 					super.setPadding(GuiUtils.noPadding());
 				}
@@ -278,7 +278,7 @@ public class TreeTableUtils {
 					
 					final ImageView imageView = ImageUtils.createImageView(image,
 							ImageUtils.CROPPED_MARGINS_IMAGE_VIEW,
-							ImageUtils.FILE_TYPE_IMAGE_SIZE, ImageUtils.FILE_TYPE_IMAGE_SIZE);
+							ImageUtils.ICON_SIZE_FILE_TYPE, ImageUtils.ICON_SIZE_FILE_TYPE);
 					
 					final CheckBox selectionCheckBox = new CheckBox();					
 					selectionCheckBox.setFocusTraversable(false);
@@ -289,8 +289,8 @@ public class TreeTableUtils {
 					treeItem.indeterminateProperty().bindBidirectional(
 							selectionCheckBox.indeterminateProperty());																					
 					
-					fileNameLabel.setText(fileEntry.nameProperty().get());
-					ImageUtils.colorize(imageView, Color.DARKOLIVEGREEN);
+					fileNameLabel.setText(fileEntry.nameProperty().get());					
+					ImageUtils.colorize(imageView, ImageUtils.ICON_COLOR);					
 					fileNameLabel.setGraphic(imageView);
 					
 					final HBox checkBoxPane = new HBox();			

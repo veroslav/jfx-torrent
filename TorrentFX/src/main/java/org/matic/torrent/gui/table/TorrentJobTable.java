@@ -27,6 +27,7 @@ import java.util.function.Consumer;
 import org.matic.torrent.gui.GuiUtils;
 import org.matic.torrent.gui.model.TorrentJobView;
 import org.matic.torrent.hash.InfoHash;
+import org.matic.torrent.preferences.CssProperties;
 import org.matic.torrent.preferences.GuiProperties;
 
 import javafx.beans.binding.Bindings;
@@ -116,11 +117,11 @@ public final class TorrentJobTable {
 		torrentJobTable.setTableMenuButtonVisible(false);
 		
 		final Text emptyTorrentListPlaceholder = new Text("Go to 'File->Add Torrent...' to add torrents.");
-		emptyTorrentListPlaceholder.getStyleClass().add("empty-torrent-list-text");
+		emptyTorrentListPlaceholder.getStyleClass().add(CssProperties.TORRENT_LIST_EMPTY_TEXT);
 		emptyTorrentListPlaceholder.visibleProperty().bind(Bindings.isEmpty(torrentJobTable.getItems()));
 		
 		final BorderPane placeholderPane = new BorderPane();
-		placeholderPane.getStyleClass().add("empty-placeholder");
+		placeholderPane.getStyleClass().add(CssProperties.PLACEHOLDER_EMPTY);
 		placeholderPane.setPadding(new Insets(15, 0, 0, 40));
 		placeholderPane.setLeft(emptyTorrentListPlaceholder);
 		

@@ -33,7 +33,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.matic.torrent.codec.BinaryDecoder;
-import org.matic.torrent.codec.BinaryEncodingKeyNames;
+import org.matic.torrent.codec.BinaryEncodingKeys;
 import org.matic.torrent.exception.BinaryDecoderException;
 import org.matic.torrent.preferences.ApplicationPreferences;
 import org.matic.torrent.preferences.PathProperties;
@@ -147,7 +147,7 @@ public class StateKeeper {
 			return true;
 		}
 		
-		metaData.getInfoDictionary().remove(BinaryEncodingKeyNames.KEY_INFO_HASH);
+		metaData.remove(BinaryEncodingKeys.KEY_INFO_HASH);
 		
 		try(final BufferedOutputStream writer = new BufferedOutputStream(new FileOutputStream(metaDataFileLocation))) {			
 				writer.write(metaData.toExportableValue());

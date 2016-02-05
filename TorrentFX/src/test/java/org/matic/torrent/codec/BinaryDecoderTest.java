@@ -51,7 +51,7 @@ public final class BinaryDecoderTest {
 		final MessageDigest messageDigest = MessageDigest.getInstance(BinaryDecoder.HASH_ALGORITHM);
 		
 		final byte[] expectedInfoHash = messageDigest.digest(infoDictionaryContents.getBytes());
-		final byte[] extractedInfoHash = ((BinaryEncodedString)dictionary.get(BinaryEncodingKeyNames.KEY_INFO_HASH)).getBytes();
+		final byte[] extractedInfoHash = ((BinaryEncodedString)dictionary.get(BinaryEncodingKeys.KEY_INFO_HASH)).getBytes();
 		
 		assertArrayEquals(expectedInfoHash, extractedInfoHash);
 	}

@@ -21,6 +21,7 @@
 package org.matic.torrent.gui.custom;
 
 import org.matic.torrent.gui.GuiUtils;
+import org.matic.torrent.preferences.CssProperties;
 
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
@@ -55,23 +56,23 @@ public class StatusBar extends HBox {
 		gridPane.setHgap(2);   
 		
 		final VBox label1Pane = new VBox(label1);
-		label1Pane.getStyleClass().add("status-bar-label");
+		label1Pane.getStyleClass().add(CssProperties.STATUS_BAR_LABEL);
 		label1.setPadding(GuiUtils.leftPadding());
 		
 		final VBox label2Pane = new VBox(label2);
-		label2Pane.getStyleClass().add("status-bar-label");
+		label2Pane.getStyleClass().add(CssProperties.STATUS_BAR_LABEL);
 		label2.setPadding(GuiUtils.leftPadding());
 		
 		final VBox dhtPane = new VBox(dhtLabel);
-		dhtPane.getStyleClass().add("status-bar-label");
+		dhtPane.getStyleClass().add(CssProperties.STATUS_BAR_LABEL);
 		dhtLabel.setPadding(GuiUtils.leftPadding());
 		
 		final VBox downloadPane = new VBox(downloadLabel);
-		downloadPane.getStyleClass().add("status-bar-label");
+		downloadPane.getStyleClass().add(CssProperties.STATUS_BAR_LABEL);
 		downloadLabel.setPadding(GuiUtils.leftPadding());
 		
 		final VBox uploadPane = new VBox(uploadLabel);
-		uploadPane.getStyleClass().add("status-bar-label");
+		uploadPane.getStyleClass().add(CssProperties.STATUS_BAR_LABEL);
 		uploadLabel.setPadding(GuiUtils.leftPadding());
 		
 		final ColumnConstraints columnConstraints = new ColumnConstraints();

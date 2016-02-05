@@ -31,6 +31,7 @@ import org.matic.torrent.tracking.TrackerManager;
 
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
+import javafx.stage.Window;
 import javafx.scene.control.Alert.AlertType;
 
 /**
@@ -77,7 +78,7 @@ public class TrackerTableActionHandler {
 	 * @param trackerTable Tracker table from which to delete trackers views
 	 */
 	public final void onTrackerDeletion(final Collection<TrackerView> trackerViews, final TrackerManager trackerManager,
-			final TrackerTable trackerTable) {		
+			final TrackerTable trackerTable, final Window owner) {		
 		if(trackerViews.isEmpty()) {
 			return;
 		}
@@ -90,6 +91,7 @@ public class TrackerTableActionHandler {
 		
 		final Alert deleteTrackerAlert = new Alert(AlertType.WARNING, warningMessage.toString(),
 						ButtonType.OK, ButtonType.CANCEL);
+		deleteTrackerAlert.initOwner(owner);
 		deleteTrackerAlert.setTitle("Delete tracker");
 		deleteTrackerAlert.setHeaderText(null);
 		final Optional<ButtonType> selectedButton = deleteTrackerAlert.showAndWait();
