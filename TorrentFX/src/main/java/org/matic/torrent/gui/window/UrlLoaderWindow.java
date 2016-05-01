@@ -81,7 +81,7 @@ public final class UrlLoaderWindow {
 	public final UrlLoaderWindowOptions showAndWait() {
 		final Optional<ButtonType> result = window.showAndWait();
 
-		if(result.isPresent() && resourceType != ResourceType.UNKNOWN) {
+		if(result.isPresent() && resourceType != ResourceType.UNKNOWN && torrentMap != null) {
 			return new UrlLoaderWindowOptions(resourceType, urlEntryField.getText(), torrentMap);
 		}
 		return null;

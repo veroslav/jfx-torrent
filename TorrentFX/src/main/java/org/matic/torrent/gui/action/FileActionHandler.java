@@ -89,7 +89,7 @@ public final class FileActionHandler {
 		final UrlLoaderWindow urlLoaderWindow = new UrlLoaderWindow(owner);
 		final UrlLoaderWindowOptions urlLoaderWindowOptions = urlLoaderWindow.showAndWait();
 		
-		if(urlLoaderWindowOptions != null && 
+		if(urlLoaderWindowOptions != null &&
 				urlLoaderWindowOptions.getUrlType() == UrlLoaderWindow.ResourceType.URL) {						
 			return addNewTorrentJob(owner, new QueuedTorrentMetaData(
 					urlLoaderWindowOptions.getTorrentMetaData()), fileTreeViewer);
