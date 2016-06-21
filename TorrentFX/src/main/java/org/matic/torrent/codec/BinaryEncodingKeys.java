@@ -1,6 +1,6 @@
 /*
-* This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015 Vedran Matic
+* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
+* Copyright (C) 2015-2016 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -38,7 +38,8 @@ public final class BinaryEncodingKeys {
 	public static final BinaryEncodedString KEY_TRACKER_ID =  new BinaryEncodedString("tracker id");
 	public static final BinaryEncodedString KEY_INCOMPLETE =  new BinaryEncodedString("incomplete");
 	public static final BinaryEncodedString KEY_INTERVAL =  new BinaryEncodedString("interval");			
-	public static final BinaryEncodedString KEY_COMPLETE =  new BinaryEncodedString("complete");			
+	public static final BinaryEncodedString KEY_COMPLETE =  new BinaryEncodedString("complete");
+    public static final BinaryEncodedString KEY_RETRY_IN = new BinaryEncodedString("retry in");
 	public static final BinaryEncodedString KEY_PEER_ID =  new BinaryEncodedString("peer id");	
 	public static final BinaryEncodedString KEY_PEERS =  new BinaryEncodedString("peers");
 	public static final BinaryEncodedString KEY_PORT =  new BinaryEncodedString("port");
@@ -51,6 +52,7 @@ public final class BinaryEncodingKeys {
 	public static final BinaryEncodedString KEY_ENCODING =  new BinaryEncodedString("encoding");
 	public static final BinaryEncodedString KEY_ANNOUNCE = new BinaryEncodedString("announce");	
 	public static final BinaryEncodedString KEY_COMMENT =  new BinaryEncodedString("comment");
+    public static final BinaryEncodedString KEY_PRIVATE = new BinaryEncodedString("private");
 	public static final BinaryEncodedString KEY_LENGTH =  new BinaryEncodedString("length");
 	public static final BinaryEncodedString KEY_PIECES =  new BinaryEncodedString("pieces");
 	public static final BinaryEncodedString KEY_FILES =  new BinaryEncodedString("files");

@@ -1,6 +1,6 @@
 /*
-* This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015 Vedran Matic
+* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
+* Copyright (C) 2015-2016 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -20,18 +20,23 @@
 
 package org.matic.torrent.queue;
 
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+
 public final class QueuedTorrent {
 	
 	public enum State {
 		ACTIVE, STOPPED, ERROR
 	}
 
+    private final List<QueuedTorrentStatusChangeListener> stateChangeListeners = new CopyOnWriteArrayList<>();
 	private final QueuedTorrentMetaData metaData;
 	private final QueuedTorrentProgress progress;
 	
-	public QueuedTorrent(final QueuedTorrentMetaData metaData, final QueuedTorrentProgress progress) {		
+	public QueuedTorrent(final QueuedTorrentMetaData metaData, final QueuedTorrentProgress progress) {
 		this.metaData = metaData;
-		this.progress = progress;		
+		this.progress = progress;
+        progress.stateProperty().addListener((obs, oldV, newV) -> notifyListenersOnStateChange(oldV, newV));
 	}
 	
 	public final QueuedTorrentMetaData getMetaData() {
@@ -42,34 +47,31 @@ public final class QueuedTorrent {
 		return progress;
 	}
 
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((metaData == null) ? 0 : metaData.hashCode());
-		result = prime * result + ((progress == null) ? 0 : progress.hashCode());
-		return result;
-	}
+    public final void addStateChangeListener(final QueuedTorrentStatusChangeListener listener) {
+        stateChangeListeners.add(listener);
+    }
 
-	@Override
-	public boolean equals(final Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		QueuedTorrent other = (QueuedTorrent) obj;
-		if (metaData == null) {
-			if (other.metaData != null)
-				return false;
-		} else if (!metaData.equals(other.metaData))
-			return false;		
-		if (progress == null) {
-			if (other.progress != null)
-				return false;
-		} else if (!progress.equals(other.progress))
-			return false;
-		return true;
-	}	
+    public final void removeStateChangeListener(final QueuedTorrentStatusChangeListener listener) {
+        stateChangeListeners.remove(listener);
+    }
+
+    private void notifyListenersOnStateChange(final State oldState, final State newState) {
+        stateChangeListeners.forEach(l -> l.stateChanged(this, oldState, newState));
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        QueuedTorrent that = (QueuedTorrent) o;
+
+        return metaData != null ? metaData.equals(that.metaData) : that.metaData == null;
+
+    }
+
+    @Override
+    public int hashCode() {
+        return metaData != null ? metaData.hashCode() : 0;
+    }
 }

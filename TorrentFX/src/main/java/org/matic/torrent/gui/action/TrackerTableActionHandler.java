@@ -20,19 +20,18 @@
 
 package org.matic.torrent.gui.action;
 
-import java.util.Collection;
-import java.util.Optional;
-
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
+import javafx.scene.control.ButtonType;
+import javafx.stage.Window;
 import org.matic.torrent.gui.model.TrackerView;
 import org.matic.torrent.gui.table.TrackerTable;
 import org.matic.torrent.queue.QueuedTorrent;
 import org.matic.torrent.tracking.Tracker;
 import org.matic.torrent.tracking.TrackerManager;
 
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
-import javafx.stage.Window;
-import javafx.scene.control.Alert.AlertType;
+import java.util.Collection;
+import java.util.Optional;
 
 /**
  * A handler for events triggered from the trackers' context menu

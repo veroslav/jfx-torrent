@@ -20,6 +20,14 @@
 
 package org.matic.torrent.net;
 
+import org.matic.torrent.preferences.ApplicationPreferences;
+import org.matic.torrent.preferences.PathProperties;
+
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509TrustManager;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -32,15 +40,6 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
-import javax.net.ssl.X509TrustManager;
-
-import org.matic.torrent.preferences.ApplicationPreferences;
-import org.matic.torrent.preferences.PathProperties;
 
 final class RetryableCertificateManager {
 	

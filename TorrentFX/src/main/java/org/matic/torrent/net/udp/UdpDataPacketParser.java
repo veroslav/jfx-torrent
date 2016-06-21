@@ -20,14 +20,14 @@
 
 package org.matic.torrent.net.udp;
 
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
-import java.io.IOException;
-
 import org.matic.torrent.codec.BinaryDecoder;
 import org.matic.torrent.exception.BinaryDecoderException;
 import org.matic.torrent.tracking.UdpTracker;
 import org.matic.torrent.tracking.methods.dht.DhtResponse;
+
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.io.IOException;
 
 public final class UdpDataPacketParser {
 	

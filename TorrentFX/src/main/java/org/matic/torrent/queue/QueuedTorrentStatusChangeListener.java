@@ -1,6 +1,6 @@
 /*
-* This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015 Vedran Matic
+* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
+* Copyright (C) 2015-2016 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -18,25 +18,16 @@
 *
 */
 
-package org.matic.torrent.tracking.listeners;
+package org.matic.torrent.queue;
 
-import org.matic.torrent.net.pwp.PwpPeer;
+public interface QueuedTorrentStatusChangeListener {
 
-import java.util.Set;
-
-/**
- * An interface for notifying implementing classes when a new peer is
- * obtained by peer discovery strategies 
- * 
- * @author vedran
- *
- */
-public interface PeerFoundListener {
-
-	/**
-	 * Notify implementing classes when new peers are found
-	 * 
-	 * @param peer Newly obtained set of peers
-	 */
-	void onPeersFound(final Set<PwpPeer> peers);
+    /**
+     * Notify all of the interested listeners when a torrent's status changes.
+     *
+     * @param torrent Target torrent
+     * @param oldStatus Previous status
+     * @param newStatus Current status
+     */
+    void stateChanged(QueuedTorrent torrent, QueuedTorrent.State oldStatus, QueuedTorrent.State newStatus);
 }

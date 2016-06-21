@@ -19,12 +19,6 @@
 */
 package org.matic.torrent.gui.window.preferences;
 
-import org.matic.torrent.gui.action.enums.ApplicationTheme;
-import org.matic.torrent.gui.action.enums.BorderStyle;
-import org.matic.torrent.gui.custom.TitledBorderPane;
-import org.matic.torrent.preferences.ApplicationPreferences;
-import org.matic.torrent.preferences.GuiProperties;
-
 import javafx.beans.property.BooleanProperty;
 import javafx.collections.FXCollections;
 import javafx.scene.Node;
@@ -37,6 +31,11 @@ import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import org.matic.torrent.gui.action.enums.ApplicationTheme;
+import org.matic.torrent.gui.action.enums.BorderStyle;
+import org.matic.torrent.gui.custom.TitledBorderPane;
+import org.matic.torrent.preferences.ApplicationPreferences;
+import org.matic.torrent.preferences.GuiProperties;
 
 public class UiExtrasContentPane extends CategoryContentPane {
 

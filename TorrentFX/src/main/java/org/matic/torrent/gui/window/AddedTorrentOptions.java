@@ -21,7 +21,6 @@
 package org.matic.torrent.gui.window;
 
 import javafx.scene.control.TreeItem;
-
 import org.matic.torrent.codec.BinaryEncodedDictionary;
 import org.matic.torrent.codec.BinaryEncodedList;
 import org.matic.torrent.codec.BinaryEncodedString;

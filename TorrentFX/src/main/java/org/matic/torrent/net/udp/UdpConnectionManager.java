@@ -20,6 +20,14 @@
 
 package org.matic.torrent.net.udp;
 
+import org.matic.torrent.net.NetworkUtilities;
+import org.matic.torrent.preferences.ApplicationPreferences;
+import org.matic.torrent.preferences.NetworkProperties;
+import org.matic.torrent.tracking.Tracker;
+import org.matic.torrent.tracking.listeners.DhtResponseListener;
+import org.matic.torrent.tracking.listeners.UdpTrackerResponseListener;
+import org.matic.torrent.tracking.methods.dht.DhtResponse;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -38,14 +46,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-
-import org.matic.torrent.net.NetworkUtilities;
-import org.matic.torrent.preferences.ApplicationPreferences;
-import org.matic.torrent.preferences.NetworkProperties;
-import org.matic.torrent.tracking.Tracker;
-import org.matic.torrent.tracking.listeners.DhtResponseListener;
-import org.matic.torrent.tracking.listeners.UdpTrackerResponseListener;
-import org.matic.torrent.tracking.methods.dht.DhtResponse;
 
 /**
  * An UDP connection manager, based on non-blocking IO.

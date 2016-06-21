@@ -20,13 +20,6 @@
 
 package org.matic.torrent.gui.window.preferences;
 
-import org.matic.torrent.gui.action.FileActionHandler;
-import org.matic.torrent.gui.action.enums.BorderStyle;
-import org.matic.torrent.gui.custom.TitledBorderPane;
-import org.matic.torrent.preferences.ApplicationPreferences;
-import org.matic.torrent.preferences.GuiProperties;
-import org.matic.torrent.preferences.PathProperties;
-
 import javafx.beans.property.BooleanProperty;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
@@ -40,6 +33,12 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Window;
+import org.matic.torrent.gui.action.FileActionHandler;
+import org.matic.torrent.gui.action.enums.BorderStyle;
+import org.matic.torrent.gui.custom.TitledBorderPane;
+import org.matic.torrent.preferences.ApplicationPreferences;
+import org.matic.torrent.preferences.GuiProperties;
+import org.matic.torrent.preferences.PathProperties;
 
 public final class DirectoriesContentPane extends CategoryContentPane {
 	

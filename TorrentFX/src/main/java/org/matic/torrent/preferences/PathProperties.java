@@ -20,9 +20,9 @@
 
 package org.matic.torrent.preferences;
 
-import java.io.File;
-
 import org.matic.torrent.peer.ClientProperties;
+
+import java.io.File;
 
 public final class PathProperties {
 	

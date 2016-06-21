@@ -20,14 +20,6 @@
 
 package org.matic.torrent.gui.window.preferences;
 
-import org.matic.torrent.gui.action.enums.BorderStyle;
-import org.matic.torrent.gui.action.enums.DownloadingTorrentClickAction;
-import org.matic.torrent.gui.action.enums.SeedingTorrentClickAction;
-import org.matic.torrent.gui.custom.TitledBorderPane;
-import org.matic.torrent.preferences.ApplicationPreferences;
-import org.matic.torrent.preferences.GuiProperties;
-import org.matic.torrent.preferences.TransferProperties;
-
 import javafx.beans.property.BooleanProperty;
 import javafx.collections.FXCollections;
 import javafx.scene.Node;
@@ -40,6 +32,13 @@ import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import org.matic.torrent.gui.action.enums.BorderStyle;
+import org.matic.torrent.gui.action.enums.DownloadingTorrentClickAction;
+import org.matic.torrent.gui.action.enums.SeedingTorrentClickAction;
+import org.matic.torrent.gui.custom.TitledBorderPane;
+import org.matic.torrent.preferences.ApplicationPreferences;
+import org.matic.torrent.preferences.GuiProperties;
+import org.matic.torrent.preferences.TransferProperties;
 
 public class UISettingsContentPane extends CategoryContentPane {
 	

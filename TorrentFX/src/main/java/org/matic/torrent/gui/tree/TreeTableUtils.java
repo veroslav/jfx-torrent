@@ -20,22 +20,6 @@
 
 package org.matic.torrent.gui.tree;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
-
-import org.matic.torrent.gui.GuiUtils;
-import org.matic.torrent.gui.image.ImageUtils;
-import org.matic.torrent.gui.model.TorrentFileEntry;
-import org.matic.torrent.gui.table.TableState;
-import org.matic.torrent.gui.table.TableUtils;
-import org.matic.torrent.preferences.CssProperties;
-import org.matic.torrent.preferences.GuiProperties;
-import org.matic.torrent.queue.FilePriority;
-import org.matic.torrent.utils.UnitConverter;
-
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -53,6 +37,21 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
+import org.matic.torrent.gui.GuiUtils;
+import org.matic.torrent.gui.image.ImageUtils;
+import org.matic.torrent.gui.model.TorrentFileEntry;
+import org.matic.torrent.gui.table.TableState;
+import org.matic.torrent.gui.table.TableUtils;
+import org.matic.torrent.preferences.CssProperties;
+import org.matic.torrent.preferences.GuiProperties;
+import org.matic.torrent.queue.FilePriority;
+import org.matic.torrent.utils.UnitConverter;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 public class TreeTableUtils {
 

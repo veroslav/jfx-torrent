@@ -20,10 +20,10 @@
 
 package org.matic.torrent.tracking;
 
+import org.matic.torrent.tracking.TrackerResponse.Type;
+
 import java.util.Collections;
 import java.util.Map;
-
-import org.matic.torrent.tracking.TrackerResponse.Type;
 
 public final class ScrapeResponse {
 

@@ -20,13 +20,12 @@
 
 package org.matic.torrent.gui.model;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.matic.torrent.queue.QueuedTorrent;
-
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
+import org.matic.torrent.queue.QueuedTorrent;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public final class TorrentJobView {
 	

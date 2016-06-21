@@ -1,6 +1,6 @@
 /*
-* This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015 Vedran Matic
+* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
+* Copyright (C) 2015-2016 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,27 @@
 */
 
 package org.matic.torrent.tracking;
+
+import org.matic.torrent.codec.BinaryDecoder;
+import org.matic.torrent.codec.BinaryEncodedDictionary;
+import org.matic.torrent.codec.BinaryEncodedString;
+import org.matic.torrent.codec.BinaryEncodingKeys;
+import org.matic.torrent.exception.BinaryDecoderException;
+import org.matic.torrent.hash.InfoHash;
+import org.matic.torrent.net.NetworkUtilities;
+import org.matic.torrent.net.pwp.PwpPeer;
+import org.matic.torrent.net.udp.UdpConnectionManager;
+import org.matic.torrent.net.udp.UdpRequest;
+import org.matic.torrent.net.udp.UdpTrackerResponse;
+import org.matic.torrent.peer.ClientProperties;
+import org.matic.torrent.queue.QueuedTorrent;
+import org.matic.torrent.tracking.Tracker.Event;
+import org.matic.torrent.tracking.TrackerRequest.Type;
+import org.matic.torrent.tracking.beans.TrackerSessionViewBean;
+import org.matic.torrent.tracking.listeners.PeerFoundListener;
+import org.matic.torrent.tracking.listeners.TrackerResponseListener;
+import org.matic.torrent.tracking.listeners.UdpTrackerResponseListener;
+import org.matic.torrent.utils.UnitConverter;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -49,22 +70,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import org.matic.torrent.hash.InfoHash;
-import org.matic.torrent.net.NetworkUtilities;
-import org.matic.torrent.net.pwp.PwpPeer;
-import org.matic.torrent.net.udp.UdpConnectionManager;
-import org.matic.torrent.net.udp.UdpRequest;
-import org.matic.torrent.net.udp.UdpTrackerResponse;
-import org.matic.torrent.peer.ClientProperties;
-import org.matic.torrent.queue.QueuedTorrent;
-import org.matic.torrent.tracking.Tracker.Event;
-import org.matic.torrent.tracking.TrackerRequest.Type;
-import org.matic.torrent.tracking.beans.TrackerSessionViewBean;
-import org.matic.torrent.tracking.listeners.PeerFoundListener;
-import org.matic.torrent.tracking.listeners.TrackerResponseListener;
-import org.matic.torrent.tracking.listeners.UdpTrackerResponseListener;
-import org.matic.torrent.utils.UnitConverter;
-
 public class TrackerManager implements TrackerResponseListener, UdpTrackerResponseListener {
 	
 	public static final int DEFAULT_REQUEST_SCHEDULER_POOL_SIZE = 1;
@@ -77,7 +82,7 @@ public class TrackerManager implements TrackerResponseListener, UdpTrackerRespon
 	private static final int TCP_REQUEST_EXECUTOR_THREAD_POOL_SIZE = 5;	//parallel requests at a time
 	private final ThreadPoolExecutor tcpRequestExecutor = new ThreadPoolExecutor(
 			TCP_REQUEST_EXECUTOR_THREAD_POOL_SIZE, TCP_REQUEST_EXECUTOR_THREAD_POOL_SIZE, 
-			REQUEST_EXECUTOR_WORKER_TIMEOUT, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
+			REQUEST_EXECUTOR_WORKER_TIMEOUT, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>());
 	
 	private final Map<TrackerSession, ScheduledAnnouncement> scheduledRequests = new ConcurrentHashMap<>();
 	private final Map<Integer, List<TrackerSession>> scheduledUdpScrapes = new ConcurrentHashMap<>();
@@ -97,7 +102,7 @@ public class TrackerManager implements TrackerResponseListener, UdpTrackerRespon
 	}
 	
 	/**
-	 * @see TrackerResponseListener#onAnnounceResponseReceived(AnnounceResponse, TrackedTorrent)
+	 * @see TrackerResponseListener#onAnnounceResponseReceived(AnnounceResponse, TrackerSession)
 	 */
 	@Override
 	public final void onAnnounceResponseReceived(final AnnounceResponse announceResponse, 
@@ -285,7 +290,7 @@ public class TrackerManager implements TrackerResponseListener, UdpTrackerRespon
 	 * Add a new tracker for a torrent
 	 * 
 	 * @param trackerUrl URL of the tracker being added
-	 * @param queuedTorrent Torrent being tracked
+	 * @param torrent Torrent being tracked
 	 * @return A view to the created, or an existing tracker session  
 	 */
 	public TrackerSessionViewBean addTracker(final String trackerUrl, final QueuedTorrent torrent) {		
@@ -568,8 +573,7 @@ public class TrackerManager implements TrackerResponseListener, UdpTrackerRespon
 			final Consumer<TrackerSession> sessionStatusUpdate = ts -> {
 				ts.setInterval(REQUEST_DELAY_ON_TRACKER_ERROR);
 				ts.setTrackerStatus(Tracker.Status.TRACKER_ERROR);
-				ts.setTrackerMessage(new String(messageBytes,
-						ClientProperties.STRING_ENCODING_CHARSET));				
+				updateTrackerSessionOnUdpTrackerError(messageBytes, ts);
 			};
 			
 			//Update matching sessions if the originating request was a scrape
@@ -590,7 +594,7 @@ public class TrackerManager implements TrackerResponseListener, UdpTrackerRespon
 					ts -> ts.getTransactionId() == transactionId).forEach(match -> {
 						match.setLastAnnounceResponse(lastResponse);
 						sessionStatusUpdate.accept(match);
-						scheduleOnTrackerError(match.getTracker(), match);
+						scheduleOnTrackerError(match);
 					}
 				);
 			}
@@ -616,6 +620,10 @@ public class TrackerManager implements TrackerResponseListener, UdpTrackerRespon
 		if(trackerSession.getTracker().getType() == Tracker.Type.INVALID) {
 			return false;
 		}
+        if(trackerEvent == Event.STOPPED && trackerSession.getTrackerStatus() == Tracker.Status.TRACKER_ERROR) {
+            resetSessionStateOnStop(trackerSession);
+            return true;
+        }
 		final Long minInterval = trackerSession.getMinInterval();
 		final long minAnnounceWaitInterval = minInterval != null? 
 				minInterval : trackerSession.getInterval();
@@ -766,25 +774,54 @@ public class TrackerManager implements TrackerResponseListener, UdpTrackerRespon
 					Arrays.stream(sessions).forEach(ts -> {							
 						ts.setTrackerStatus(Tracker.Status.CONNECTION_TIMEOUT);
 						ts.setInterval(REQUEST_DELAY_ON_TRACKER_ERROR);												
-						scheduleOnTrackerError(tracker, ts);						
+						scheduleOnTrackerError(ts);
 					});
 				}
 			}
 		}
 	}
+
+    private void updateTrackerSessionOnUdpTrackerError(final byte[] errorMessageBytes, final TrackerSession trackerSession) {
+        //Check whether the tracker message is BEncoded
+        final BinaryDecoder decoder = new BinaryDecoder();
+        final BinaryEncodedDictionary trackerMessage;
+
+        try {
+            trackerMessage = decoder.decode(new ByteArrayInputStream(errorMessageBytes));
+            final BinaryEncodedString failureReason = (BinaryEncodedString)trackerMessage.get(
+                    BinaryEncodingKeys.KEY_FAILURE_REASON);
+            if(failureReason != null) {
+                trackerSession.setTrackerMessage(failureReason.toString());
+                final BinaryEncodedString retryIn = (BinaryEncodedString)trackerMessage.get(
+                        BinaryEncodingKeys.KEY_RETRY_IN);
+                if(retryIn != null) {
+                    trackerSession.setInterval(Long.parseLong(retryIn.getValue()) * 1000);
+                }
+            }
+            else {
+                trackerSession.setTrackerMessage("Unknown tracker error");
+            }
+
+        } catch (final IOException | BinaryDecoderException e) {
+            trackerSession.setTrackerMessage(new String(errorMessageBytes,
+                    ClientProperties.STRING_ENCODING_CHARSET));
+        }
+    }
 	
-	private void scheduleOnTrackerError(final Tracker tracker, final TrackerSession trackerSession) {
+	private void scheduleOnTrackerError(final TrackerSession trackerSession) {
 		synchronized(trackerSessions) {
 			final ScheduledAnnouncement previousAnnouncement = scheduledRequests.get(trackerSession);
+
 			if(previousAnnouncement != null) {				
 				final AnnounceParameters oldAnnouncement = previousAnnouncement.getAnnounceParameters();
 				if(isValidTrackerEvent(trackerSession, oldAnnouncement.getTrackerEvent())) {
 					//TODO: Expand REQUEST_DELAY_ON_TRACKER_ERROR based on total request attempt count
-					scheduleAnnouncement(trackerSession, oldAnnouncement, REQUEST_DELAY_ON_TRACKER_ERROR);
+					scheduleAnnouncement(trackerSession, oldAnnouncement, trackerSession.getInterval());
 				}
 			}
 			
 			//Delete previous scrape, if any, and schedule a new one
+            final Tracker tracker = trackerSession.getTracker();
 			final int scrapeTransactionId = tracker.getScrapeTransactionId(); 
 			final List<TrackerSession> scrapedSessions = scheduledUdpScrapes.remove(scrapeTransactionId);
 			if(scrapedSessions != null && !scrapedSessions.isEmpty()) {
@@ -808,10 +845,8 @@ public class TrackerManager implements TrackerResponseListener, UdpTrackerRespon
 		
 		synchronized(trackerSessions) {
 			trackerSession.setLastAcknowledgedEvent(Tracker.Event.STOPPED);
-			trackerSession.setMinInterval(Tracker.MIN_INTERVAL_DEFAULT_VALUE);			
-			trackerSession.setTrackerStatus(Tracker.Status.UNKNOWN);
-			trackerSession.setLastAnnounceResponse(0);			
-			trackerSession.setTrackerMessage("");
+			trackerSession.setMinInterval(Tracker.MIN_INTERVAL_DEFAULT_VALUE);
+			trackerSession.setLastAnnounceResponse(0);
 			trackerSession.setInterval(0);
 		}
 	}

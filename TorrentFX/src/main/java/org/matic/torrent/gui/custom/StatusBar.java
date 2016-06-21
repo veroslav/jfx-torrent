@@ -20,9 +20,6 @@
 
 package org.matic.torrent.gui.custom;
 
-import org.matic.torrent.gui.GuiUtils;
-import org.matic.torrent.preferences.CssProperties;
-
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.layout.ColumnConstraints;
@@ -30,6 +27,8 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import org.matic.torrent.gui.GuiUtils;
+import org.matic.torrent.preferences.CssProperties;
 
 /**
  * A bar that displays connectivity and client status

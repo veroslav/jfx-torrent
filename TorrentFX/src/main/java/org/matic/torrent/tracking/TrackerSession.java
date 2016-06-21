@@ -20,12 +20,12 @@
 
 package org.matic.torrent.tracking;
 
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-
 import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.peer.ClientProperties;
 import org.matic.torrent.queue.QueuedTorrent;
+
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 public final class TrackerSession {
 

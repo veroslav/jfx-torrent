@@ -20,12 +20,12 @@
 
 package org.matic.torrent.utils;
 
-import javax.xml.bind.DatatypeConverter;
-
 import org.junit.Assert;
 import org.junit.Test;
 import org.matic.torrent.hash.HashUtilities;
 import org.matic.torrent.peer.ClientProperties;
+
+import javax.xml.bind.DatatypeConverter;
 
 public final class HashUtilitiesTest {
 

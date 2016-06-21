@@ -66,6 +66,10 @@ public final class BinaryEncodedList implements BinaryEncodable {
 		return list.iterator();
 	}
 
+    public final boolean contains(final BinaryEncodable element) {
+        return list.contains(element);
+    }
+
 	@Override
 	public final int hashCode() {
 		final int prime = 31;

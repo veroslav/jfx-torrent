@@ -20,6 +20,8 @@
 
 package org.matic.torrent.net.pwp;
 
+import org.matic.torrent.net.NetworkUtilities;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
@@ -39,8 +41,6 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import org.matic.torrent.net.NetworkUtilities;
 
 /**
  * 

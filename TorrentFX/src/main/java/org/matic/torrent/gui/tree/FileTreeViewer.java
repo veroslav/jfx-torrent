@@ -20,13 +20,9 @@
 
 package org.matic.torrent.gui.tree;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
-
+import javafx.scene.control.CheckBoxTreeItem;
+import javafx.scene.control.TreeItem;
+import javafx.scene.control.TreeTableView;
 import org.matic.torrent.codec.BinaryEncodable;
 import org.matic.torrent.codec.BinaryEncodedDictionary;
 import org.matic.torrent.codec.BinaryEncodedInteger;
@@ -39,9 +35,12 @@ import org.matic.torrent.queue.FilePriority;
 import org.matic.torrent.queue.QueuedTorrentMetaData;
 import org.matic.torrent.queue.QueuedTorrentProgress;
 
-import javafx.scene.control.CheckBoxTreeItem;
-import javafx.scene.control.TreeItem;
-import javafx.scene.control.TreeTableView;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * This class implements a graphic tree representation of a torrent's contents. 

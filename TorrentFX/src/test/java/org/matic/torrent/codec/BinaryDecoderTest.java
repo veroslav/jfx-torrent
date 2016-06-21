@@ -20,16 +20,16 @@
 
 package org.matic.torrent.codec;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import org.junit.Before;
+import org.junit.Test;
+import org.matic.torrent.exception.BinaryDecoderException;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.security.MessageDigest;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.matic.torrent.exception.BinaryDecoderException;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 public final class BinaryDecoderTest {
 	

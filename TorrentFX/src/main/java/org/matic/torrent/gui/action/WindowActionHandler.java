@@ -20,19 +20,18 @@
 
 package org.matic.torrent.gui.action;
 
-import java.util.Optional;
-
 import javafx.event.Event;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.ButtonType;
 import javafx.stage.Window;
-
 import org.matic.torrent.gui.window.preferences.PreferencesWindow;
 import org.matic.torrent.peer.ClientProperties;
 import org.matic.torrent.preferences.ApplicationPreferences;
 import org.matic.torrent.preferences.GuiProperties;
+
+import java.util.Optional;
 
 public final class WindowActionHandler {
 	

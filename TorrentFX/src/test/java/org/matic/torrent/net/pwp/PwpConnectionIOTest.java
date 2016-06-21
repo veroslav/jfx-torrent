@@ -20,13 +20,13 @@
 
 package org.matic.torrent.net.pwp;
 
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.List;
-
 import org.junit.Assert;
 import org.junit.Test;
 import org.matic.torrent.net.pwp.PwpMessage.MessageType;
+
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.List;
 
 public final class PwpConnectionIOTest {
 

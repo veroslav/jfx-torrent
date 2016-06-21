@@ -20,6 +20,9 @@
 
 package org.matic.torrent.net;
 
+import org.matic.torrent.peer.ClientProperties;
+
+import javax.net.ssl.HttpsURLConnection;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
@@ -28,10 +31,6 @@ import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.URL;
 import java.security.cert.X509Certificate;
-
-import javax.net.ssl.HttpsURLConnection;
-
-import org.matic.torrent.peer.ClientProperties;
 
 public final class NetworkUtilities {
 

@@ -1,6 +1,6 @@
 /*
-* This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015 Vedran Matic
+* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
+* Copyright (C) 2015-2016 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -20,15 +20,6 @@
 
 package org.matic.torrent.gui.table;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.ObservableList;
@@ -45,7 +36,6 @@ import javafx.scene.control.TableView;
 import javafx.scene.input.KeyCode;
 import javafx.stage.Window;
 import javafx.util.Callback;
-
 import org.matic.torrent.gui.GuiUtils;
 import org.matic.torrent.gui.model.TrackerView;
 import org.matic.torrent.gui.window.AddTrackerWindow;
@@ -53,6 +43,15 @@ import org.matic.torrent.preferences.GuiProperties;
 import org.matic.torrent.queue.QueuedTorrent;
 import org.matic.torrent.tracking.Tracker;
 import org.matic.torrent.utils.UnitConverter;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class TrackerTable {	
 	
@@ -103,7 +102,7 @@ public class TrackerTable {
 	}
 	
 	public final boolean addTracker(final TrackerView trackerView) {
-		final ObservableList<TrackerView> tableItems = trackerTable.getItems(); 
+		final ObservableList<TrackerView> tableItems = trackerTable.getItems();
 		if(tableItems.contains(trackerView)) {
 			return false;
 		}
@@ -256,11 +255,11 @@ public class TrackerTable {
 	}
 	
 	private Collection<TrackerView> getDeletableTrackers(final Collection<TrackerView> selectedRows) {
-		return selectedRows.stream().filter(tv -> {			
-			return !(tv.getTrackerName().equals("[DHT]") || 
+		return selectedRows.stream().filter(tv ->
+			!(tv.getTrackerName().equals("[DHT]") ||
 					tv.getTrackerName().equals("[Local Peer Discovery]") ||
-					tv.getTrackerName().equals("[Peer Exchange]"));
-		}).collect(Collectors.toList());
+					tv.getTrackerName().equals("[Peer Exchange]"))
+		).collect(Collectors.toList());
 	}
 	
 	private void createColumns() {									
@@ -299,10 +298,9 @@ public class TrackerTable {
 					UnitConverter.formatMillisToTime(interval) : "";
 		};
 		
-		final Function<TrackerView, String> minIntervalValueConverter = tv -> {
-			return tv.getTorrent().getProgress().getState() != QueuedTorrent.State.STOPPED? 
+		final Function<TrackerView, String> minIntervalValueConverter =
+                tv -> tv.getTorrent().getProgress().getState() != QueuedTorrent.State.STOPPED?
 					UnitConverter.formatMillisToTime(tv.getMinInterval()) : "";
-		};
 		
 		final Callback<CellDataFeatures<TrackerView, String>, ObservableValue<String>> nameValueFactory =
 				tv -> tv.getValue().trackerNameProperty();
@@ -323,21 +321,21 @@ public class TrackerTable {
 				
 		final LinkedHashMap<String, TableColumn<TrackerView, ?>> columnMappings = new LinkedHashMap<>();
 		columnMappings.put(NAME_COLUMN_NAME, TableUtils.buildColumn(nameValueFactory,
-				tv -> tv.getTrackerName(), GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, NAME_COLUMN_NAME));
+				TrackerView::getTrackerName, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, NAME_COLUMN_NAME));
 		columnMappings.put(STATUS_COLUMN_NAME, TableUtils.buildColumn(statusValueFactory,
-				tv -> tv.getStatus(), GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, STATUS_COLUMN_NAME));
+				TrackerView::getStatus, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, STATUS_COLUMN_NAME));
 		columnMappings.put(UPDATE_IN_COLUMN_NAME, TableUtils.buildColumn(nextUpdateValueFactory,
 				updateInValueConverter, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, UPDATE_IN_COLUMN_NAME));
 		columnMappings.put(INTERVAL_COLUMN_NAME, TableUtils.buildColumn(intervalValueFactory,
 				intervalValueConverter, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, INTERVAL_COLUMN_NAME));
 		columnMappings.put(MIN_INTERVAL_COLUMN_NAME, TableUtils.buildColumn(minIntervalValueFactory,
 				minIntervalValueConverter, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, MIN_INTERVAL_COLUMN_NAME));
-		columnMappings.put(SEEDS_COLUMN_NAME, TableUtils.buildColumn(seedsValueFactory,
-				val -> String.valueOf(val.getSeeds()), GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, SEEDS_COLUMN_NAME));
-		columnMappings.put(PEERS_COLUMN_NAME, TableUtils.buildColumn(peersValueFactory, val ->
-			String.valueOf(val.getLeechers()), GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, PEERS_COLUMN_NAME));
-		columnMappings.put(DOWNLOADED_COLUMN_NAME, TableUtils.buildColumn(downloadedValueFactory, val ->
-			String.valueOf(val.getDownloaded()), GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, DOWNLOADED_COLUMN_NAME));
+        columnMappings.put(SEEDS_COLUMN_NAME, TableUtils.buildColumn(seedsValueFactory,
+                val -> String.valueOf(val.getSeeds()), GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, SEEDS_COLUMN_NAME));
+        columnMappings.put(PEERS_COLUMN_NAME, TableUtils.buildColumn(peersValueFactory,
+                val -> String.valueOf(val.getLeechers()), GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, PEERS_COLUMN_NAME));
+        columnMappings.put(DOWNLOADED_COLUMN_NAME, TableUtils.buildColumn(downloadedValueFactory, val ->
+                String.valueOf(val.getDownloaded()), GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, DOWNLOADED_COLUMN_NAME));
 		
 		return columnMappings;
 	}	

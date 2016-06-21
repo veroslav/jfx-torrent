@@ -20,14 +20,14 @@
 
 package org.matic.torrent.codec;
 
+import org.matic.torrent.exception.BinaryDecoderException;
+
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.zip.GZIPInputStream;
-
-import org.matic.torrent.exception.BinaryDecoderException;
 
 /**
  * A parser and decoder for binary encoded data types. Input can be read from 

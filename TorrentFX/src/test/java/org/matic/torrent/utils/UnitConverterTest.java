@@ -20,10 +20,10 @@
 
 package org.matic.torrent.utils;
 
-import java.util.TimeZone;
-
 import org.junit.Assert;
 import org.junit.Test;
+
+import java.util.TimeZone;
 
 public final class UnitConverterTest {
 

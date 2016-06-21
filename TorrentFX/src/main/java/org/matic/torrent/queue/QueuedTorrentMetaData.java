@@ -19,8 +19,6 @@
 */
 package org.matic.torrent.queue;
 
-import java.io.IOException;
-
 import org.matic.torrent.codec.BinaryEncodable;
 import org.matic.torrent.codec.BinaryEncodedDictionary;
 import org.matic.torrent.codec.BinaryEncodedInteger;
@@ -28,6 +26,8 @@ import org.matic.torrent.codec.BinaryEncodedList;
 import org.matic.torrent.codec.BinaryEncodedString;
 import org.matic.torrent.codec.BinaryEncodingKeys;
 import org.matic.torrent.hash.InfoHash;
+
+import java.io.IOException;
 
 /**
  * A convenience class that provides easier access to a torrent's meta data

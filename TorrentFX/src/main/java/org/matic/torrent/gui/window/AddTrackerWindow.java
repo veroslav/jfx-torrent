@@ -20,15 +20,6 @@
 
 package org.matic.torrent.gui.window;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-
-import org.matic.torrent.gui.action.enums.BorderStyle;
-import org.matic.torrent.gui.custom.TitledBorderPane;
-import org.matic.torrent.preferences.PathProperties;
-
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Dialog;
@@ -37,6 +28,14 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.Pane;
 import javafx.stage.Window;
+import org.matic.torrent.gui.action.enums.BorderStyle;
+import org.matic.torrent.gui.custom.TitledBorderPane;
+import org.matic.torrent.preferences.PathProperties;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 
 /**
  * A window shown when the user chooses to add tracker(s)

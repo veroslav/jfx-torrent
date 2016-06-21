@@ -20,10 +20,9 @@
 
 package org.matic.torrent.net;
 
+import javax.net.ssl.X509TrustManager;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-
-import javax.net.ssl.X509TrustManager;
 
 public final class RetryableCertificateInterceptor implements X509TrustManager {
 	private X509TrustManager trustManager;

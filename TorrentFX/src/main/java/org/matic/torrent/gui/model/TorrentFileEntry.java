@@ -31,7 +31,6 @@ import javafx.beans.property.SimpleLongProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.scene.image.Image;
-
 import org.matic.torrent.queue.FilePriority;
 
 /**

@@ -1,6 +1,6 @@
 /*
-* This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015 Vedran Matic
+* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
+* Copyright (C) 2015-2016 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -19,48 +19,6 @@
 */
 
 package org.matic.torrent.gui.window;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
-
-import org.matic.torrent.gui.action.FileActionHandler;
-import org.matic.torrent.gui.action.TabActionHandler;
-import org.matic.torrent.gui.action.TorrentJobActionHandler;
-import org.matic.torrent.gui.action.TrackerTableActionHandler;
-import org.matic.torrent.gui.action.WindowActionHandler;
-import org.matic.torrent.gui.action.enums.ApplicationTheme;
-import org.matic.torrent.gui.custom.StatusBar;
-import org.matic.torrent.gui.image.ImageUtils;
-import org.matic.torrent.gui.model.TorrentFileEntry;
-import org.matic.torrent.gui.model.TorrentJobView;
-import org.matic.torrent.gui.model.TrackerView;
-import org.matic.torrent.gui.table.TableUtils;
-import org.matic.torrent.gui.table.TorrentJobTable;
-import org.matic.torrent.gui.table.TrackerTable;
-import org.matic.torrent.gui.tree.FileTreeViewer;
-import org.matic.torrent.gui.tree.TreeTableUtils;
-import org.matic.torrent.hash.InfoHash;
-import org.matic.torrent.io.StateKeeper;
-import org.matic.torrent.peer.ClientProperties;
-import org.matic.torrent.preferences.ApplicationPreferences;
-import org.matic.torrent.preferences.CssProperties;
-import org.matic.torrent.preferences.GuiProperties;
-import org.matic.torrent.queue.QueuedTorrent;
-import org.matic.torrent.queue.QueuedTorrentManager;
-import org.matic.torrent.queue.QueuedTorrentMetaData;
-import org.matic.torrent.tracking.TrackerManager;
-import org.matic.torrent.tracking.beans.TrackerSessionViewBean;
-import org.matic.torrent.utils.PeriodicTask;
-import org.matic.torrent.utils.PeriodicTaskRunner;
 
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -103,6 +61,47 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import org.matic.torrent.gui.action.FileActionHandler;
+import org.matic.torrent.gui.action.TabActionHandler;
+import org.matic.torrent.gui.action.TorrentJobActionHandler;
+import org.matic.torrent.gui.action.TrackerTableActionHandler;
+import org.matic.torrent.gui.action.WindowActionHandler;
+import org.matic.torrent.gui.action.enums.ApplicationTheme;
+import org.matic.torrent.gui.custom.StatusBar;
+import org.matic.torrent.gui.image.ImageUtils;
+import org.matic.torrent.gui.model.TorrentFileEntry;
+import org.matic.torrent.gui.model.TorrentJobView;
+import org.matic.torrent.gui.model.TrackerView;
+import org.matic.torrent.gui.table.TableUtils;
+import org.matic.torrent.gui.table.TorrentJobTable;
+import org.matic.torrent.gui.table.TrackerTable;
+import org.matic.torrent.gui.tree.FileTreeViewer;
+import org.matic.torrent.gui.tree.TreeTableUtils;
+import org.matic.torrent.hash.InfoHash;
+import org.matic.torrent.io.StateKeeper;
+import org.matic.torrent.peer.ClientProperties;
+import org.matic.torrent.preferences.ApplicationPreferences;
+import org.matic.torrent.preferences.CssProperties;
+import org.matic.torrent.preferences.GuiProperties;
+import org.matic.torrent.queue.QueuedTorrent;
+import org.matic.torrent.queue.QueuedTorrentManager;
+import org.matic.torrent.queue.QueuedTorrentMetaData;
+import org.matic.torrent.tracking.TrackerManager;
+import org.matic.torrent.tracking.beans.TrackerSessionViewBean;
+import org.matic.torrent.utils.PeriodicTask;
+import org.matic.torrent.utils.PeriodicTaskRunner;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * A main application window, showing all of the GUI components.
@@ -738,7 +737,8 @@ public final class ApplicationWindow {
 		
 		final QueuedTorrentMetaData metaData = torrentOptions.getMetaData();
 		final InfoHash infoHash = metaData.getInfoHash();
-		if(queuedTorrentManager.find(infoHash).isPresent()) {
+        final boolean torrentExists = queuedTorrentManager.find(infoHash).isPresent();
+		if(torrentExists) {
 			final Alert existingTorrentAlert = new Alert(AlertType.ERROR,
 					"The torrent already exists.\n" +
 							"Would you like to load trackers from it?",
@@ -746,16 +746,21 @@ public final class ApplicationWindow {
 			existingTorrentAlert.initOwner(stage);
 			existingTorrentAlert.setTitle("Existing torrent file");
 			existingTorrentAlert.setHeaderText(null);
-			existingTorrentAlert.showAndWait();			
-			return;
+            final Optional<ButtonType> addTrackersAnswer = existingTorrentAlert.showAndWait();
+            if(!addTrackersAnswer.isPresent() || !(addTrackersAnswer.get() == ButtonType.OK)) {
+                return;
+            }
 		}
 
-		final QueuedTorrent queuedTorrent = new QueuedTorrent(metaData, torrentOptions.getProgress());		
-		StateKeeper.store(queuedTorrent);
-		
-		loadTorrent(queuedTorrent, torrentOptions.getTorrentContents());
+		final QueuedTorrent queuedTorrent = new QueuedTorrent(metaData, torrentOptions.getProgress());
+        if(torrentExists) {
+            queuedTorrentManager.add(queuedTorrent);
+        }
+        else {
+            StateKeeper.store(queuedTorrent);
+            loadTorrent(queuedTorrent, torrentOptions.getTorrentContents());
+        }
 		fileTreeViewer.show(infoHash);
-		
 		updateGui();
 	}
 	

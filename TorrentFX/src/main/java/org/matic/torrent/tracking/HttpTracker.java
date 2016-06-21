@@ -20,6 +20,21 @@
 
 package org.matic.torrent.tracking;
 
+import org.matic.torrent.codec.BinaryDecoder;
+import org.matic.torrent.codec.BinaryEncodable;
+import org.matic.torrent.codec.BinaryEncodedDictionary;
+import org.matic.torrent.codec.BinaryEncodedInteger;
+import org.matic.torrent.codec.BinaryEncodedList;
+import org.matic.torrent.codec.BinaryEncodedString;
+import org.matic.torrent.codec.BinaryEncodingKeys;
+import org.matic.torrent.exception.BinaryDecoderException;
+import org.matic.torrent.hash.HashUtilities;
+import org.matic.torrent.hash.InfoHash;
+import org.matic.torrent.net.NetworkUtilities;
+import org.matic.torrent.net.pwp.PwpPeer;
+import org.matic.torrent.peer.ClientProperties;
+import org.matic.torrent.tracking.listeners.TrackerResponseListener;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -40,21 +55,6 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-
-import org.matic.torrent.codec.BinaryDecoder;
-import org.matic.torrent.codec.BinaryEncodable;
-import org.matic.torrent.codec.BinaryEncodedDictionary;
-import org.matic.torrent.codec.BinaryEncodedInteger;
-import org.matic.torrent.codec.BinaryEncodedList;
-import org.matic.torrent.codec.BinaryEncodedString;
-import org.matic.torrent.codec.BinaryEncodingKeys;
-import org.matic.torrent.exception.BinaryDecoderException;
-import org.matic.torrent.hash.HashUtilities;
-import org.matic.torrent.hash.InfoHash;
-import org.matic.torrent.net.NetworkUtilities;
-import org.matic.torrent.net.pwp.PwpPeer;
-import org.matic.torrent.peer.ClientProperties;
-import org.matic.torrent.tracking.listeners.TrackerResponseListener;
 
 public final class HttpTracker extends Tracker {
 	

@@ -20,27 +20,26 @@
 
 package org.matic.torrent.gui.action;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.nio.file.Paths;
-
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
-
 import org.matic.torrent.codec.BinaryDecoder;
 import org.matic.torrent.codec.BinaryEncodedDictionary;
 import org.matic.torrent.exception.BinaryDecoderException;
-import org.matic.torrent.gui.window.AddedTorrentOptions;
 import org.matic.torrent.gui.tree.FileTreeViewer;
 import org.matic.torrent.gui.window.AddNewTorrentWindow;
+import org.matic.torrent.gui.window.AddedTorrentOptions;
 import org.matic.torrent.gui.window.UrlLoaderWindow;
 import org.matic.torrent.gui.window.UrlLoaderWindowOptions;
 import org.matic.torrent.queue.QueuedTorrentMetaData;
+
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.nio.file.Paths;
 
 /**
  * Handle file related action events, such as opening and loading files.

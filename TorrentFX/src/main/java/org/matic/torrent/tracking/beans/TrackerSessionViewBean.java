@@ -1,6 +1,6 @@
 /*
-* This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015 Vedran Matic
+* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
+* Copyright (C) 2015-2016 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -26,14 +26,10 @@ import org.matic.torrent.tracking.TrackerSession;
 public class TrackerSessionViewBean extends TrackableSessionViewBean {
 	
 	private static final String TRACKER_MESSAGE_NULL = "null";		//Sometimes returned as a tracker message
-	
-	private final TrackerSession trackerSession;
-	
 	private Tracker.Status trackerStatus;		
 
 	public TrackerSessionViewBean(final TrackerSession trackerSession) {
-		super(trackerSession.getTorrent());
-		this.trackerSession = trackerSession;
+		super(trackerSession);
 		updateValues();
 	}
 	
@@ -58,7 +54,7 @@ public class TrackerSessionViewBean extends TrackableSessionViewBean {
 		
 		final boolean isTrackerScraped = trackerStatus == Tracker.Status.SCRAPE_OK ||
 				trackerStatus == Tracker.Status.SCRAPE_NOT_SUPPORTED;
-		
+
 		displayedMessage = "";
 		if((trackerStatus != Tracker.Status.UPDATING && nextUpdateValue >= 1000 &&
 				(torrentState == QueuedTorrent.State.ACTIVE))) {

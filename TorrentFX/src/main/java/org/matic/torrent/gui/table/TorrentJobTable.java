@@ -20,16 +20,6 @@
 
 package org.matic.torrent.gui.table;
 
-import java.util.LinkedHashMap;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-
-import org.matic.torrent.gui.GuiUtils;
-import org.matic.torrent.gui.model.TorrentJobView;
-import org.matic.torrent.hash.InfoHash;
-import org.matic.torrent.preferences.CssProperties;
-import org.matic.torrent.preferences.GuiProperties;
-
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.ReadOnlyObjectWrapper;
@@ -44,6 +34,15 @@ import javafx.scene.control.TableView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.text.Text;
 import javafx.util.Callback;
+import org.matic.torrent.gui.GuiUtils;
+import org.matic.torrent.gui.model.TorrentJobView;
+import org.matic.torrent.hash.InfoHash;
+import org.matic.torrent.preferences.CssProperties;
+import org.matic.torrent.preferences.GuiProperties;
+
+import java.util.LinkedHashMap;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 /**
  * This is a graphical view (represented as a table) of current torrent jobs

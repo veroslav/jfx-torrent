@@ -16,9 +16,8 @@
 
 package org.matic.torrent.hash;
 
-import java.util.Arrays;
-
 import javax.xml.bind.DatatypeConverter;
+import java.util.Arrays;
 
 /**
  * Immutable representation of a torrent's info dictionary SHA-1 hash.

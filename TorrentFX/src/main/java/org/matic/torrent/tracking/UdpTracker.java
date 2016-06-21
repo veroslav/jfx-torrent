@@ -20,6 +20,11 @@
 
 package org.matic.torrent.tracking;
 
+import org.matic.torrent.hash.InfoHash;
+import org.matic.torrent.net.udp.UdpConnectionManager;
+import org.matic.torrent.net.udp.UdpRequest;
+import org.matic.torrent.peer.ClientProperties;
+
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -30,11 +35,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
-
-import org.matic.torrent.hash.InfoHash;
-import org.matic.torrent.net.udp.UdpConnectionManager;
-import org.matic.torrent.net.udp.UdpRequest;
-import org.matic.torrent.peer.ClientProperties;
 
 public final class UdpTracker extends Tracker {
 		

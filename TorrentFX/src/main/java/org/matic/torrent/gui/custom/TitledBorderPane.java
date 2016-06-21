@@ -20,15 +20,14 @@
 
 package org.matic.torrent.gui.custom;
 
-import org.matic.torrent.gui.action.enums.BorderStyle;
-import org.matic.torrent.preferences.CssProperties;
-
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.layout.StackPane;
+import org.matic.torrent.gui.action.enums.BorderStyle;
+import org.matic.torrent.preferences.CssProperties;
 
 /**
  * A container for a {@link Node} with a title displayed on the surrounding border

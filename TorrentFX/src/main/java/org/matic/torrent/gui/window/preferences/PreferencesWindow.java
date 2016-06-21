@@ -20,15 +20,6 @@
 
 package org.matic.torrent.gui.window.preferences;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import org.matic.torrent.gui.action.FileActionHandler;
-import org.matic.torrent.preferences.CssProperties;
-
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.event.ActionEvent;
@@ -46,6 +37,14 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Window;
+import org.matic.torrent.gui.action.FileActionHandler;
+import org.matic.torrent.preferences.CssProperties;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * A window showing all program preferences that can be changed by the user

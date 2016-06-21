@@ -20,10 +20,9 @@
 
 package org.matic.torrent.hash;
 
+import javax.xml.bind.DatatypeConverter;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import javax.xml.bind.DatatypeConverter;
 
 public final class HashUtilities {
 	

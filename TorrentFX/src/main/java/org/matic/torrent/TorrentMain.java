@@ -20,16 +20,15 @@
 
 package org.matic.torrent;
 
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-
+import javafx.application.Application;
+import javafx.stage.Stage;
 import org.matic.torrent.gui.window.ApplicationWindow;
 import org.matic.torrent.net.udp.UdpConnectionManager;
 import org.matic.torrent.queue.QueuedTorrentManager;
 import org.matic.torrent.tracking.TrackerManager;
 
-import javafx.application.Application;
-import javafx.stage.Stage;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 public final class TorrentMain extends Application {
 	

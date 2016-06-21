@@ -20,19 +20,18 @@
 
 package org.matic.torrent.queue;
 
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
-
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleObjectProperty;
-
 import org.matic.torrent.codec.BinaryEncodedDictionary;
 import org.matic.torrent.codec.BinaryEncodedList;
 import org.matic.torrent.codec.BinaryEncodedString;
 import org.matic.torrent.codec.BinaryEncodingKeys;
+
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
 public class QueuedTorrentProgress {
 	

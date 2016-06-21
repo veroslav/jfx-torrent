@@ -20,11 +20,11 @@
 
 package org.matic.torrent.tracking;
 
-import java.util.Collections;
-import java.util.Set;
-
 import org.matic.torrent.net.pwp.PwpPeer;
 import org.matic.torrent.tracking.TrackerResponse.Type;
+
+import java.util.Collections;
+import java.util.Set;
 
 public final class AnnounceResponse {
 

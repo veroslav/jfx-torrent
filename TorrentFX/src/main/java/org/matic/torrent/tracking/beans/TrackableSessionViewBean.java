@@ -1,6 +1,6 @@
 /*
-* This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015 Vedran Matic
+* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
+* Copyright (C) 2015-2016 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 package org.matic.torrent.tracking.beans;
 
 import org.matic.torrent.queue.QueuedTorrent;
+import org.matic.torrent.tracking.TrackerSession;
 
 public abstract class TrackableSessionViewBean {
 	
@@ -33,17 +34,17 @@ public abstract class TrackableSessionViewBean {
 	protected int leechers;
 	protected int seeders;
 	
-	protected final QueuedTorrent torrent;
+	protected final TrackerSession trackerSession;
 	
-	protected TrackableSessionViewBean(final QueuedTorrent torrent) {
-		this.torrent = torrent;
+	protected TrackableSessionViewBean(final TrackerSession trackerSession) {
+		this.trackerSession = trackerSession;
 	}
 	
 	public abstract void updateValues();	
 	public abstract String getName();
 	
 	public final QueuedTorrent getTorrent() {
-		return torrent;
+		return trackerSession.getTorrent();
 	}
 	
 	public final String getStatus() {

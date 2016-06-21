@@ -20,12 +20,11 @@
 
 package org.matic.torrent.gui.action;
 
+import javafx.collections.ObservableList;
+import javafx.scene.control.Button;
 import org.matic.torrent.gui.model.TorrentJobView;
 import org.matic.torrent.gui.table.TorrentJobTable;
 import org.matic.torrent.queue.QueuedTorrent;
-
-import javafx.collections.ObservableList;
-import javafx.scene.control.Button;
 
 public class TorrentJobActionHandler {
 

@@ -20,12 +20,6 @@
 
 package org.matic.torrent.gui.image;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
 import javafx.geometry.Rectangle2D;
 import javafx.scene.effect.Blend;
 import javafx.scene.effect.BlendMode;
@@ -36,8 +30,13 @@ import javafx.scene.image.ImageView;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Rectangle;
-
 import org.matic.torrent.gui.window.ApplicationWindow;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 public final class ImageUtils {
 	

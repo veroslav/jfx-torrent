@@ -20,15 +20,14 @@
 
 package org.matic.torrent.gui.model;
 
-import org.matic.torrent.queue.QueuedTorrent;
-import org.matic.torrent.tracking.beans.TrackableSessionViewBean;
-
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.LongProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleLongProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import org.matic.torrent.queue.QueuedTorrent;
+import org.matic.torrent.tracking.beans.TrackableSessionViewBean;
 
 public final class TrackerView {
 

@@ -1,6 +1,6 @@
 /*
-* This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015 Vedran Matic
+* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
+* Copyright (C) 2015-2016 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,15 @@
 */
 package org.matic.torrent.io;
 
+import org.matic.torrent.codec.BinaryDecoder;
+import org.matic.torrent.codec.BinaryEncodingKeys;
+import org.matic.torrent.exception.BinaryDecoderException;
+import org.matic.torrent.preferences.ApplicationPreferences;
+import org.matic.torrent.preferences.PathProperties;
+import org.matic.torrent.queue.QueuedTorrent;
+import org.matic.torrent.queue.QueuedTorrentMetaData;
+import org.matic.torrent.queue.QueuedTorrentProgress;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -31,15 +40,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Set;
-
-import org.matic.torrent.codec.BinaryDecoder;
-import org.matic.torrent.codec.BinaryEncodingKeys;
-import org.matic.torrent.exception.BinaryDecoderException;
-import org.matic.torrent.preferences.ApplicationPreferences;
-import org.matic.torrent.preferences.PathProperties;
-import org.matic.torrent.queue.QueuedTorrent;
-import org.matic.torrent.queue.QueuedTorrentMetaData;
-import org.matic.torrent.queue.QueuedTorrentProgress;
 
 public class StateKeeper {
 	
@@ -148,7 +148,7 @@ public class StateKeeper {
 		}
 		
 		metaData.remove(BinaryEncodingKeys.KEY_INFO_HASH);
-		
+
 		try(final BufferedOutputStream writer = new BufferedOutputStream(new FileOutputStream(metaDataFileLocation))) {			
 				writer.write(metaData.toExportableValue());
 				writer.flush();

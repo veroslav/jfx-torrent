@@ -20,11 +20,11 @@
 
 package org.matic.torrent.utils;
 
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Task;
+
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * A service that periodically executes actions 

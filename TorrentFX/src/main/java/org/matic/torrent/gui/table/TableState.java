@@ -20,11 +20,11 @@
 
 package org.matic.torrent.gui.table;
 
+import javafx.scene.control.TableColumnBase;
+
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
-
-import javafx.scene.control.TableColumnBase;
 
 /**
  * A bean holding a table's state during the initialization
