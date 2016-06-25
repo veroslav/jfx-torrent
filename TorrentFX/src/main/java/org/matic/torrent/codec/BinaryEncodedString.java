@@ -1,6 +1,6 @@
 /*
-* This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015 Vedran Matic
+* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
+* Copyright (C) 2015-2016 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,6 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-
 package org.matic.torrent.codec;
 
 import java.io.ByteArrayOutputStream;
@@ -49,20 +48,20 @@ public final class BinaryEncodedString implements BinaryEncodable, Comparable<Bi
 		this(value.getBytes(StandardCharsets.UTF_8));
 	}
 	
-	public final byte[] getBytes() {
+	public byte[] getBytes() {
 		return Arrays.copyOf(bytes, bytes.length);
 	}
 	
-	public final String getValue() {
+	public String getValue() {
 		return value.toString();
 	}
 	
-	public final int getLength() {
+	public int getLength() {
 		return value.length();
 	}
 	
 	@Override
-	public final int hashCode() {
+	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((value == null) ? 0 : value.hashCode());
@@ -70,7 +69,7 @@ public final class BinaryEncodedString implements BinaryEncodable, Comparable<Bi
 	}
 
 	@Override
-	public final boolean equals(final Object obj) {
+	public boolean equals(final Object obj) {
 		if (this == obj)
 			return true;
 		if (obj == null)
@@ -87,12 +86,12 @@ public final class BinaryEncodedString implements BinaryEncodable, Comparable<Bi
 	}
 
 	@Override
-	public final String toString() {
+	public String toString() {
 		return value;
 	}
 
 	@Override
-	public final int compareTo(final BinaryEncodedString other) {
+	public int compareTo(final BinaryEncodedString other) {
 		return value.compareTo(other.value);
 	}
 

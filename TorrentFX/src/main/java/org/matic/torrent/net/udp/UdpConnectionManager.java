@@ -1,6 +1,6 @@
 /*
-* This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015 Vedran Matic
+* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
+* Copyright (C) 2015-2016 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,6 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-
 package org.matic.torrent.net.udp;
 
 import org.matic.torrent.net.NetworkUtilities;
@@ -56,7 +55,7 @@ import java.util.concurrent.TimeUnit;
  * @author vedran
  *
  */
-public class UdpConnectionManager {
+public final class UdpConnectionManager {
 	
 	public static final int DEFAULT_UDP_PORT = 45895;
 	public static final int UDP_TRACKER_PORT = Integer.parseInt(ApplicationPreferences.getProperty(
@@ -94,19 +93,19 @@ public class UdpConnectionManager {
 		channelWriterExecutor.allowCoreThreadTimeOut(true);
 	}
 	
-	public final void addTrackerListener(final UdpTrackerResponseListener listener) {		
+	public void addTrackerListener(final UdpTrackerResponseListener listener) {
 		trackerListeners.add(listener);
 	}
 	
-	public final void removeTrackerListener(final UdpTrackerResponseListener listener) {		
+	public void removeTrackerListener(final UdpTrackerResponseListener listener) {
 		trackerListeners.remove(listener);
 	}
 	
-	public final void addDhtListener(final DhtResponseListener listener) {		
+	public void addDhtListener(final DhtResponseListener listener) {
 		dhtListeners.add(listener);
 	}
 	
-	public final void removeDhtListener(final DhtResponseListener listener) {		
+	public void removeDhtListener(final DhtResponseListener listener) {
 		dhtListeners.remove(listener);
 	}
 	
@@ -116,9 +115,9 @@ public class UdpConnectionManager {
 	 * @param request UDP packet request to send
 	 * @return Whether the request was scheduled
 	 */
-	public boolean send(final UdpRequest request) {			
+	public boolean send(final UdpRequest request) {
 		final boolean requestAdded = outgoingMessages.offer(request);
-		
+
 		if(connectionSelector != null) {
 			connectionSelector.wakeup();
 		}
@@ -169,7 +168,7 @@ public class UdpConnectionManager {
 	/**
 	 * Stop UDP connection manager
 	 */
-	public final void unmanage() {		
+	public void unmanage() {
 		connectionManagerExecutor.shutdownNow();
 		channelWriterExecutor.shutdownNow();
 		if(connectionSelector != null) {
@@ -215,6 +214,7 @@ public class UdpConnectionManager {
 		else {
 			//Try parsing as a regular UDP tracker response message
 			final UdpTrackerResponse trackerResponse = UdpDataPacketParser.parseTrackerResponse(receivedPacket);
+
 			if(trackerResponse != null) {				
 				notifyTrackerListenersOnResponse(trackerResponse);
 			}
@@ -237,7 +237,7 @@ public class UdpConnectionManager {
 		outputBuffer.flip();
 		
 		try {			
-			channel.send(outputBuffer, remoteAddress);			
+			channel.send(outputBuffer, remoteAddress);
 		} catch (final IOException ioe) {	
 			notifyListenersOnRequestError(udpRequest, Tracker.getStatusMessage(Tracker.Status.CONNECTION_TIMEOUT));
 		}

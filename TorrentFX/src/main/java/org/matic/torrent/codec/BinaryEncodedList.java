@@ -1,6 +1,6 @@
 /*
-* This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015 Vedran Matic
+* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
+* Copyright (C) 2015-2016 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,6 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-
 package org.matic.torrent.codec;
 
 import java.io.ByteArrayOutputStream;
@@ -46,16 +45,20 @@ public final class BinaryEncodedList implements BinaryEncodable {
 		list = new ArrayList<>();
 	}
 	
-	public final void add(final BinaryEncodable element) {
+	public void add(final BinaryEncodable element) {
 		list.add(element);
 	}
 	
-	public final BinaryEncodable get(final int index) {
+	public BinaryEncodable get(final int index) {
 		return list.get(index);
 	}
 	
-	public final int size() {
+	public int size() {
 		return list.size();
+	}
+
+	public boolean contains(final BinaryEncodable element) {
+		return list.contains(element);
 	}
 	
 	public Stream<BinaryEncodable> stream() {
@@ -66,12 +69,8 @@ public final class BinaryEncodedList implements BinaryEncodable {
 		return list.iterator();
 	}
 
-    public final boolean contains(final BinaryEncodable element) {
-        return list.contains(element);
-    }
-
 	@Override
-	public final int hashCode() {
+	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((list == null) ? 0 : list.hashCode());
@@ -79,7 +78,7 @@ public final class BinaryEncodedList implements BinaryEncodable {
 	}
 
 	@Override
-	public final boolean equals(final Object obj) {
+	public boolean equals(final Object obj) {
 		if (this == obj)
 			return true;
 		if (obj == null)
@@ -96,7 +95,7 @@ public final class BinaryEncodedList implements BinaryEncodable {
 	}
 
 	@Override
-	public final String toString() {
+	public String toString() {
 		return list.toString();
 	}
 

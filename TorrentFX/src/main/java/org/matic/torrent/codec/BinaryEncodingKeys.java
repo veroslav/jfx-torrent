@@ -23,7 +23,8 @@ package org.matic.torrent.codec;
 public final class BinaryEncodingKeys {
 	
 	//STORED STATE SPECIFIC PROPERTY KEYS
-	public static final BinaryEncodedString STATE_KEY_TORRENT_STATE = new BinaryEncodedString("state");
+	public static final BinaryEncodedString STATE_KEY_TORRENT_STATUS = new BinaryEncodedString("status");
+    public static final BinaryEncodedString STATE_KEY_ADDED_ON = new BinaryEncodedString("added on");
 	public static final BinaryEncodedString STATE_KEY_TORRENT = new BinaryEncodedString("torrent");
 	public static final BinaryEncodedString STATE_KEY_LABEL = new BinaryEncodedString("label");
 	
@@ -39,15 +40,16 @@ public final class BinaryEncodingKeys {
 	public static final BinaryEncodedString KEY_INCOMPLETE =  new BinaryEncodedString("incomplete");
 	public static final BinaryEncodedString KEY_INTERVAL =  new BinaryEncodedString("interval");			
 	public static final BinaryEncodedString KEY_COMPLETE =  new BinaryEncodedString("complete");
-    public static final BinaryEncodedString KEY_RETRY_IN = new BinaryEncodedString("retry in");
+	public static final BinaryEncodedString KEY_RETRY_IN = new BinaryEncodedString("retry in");
 	public static final BinaryEncodedString KEY_PEER_ID =  new BinaryEncodedString("peer id");	
 	public static final BinaryEncodedString KEY_PEERS =  new BinaryEncodedString("peers");
 	public static final BinaryEncodedString KEY_PORT =  new BinaryEncodedString("port");
-	public static final BinaryEncodedString KEY_IP =  new BinaryEncodedString("ip");		
+	public static final BinaryEncodedString KEY_IP =  new BinaryEncodedString("ip");
 	
 	//TORRENT META FILE KEYS	
 	public static final BinaryEncodedString KEY_ANNOUNCE_LIST = new BinaryEncodedString("announce-list");
 	public static final BinaryEncodedString KEY_CREATION_DATE = new BinaryEncodedString("creation date");
+    public static final BinaryEncodedString KEY_CREATED_BY = new BinaryEncodedString("created by");
 	public static final BinaryEncodedString KEY_PIECE_LENGTH = new BinaryEncodedString("piece length");
 	public static final BinaryEncodedString KEY_ENCODING =  new BinaryEncodedString("encoding");
 	public static final BinaryEncodedString KEY_ANNOUNCE = new BinaryEncodedString("announce");	

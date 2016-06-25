@@ -46,6 +46,17 @@
     -fx-background-color: #76b83e;       
 }
 
+.info-pane {
+	-fx-border-color: #C7C7C7;
+  	-fx-border-width: 2;
+	-fx-padding: 0 0 0 3;
+}
+
+.info-pane-category-label {
+	-fx-background-color: #DADADA;
+    -fx-text-fill: -primary-text-color;
+}
+
 .menu-button:hover .label, .menu-button:showing .label,
 .menu-bar .menu-item:focused .label,
 .context-menu .menu-item:focused .label {
@@ -175,19 +186,19 @@
 }
 
 .tool-bar:horizontal {
-    -fx-background-color: 
+    -fx-background-color:
     	linear-gradient(#fcfcfc, #f3f3f3),
         linear-gradient(#f2f2f2 0%, #ebebeb 29%, #dddddd 30%, #cfcfcf 100%);
 }
 
 .toolbar-button {
-	-fx-background-color: 
+	-fx-background-color:
         linear-gradient(#fcfcfc, #f3f3f3),
         linear-gradient(#f2f2f2 0%, #ebebeb 29%, #dddddd 30%, #cfcfcf 100%);
 }
 
 .toolbar-button:hover {
-    -fx-background-color: 
+    -fx-background-color:
     	linear-gradient(#f3f3f3, #fcfcfc),
     	linear-gradient(#cfcfcf 0%, #dddddd 29%, #ebebeb 30%, #f2f2f2 100%);
 }
@@ -219,7 +230,7 @@
 }
 
 .tree-table-row-cell:selected {
-    -fx-background-color: #E2EDF9;       
+    -fx-background-color: #E2EDF9;
 }
 
 .tree-table-view:focused .tree-cell:selected .text {

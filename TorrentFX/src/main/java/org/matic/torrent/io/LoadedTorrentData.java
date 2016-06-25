@@ -17,20 +17,31 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-package org.matic.torrent.gui.action.enums;
+package org.matic.torrent.io;
 
-public enum ApplicationTheme {
-	
-	LIGHT("Light"), DARK("Dark");
-	
-	private final String label;
-	
-	ApplicationTheme(final String label) {
-		this.label = label;
-	}
-	
-	@Override
-	public String toString() {
-		return label;
-	}
+import org.matic.torrent.queue.QueuedTorrentMetaData;
+import org.matic.torrent.queue.QueuedTorrentProgress;
+
+/**
+ * A bean containing the loaded data from a disk for a previously stored torrent.
+ *
+ * @author Vedran Matic
+ */
+public final class LoadedTorrentData {
+
+    private final QueuedTorrentMetaData metaData;
+    private final QueuedTorrentProgress progress;
+
+    public LoadedTorrentData(final QueuedTorrentMetaData metaData, final QueuedTorrentProgress progress) {
+        this.metaData = metaData;
+        this.progress = progress;
+    }
+
+    public QueuedTorrentMetaData getMetaData() {
+        return metaData;
+    }
+
+    public QueuedTorrentProgress getProgress() {
+        return progress;
+    }
 }

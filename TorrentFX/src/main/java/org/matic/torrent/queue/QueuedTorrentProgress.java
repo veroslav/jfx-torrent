@@ -1,6 +1,6 @@
 /*
-* This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015 Vedran Matic
+* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
+* Copyright (C) 2015-2016 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -17,14 +17,10 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-
 package org.matic.torrent.queue;
 
-import javafx.beans.property.IntegerProperty;
-import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.SimpleIntegerProperty;
-import javafx.beans.property.SimpleObjectProperty;
 import org.matic.torrent.codec.BinaryEncodedDictionary;
+import org.matic.torrent.codec.BinaryEncodedInteger;
 import org.matic.torrent.codec.BinaryEncodedList;
 import org.matic.torrent.codec.BinaryEncodedString;
 import org.matic.torrent.codec.BinaryEncodingKeys;
@@ -33,36 +29,29 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
-public class QueuedTorrentProgress {
+public final class QueuedTorrentProgress {
 	
 	private final BinaryEncodedDictionary torrentState;
-	
-	private final IntegerProperty priority = new SimpleIntegerProperty(0);
-	private final ObjectProperty<QueuedTorrent.State> state;
 
 	public QueuedTorrentProgress(final BinaryEncodedDictionary torrentState) {
 		this.torrentState = torrentState;
-		
-		final String stateValue = ((BinaryEncodedString)torrentState.get(
-				BinaryEncodingKeys.STATE_KEY_TORRENT_STATE)).toString();
-		this.state = new SimpleObjectProperty<>(QueuedTorrent.State.valueOf(stateValue));
 	}
 	
-	public final String getName() {
+	public String getName() {
 		return torrentState.get(BinaryEncodingKeys.KEY_NAME).toString();
 	}
 	
-	public final void setName(final String name) {
+	public void setName(final String name) {
 		torrentState.put(BinaryEncodingKeys.KEY_NAME, new BinaryEncodedString(name));
 	}
 	
-	public final void addTrackerUrls(final Set<String> trackerUrls) {		
+	public void addTrackerUrls(final Set<String> trackerUrls) {
 		final BinaryEncodedList trackerList = new BinaryEncodedList();		
 		trackerUrls.forEach(t -> trackerList.add(new BinaryEncodedString(t)));		
 		torrentState.put(BinaryEncodingKeys.KEY_ANNOUNCE_LIST, trackerList);
 	}
 	
-	public final Set<String> getTrackerUrls() {
+	public Set<String> getTrackerUrls() {
 		final BinaryEncodedList trackerList = (BinaryEncodedList)torrentState.get(
 				BinaryEncodingKeys.KEY_ANNOUNCE_LIST);
 		
@@ -74,32 +63,24 @@ public class QueuedTorrentProgress {
 		
 		return trackerUrls;
 	}
-	
-	public final int getPriority() {
-		return priority.get();
+
+    protected void setAddedOn(final long addedOnMillis) {
+        torrentState.put(BinaryEncodingKeys.STATE_KEY_ADDED_ON, new BinaryEncodedInteger(addedOnMillis));
+    }
+
+    public long getAddedOn() {
+        return ((BinaryEncodedInteger)torrentState.get(BinaryEncodingKeys.STATE_KEY_ADDED_ON)).getValue();
+    }
+
+	public void setStatus(final TorrentStatus status) {
+		torrentState.put(BinaryEncodingKeys.STATE_KEY_TORRENT_STATUS, new BinaryEncodedString(status.name()));
 	}
 	
-	public final void setPriority(final int priority) {
-		this.priority.set(priority);
-	}
-	
-	public IntegerProperty priorityProperty() {
-		return priority;
-	}
-	
-	public void setState(final QueuedTorrent.State state) {
-		this.state.set(state);
-	}
-	
-	public QueuedTorrent.State getState() {
-		return state.get();
-	}
-	
-	public ObjectProperty<QueuedTorrent.State> stateProperty() {
-		return state;
+	protected TorrentStatus getStatus() {
+		return TorrentStatus.valueOf(torrentState.get(BinaryEncodingKeys.STATE_KEY_TORRENT_STATUS).toString());
 	}
 
-	public final byte[] toExportableValue() throws IOException {		
+	public byte[] toExportableValue() throws IOException {
 		return torrentState.toExportableValue();
 	}
 }

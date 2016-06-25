@@ -1,6 +1,6 @@
 /*
-* This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015 Vedran Matic
+* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
+* Copyright (C) 2015-2016 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -50,6 +50,7 @@ import org.matic.torrent.codec.BinaryEncodedInteger;
 import org.matic.torrent.codec.BinaryEncodedString;
 import org.matic.torrent.gui.action.enums.BorderStyle;
 import org.matic.torrent.gui.custom.TitledBorderPane;
+import org.matic.torrent.gui.model.FileTree;
 import org.matic.torrent.gui.model.TorrentFileEntry;
 import org.matic.torrent.gui.table.TableUtils;
 import org.matic.torrent.gui.tree.FileTreeViewer;
@@ -73,7 +74,7 @@ import java.util.TimeZone;
  * @author vedran
  *
  */
-public final class AddNewTorrentWindow {
+public final class AddTorrentWindow {
 	
 	private final CheckBox createSubFolderCheckbox;
 	private final CheckBox dontShowAgainCheckbox;
@@ -109,8 +110,8 @@ public final class AddNewTorrentWindow {
 	
 	private Optional<Long> availableDiskSpace;
 
-	public AddNewTorrentWindow(final Window owner, final QueuedTorrentMetaData metaData,
-			final FileTreeViewer fileTreeViewer) {	
+	public AddTorrentWindow(final Window owner, final QueuedTorrentMetaData metaData,
+                            final FileTreeViewer fileTreeViewer) {
 		
 		final BinaryEncodedInteger creationDateInSeconds = metaData.getCreationDate();
 		creationDate = creationDateInSeconds != null? UnitConverter.formatMillisToDate(
@@ -129,9 +130,7 @@ public final class AddNewTorrentWindow {
 		fileName = metaData.getName();
 		
 		this.fileTreeViewer = fileTreeViewer;
-		
-		//TODO: Pass an empty QueuedTorrentProgress as param below?
-		fileView.setRoot(this.fileTreeViewer.createView(fileView, metaData, null));
+		fileView.setRoot(this.fileTreeViewer.createTreeView(fileView, new FileTree(metaData, null)));
 		
 		window = new Dialog<>();
 		window.initOwner(owner);
@@ -168,7 +167,7 @@ public final class AddNewTorrentWindow {
 		initComponents();
 	}
 	
-	public final AddedTorrentOptions showAndWait() {
+	public AddedTorrentOptions showAndWait() {
 		final Optional<ButtonType> result = window.showAndWait();
 		storeColumnStates();
 		fileTreeViewer.restoreDefault();

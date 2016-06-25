@@ -17,61 +17,64 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-
 package org.matic.torrent.queue;
 
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
+import org.matic.torrent.hash.InfoHash;
+
+import java.util.Objects;
 
 public final class QueuedTorrent {
-	
-	public enum State {
-		ACTIVE, STOPPED, ERROR
-	}
 
-    private final List<QueuedTorrentStatusChangeListener> stateChangeListeners = new CopyOnWriteArrayList<>();
 	private final QueuedTorrentMetaData metaData;
 	private final QueuedTorrentProgress progress;
+    private final InfoHash infoHash;
+
+    private final ObjectProperty<TorrentStatus> status = new SimpleObjectProperty<>();
 	
 	public QueuedTorrent(final QueuedTorrentMetaData metaData, final QueuedTorrentProgress progress) {
 		this.metaData = metaData;
 		this.progress = progress;
-        progress.stateProperty().addListener((obs, oldV, newV) -> notifyListenersOnStateChange(oldV, newV));
+        this.infoHash = metaData.getInfoHash();
+
+        this.status.set(progress.getStatus());
 	}
+
+    public InfoHash getInfoHash() {
+        return infoHash;
+    }
 	
-	public final QueuedTorrentMetaData getMetaData() {
+	public QueuedTorrentMetaData getMetaData() {
 		return metaData;
 	}
 	
-	public final QueuedTorrentProgress getProgress() {
+	public QueuedTorrentProgress getProgress() {
 		return progress;
 	}
 
-    public final void addStateChangeListener(final QueuedTorrentStatusChangeListener listener) {
-        stateChangeListeners.add(listener);
+    protected ObjectProperty<TorrentStatus> statusProperty() {
+        return status;
     }
 
-    public final void removeStateChangeListener(final QueuedTorrentStatusChangeListener listener) {
-        stateChangeListeners.remove(listener);
+    public TorrentStatus getStatus() {
+        return status.get();
     }
 
-    private void notifyListenersOnStateChange(final State oldState, final State newState) {
-        stateChangeListeners.forEach(l -> l.stateChanged(this, oldState, newState));
+    protected void setStatus(final TorrentStatus status) {
+        this.status.set(status);
     }
 
     @Override
     public boolean equals(final Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-
         QueuedTorrent that = (QueuedTorrent) o;
-
-        return metaData != null ? metaData.equals(that.metaData) : that.metaData == null;
-
+        return Objects.equals(infoHash, that.infoHash);
     }
 
     @Override
     public int hashCode() {
-        return metaData != null ? metaData.hashCode() : 0;
+        return Objects.hash(infoHash);
     }
 }

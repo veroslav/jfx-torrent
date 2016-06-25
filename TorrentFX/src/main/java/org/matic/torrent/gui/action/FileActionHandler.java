@@ -29,7 +29,7 @@ import org.matic.torrent.codec.BinaryDecoder;
 import org.matic.torrent.codec.BinaryEncodedDictionary;
 import org.matic.torrent.exception.BinaryDecoderException;
 import org.matic.torrent.gui.tree.FileTreeViewer;
-import org.matic.torrent.gui.window.AddNewTorrentWindow;
+import org.matic.torrent.gui.window.AddTorrentWindow;
 import org.matic.torrent.gui.window.AddedTorrentOptions;
 import org.matic.torrent.gui.window.UrlLoaderWindow;
 import org.matic.torrent.gui.window.UrlLoaderWindowOptions;
@@ -108,9 +108,9 @@ public final class FileActionHandler {
 	
 	private AddedTorrentOptions addNewTorrentJob(final Window owner,
 			final QueuedTorrentMetaData metaData, final FileTreeViewer fileTreeViewer) {
-		final AddNewTorrentWindow addNewTorrentWindow = new AddNewTorrentWindow(
+		final AddTorrentWindow addTorrentWindow = new AddTorrentWindow(
 				owner, metaData, fileTreeViewer);
-		return addNewTorrentWindow.showAndWait();
+		return addTorrentWindow.showAndWait();
 	}
 	
 	private String getTorrentPath(final Window owner) {

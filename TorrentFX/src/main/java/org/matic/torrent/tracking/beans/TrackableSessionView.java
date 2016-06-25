@@ -22,7 +22,7 @@ package org.matic.torrent.tracking.beans;
 import org.matic.torrent.queue.QueuedTorrent;
 import org.matic.torrent.tracking.TrackerSession;
 
-public abstract class TrackableSessionViewBean {
+public abstract class TrackableSessionView {
 	
 	protected String displayedMessage;
 	protected long lastTrackerResponse;
@@ -36,7 +36,7 @@ public abstract class TrackableSessionViewBean {
 	
 	protected final TrackerSession trackerSession;
 	
-	protected TrackableSessionViewBean(final TrackerSession trackerSession) {
+	protected TrackableSessionView(final TrackerSession trackerSession) {
 		this.trackerSession = trackerSession;
 	}
 	

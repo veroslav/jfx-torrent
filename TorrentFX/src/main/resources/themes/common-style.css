@@ -49,6 +49,17 @@
   	-fx-rotate: 0;
 }
 
+.info-pane {
+	-fx-background-color: -fx-base;
+	-fx-padding: 1;
+}
+
+.info-pane-category-label {
+	-fx-font-size: 14;
+	-fx-font-weight: bold;
+	-fx-pref-height: 22;
+}
+
 .label-text {
 	-fx-font-size: 15;
 }

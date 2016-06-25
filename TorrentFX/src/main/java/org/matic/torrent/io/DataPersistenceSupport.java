@@ -22,15 +22,12 @@ package org.matic.torrent.io;
 import org.matic.torrent.codec.BinaryDecoder;
 import org.matic.torrent.codec.BinaryEncodingKeys;
 import org.matic.torrent.exception.BinaryDecoderException;
-import org.matic.torrent.preferences.ApplicationPreferences;
-import org.matic.torrent.preferences.PathProperties;
-import org.matic.torrent.queue.QueuedTorrent;
+import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.queue.QueuedTorrentMetaData;
 import org.matic.torrent.queue.QueuedTorrentProgress;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -38,55 +35,71 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
-public class StateKeeper {
+public final class DataPersistenceSupport {
 	
 	private static final String TORRENT_FILE_EXTENSION = ".torrent";
 	private static final String STATE_FILE_EXTENSION = ".state";
+
+    private final String workPath;
+
+    public DataPersistenceSupport(final String workPath) {
+        this.workPath = workPath;
+    }
 	
 	/**
 	 * Delete a torrent's meta data (.torrent) and state (.state) files from the disk
 	 * 
-	 * @param torrent Torrent to delete
+	 * @param infoHash Info hash if the torrent to be deleted
 	 * @throws IOException If the files to delete can't be found
 	 */
-	public static void delete(final QueuedTorrent torrent) throws IOException {		
-		//TODO: Don't use default target path, as the torrent might have been re-located.
-		final Path targetPath = Paths.get(StateKeeper.buildTargetPath());
-		final Path torrentFilePath = Paths.get(targetPath.toString(),
-				torrent.getMetaData().getInfoHash().toString() + TORRENT_FILE_EXTENSION);
-		final Path stateFilePath = Paths.get(targetPath.toString(),
-				torrent.getMetaData().getInfoHash().toString() + STATE_FILE_EXTENSION);
+	public void delete(final InfoHash infoHash) throws IOException {
+        final Path targetPath = Paths.get(workPath);
+        final Path torrentFilePath = Paths.get(targetPath.toString(),
+                infoHash.toString() + TORRENT_FILE_EXTENSION);
+        final Path stateFilePath = Paths.get(targetPath.toString(),
+                infoHash.toString() + STATE_FILE_EXTENSION);
 		
 		Files.deleteIfExists(torrentFilePath);
 		Files.deleteIfExists(stateFilePath);
 	}
+
+    /**
+     * Check whether a torrent has been stored on the disk.
+     *
+     * @param infoHash Info hash of the torrent to check.
+     * @return Whether the torrent is stored on the disk.
+     */
+    public boolean isPersisted(final InfoHash infoHash) {
+        return Files.exists(Paths.get(workPath + infoHash.toString().toLowerCase() + STATE_FILE_EXTENSION));
+    }
 	
 	/**
-	 * Save a torrent's meta data (.torrent) and state (.state) files to the disk
+	 * Save a torrent's meta data (.torrent) and state (.state) files to the disk.
 	 * 
-	 * @param torrent Torrent to save
+	 * @param metaData Meta data to be saved.
+     * @param progress Torrent's progress to be saved.
 	 */
-	public static void store(final QueuedTorrent torrent) {
-		final String targetPath = StateKeeper.buildTargetPath(); 
-		storeMetaData(torrent.getMetaData(), targetPath);
-		storeState(torrent.getProgress(),
-				torrent.getMetaData().getInfoHash().toString().toLowerCase(), targetPath);
-	}
+    public void store(final QueuedTorrentMetaData metaData, final QueuedTorrentProgress progress) {
+        storeMetaData(metaData);
+        storeProgress(progress, metaData.getInfoHash().toString().toLowerCase());
+    }
 	
 	/**
-	 * Load all of the torrents and their state data from their disk location
+	 * Load all of the torrents and their state data from their disk location.
 	 * 
-	 * @return Loaded torrents
+	 * @return Loaded torrents.
 	 */
-	public static Set<QueuedTorrent> loadAll() {
-		final Set<QueuedTorrent> loadedTorrents = new HashSet<>();
+	public List<LoadedTorrentData> loadAll() {
+		final List<LoadedTorrentData> loadedTorrents = new ArrayList<>();
 		final BinaryDecoder decoder = new BinaryDecoder();
 		
 		final Set<String> torrentNames = new HashSet<>();
-		final Path path = Paths.get(StateKeeper.buildTargetPath());		
+		final Path path = Paths.get(workPath);
 		
 		try {
 			Files.createDirectories(path);
@@ -128,20 +141,14 @@ public class StateKeeper {
 			catch(final IOException | BinaryDecoderException e) {
 				e.printStackTrace();
 			}
-			loadedTorrents.add(new QueuedTorrent(metaData, progress));
+			loadedTorrents.add(new LoadedTorrentData(metaData, progress));
 		});
 		
 		return loadedTorrents;
 	}
-	
-	private static String buildTargetPath() {
-		final String path = ApplicationPreferences.getProperty(PathProperties.NEW_TORRENTS,
-				PathProperties.DEFAULT_STORE_TORRENTS_PATH);
-		return path.endsWith(File.separator)? path : path + File.separator;
-	}
-	
-	private static boolean storeMetaData(final QueuedTorrentMetaData metaData, final String targetPath) {
-		final String metaDataFileLocation = targetPath + metaData.getInfoHash().toString() + TORRENT_FILE_EXTENSION;
+
+	private boolean storeMetaData(final QueuedTorrentMetaData metaData) {
+		final String metaDataFileLocation = workPath + metaData.getInfoHash().toString() + TORRENT_FILE_EXTENSION;
 		
 		if(Files.exists(Paths.get(metaDataFileLocation))) {
 			return true;
@@ -159,10 +166,10 @@ public class StateKeeper {
 		return true;
 	}
 
-	private static boolean storeState(final QueuedTorrentProgress state, final String infoHash, final String targetPath) {	
+	private boolean storeProgress(final QueuedTorrentProgress progress, final String infoHash) {
 		try(final BufferedOutputStream writer = new BufferedOutputStream(new FileOutputStream(
-				targetPath + infoHash.toString() + STATE_FILE_EXTENSION))) {				
-				writer.write(state.toExportableValue());
+				workPath + infoHash.toString() + STATE_FILE_EXTENSION))) {
+				writer.write(progress.toExportableValue());
 				writer.flush();
 		}
 		catch(final IOException ioe) {

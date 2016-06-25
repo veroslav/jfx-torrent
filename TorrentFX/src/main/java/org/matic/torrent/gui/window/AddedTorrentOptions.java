@@ -1,6 +1,6 @@
 /*
-* This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015 Vedran Matic
+* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
+* Copyright (C) 2015-2016 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,6 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-
 package org.matic.torrent.gui.window;
 
 import javafx.scene.control.TreeItem;
@@ -26,10 +25,9 @@ import org.matic.torrent.codec.BinaryEncodedList;
 import org.matic.torrent.codec.BinaryEncodedString;
 import org.matic.torrent.codec.BinaryEncodingKeys;
 import org.matic.torrent.gui.model.TorrentFileEntry;
-import org.matic.torrent.queue.QueuedTorrent;
-import org.matic.torrent.queue.QueuedTorrent.State;
 import org.matic.torrent.queue.QueuedTorrentMetaData;
 import org.matic.torrent.queue.QueuedTorrentProgress;
+import org.matic.torrent.queue.TorrentStatus;
 
 /**
  * A bean containing all of the options selected by the user, during the addition of
@@ -74,27 +72,27 @@ public final class AddedTorrentOptions {
 		progress = new QueuedTorrentProgress(state);
 	}
 	
-	public final QueuedTorrentMetaData getMetaData() {
+	public QueuedTorrentMetaData getMetaData() {
 		return metaData;
 	}
 	
-	public final QueuedTorrentProgress getProgress() {
+	public QueuedTorrentProgress getProgress() {
 		return progress;
 	}
 	
-	public final TreeItem<TorrentFileEntry> getTorrentContents() {
+	public TreeItem<TorrentFileEntry> getTorrentContents() {
 		return torrentContents;
 	}
 	
-	public final boolean shouldCreateSubfolder() {
+	public boolean shouldCreateSubfolder() {
 		return createSubfolder;
 	}
 	
-	public final boolean shouldAddToTopQueue() {
+	public boolean shouldAddToTopQueue() {
 		return addToTopQueue;
 	}
 	
-	public final boolean shouldSkipHashCheck() {
+	public boolean shouldSkipHashCheck() {
 		return skipHashCheck;
 	}
 	
@@ -109,8 +107,8 @@ public final class AddedTorrentOptions {
 			state.put(BinaryEncodingKeys.STATE_KEY_LABEL, new BinaryEncodedString(label));
 		}
 		
-		final QueuedTorrent.State targetState = startTorrent? State.ACTIVE : State.STOPPED;
-		state.put(BinaryEncodingKeys.STATE_KEY_TORRENT_STATE, new BinaryEncodedString(targetState.name()));
+		final TorrentStatus targetStatus = startTorrent? TorrentStatus.ACTIVE : TorrentStatus.STOPPED;
+		state.put(BinaryEncodingKeys.STATE_KEY_TORRENT_STATUS, new BinaryEncodedString(targetStatus.name()));
 		
 		final BinaryEncodedList trackerList = new BinaryEncodedList();
 		metaData.getAnnounceList().stream().flatMap(l -> ((BinaryEncodedList)l).stream()).forEach(

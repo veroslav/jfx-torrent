@@ -1,6 +1,6 @@
 /*
-* This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015 Vedran Matic
+* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
+* Copyright (C) 2015-2016 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -26,7 +26,8 @@ import javafx.scene.control.ButtonType;
 import javafx.stage.Window;
 import org.matic.torrent.gui.model.TrackerView;
 import org.matic.torrent.gui.table.TrackerTable;
-import org.matic.torrent.queue.QueuedTorrent;
+import org.matic.torrent.hash.InfoHash;
+import org.matic.torrent.queue.QueuedTorrentManager;
 import org.matic.torrent.tracking.Tracker;
 import org.matic.torrent.tracking.TrackerManager;
 
@@ -34,26 +35,26 @@ import java.util.Collection;
 import java.util.Optional;
 
 /**
- * A handler for events triggered from the trackers' context menu
+ * A handler for events triggered from the trackers' context menu.
  * 
  * @author vedran
  *
  */
-public class TrackerTableActionHandler {
+public final class TrackerTableActionHandler {
 	
 	/**
-	 * Add a user entered list of tracker url:s for tracking
+	 * Add a user entered list of tracker url:s for tracking.
 	 * 
-	 * @param urls User entered tracker url:s to add
-	 * @param trackerManager Target tracker manager
-	 * @param torrent Target tracked torrent
-	 * @param trackerTable Tracker table to which to add trackers views
+	 * @param urls User entered tracker url:s to add.
+	 * @param torrentManager Torrent manager.
+	 * @param infoHash Target tracked torrent's info hash.
+	 * @param trackerTable Tracker table to which to add trackers views.
 	 */
-	public final void onTrackersAdded(final Collection<String> urls, final TrackerManager trackerManager,
-			final QueuedTorrent torrent, final TrackerTable trackerTable) {
-		urls.forEach(url -> trackerTable.addTracker(new TrackerView(
-				trackerManager.addTracker(url, torrent))));
-	}
+    public void onTrackersAdded(final Collection<String> urls, final QueuedTorrentManager torrentManager,
+                                      final InfoHash infoHash, final TrackerTable trackerTable) {
+        urls.forEach(url -> trackerTable.addTracker(new TrackerView(
+                torrentManager.addTracker(url, infoHash))));
+    }
 
 	/**
 	 * Request a manual tracker update by a user
@@ -61,7 +62,7 @@ public class TrackerTableActionHandler {
 	 * @param trackerViews Tracker views to update
 	 * @param trackerManager Target tracker manager
 	 */
-	public final void onTrackerUpdate(final Collection<TrackerView> trackerViews, final TrackerManager trackerManager) {
+	public void onTrackerUpdate(final Collection<TrackerView> trackerViews, final TrackerManager trackerManager) {
 		if(trackerViews.isEmpty()) {
 			return;
 		}
@@ -76,7 +77,7 @@ public class TrackerTableActionHandler {
 	 * @param trackerManager Target tracker manager
 	 * @param trackerTable Tracker table from which to delete trackers views
 	 */
-	public final void onTrackerDeletion(final Collection<TrackerView> trackerViews, final TrackerManager trackerManager,
+	public void onTrackerDeletion(final Collection<TrackerView> trackerViews, final TrackerManager trackerManager,
 			final TrackerTable trackerTable, final Window owner) {		
 		if(trackerViews.isEmpty()) {
 			return;

@@ -17,20 +17,26 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-package org.matic.torrent.gui.action.enums;
+package org.matic.torrent.gui.model;
 
-public enum ApplicationTheme {
+public final class AvailabilityView {
 	
-	LIGHT("Light"), DARK("Dark");
-	
-	private final String label;
-	
-	ApplicationTheme(final String label) {
-		this.label = label;
+	private final int totalPieces;
+	private int havePieces = 0;
+
+	public AvailabilityView(final int totalPieces) {
+		this.totalPieces = totalPieces;
 	}
-	
-	@Override
-	public String toString() {
-		return label;
+
+	public int getTotalPieces() {
+		return totalPieces;
 	}
+
+	public void setHavePieces(final int havePieces) {
+		this.havePieces = havePieces;
+	}
+
+	public int getHavePieces() {
+		return havePieces;
+	}		
 }

@@ -1,6 +1,6 @@
 /*
-* This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015 Vedran Matic
+* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
+* Copyright (C) 2015-2016 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,6 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-
 package org.matic.torrent.gui.model;
 
 import javafx.beans.property.IntegerProperty;
@@ -27,7 +26,8 @@ import javafx.beans.property.SimpleLongProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import org.matic.torrent.queue.QueuedTorrent;
-import org.matic.torrent.tracking.beans.TrackableSessionViewBean;
+import org.matic.torrent.queue.TorrentStatus;
+import org.matic.torrent.tracking.beans.TrackableSessionView;
 
 public final class TrackerView {
 
@@ -41,30 +41,30 @@ public final class TrackerView {
 	private final StringProperty status = new SimpleStringProperty();
 	private final StringProperty trackerName;
 	
-	private final TrackableSessionViewBean trackerViewBean;
+	private final TrackableSessionView trackableSessionView;
 
 	private long lastUserRequestedUpdate = 0;
 	private long lastTrackerResponse = 0;
 
-	public TrackerView(final TrackableSessionViewBean trackerViewBean) {
-		this.trackerViewBean = trackerViewBean;
-		this.trackerName = new SimpleStringProperty(trackerViewBean.getName());
+	public TrackerView(final TrackableSessionView trackableSessionView) {
+		this.trackableSessionView = trackableSessionView;
+		this.trackerName = new SimpleStringProperty(trackableSessionView.getName());
 	}
 	
-	public final void update() {
-		trackerViewBean.updateValues();
-		this.lastTrackerResponse = trackerViewBean.getLastTrackerResponse();
-		setTorrentState(trackerViewBean.getTorrent().getProgress().getState());
-		status.set(trackerViewBean.getStatus());
-		nextUpdate.set(trackerViewBean.getNextUpdate());
-		interval.set(trackerViewBean.getInterval());
-		minInterval.set(trackerViewBean.getMinInterval());		
-		downloaded.set(trackerViewBean.getDownloaded());
-		leechers.set(trackerViewBean.getLeechers());
-		seeds.set(trackerViewBean.getSeeders());		
+	public void update() {
+        trackableSessionView.updateValues();
+		this.lastTrackerResponse = trackableSessionView.getLastTrackerResponse();
+		//setTorrentStatus(trackableSessionView.getTorrent().getStatus());
+		status.set(trackableSessionView.getStatus());
+		nextUpdate.set(trackableSessionView.getNextUpdate());
+		interval.set(trackableSessionView.getInterval());
+		minInterval.set(trackableSessionView.getMinInterval());
+		downloaded.set(trackableSessionView.getDownloaded());
+		leechers.set(trackableSessionView.getLeechers());
+		seeds.set(trackableSessionView.getSeeders());
 	}
 	
-	public final void setLastTrackerResponse(final long lastTrackerResponse) {
+	public void setLastTrackerResponse(final long lastTrackerResponse) {
 		this.lastTrackerResponse = lastTrackerResponse;
 	}
 	
@@ -72,31 +72,31 @@ public final class TrackerView {
 		this.status.set(status);
 	}
 	
-	public final long getLastUserRequestedUpdate() {
+	public long getLastUserRequestedUpdate() {
 		return lastUserRequestedUpdate;
 	}
 	
-	public final void setLastUserRequestedUpdate(final long lastUserRequestedUpdate) {
+	/*public void setLastUserRequestedUpdate(final long lastUserRequestedUpdate) {
 		this.lastUserRequestedUpdate = lastUserRequestedUpdate;
-	}
+	}*/
 
 	public QueuedTorrent getTorrent() {
-		return trackerViewBean.getTorrent();
+		return trackableSessionView.getTorrent();
 	}
 		
-	public QueuedTorrent.State getTorrentState() {
-		return trackerViewBean.getTorrent().getProgress().getState();
+	public TorrentStatus getTorrentStatus() {
+		return trackableSessionView.getTorrent().getStatus();
 	}
 	
-	public void setTorrentState(final QueuedTorrent.State torrentState) {
-		this.trackerViewBean.getTorrent().getProgress().setState(torrentState);
-	}
+	/*public void setTorrentStatus(final TorrentStatus torrentStatus) {
+		this.trackableSessionView.getTorrent().getProgress().setStatus(torrentStatus);
+	}*/
 
 	public String getStatus() {
 		return status.get();
 	}
 	
-	public final StringProperty statusProperty() {
+	public StringProperty statusProperty() {
 		return status;
 	}
 
@@ -104,27 +104,27 @@ public final class TrackerView {
 		return lastTrackerResponse;
 	}
 
-	public final long getMinInterval() {
+	public long getMinInterval() {
 		return minInterval.get();
 	}
 	
-	public final LongProperty minIntervalProperty() {
+	public LongProperty minIntervalProperty() {
 		return minInterval;
 	}
 
-	public final long getInterval() {
+	public long getInterval() {
 		return interval.get();
 	}
 	
-	public final LongProperty intervalProperty() {
+	public LongProperty intervalProperty() {
 		return interval;
 	}
 
-	public final int getDownloaded() {
+	public int getDownloaded() {
 		return downloaded.get();
 	}
 	
-	public final IntegerProperty downloadedProperty() {
+	public IntegerProperty downloadedProperty() {
 		return downloaded;
 	}
 	
@@ -132,7 +132,7 @@ public final class TrackerView {
 		return nextUpdate.get();
 	}
 	
-	public final LongProperty nextUpdateProperty() {
+	public LongProperty nextUpdateProperty() {
 		return nextUpdate;
 	}
 	
@@ -140,7 +140,7 @@ public final class TrackerView {
 		return leechers.get();
 	}
 	
-	public final IntegerProperty leechersProperty() {
+	public IntegerProperty leechersProperty() {
 		return leechers;
 	}
 	
@@ -148,7 +148,7 @@ public final class TrackerView {
 		return seeds.get();
 	}
 	
-	public final IntegerProperty seedsProperty() {
+	public IntegerProperty seedsProperty() {
 		return seeds;
 	}
 	
@@ -156,7 +156,7 @@ public final class TrackerView {
 		return trackerName.get();
 	}
 	
-	public final StringProperty trackerNameProperty() {
+	public StringProperty trackerNameProperty() {
 		return trackerName;
 	}
 
@@ -191,7 +191,7 @@ public final class TrackerView {
 				+ leechers + ", seeds=" + seeds + ", minInterval="
 				+ minInterval + ", nextUpdate=" + nextUpdate + ", interval="
 				+ interval + ", status=" + status + ", trackerName="
-				+ trackerName + ", trackerViewBean=" + trackerViewBean
+				+ trackerName + ", trackableSessionView=" + trackableSessionView
 				+ ", lastUserRequestedUpdate=" + lastUserRequestedUpdate
 				+ ", lastTrackerResponse=" + lastTrackerResponse + "]";
 	}

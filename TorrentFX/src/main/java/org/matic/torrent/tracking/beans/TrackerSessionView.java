@@ -19,22 +19,22 @@
 */
 package org.matic.torrent.tracking.beans;
 
-import org.matic.torrent.queue.QueuedTorrent;
+import org.matic.torrent.queue.TorrentStatus;
 import org.matic.torrent.tracking.Tracker;
 import org.matic.torrent.tracking.TrackerSession;
 
-public class TrackerSessionViewBean extends TrackableSessionViewBean {
+public final class TrackerSessionView extends TrackableSessionView {
 	
 	private static final String TRACKER_MESSAGE_NULL = "null";		//Sometimes returned as a tracker message
 	private Tracker.Status trackerStatus;		
 
-	public TrackerSessionViewBean(final TrackerSession trackerSession) {
+	public TrackerSessionView(final TrackerSession trackerSession) {
 		super(trackerSession);
 		updateValues();
 	}
 	
 	@Override
-	public final void updateValues() {		
+	public void updateValues() {
 		minInterval = trackerSession.getMinInterval();
 		interval = trackerSession.getInterval();
 		
@@ -47,7 +47,7 @@ public class TrackerSessionViewBean extends TrackableSessionViewBean {
 				trackerSession.getTracker().getLastResponse() : trackerSession.getLastAnnounceResponse();
 		nextUpdateValue = trackerSession.getInterval() - (System.currentTimeMillis() - lastTrackerResponse);
 		
-		final QueuedTorrent.State torrentState = trackerSession.getTorrent().getProgress().getState();
+		final TorrentStatus torrentStatus = trackerSession.getTorrent().getStatus();
 		final String trackerMessage = trackerSession.getTrackerMessage();
 		final String statusMessage = trackerMessage != null && !trackerMessage.equals(TRACKER_MESSAGE_NULL)?
 				trackerMessage : Tracker.getStatusMessage(trackerStatus);
@@ -57,16 +57,16 @@ public class TrackerSessionViewBean extends TrackableSessionViewBean {
 
 		displayedMessage = "";
 		if((trackerStatus != Tracker.Status.UPDATING && nextUpdateValue >= 1000 &&
-				(torrentState == QueuedTorrent.State.ACTIVE))) {
+				(torrentStatus == TorrentStatus.ACTIVE))) {
 			displayedMessage = statusMessage;
 		}
-		else if(torrentState == QueuedTorrent.State.STOPPED && isTrackerScraped) {
+		else if(torrentStatus == TorrentStatus.STOPPED && isTrackerScraped) {
 			displayedMessage = Tracker.getStatusMessage(trackerStatus);
 		}
 	}
 	
 	@Override
-	public final String getName() {
+	public String getName() {
 		return trackerSession.getTracker().getUrl();
 	}
 }

@@ -17,7 +17,6 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-
 package org.matic.torrent.gui.table;
 
 import javafx.beans.binding.BooleanBinding;
@@ -40,7 +39,7 @@ import org.matic.torrent.gui.GuiUtils;
 import org.matic.torrent.gui.model.TrackerView;
 import org.matic.torrent.gui.window.AddTrackerWindow;
 import org.matic.torrent.preferences.GuiProperties;
-import org.matic.torrent.queue.QueuedTorrent;
+import org.matic.torrent.queue.TorrentStatus;
 import org.matic.torrent.tracking.Tracker;
 import org.matic.torrent.utils.UnitConverter;
 
@@ -89,7 +88,7 @@ public class TrackerTable {
 		createContextMenu();
 	}
 	
-	public final void setContent(final List<TrackerView> trackerViews) {
+	public void setContent(final List<TrackerView> trackerViews) {
 		trackerTable.getItems().clear();		
 		trackerTable.getItems().addAll(trackerViews);
 	}
@@ -97,11 +96,11 @@ public class TrackerTable {
 	/**
 	 * Update tracker view beans with the latest tracker statistics
 	 */
-	public final void updateContent() {
+	public void updateContent() {
 		trackerTable.getItems().forEach(TrackerView::update);
 	}
 	
-	public final boolean addTracker(final TrackerView trackerView) {
+	public boolean addTracker(final TrackerView trackerView) {
 		final ObservableList<TrackerView> tableItems = trackerTable.getItems();
 		if(tableItems.contains(trackerView)) {
 			return false;
@@ -109,7 +108,7 @@ public class TrackerTable {
 		return tableItems.add(trackerView);
 	}
 	
-	public final boolean removeTracker(final TrackerView trackerView) {
+	public boolean removeTracker(final TrackerView trackerView) {
 		return trackerTable.getItems().remove(trackerView);
 	}
 	
@@ -247,7 +246,7 @@ public class TrackerTable {
 	private Collection<TrackerView> getUpdatableTrackers(final Collection<TrackerView> selectedRows) {
 		return selectedRows.stream().filter(tv -> {
 			final long currentTime = System.currentTimeMillis();
-			return tv.getTorrentState() == QueuedTorrent.State.ACTIVE && tv.getNextUpdate() > 0 &&
+			return tv.getTorrentStatus() == TorrentStatus.ACTIVE && tv.getNextUpdate() > 0 &&
 					tv.getStatus().equals(Tracker.getStatusMessage(Tracker.Status.WORKING)) &&
 					((currentTime - tv.getLastTrackerResponse()) >= tv.getMinInterval()) &&
 					(currentTime - tv.getLastUserRequestedUpdate() > MIN_USER_REQUESTED_ANNOUNCE_DELAY);
@@ -279,7 +278,7 @@ public class TrackerTable {
 	
 	private LinkedHashMap<String, TableColumn<TrackerView, ?>> buildColumnMappings() {
 		final Function<TrackerView, String> updateInValueConverter = tv -> {			
-			if(tv.getTorrent().getProgress().getState() == QueuedTorrent.State.STOPPED) {
+			if(tv.getTorrent().getStatus() == TorrentStatus.STOPPED) {
 				return "";
 			}
 			final long nextUpdateValue = tv.getNextUpdate();			
@@ -294,12 +293,12 @@ public class TrackerTable {
 		
 		final Function<TrackerView, String> intervalValueConverter = tv -> {
 			final long interval = tv.getInterval(); 
-			return (tv.getTorrent().getProgress().getState() != QueuedTorrent.State.STOPPED) && (interval > 0)?
+			return (tv.getTorrent().getStatus() != TorrentStatus.STOPPED) && (interval > 0)?
 					UnitConverter.formatMillisToTime(interval) : "";
 		};
 		
 		final Function<TrackerView, String> minIntervalValueConverter =
-                tv -> tv.getTorrent().getProgress().getState() != QueuedTorrent.State.STOPPED?
+                tv -> tv.getTorrent().getStatus() != TorrentStatus.STOPPED?
 					UnitConverter.formatMillisToTime(tv.getMinInterval()) : "";
 		
 		final Callback<CellDataFeatures<TrackerView, String>, ObservableValue<String>> nameValueFactory =

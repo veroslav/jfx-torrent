@@ -1,6 +1,6 @@
 /*
-* This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015 Vedran Matic
+* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
+* Copyright (C) 2015-2016 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,6 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-
 package org.matic.torrent.gui.table;
 
 import javafx.beans.binding.Bindings;
@@ -35,7 +34,7 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.text.Text;
 import javafx.util.Callback;
 import org.matic.torrent.gui.GuiUtils;
-import org.matic.torrent.gui.model.TorrentJobView;
+import org.matic.torrent.gui.model.TorrentView;
 import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.preferences.CssProperties;
 import org.matic.torrent.preferences.GuiProperties;
@@ -50,18 +49,18 @@ import java.util.function.Consumer;
  * @author vedran
  *
  */
-public final class TorrentJobTable {
-	
+public final class TorrentViewTable {
+
 	private static final String PRIORITY_COLUMN_NAME = "#";
 	private static final String NAME_COLUMN_NAME = "Name";
 
-	private final TableView<TorrentJobView> torrentJobTable = new TableView<>();
+	private final TableView<TorrentView> torrentJobTable = new TableView<>();
 	
-	public TorrentJobTable() {		
+	public TorrentViewTable() {
 		initComponents();
 	}
 	
-	public void addSelectionListener(final Consumer<TorrentJobView> handler) {
+	public void addSelectionListener(final Consumer<TorrentView> handler) {
 		torrentJobTable.getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) ->
 			handler.accept(newV));
 	}
@@ -75,25 +74,26 @@ public final class TorrentJobTable {
 	 * 
 	 * @return Generated boolean binding
 	 */
-	public final BooleanBinding bindOnEmpty() {
+	public BooleanBinding bindOnEmpty() {
 		return Bindings.size(torrentJobTable.getItems()).isEqualTo(0);
 	}
 	
-	public void addJob(final TorrentJobView torrentJob) {
+	public void addJob(final TorrentView torrentJob) {
 		torrentJobTable.getItems().add(torrentJob);
 		torrentJobTable.getSelectionModel().clearSelection();
 		torrentJobTable.getSelectionModel().select(torrentJob);
 	}
 	
-	public void deleteJobs(final ObservableList<TorrentJobView> torrentJobs) {
+	public void deleteJobs(final ObservableList<TorrentView> torrentJobs) {
 		torrentJobTable.getItems().removeAll(torrentJobs);		
 	}
 	
-	public ObservableList<TorrentJobView> getSelectedJobs() {
+	public ObservableList<TorrentView> getSelectedJobs() {
 		return torrentJobTable.getSelectionModel().getSelectedItems();
 	}
 	
-	public void selectJob(final TorrentJobView torrentJob) {
+	public void selectJob(final TorrentView torrentJob) {
+        torrentJobTable.getSelectionModel().clearSelection();
 		torrentJobTable.getSelectionModel().select(torrentJob);
 	}
 	
@@ -129,13 +129,13 @@ public final class TorrentJobTable {
 	}
 	
 	private void createColumns() {
-		final LinkedHashMap<String, TableColumn<TorrentJobView, ?>> columnMappings = buildColumnMappings();
+		final LinkedHashMap<String, TableColumn<TorrentView, ?>> columnMappings = buildColumnMappings();
 		final BiConsumer<String, Double> columnResizer = (columnId, targetWidth) -> {
-			final TableColumn<TorrentJobView,?> tableColumn = columnMappings.get(columnId);
+			final TableColumn<TorrentView,?> tableColumn = columnMappings.get(columnId);
 			torrentJobTable.getColumns().add(tableColumn);
 			torrentJobTable.resizeColumn(tableColumn, targetWidth - tableColumn.getWidth());
 		};
-		final TableState<TorrentJobView> columnState = TableUtils.loadColumnStates(columnMappings, columnResizer,
+		final TableState<TorrentView> columnState = TableUtils.loadColumnStates(columnMappings, columnResizer,
 				GuiProperties.TORRENT_JOBS_TAB_COLUMN_VISIBILITY, GuiProperties.DEFAULT_TORRENT_JOBS_TAB_COLUMN_VISIBILITIES,
 				GuiProperties.TORRENT_JOBS_TAB_COLUMN_SIZE, GuiProperties.DEFAULT_TORRENT_JOBS_COLUMN_SIZES,
 				GuiProperties.TORRENT_JOBS_TAB_COLUMN_ORDER, GuiProperties.DEFAULT_TORRENT_JOBS_TAB_COLUMN_ORDER);
@@ -143,14 +143,14 @@ public final class TorrentJobTable {
 		TableUtils.addTableHeaderContextMenus(torrentJobTable.getColumns(), columnState, columnResizer);
 	}
 		
-	private LinkedHashMap<String, TableColumn<TorrentJobView, ?>> buildColumnMappings() {			
-		final Callback<CellDataFeatures<TorrentJobView, Number>, ObservableValue<Number>> priorityValueFactory = 
+	private LinkedHashMap<String, TableColumn<TorrentView, ?>> buildColumnMappings() {
+		final Callback<CellDataFeatures<TorrentView, Number>, ObservableValue<Number>> priorityValueFactory =
 				tj -> tj.getValue().priorityProperty();
-		final Callback<CellDataFeatures<TorrentJobView, String>, ObservableValue<String>> nameValueFactory =
+		final Callback<CellDataFeatures<TorrentView, String>, ObservableValue<String>> nameValueFactory =
 				tj -> new ReadOnlyObjectWrapper<String>(tj.getValue().getFileName());
 		
-		final LinkedHashMap<String, TableColumn<TorrentJobView, ?>> columnMappings = new LinkedHashMap<>();
-		columnMappings.put(PRIORITY_COLUMN_NAME, TableUtils.buildColumn(priorityValueFactory, 
+		final LinkedHashMap<String, TableColumn<TorrentView, ?>> columnMappings = new LinkedHashMap<>();
+		columnMappings.put(PRIORITY_COLUMN_NAME, TableUtils.buildColumn(priorityValueFactory,
 				val -> String.valueOf(val.getPriority()), GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, PRIORITY_COLUMN_NAME));
 		columnMappings.put(NAME_COLUMN_NAME, TableUtils.buildColumn(nameValueFactory, tj -> tj.getFileName(),
 				GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, NAME_COLUMN_NAME));

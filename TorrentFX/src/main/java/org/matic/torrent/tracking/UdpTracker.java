@@ -1,6 +1,6 @@
 /*
-* This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015 Vedran Matic
+* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
+* Copyright (C) 2015-2016 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,6 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-
 package org.matic.torrent.tracking;
 
 import org.matic.torrent.hash.InfoHash;
@@ -210,6 +209,7 @@ public final class UdpTracker extends Tracker {
 			dos.writeInt(transactionId);
 		}
 		catch(final IOException ioe) {
+            ioe.printStackTrace();
 			return null;
 		}
 		return new UdpRequest(UdpRequest.Type.TRACKER, transactionId, 

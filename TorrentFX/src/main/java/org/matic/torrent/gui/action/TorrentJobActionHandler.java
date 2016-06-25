@@ -1,6 +1,6 @@
 /*
-* This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015 Vedran Matic
+* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
+* Copyright (C) 2015-2016 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -17,27 +17,24 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-
 package org.matic.torrent.gui.action;
 
 import javafx.collections.ObservableList;
 import javafx.scene.control.Button;
-import org.matic.torrent.gui.model.TorrentJobView;
-import org.matic.torrent.gui.table.TorrentJobTable;
-import org.matic.torrent.queue.QueuedTorrent;
+import org.matic.torrent.gui.model.TorrentView;
+import org.matic.torrent.queue.QueuedTorrentManager;
+import org.matic.torrent.queue.TorrentStatus;
 
 public class TorrentJobActionHandler {
 
-	public void onChangeTorrentState(final QueuedTorrent.State newStatus, final Button startButton,
-			final Button stopButton, final TorrentJobTable torrentJobTable) {
-		startButton.setDisable(newStatus == QueuedTorrent.State.ACTIVE);
-		stopButton.setDisable(newStatus == QueuedTorrent.State.STOPPED);
-		
-		final ObservableList<TorrentJobView> selectedTorrentJobs = torrentJobTable.getSelectedJobs();
-		
-		if(selectedTorrentJobs.size() > 0) {
-			selectedTorrentJobs.stream().map(
-					TorrentJobView::getQueuedTorrent).forEach(t -> t.getProgress().setState(newStatus));			
-		}
+	public void onRequestTorrentStateChange(final QueuedTorrentManager torrentManager,
+                                            final ObservableList<TorrentView> selectedTorrents,
+                                            final TorrentStatus requestedStatus, final Button startButton,
+                                            final Button stopButton) {
+        startButton.setDisable(requestedStatus == TorrentStatus.ACTIVE);
+        stopButton.setDisable(requestedStatus == TorrentStatus.STOPPED);
+
+        selectedTorrents.stream().forEach(tv ->
+                torrentManager.requestStatusChange(tv.getInfoHash(), requestedStatus));
 	}
 }

@@ -1,6 +1,6 @@
 /*
-* This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015 Vedran Matic
+* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
+* Copyright (C) 2015-2016 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -28,14 +28,15 @@ import org.matic.torrent.codec.BinaryEncodingKeys;
 import org.matic.torrent.hash.InfoHash;
 
 import java.io.IOException;
+import java.util.Iterator;
 
 /**
- * A convenience class that provides easier access to a torrent's meta data
+ * A convenience class that provides easier access to a torrent's meta data.
  * 
  * @author Vedran Matic
  *
  */
-public class QueuedTorrentMetaData {
+public final class QueuedTorrentMetaData {
 
 	private final BinaryEncodedDictionary infoDictionary;
 	private final BinaryEncodedDictionary metaData;
@@ -49,53 +50,77 @@ public class QueuedTorrentMetaData {
 				BinaryEncodingKeys.KEY_INFO_HASH)).getBytes());
 	}
 	
-	public final BinaryEncodable remove(final BinaryEncodedString keyName) {
+	public BinaryEncodable remove(final BinaryEncodedString keyName) {
 		return metaData.remove(keyName);
 	}
 	
-	public final InfoHash getInfoHash() {
+	public InfoHash getInfoHash() {
 		return infoHash;
 	}
-	
-	public final BinaryEncodedDictionary getInfoDictionary() {
-		return infoDictionary;
-	}
-	
-	public final String getAnnounceUrl() {
+
+    public boolean isSingleFile() {
+        return getSingleFileLength() != null;
+    }
+
+	public String getAnnounceUrl() {
 		final BinaryEncodedString url = (BinaryEncodedString)metaData.get(BinaryEncodingKeys.KEY_ANNOUNCE);
 		return url == null? null : url.toString();
 	}
 	
-	public final BinaryEncodedList getAnnounceList() {
+	public BinaryEncodedList getAnnounceList() {
 		final BinaryEncodedList announceList = (BinaryEncodedList)metaData.get(BinaryEncodingKeys.KEY_ANNOUNCE_LIST);
 		return announceList == null? new BinaryEncodedList() : announceList;		
 	}
 	
-	public final BinaryEncodedString getComment() {
+	public BinaryEncodedString getComment() {
 		return (BinaryEncodedString)metaData.get(BinaryEncodingKeys.KEY_COMMENT);
 	}
 	
-	public final BinaryEncodedInteger getCreationDate() {
+	public BinaryEncodedInteger getCreationDate() {
 		return (BinaryEncodedInteger)metaData.get(BinaryEncodingKeys.KEY_CREATION_DATE);
 	}
+
+    public BinaryEncodedString getCreatedBy() {
+        return (BinaryEncodedString)metaData.get(BinaryEncodingKeys.KEY_CREATED_BY);
+    }
 	
-	public final BinaryEncodedList getFiles() {
+	public BinaryEncodedList getFiles() {
 		return (BinaryEncodedList)infoDictionary.get(BinaryEncodingKeys.KEY_FILES);
 	}
+
+    public long getTotalLength() {
+        if(isSingleFile()) {
+            return getSingleFileLength().getValue();
+        }
+
+        final Iterator<BinaryEncodable> fileIterator = getFiles().iterator();
+        long length = 0;
+        while(fileIterator.hasNext()) {
+            final BinaryEncodedDictionary fileDictionary = (BinaryEncodedDictionary)fileIterator.next();
+            length += ((BinaryEncodedInteger)fileDictionary.get(
+                    BinaryEncodingKeys.KEY_LENGTH)).getValue();
+        }
+
+        return length;
+    }
 	
-	public final BinaryEncodedInteger getLength() {
-		return (BinaryEncodedInteger)infoDictionary.get(BinaryEncodingKeys.KEY_LENGTH);
-	}
-	
-	public final String getName() {
+	public String getName() {
 		return infoDictionary.get(BinaryEncodingKeys.KEY_NAME).toString();
 	}
-	
-	public final BinaryEncodedInteger getPieceLength() {
-		return (BinaryEncodedInteger)infoDictionary.get(BinaryEncodingKeys.KEY_PIECE_LENGTH);
-	}
 
-	public final byte[] toExportableValue() throws IOException {
+    public long getPieceLength() {
+        return ((BinaryEncodedInteger)infoDictionary.get(BinaryEncodingKeys.KEY_PIECE_LENGTH)).getValue();
+    }
+
+    public int getTotalPieces() {
+        return (int)Math.ceil(((double)getTotalLength()) / getPieceLength());
+    }
+
+	public byte[] toExportableValue() throws IOException {
 		return metaData.toExportableValue();
 	}
+
+    private BinaryEncodedInteger getSingleFileLength() {
+        return (BinaryEncodedInteger)infoDictionary.get(BinaryEncodingKeys.KEY_LENGTH);
+    }
 }

@@ -1,6 +1,6 @@
 /*
-* This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015 Vedran Matic
+* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
+* Copyright (C) 2015-2016 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,6 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-
 package org.matic.torrent.gui.tree;
 
 import javafx.scene.control.CheckBoxTreeItem;
@@ -29,11 +28,10 @@ import org.matic.torrent.codec.BinaryEncodedInteger;
 import org.matic.torrent.codec.BinaryEncodedList;
 import org.matic.torrent.codec.BinaryEncodingKeys;
 import org.matic.torrent.gui.image.ImageUtils;
+import org.matic.torrent.gui.model.FileTree;
 import org.matic.torrent.gui.model.TorrentFileEntry;
 import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.queue.FilePriority;
-import org.matic.torrent.queue.QueuedTorrentMetaData;
-import org.matic.torrent.queue.QueuedTorrentProgress;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -109,7 +107,7 @@ public final class FileTreeViewer {
 	/**
 	 * Handler for selection of all torrent file entries
 	 */
-	public final void selectAllEntries() {
+	public void selectAllEntries() {
 		final int selectedIndex = currentTree.getSelectionModel().getSelectedIndex();
 		currentTree.getRoot().getChildren().forEach(child -> child.getValue().selectedProperty().set(true));
 		currentTree.getSelectionModel().select(selectedIndex);
@@ -118,7 +116,7 @@ public final class FileTreeViewer {
 	/**
 	 * Handler for deselection of all torrent file entries
 	 */
-	public final void unselectAllEntries() {
+	public void unselectAllEntries() {
 		final int selectedIndex = currentTree.getSelectionModel().getSelectedIndex();
 		currentTree.getRoot().getChildren().forEach(child -> {
 			final CheckBoxTreeItem<TorrentFileEntry> checkBoxItem = (CheckBoxTreeItem<TorrentFileEntry>)child;
@@ -133,14 +131,14 @@ public final class FileTreeViewer {
 	/**
 	 * Handler for collapsing of all torrent file entries
 	 */
-	public final void collapseAll() {
+	public void collapseAll() {
 		currentTree.getRoot().getChildren().forEach(this::onCollapseFolderTree);
 	}
 	
 	/**
 	 * Handler for expansion of all torrent file entries
 	 */
-	public final void expandAll() {
+	public void expandAll() {
 		onExpandFolderTree(currentTree.getRoot());
 	}
 	
@@ -166,7 +164,7 @@ public final class FileTreeViewer {
 	/**
 	 * Handler for a tree item expansion
 	 * 
-	 * @param targetItem Expanded tree item
+	 * @param treeItem Expanded tree item
 	 */
 	protected void onExpandFolderTree(final TreeItem<TorrentFileEntry> treeItem) {		
 		if(treeItem.isLeaf()) {
@@ -231,43 +229,37 @@ public final class FileTreeViewer {
 	}
 	
 	/**
-	 * Create a file tree view from a torrent's meta data and current state
+	 * Create a file tree view from a torrent's file tree.
 	 * 
-	 * @param fileTree Action handler tree for the created view
-	 * @param metaData Torrent's meta data
-	 * @param progress Torrent's progress state
-	 * @return A view to the torrent's data
+	 * @param fileTreeView Action handler tree for the created view.
+	 * @param fileTree A bean containing the torrent's meta data and progress.
+	 * @return A view to the torrent's data.
 	 */
-	public TreeItem<TorrentFileEntry> createView(final TreeTableView<TorrentFileEntry> fileTree,
-			final QueuedTorrentMetaData metaData, final QueuedTorrentProgress progress) {						
-		currentTree = fileTree;
-		TreeItem<TorrentFileEntry> root = null;
+	public TreeItem<TorrentFileEntry> createTreeView(final TreeTableView<TorrentFileEntry> fileTreeView,
+                                                     final FileTree fileTree) {
+		currentTree = fileTreeView;
+		final TreeItem<TorrentFileEntry> root;
 		
-		if(metaData.getLength() != null) {
+		if(fileTree.isSingleFile()) {
 			//Handle single file torrent mode
-			root = buildSingleFileTree(metaData, progress);
+			root = buildSingleFileTree(fileTree);
 			
 		}
-		else if(metaData.getFiles() != null) {
-			//Handle multiple files torrent mode
-			root = buildMultiFileTree(metaData, progress);
-		}
 		else {
-			//TODO: Handle invalid torrent, no files found (show an error to the user)
-			return null;
+			//Handle multiple files torrent mode
+			root = buildMultiFileTree(fileTree);
 		}
-		
+
 		root.setExpanded(true);		
 		return root;
 	}
 	
-	private TreeItem<TorrentFileEntry> buildSingleFileTree(final QueuedTorrentMetaData metaData,
-			final QueuedTorrentProgress progress) {
-		final String fileName = metaData.getName();
-		final long fileLength = metaData.getLength().getValue();
+	private TreeItem<TorrentFileEntry> buildSingleFileTree(final FileTree fileTree) {
+		final String fileName = fileTree.getName();
+		final long fileLength = fileTree.getLength();
 		final TorrentFileEntry fileEntry = new TorrentFileEntry(fileName, ". (current path)", 
 				fileLength, true, ImageUtils.getFileTypeImage(fileName));
-		fileEntry.setPieceCount((long)Math.ceil(fileLength / metaData.getPieceLength().getValue()));
+		fileEntry.setPieceCount((long)Math.ceil(fileLength / fileTree.getPieceLength()));
 		
 		final TreeItem<TorrentFileEntry> treeItem = initTreeItem(fileEntry);		
 		final CheckBoxTreeItem<TorrentFileEntry> root = new CheckBoxTreeItem<>(new TorrentFileEntry(
@@ -280,9 +272,8 @@ public final class FileTreeViewer {
 		return root;
 	}
 	
-	private TreeItem<TorrentFileEntry> buildMultiFileTree(final QueuedTorrentMetaData metaData,
-			final QueuedTorrentProgress progress) {		
-		final String fileName = metaData.getName();
+	private TreeItem<TorrentFileEntry> buildMultiFileTree(final FileTree fileTree) {
+		final String fileName = fileTree.getName();
 		final TorrentFileEntry fileDirEntry = new TorrentFileEntry(fileName, ". (current path)", 0L, true, null);					
 		final CheckBoxTreeItem<TorrentFileEntry> fileDirTreeItem = new CheckBoxTreeItem<>(fileDirEntry);
 		final TorrentEntryNode<TreeItem<TorrentFileEntry>> fileDirNode = new TorrentEntryNode<>(fileName, fileDirTreeItem);
@@ -292,7 +283,7 @@ public final class FileTreeViewer {
 		long fileLengthRead = 0;
 		
 		//Iterate through all the files contained by this torrent
-		final Iterator<BinaryEncodable> fileIterator = metaData.getFiles().iterator();
+		final Iterator<BinaryEncodable> fileIterator = fileTree.getFiles().iterator();
 		while(fileIterator.hasNext()) {
 			final BinaryEncodedDictionary fileDictionary = (BinaryEncodedDictionary)fileIterator.next();																
 			final long fileLength = ((BinaryEncodedInteger)fileDictionary.get(
@@ -327,9 +318,9 @@ public final class FileTreeViewer {
 			final TorrentFileEntry fileEntry = new TorrentFileEntry(leafName, pathBuilder.toString(), 
 					fileLength, false, ImageUtils.getFileTypeImage(leafName));
 			
-			fileEntry.setFirstPiece((long)Math.floor(fileLengthRead / metaData.getPieceLength().getValue()));
+			fileEntry.setFirstPiece((long)Math.floor(fileLengthRead / fileTree.getPieceLength()));
 			fileLengthRead += fileLength;
-			fileEntry.setPieceCount((long)Math.ceil(fileLength / metaData.getPieceLength().getValue()));
+			fileEntry.setPieceCount((long)Math.ceil(fileLength / fileTree.getPieceLength()));
 			
 			final TreeItem<TorrentFileEntry> treeItem = initTreeItem(fileEntry);
 			currentNode.getData().getChildren().add(treeItem);

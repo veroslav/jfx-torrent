@@ -1,6 +1,6 @@
 /*
-* This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015 Vedran Matic
+* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
+* Copyright (C) 2015-2016 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -51,12 +51,12 @@ public final class BinaryDecoder {
 		}
 	}
 	
-	public final BinaryEncodedDictionary decode(final InputStream input) 
+	public BinaryEncodedDictionary decode(final InputStream input)
 			throws IOException, BinaryDecoderException {
 		return decodeFromStream(new BufferedInputStream(input));
 	}
 	
-	public final BinaryEncodedDictionary decodeGzip(final InputStream input) 
+	public BinaryEncodedDictionary decodeGzip(final InputStream input)
 			throws IOException, BinaryDecoderException {
 		return decodeFromStream(new BufferedInputStream(new GZIPInputStream(input)));
 	}

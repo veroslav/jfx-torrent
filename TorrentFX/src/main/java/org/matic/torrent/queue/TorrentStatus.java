@@ -20,14 +20,6 @@
 
 package org.matic.torrent.queue;
 
-public interface QueuedTorrentStatusChangeListener {
-
-    /**
-     * Notify all of the interested listeners when a torrent's status changes.
-     *
-     * @param torrent Target torrent
-     * @param oldStatus Previous status
-     * @param newStatus Current status
-     */
-    void stateChanged(QueuedTorrent torrent, QueuedTorrent.State oldStatus, QueuedTorrent.State newStatus);
+public enum TorrentStatus {
+    ACTIVE, STOPPED, ERROR
 }

@@ -77,6 +77,12 @@
     -fx-background-color: #5C8526;
 }
 
+.info-pane-category-label {
+	-fx-background-color: #47484B;
+    -fx-border-color: black;
+    -fx-text-fill: -primary-text-color;
+}
+
 .menu-bar .menu-item:focused,
 .context-menu .menu-item:focused {
 	-fx-background-color: #046293;
