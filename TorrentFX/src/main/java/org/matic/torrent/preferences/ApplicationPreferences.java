@@ -1,6 +1,6 @@
 /*
-* This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015 Vedran Matic
+* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
+* Copyright (C) 2015-2016 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@ package org.matic.torrent.preferences;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.prefs.PreferenceChangeListener;
 import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
 
@@ -38,6 +39,24 @@ public final class ApplicationPreferences {
 	
 	//Prevent instantiation of this class
 	private ApplicationPreferences() {}
+	
+	/**
+	 * Add a listener to be notified when a value of a property changes.
+	 * 
+	 * @param listener Target listener
+	 */
+	public static void addPreferenceChangeListener(final PreferenceChangeListener listener) {
+		PREFERENCES.addPreferenceChangeListener(listener);
+	}
+	
+	/**
+	 * Remove previously added property value change listener.
+	 * 
+	 * @param listener Target listener
+	 */
+	public static void removePreferenceChangeListener(final PreferenceChangeListener listener) {
+		PREFERENCES.removePreferenceChangeListener(listener);
+	}
 	
 	/**
 	 * Get a boolean value of an application property

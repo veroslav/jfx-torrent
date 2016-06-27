@@ -27,6 +27,8 @@ import javafx.stage.Window;
 import org.matic.torrent.gui.model.TrackerView;
 import org.matic.torrent.gui.table.TrackerTable;
 import org.matic.torrent.hash.InfoHash;
+import org.matic.torrent.preferences.ApplicationPreferences;
+import org.matic.torrent.preferences.GuiProperties;
 import org.matic.torrent.queue.QueuedTorrentManager;
 import org.matic.torrent.tracking.Tracker;
 import org.matic.torrent.tracking.TrackerManager;
@@ -82,20 +84,25 @@ public final class TrackerTableActionHandler {
 		if(trackerViews.isEmpty()) {
 			return;
 		}
-		
-		final StringBuilder warningMessage = new StringBuilder("Do you really want to delete selected tracker");
-		if(trackerViews.size() > 1) {
-			warningMessage.append("s");
+		final boolean confirmTrackerDeletion = ApplicationPreferences.getProperty(
+				GuiProperties.DELETE_TRACKER_CONFIRMATION, true);
+		boolean shouldDeleteTracker = false;
+		if(confirmTrackerDeletion) {
+			final StringBuilder warningMessage = new StringBuilder("Do you really want to delete selected tracker");
+			if(trackerViews.size() > 1) {
+				warningMessage.append("s");
+			}
+			warningMessage.append("?");
+			
+			final Alert deleteTrackerAlert = new Alert(AlertType.WARNING, warningMessage.toString(),
+							ButtonType.OK, ButtonType.CANCEL);
+			deleteTrackerAlert.initOwner(owner);
+			deleteTrackerAlert.setTitle("Delete tracker");
+			deleteTrackerAlert.setHeaderText(null);
+			final Optional<ButtonType> selectedButton = deleteTrackerAlert.showAndWait();
+			shouldDeleteTracker = selectedButton.isPresent() && selectedButton.get() == ButtonType.OK;			
 		}
-		warningMessage.append("?");
-		
-		final Alert deleteTrackerAlert = new Alert(AlertType.WARNING, warningMessage.toString(),
-						ButtonType.OK, ButtonType.CANCEL);
-		deleteTrackerAlert.initOwner(owner);
-		deleteTrackerAlert.setTitle("Delete tracker");
-		deleteTrackerAlert.setHeaderText(null);
-		final Optional<ButtonType> selectedButton = deleteTrackerAlert.showAndWait();
-		if(selectedButton.isPresent() && selectedButton.get() == ButtonType.OK) {			
+		if(!confirmTrackerDeletion || shouldDeleteTracker) {
 			trackerViews.forEach(tv -> {
 				final boolean removed = trackerManager.removeTracker(tv.getTrackerName(), tv.getTorrent());
 				if(removed) {

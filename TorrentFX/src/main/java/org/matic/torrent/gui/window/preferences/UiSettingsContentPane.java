@@ -1,6 +1,6 @@
 /*
-* This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015 Vedran Matic
+* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
+* Copyright (C) 2015-2016 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,6 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-
 package org.matic.torrent.gui.window.preferences;
 
 import javafx.beans.property.BooleanProperty;
@@ -40,7 +39,7 @@ import org.matic.torrent.preferences.ApplicationPreferences;
 import org.matic.torrent.preferences.GuiProperties;
 import org.matic.torrent.preferences.TransferProperties;
 
-public class UISettingsContentPane extends CategoryContentPane {
+public final class UiSettingsContentPane extends CategoryContentPane {
 	
 	private static final String UI_SETTINGS_CONTENT_PANE_NAME = "UI Settings";
 		
@@ -71,7 +70,7 @@ public class UISettingsContentPane extends CategoryContentPane {
 	private final ComboBox<DownloadingTorrentClickAction> downloadingTorrentOptionsComboBox = new ComboBox<>();
 	private final ComboBox<SeedingTorrentClickAction> seedingTorrentOptionsComboBox = new ComboBox<>();
 	
-	public UISettingsContentPane(final BooleanProperty preferencesChanged) {
+	public UiSettingsContentPane(final BooleanProperty preferencesChanged) {
 		super(UI_SETTINGS_CONTENT_PANE_NAME, preferencesChanged);
 		initComponents(preferencesChanged);
 	}
@@ -82,7 +81,7 @@ public class UISettingsContentPane extends CategoryContentPane {
 	}
 
 	@Override
-	public final void onSaveContentChanges() {
+	public void onSaveContentChanges() {
 		if(preferencesChanged.get()) {
 			//Save check box values
 			ApplicationPreferences.setProperty(GuiProperties.DELETE_TORRENT_CONFIRMATION,

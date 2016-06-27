@@ -40,7 +40,7 @@ public final class AvailabilityBar extends Canvas {
 	
 	public AvailabilityBar() {
 		this.widthProperty().addListener(obs -> update(availability));
-		this.heightProperty().addListener(obs -> update(availability));
+		this.heightProperty().addListener(obs -> update(availability));		
 	}
 	
 	@Override
@@ -58,12 +58,9 @@ public final class AvailabilityBar extends Canvas {
 		return true;
 	}
 
-	public void update(final AvailabilityView availability) {		
-		//Clear everything and apply background color
+	public void update(final AvailabilityView availability) {	
+		this.availability = availability;
 		final GraphicsContext context = this.getGraphicsContext2D();
-		context.clearRect(0, 0, this.getWidth(), this.getHeight());
-		context.setFill(Color.LIGHTGRAY);
-		context.fillRect(0, 0, this.getWidth(), this.getHeight());		
 		
 		//Draw a 3D effect around the bar
 		context.setFill(Color.DARKGRAY);

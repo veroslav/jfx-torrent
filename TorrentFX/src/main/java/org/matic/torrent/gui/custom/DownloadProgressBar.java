@@ -27,6 +27,7 @@ import org.matic.torrent.gui.model.AvailabilityView;
 
 public final class DownloadProgressBar extends Canvas {
 	
+	private static final Color DOWNLOADED_PIECE_COLOR = Color.rgb(171, 214, 121);
 	private static final Color PROGRESSBAR_COLOR = Color.rgb(80, 80, 255);
 	
 	private AvailabilityView availabilityView = null;
@@ -53,12 +54,7 @@ public final class DownloadProgressBar extends Canvas {
 	
 	public void update(final AvailabilityView availabilityView) {		
 		this.availabilityView = availabilityView;
-		
-		//Clear everything and apply background color
-		final GraphicsContext context = this.getGraphicsContext2D();
-		context.clearRect(0, 0, this.getWidth(), this.getHeight());
-		context.setFill(Color.LIGHTGRAY);
-		context.fillRect(0, 0, this.getWidth(), this.getHeight());
+		final GraphicsContext context = this.getGraphicsContext2D();		
 		
 		//Draw a 3D effect around the bar
 		context.setFill(Color.DARKGRAY);
@@ -75,13 +71,24 @@ public final class DownloadProgressBar extends Canvas {
 	
 	private void drawProgressBar(final GraphicsContext context) {
 		final double barWidth = availabilityView == null? 0 :
-			(((double)availabilityView.getHavePieces()) / availabilityView.getTotalPieces()) * (this.getWidth() - 1);
+			(((double)availabilityView.getHavePiecesCount()) / availabilityView.getTotalPieces()) * (this.getWidth() - 1);
 		
 		context.setFill(PROGRESSBAR_COLOR);
 		context.fillRect(1, 1, barWidth, 5);
 	}
 	
 	private void drawAvailabilityBar(final GraphicsContext context) {
-		//TODO: Implement method
+		if(availabilityView == null) {
+			return;
+		}
+		final double pieceWidth = (this.getWidth() - 2) / availabilityView.getTotalPieces();
+		
+		context.setFill(DOWNLOADED_PIECE_COLOR);
+		double xOffset = 1;
+		for(int j = 0; j < availabilityView.getLastHaveIndex(); xOffset += pieceWidth, ++j) {
+			if(availabilityView.getHave(j)) {
+				context.fillRect(xOffset, 7, pieceWidth, this.getHeight() - 1);
+			}
+		}
 	}
 }

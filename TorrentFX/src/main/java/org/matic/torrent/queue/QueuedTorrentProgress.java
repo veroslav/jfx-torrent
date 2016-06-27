@@ -26,7 +26,7 @@ import org.matic.torrent.codec.BinaryEncodedString;
 import org.matic.torrent.codec.BinaryEncodingKeys;
 
 import java.io.IOException;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 public final class QueuedTorrentProgress {
@@ -55,7 +55,7 @@ public final class QueuedTorrentProgress {
 		final BinaryEncodedList trackerList = (BinaryEncodedList)torrentState.get(
 				BinaryEncodingKeys.KEY_ANNOUNCE_LIST);
 		
-		final Set<String> trackerUrls = new HashSet<>();
+		final Set<String> trackerUrls = new LinkedHashSet<>();
 		
 		if(trackerList != null && trackerList.size() > 0) {			
 			trackerList.stream().forEach(t -> trackerUrls.add(t.toString()));

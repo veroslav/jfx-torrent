@@ -26,6 +26,7 @@ import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import org.matic.torrent.gui.GuiUtils;
 import org.matic.torrent.gui.model.AvailabilityView;
@@ -79,9 +80,9 @@ public final class InfoPane extends VBox {
 		initComponents();
 	}
 	
-	public void update(final TorrentView torrentView) {
+	public void setContent(final TorrentView torrentView) {
         if(torrentView != null) {
-            final AvailabilityView availabilityView = torrentView.getAvailabilityView();
+            final AvailabilityView availabilityView = torrentView.getAvailabilityView();        	        	
             availabilityBar.update(availabilityView);
             downloadProgress.update(availabilityView);
         }
@@ -99,7 +100,7 @@ public final class InfoPane extends VBox {
 		totalSizeValueLabel.setText(clear? "" : UnitConverter.formatByteCount(torrentView.getTotalLength())
 				+ " (" + UnitConverter.formatByteCount(torrentView.getDownloadedBytes()) + " done)");
 
-        final Long creationTime = torrentView.getCreationTime();
+        final Long creationTime = clear? 0 : torrentView.getCreationTime();
 		createdOnValueLabel.setText(clear || creationTime == null? "" : UnitConverter.formatMillisToDate(
                 creationTime, TimeZone.getDefault()));
 		addedOnValueLabel.setText(clear? "" : UnitConverter.formatMillisToDate(
@@ -160,15 +161,21 @@ public final class InfoPane extends VBox {
 		VBox.setVgrow(labelPane, Priority.ALWAYS);
 	}
 	
-	private Node buildProgressBarPanes() {		
+	private Node buildProgressBarPanes() {	
+		final StackPane availabilityBarHolder = new StackPane(availabilityBar);
+		availabilityBarHolder.getStyleClass().add("availability-bar");
+		
 		final Pane availabilityPane = new Pane();
-		availabilityPane.getChildren().add(availabilityBar);
+		availabilityPane.getChildren().add(availabilityBarHolder);
 		availabilityBar.widthProperty().bind(availabilityPane.widthProperty());
 		availabilityBar.heightProperty().bind(availabilityPane.heightProperty());
 		availabilityPane.setMinHeight(25);
 		
+		final StackPane downloadProgressBarHolder = new StackPane(downloadProgress);
+		downloadProgressBarHolder.getStyleClass().add("availability-bar");
+		
 		final Pane downloadProgressPane = new Pane();
-		downloadProgressPane.getChildren().add(downloadProgress);
+		downloadProgressPane.getChildren().add(downloadProgressBarHolder);
 		downloadProgress.widthProperty().bind(downloadProgressPane.widthProperty());
 		downloadProgress.heightProperty().bind(downloadProgressPane.heightProperty());
 		downloadProgressPane.setMinHeight(25);
@@ -177,11 +184,11 @@ public final class InfoPane extends VBox {
 		
 		final Label downloadedValueLabel = new Label("0.0 %");
 		downloadedValueLabel.setPadding(labelInsets);
-        downloadedValueLabel.setPrefWidth(70);
+        downloadedValueLabel.setMinWidth(70);
 		
 		final Label availabilityValueLabel = new Label("0.000");
 		availabilityValueLabel.setPadding(labelInsets);
-        availabilityValueLabel.setPrefWidth(70);
+        availabilityValueLabel.setMinWidth(70);
 
         final Label downloadedLabel = new Label("Downloaded: ");
         downloadedLabel.setPadding(GuiUtils.leftPadding());

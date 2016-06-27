@@ -1,6 +1,6 @@
 /*
-* This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015 Vedran Matic
+* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
+* Copyright (C) 2015-2016 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -115,7 +115,7 @@ public abstract class Tracker {
 		this.lastResponse.set(lastResponse);
 	}
 	
-	public final long getLastScrape() {
+	public long getLastScrape() {
 		return lastScrape.get();
 	}
 
@@ -123,11 +123,11 @@ public abstract class Tracker {
 		this.lastScrape.set(lastScrape);
 	}
 	
-	public final int getScrapeTransactionId() {
+	public int getScrapeTransactionId() {
 		return scrapeTransactionId.get();
 	}
 	
-	public final void setScrapeTransactionId(final int scrapeTransactionId) {
+	public void setScrapeTransactionId(final int scrapeTransactionId) {
 		this.scrapeTransactionId.set(scrapeTransactionId);
 	}
 

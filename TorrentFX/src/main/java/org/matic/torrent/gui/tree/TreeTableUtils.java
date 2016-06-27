@@ -1,6 +1,6 @@
 /*
-* This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015 Vedran Matic
+* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
+* Copyright (C) 2015-2016 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,6 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-
 package org.matic.torrent.gui.tree;
 
 import javafx.beans.property.ReadOnlyObjectWrapper;
@@ -53,7 +52,7 @@ import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-public class TreeTableUtils {
+public final class TreeTableUtils {
 
 	private static final String FIRST_PIECE_COLUMN_NAME = "First Piece";
 	private static final String PIECE_COUNT_COLUMN_NAME = "#Pieces";
@@ -94,7 +93,7 @@ public class TreeTableUtils {
 			columnMappings.put(DONE_COLUMN_NAME, buildSimpleLongValueColumn(DONE_COLUMN_NAME, "done",
 					GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, GuiUtils.rightPadding(),
 							tfe -> UnitConverter.formatByteCount(tfe.doneProperty().get())));
-			columnMappings.put(FIRST_PIECE_COLUMN_NAME,buildSimpleLongValueColumn(FIRST_PIECE_COLUMN_NAME, "firstPiece",
+			columnMappings.put(FIRST_PIECE_COLUMN_NAME, buildSimpleLongValueColumn(FIRST_PIECE_COLUMN_NAME, "firstPiece",
 							GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, GuiUtils.rightPadding(),
 							tfe -> String.valueOf(tfe.firstPieceProperty().get())));
 			columnMappings.put(PIECE_COUNT_COLUMN_NAME, buildSimpleLongValueColumn(

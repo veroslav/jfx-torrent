@@ -50,7 +50,7 @@ public final class ImageUtils {
 	public static final String SIDEBAR_LABEL_ICON_LOCATION = "/icons/sidebar_label.png";
 	public static final String SIDEBAR_RSS_ICON_LOCATION = "/icons/sidebar_rss.png";
 	
-	public static final String FOLDER_OPEN_ICON_LOCATION = "/icons/toolbar_open.png";
+	public static final String FOLDER_OPEN_ICON_LOCATION = "/icons/folder_opened.png";
 	public static final String FOLDER_CLOSED_ICON_LOCATION = "/icons/folder_closed.png";
 	public static final String PAUSE_ICON_LOCATION = "/icons/toolbar_pause.png";
 	public static final String LOCK_ICON_LOCATION = "/icons/toolbar_unlock.png";
@@ -85,9 +85,9 @@ public final class ImageUtils {
 
 	//Folder opened/closed images
 	public static final Image FOLDER_CLOSED_IMAGE = new Image(
-			ApplicationWindow.class.getResourceAsStream("/themes/dark" + FOLDER_CLOSED_ICON_LOCATION));
+			ApplicationWindow.class.getResourceAsStream(FOLDER_CLOSED_ICON_LOCATION));
 	public static final Image FOLDER_OPENED_IMAGE = new Image(
-			ApplicationWindow.class.getResourceAsStream("/themes/dark" + FOLDER_OPEN_ICON_LOCATION));
+			ApplicationWindow.class.getResourceAsStream(FOLDER_OPEN_ICON_LOCATION));
 	
 	//Filter list category images
 	public static final Image DOWNLOADS_IMAGE = new Image(

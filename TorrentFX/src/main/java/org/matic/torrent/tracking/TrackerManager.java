@@ -55,6 +55,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -69,9 +70,11 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.prefs.PreferenceChangeEvent;
+import java.util.prefs.PreferenceChangeListener;
 import java.util.stream.Collectors;
 
-public final class TrackerManager implements TrackerResponseListener, UdpTrackerResponseListener {
+public final class TrackerManager implements TrackerResponseListener, UdpTrackerResponseListener, PreferenceChangeListener {
 	
 	public static final int DEFAULT_REQUEST_SCHEDULER_POOL_SIZE = 1;
 	
@@ -229,8 +232,14 @@ public final class TrackerManager implements TrackerResponseListener, UdpTracker
 		onUdpTrackerError(response);
 	}
 	
-	//TODO: Add method issueScrape(final Tracker tracker)	
-	
+	/**
+	 * @see PreferenceChangeListener#preferenceChange(PreferenceChangeEvent)
+	 */
+	@Override
+	public void preferenceChange(final PreferenceChangeEvent event) {
+	    //TODO: Implement method
+	}
+
 	/**
 	 * Issue an announce to a tracker when the torrent state changes
 	 * 
@@ -298,7 +307,7 @@ public final class TrackerManager implements TrackerResponseListener, UdpTracker
 		final TrackerSessionView trackerSessionView = new TrackerSessionView(trackerSession);
 		
 		synchronized(trackerSessions) {		
-			trackerSessions.putIfAbsent(torrent, new HashSet<>());
+			trackerSessions.putIfAbsent(torrent, new LinkedHashSet<>());
 			trackerSessions.compute(torrent, (key, sessions) -> {
 				sessions.add(trackerSession);
 				return sessions;
@@ -357,7 +366,7 @@ public final class TrackerManager implements TrackerResponseListener, UdpTracker
 	public int removeTorrent(final QueuedTorrent torrent) {		
 		synchronized(trackerSessions) {		
 			//Check if any tracked torrents match supplied info hash
-			final Set<TrackerSession> matchList = trackerSessions.remove(torrent);			
+			final Set<TrackerSession> matchList = trackerSessions.remove(torrent);
 			return stopSessions(matchList);					
 		}
 	}

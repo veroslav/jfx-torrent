@@ -81,11 +81,11 @@ public final class HttpTracker extends Tracker {
 		scrapeUrl = scrapeSupported? url.replace(REQUEST_TYPE_ANNOUNCE, REQUEST_TYPE_SCRAPE) : null;
 	}
 	
-	public final void addListener(final TrackerResponseListener listener) {
+	public void addListener(final TrackerResponseListener listener) {
 		listeners.add(listener);
 	}
 	
-	public final void removeListener(final TrackerResponseListener listener) {
+	public void removeListener(final TrackerResponseListener listener) {
 		listeners.remove(listener);
 	}
 	
@@ -105,7 +105,7 @@ public final class HttpTracker extends Tracker {
 	 * @see Tracker#scrape(TrackerSession...)
 	 */
 	@Override
-	protected final void scrape(final TrackerSession... trackerSessions) {
+	protected void scrape(final TrackerSession... trackerSessions) {
 		if(trackerSessions.length == 0) {
 			return;
 		}
@@ -135,7 +135,7 @@ public final class HttpTracker extends Tracker {
 	 * @see Tracker#getType()
 	 */
 	@Override
-	public final Type getType() {
+	public Type getType() {
 		return Type.TCP;
 	}
 	
@@ -160,7 +160,7 @@ public final class HttpTracker extends Tracker {
 	 * @see Tracker#announce(AnnounceParameters, TrackerSession)
 	 */
 	@Override
-	protected final void announce(final AnnounceParameters announceParameters, final TrackerSession trackerSession) {		
+	protected void announce(final AnnounceParameters announceParameters, final TrackerSession trackerSession) {		
 		final String requestUrl = buildAnnounceRequestUrl(announceParameters,
 				trackerSession.getInfoHash(), trackerSession.getKey());
 		final TrackerResponse trackerResponse = requestUrl == null? new TrackerResponse(
@@ -229,9 +229,7 @@ public final class HttpTracker extends Tracker {
 		result.append(announceParameters.getDownloaded());
 		result.append("&left=");
 		result.append(announceParameters.getLeft());
-		result.append("&corrupt=0");
-		
-		result.append("&key=");
+		result.append("&corrupt=0&key=");		
 		result.append(Integer.toHexString(key));
 		
 		final Event trackerEvent = announceParameters.getTrackerEvent();
@@ -255,12 +253,13 @@ public final class HttpTracker extends Tracker {
 		try {			
 			final URL targetUrl = new URL(url);
 			
-			HttpURLConnection.setFollowRedirects(false);
+			//HttpURLConnection.setFollowRedirects(false);
 			final HttpURLConnection connection = (HttpURLConnection)targetUrl.openConnection();			
 			connection.setRequestProperty(NetworkUtilities.HTTP_ACCEPT_CHARSET, StandardCharsets.UTF_8.name());
 			connection.setRequestProperty(NetworkUtilities.HTTP_USER_AGENT_NAME, NetworkUtilities.getHttpUserAgent());			
 			connection.setRequestProperty(NetworkUtilities.HTTP_ACCEPT_ENCODING, NetworkUtilities.HTTP_GZIP_ENCODING);
 			connection.setConnectTimeout(NetworkUtilities.HTTP_CONNECTION_TIMEOUT);
+			connection.setInstanceFollowRedirects(false);
 			
 			final int responseCode = connection.getResponseCode();
 			

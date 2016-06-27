@@ -30,7 +30,7 @@ import org.matic.torrent.tracking.beans.TrackerSessionView;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -108,7 +108,7 @@ public final class QueuedTorrentManager {
 		synchronized(queuedTorrents) {
             final Optional<QueuedTorrent> torrent = match(metaData.getInfoHash());
             final Set<String> trackerUrls = progress.getTrackerUrls();
-            final Set<TrackerSessionView> trackerSessionViews = new HashSet<>();
+            final Set<TrackerSessionView> trackerSessionViews = new LinkedHashSet<>();
             final QueuedTorrent matchedTorrent;
 
             if (!torrent.isPresent()) {
@@ -127,8 +127,8 @@ public final class QueuedTorrentManager {
                 //Merge trackers, the torrent already exists
                 matchedTorrent = torrent.get();
                 final BinaryEncodedList announceList = matchedTorrent.getMetaData().getAnnounceList();
-                final Set<BinaryEncodedString> newUrls = trackerUrls.stream().map(BinaryEncodedString::new).filter(
-                        url -> !announceList.contains(url)).collect(Collectors.toSet());
+                final List<BinaryEncodedString> newUrls = trackerUrls.stream().map(BinaryEncodedString::new).filter(
+                        url -> !announceList.contains(url)).collect(Collectors.toList());
                 trackerSessionViews.addAll(newUrls.stream().map(url -> {
                     announceList.add(url);
                     return trackerManager.addTracker(url.getValue(), matchedTorrent);

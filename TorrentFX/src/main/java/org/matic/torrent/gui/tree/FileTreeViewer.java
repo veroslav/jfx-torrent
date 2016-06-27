@@ -318,9 +318,9 @@ public final class FileTreeViewer {
 			final TorrentFileEntry fileEntry = new TorrentFileEntry(leafName, pathBuilder.toString(), 
 					fileLength, false, ImageUtils.getFileTypeImage(leafName));
 			
-			fileEntry.setFirstPiece((long)Math.floor(fileLengthRead / fileTree.getPieceLength()));
+			fileEntry.setFirstPiece((long)Math.floor(((double)fileLengthRead) / fileTree.getPieceLength()));
 			fileLengthRead += fileLength;
-			fileEntry.setPieceCount((long)Math.ceil(fileLength / fileTree.getPieceLength()));
+			fileEntry.setPieceCount((long)Math.ceil(((double)fileLength) / fileTree.getPieceLength()));
 			
 			final TreeItem<TorrentFileEntry> treeItem = initTreeItem(fileEntry);
 			currentNode.getData().getChildren().add(treeItem);

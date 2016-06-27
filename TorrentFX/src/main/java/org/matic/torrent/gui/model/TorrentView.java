@@ -29,7 +29,7 @@ import org.matic.torrent.queue.QueuedTorrentMetaData;
 import org.matic.torrent.queue.TorrentStatus;
 import org.matic.torrent.tracking.beans.TrackerSessionView;
 
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 public final class TorrentView {
@@ -66,7 +66,7 @@ public final class TorrentView {
     private long completionTime;
     private long havePieces;
 
-    private final Set<TrackerSessionView> trackerSessionViews = new HashSet<>();
+    private final Set<TrackerSessionView> trackerSessionViews = new LinkedHashSet<>();
 
 	public TorrentView(final QueuedTorrent queuedTorrent) {
 		this.priority = new SimpleIntegerProperty(0);

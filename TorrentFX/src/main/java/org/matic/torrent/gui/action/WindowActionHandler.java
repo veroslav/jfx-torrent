@@ -90,7 +90,8 @@ public final class WindowActionHandler {
 	 * @return Whether the user chose to really quit
 	 */
 	public boolean onWindowClose(final Event event, final Window owner) {
-		final boolean isClosed = handleWindowClosing(owner);
+		final boolean showConfirmAlert = ApplicationPreferences.getProperty(GuiProperties.EXIT_CONFIRMATION, true);
+		final boolean isClosed = !showConfirmAlert || handleWindowClosing(owner);
         
         if(!isClosed) {
             //User cancelled quit action, don't do anything

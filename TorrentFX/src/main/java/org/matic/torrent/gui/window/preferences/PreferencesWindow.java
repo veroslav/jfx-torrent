@@ -71,7 +71,7 @@ public final class PreferencesWindow {
 	public PreferencesWindow(final Window owner, final FileActionHandler fileActionHandler) {
 		optionGroupMappings = new HashMap<>();
 		
-		categoryContentPanes[0] = new UISettingsContentPane(preferencesChanged);
+		categoryContentPanes[0] = new UiSettingsContentPane(preferencesChanged);
 		categoryContentPanes[1] = new DirectoriesContentPane(owner, fileActionHandler, preferencesChanged);
 		categoryContentPanes[2] = new BitTorrentContentPane(preferencesChanged);
 		categoryContentPanes[3] = new UiExtrasContentPane(preferencesChanged, owner.getScene());

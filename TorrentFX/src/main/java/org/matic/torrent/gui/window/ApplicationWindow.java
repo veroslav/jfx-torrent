@@ -180,7 +180,7 @@ public final class ApplicationWindow {
 	private final Map<String, Tab> detailsTabMap = new HashMap<>();
 	
 	//A service that periodically executes actions (such as GUI update)
-	private final PeriodicTaskRunner periodicTaskRunner = new PeriodicTaskRunner();
+	private final PeriodicTaskRunner guiUpdateTaskRunner = new PeriodicTaskRunner();
 	
 	//The manager for handling queued torrents states
 	private final QueuedTorrentManager queuedTorrentManager;
@@ -296,9 +296,9 @@ public final class ApplicationWindow {
 		
 		final PeriodicTask periodicTask = new PeriodicTask(() -> Platform.runLater(this::updateGui), guiUpdateInterval);
 		
-		periodicTaskRunner.addTask(periodicTask);		
-		periodicTaskRunner.setPeriod(Duration.seconds(1));		
-		periodicTaskRunner.start();
+		guiUpdateTaskRunner.addTask(periodicTask);		
+		guiUpdateTaskRunner.setPeriod(Duration.seconds(1));		
+		guiUpdateTaskRunner.start();
 	}
 	
 	private void updateGui() {					
@@ -324,7 +324,7 @@ public final class ApplicationWindow {
 					TreeTableUtils.sort(fileContentTree);
 					break;
 				case GuiProperties.INFO_TAB_ID:
-					infoPane.update(selectedTorrents.get(selectedTorrents.size() - 1));
+					infoPane.setContent(selectedTorrents.get(selectedTorrents.size() - 1));
 					break;
 				}				
 			}			
@@ -816,18 +816,24 @@ public final class ApplicationWindow {
 		final ObservableList<TorrentView> selectedTorrentJobs = torrentViewTable.getSelectedJobs();
 		
 		if(selectedTorrentJobs.size() > 0) {
-			final Alert confirmDeleteAlert = new Alert(AlertType.WARNING,
-					"Are you sure you want to delete selected torrent(s)?",
-							ButtonType.OK, ButtonType.CANCEL);
-			confirmDeleteAlert.initOwner(stage);
-			confirmDeleteAlert.setTitle("Delete torrent");
-			confirmDeleteAlert.setHeaderText(null);
-			final Optional<ButtonType> answer = confirmDeleteAlert.showAndWait();
-			if(answer.isPresent() && answer.get() == ButtonType.OK) {			
+			final boolean showConfirmAlert = ApplicationPreferences.getProperty(
+					GuiProperties.DELETE_TORRENT_CONFIRMATION, true);
+			boolean torrentDeletionConfirmed = false;
+			if(showConfirmAlert) {
+				final Alert confirmDeleteAlert = new Alert(AlertType.WARNING,
+						"Are you sure you want to delete selected torrent(s)?",
+								ButtonType.OK, ButtonType.CANCEL);
+				confirmDeleteAlert.initOwner(stage);
+				confirmDeleteAlert.setTitle("Delete torrent");
+				confirmDeleteAlert.setHeaderText(null);
+				final Optional<ButtonType> answer = confirmDeleteAlert.showAndWait();
+				torrentDeletionConfirmed = answer.isPresent() && answer.get() == ButtonType.OK;				
+			}
+			if(!showConfirmAlert || torrentDeletionConfirmed) {
 				selectedTorrentJobs.stream().map(
 						TorrentView::getInfoHash).forEach(t -> {
 							try {
-                                queuedTorrentManager.remove(t);
+	                            queuedTorrentManager.remove(t);
 							} catch (final IOException ioe) {
 								final Alert deleteErrorAlert = new Alert(AlertType.ERROR,
 										"Failed to delete torrent from the disk.", ButtonType.OK);
@@ -836,19 +842,19 @@ public final class ApplicationWindow {
 								deleteErrorAlert.setHeaderText(null);
 								deleteErrorAlert.showAndWait();
 							}
-						});
+						});			
 				torrentViewTable.deleteJobs(selectedTorrentJobs);
 				final ObservableList<TorrentView> newSelection = torrentViewTable.getSelectedJobs();
 				if(newSelection.isEmpty()) {
 					fileTreeViewer.hide();
-                    infoPane.update(null);
+	                infoPane.setContent(null);
 					trackerTable.setContent(FXCollections.emptyObservableList());
 				}
 				else {
 					final TorrentView selectedJob = newSelection.get(0);
 					fileTreeViewer.show(selectedJob.getInfoHash());
 					torrentViewTable.selectJob(selectedJob);
-                    infoPane.update(selectedJob);
+                    infoPane.setContent(selectedJob);
 				}
 			}
 		}
@@ -862,6 +868,7 @@ public final class ApplicationWindow {
 		if(torrentSelected) {		
 			fileTreeViewer.show(selectedTorrentView.getInfoHash());
 			trackerTable.setContent(trackerViewMappings.get(selectedTorrentView.getInfoHash()));
+            infoPane.setContent(selectedTorrentView);
 			updateGui();
 		}
 		toolbarButtonsMap.get(ImageUtils.DOWNLOAD_ICON_LOCATION).setDisable(!torrentSelected ||
@@ -995,19 +1002,12 @@ public final class ApplicationWindow {
 				GuiProperties.DEFAULT_INFO_TAB_COLUMN_ORDER);
 	}
 	
-	private void storeTorrentProgress() {
-		//TODO: Implement method
-	}
-	
 	private void onShutdown(final Event event) {
 		final boolean isShuttingDown = windowActionHandler.onWindowClose(event, stage);
 		
 		if(isShuttingDown) {
 			//Stop updating periodic tasks
-			periodicTaskRunner.cancel();
-			
-			//Save progress state for all torrents
-			storeTorrentProgress();
+			guiUpdateTaskRunner.cancel();
 			
 			//Store any changes to window components
 			storeWindowChanges();
