@@ -19,6 +19,22 @@
 */
 package org.matic.torrent.gui.tree;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
+
+import org.matic.torrent.gui.GuiUtils;
+import org.matic.torrent.gui.image.ImageUtils;
+import org.matic.torrent.gui.model.TorrentFileEntry;
+import org.matic.torrent.gui.table.TableState;
+import org.matic.torrent.gui.table.TableUtils;
+import org.matic.torrent.preferences.CssProperties;
+import org.matic.torrent.preferences.GuiProperties;
+import org.matic.torrent.queue.FilePriority;
+import org.matic.torrent.utils.UnitConverter;
+
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -36,21 +52,6 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
-import org.matic.torrent.gui.GuiUtils;
-import org.matic.torrent.gui.image.ImageUtils;
-import org.matic.torrent.gui.model.TorrentFileEntry;
-import org.matic.torrent.gui.table.TableState;
-import org.matic.torrent.gui.table.TableUtils;
-import org.matic.torrent.preferences.CssProperties;
-import org.matic.torrent.preferences.GuiProperties;
-import org.matic.torrent.queue.FilePriority;
-import org.matic.torrent.utils.UnitConverter;
-
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
 
 public final class TreeTableUtils {
 
@@ -86,7 +87,7 @@ public final class TreeTableUtils {
 		columnMappings.put(PATH_COLUMN_NAME, buildPathColumn());
 		columnMappings.put(SIZE_COLUMN_NAME, buildSimpleLongValueColumn(SIZE_COLUMN_NAME, "size", 
 						GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, GuiUtils.rightPadding(), 
-						tfe -> UnitConverter.formatByteCount(tfe.sizeProperty().get())));
+						tfe -> UnitConverter.formatByteCount(tfe.lengthProperty().get())));
 		columnMappings.put(PRIORITY_COLUMN_NAME, buildPriorityColumn());
 		
 		if(expandedMode) {
@@ -95,7 +96,7 @@ public final class TreeTableUtils {
 							tfe -> UnitConverter.formatByteCount(tfe.doneProperty().get())));
 			columnMappings.put(FIRST_PIECE_COLUMN_NAME, buildSimpleLongValueColumn(FIRST_PIECE_COLUMN_NAME, "firstPiece",
 							GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, GuiUtils.rightPadding(),
-							tfe -> String.valueOf(tfe.firstPieceProperty().get())));
+							tfe -> String.valueOf(tfe.firstPieceProperty().get() + 1)));
 			columnMappings.put(PIECE_COUNT_COLUMN_NAME, buildSimpleLongValueColumn(
 							PIECE_COUNT_COLUMN_NAME, "pieceCount", GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME,
 							GuiUtils.rightPadding(),tfe -> String.valueOf(tfe.pieceCountProperty().get())));
@@ -157,16 +158,16 @@ public final class TreeTableUtils {
 		return longValueColumn;
 	}
 	
-	private static TreeTableColumn<TorrentFileEntry, Integer> buildPriorityColumn() {		
-		final TreeTableColumn<TorrentFileEntry, Integer> priorityColumn =
-				new TreeTableColumn<TorrentFileEntry, Integer>(PRIORITY_COLUMN_NAME);
+	private static TreeTableColumn<TorrentFileEntry, FilePriority> buildPriorityColumn() {
+		final TreeTableColumn<TorrentFileEntry, FilePriority> priorityColumn =
+				new TreeTableColumn<>(PRIORITY_COLUMN_NAME);
 		priorityColumn.setId(PRIORITY_COLUMN_NAME);
 		priorityColumn.setGraphic(TableUtils.buildColumnHeader(priorityColumn, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME));
-		priorityColumn.setCellValueFactory(new TreeItemPropertyValueFactory<TorrentFileEntry, Integer>("priority"));
-		priorityColumn.setCellFactory(column -> new TreeTableCell<TorrentFileEntry, Integer>() {
+		priorityColumn.setCellValueFactory(new TreeItemPropertyValueFactory<>("priority"));
+		priorityColumn.setCellFactory(column -> new TreeTableCell<TorrentFileEntry, FilePriority>() {
 			final Label valueLabel = new Label();			
 			@Override
-			protected final void updateItem(final Integer value, final boolean empty) {
+			protected final void updateItem(final FilePriority value, final boolean empty) {
 				super.updateItem(value, empty);
 				if(empty) {
 					setText(null);
@@ -179,7 +180,7 @@ public final class TreeTableUtils {
 						return;
 					}
 
-					valueLabel.setText(FilePriority.valueOf(fileContent.priorityProperty().get()));
+					valueLabel.setText(fileContent.getPriority().toString());
 	                this.setGraphic(valueLabel);
 	                this.setAlignment(Pos.BASELINE_LEFT);
 	                super.setPadding(GuiUtils.leftPadding());
@@ -247,7 +248,7 @@ public final class TreeTableUtils {
 			final TorrentFileEntry fileEntry = p.getValue().getValue();
 			final FileNameColumnModel columnModel = new FileNameColumnModel(
 					treeItem.isLeaf(), fileEntry.nameProperty().get());
-			return new ReadOnlyObjectWrapper<FileNameColumnModel>(columnModel);
+			return new ReadOnlyObjectWrapper<>(columnModel);
 		});			
 		fileNameColumn.setCellFactory(column -> new CheckBoxTreeTableCell<
 				TorrentFileEntry, FileNameColumnModel>() {	

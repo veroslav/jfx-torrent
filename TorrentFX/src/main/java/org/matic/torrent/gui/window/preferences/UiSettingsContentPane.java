@@ -19,6 +19,14 @@
 */
 package org.matic.torrent.gui.window.preferences;
 
+import org.matic.torrent.gui.action.enums.BorderStyle;
+import org.matic.torrent.gui.action.enums.DownloadingTorrentClickAction;
+import org.matic.torrent.gui.action.enums.SeedingTorrentClickAction;
+import org.matic.torrent.gui.custom.TitledBorderPane;
+import org.matic.torrent.preferences.ApplicationPreferences;
+import org.matic.torrent.preferences.GuiProperties;
+import org.matic.torrent.preferences.TransferProperties;
+
 import javafx.beans.property.BooleanProperty;
 import javafx.collections.FXCollections;
 import javafx.scene.Node;
@@ -31,13 +39,6 @@ import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
-import org.matic.torrent.gui.action.enums.BorderStyle;
-import org.matic.torrent.gui.action.enums.DownloadingTorrentClickAction;
-import org.matic.torrent.gui.action.enums.SeedingTorrentClickAction;
-import org.matic.torrent.gui.custom.TitledBorderPane;
-import org.matic.torrent.preferences.ApplicationPreferences;
-import org.matic.torrent.preferences.GuiProperties;
-import org.matic.torrent.preferences.TransferProperties;
 
 public final class UiSettingsContentPane extends CategoryContentPane {
 	
@@ -83,15 +84,21 @@ public final class UiSettingsContentPane extends CategoryContentPane {
 	@Override
 	public void onSaveContentChanges() {
 		if(preferencesChanged.get()) {
+			//Apply changed values
+			final boolean alternateListRowColorEnabled = ApplicationPreferences.getProperty(
+					GuiProperties.ALTERNATE_LIST_ROW_COLOR, false);
+			if(alternateListRowColorEnabled != alternateListColorCheck.isSelected()) {
+				ApplicationPreferences.setProperty(GuiProperties.ALTERNATE_LIST_ROW_COLOR,
+						alternateListColorCheck.isSelected());
+			}
+			
 			//Save check box values
 			ApplicationPreferences.setProperty(GuiProperties.DELETE_TORRENT_CONFIRMATION,
 					confirmTorrentDeleteCheck.isSelected());
 			ApplicationPreferences.setProperty(GuiProperties.DELETE_TRACKER_CONFIRMATION,
 					confirmTrackerDeleteCheck.isSelected());
 			ApplicationPreferences.setProperty(GuiProperties.EXIT_CONFIRMATION,
-					confirmOnExitCheck.isSelected());
-			ApplicationPreferences.setProperty(GuiProperties.ALTERNATE_LIST_ROW_COLOR,
-					alternateListColorCheck.isSelected());
+					confirmOnExitCheck.isSelected());			
 			ApplicationPreferences.setProperty(GuiProperties.SHOW_SPEED_IN_TITLEBAR,
 					speedInTitleBarCheck.isSelected());
 			ApplicationPreferences.setProperty(GuiProperties.SHOW_SPEED_LIMITS_IN_STATUSBAR,

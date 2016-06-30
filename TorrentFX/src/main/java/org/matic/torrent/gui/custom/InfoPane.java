@@ -295,8 +295,10 @@ public final class InfoPane extends VBox {
 		
 		final ColumnConstraints labelColumnConstraints = new ColumnConstraints();
 		labelColumnConstraints.setPrefWidth(220);
+		labelColumnConstraints.setMinWidth(120);
 		final ColumnConstraints valueColumnConstraints = new ColumnConstraints();
 		valueColumnConstraints.setPrefWidth(300);
+		valueColumnConstraints.setMinWidth(120);
 		transferSectionPane.getColumnConstraints().addAll(labelColumnConstraints, valueColumnConstraints,
 				labelColumnConstraints, valueColumnConstraints, labelColumnConstraints, valueColumnConstraints);
 

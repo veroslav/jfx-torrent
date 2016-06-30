@@ -162,12 +162,12 @@ public final class HttpTracker extends Tracker {
 	@Override
 	protected void announce(final AnnounceParameters announceParameters, final TrackerSession trackerSession) {		
 		final String requestUrl = buildAnnounceRequestUrl(announceParameters,
-				trackerSession.getInfoHash(), trackerSession.getKey());
+				trackerSession.getTorrentView().getInfoHash(), trackerSession.getKey());
 		final TrackerResponse trackerResponse = requestUrl == null? new TrackerResponse(
 				TrackerResponse.Type.INVALID_URL, "Unsupported encoding") : sendRequest(requestUrl);
 				
 		final AnnounceResponse announceResponse = trackerResponse.getType() == TrackerResponse.Type.OK?
-				buildAnnounceResponse(trackerResponse.getResponseData(), trackerSession.getInfoHash()) :
+				buildAnnounceResponse(trackerResponse.getResponseData(), trackerSession.getTorrentView().getInfoHash()) :
 					new AnnounceResponse(trackerResponse.getType(), trackerResponse.getMessage());
 		
 		if(trackerResponse.getType() == TrackerResponse.Type.OK) {
@@ -198,7 +198,7 @@ public final class HttpTracker extends Tracker {
 		result.append("?");
 		
 		result.append(Arrays.stream(trackerSessions).map(ts -> "info_hash=" + HashUtilities.urlEncodeBytes(
-				ts.getInfoHash().getBytes())).collect(Collectors.joining("&")));
+				ts.getTorrentView().getInfoHash().getBytes())).collect(Collectors.joining("&")));
 
 		return result.toString();
 	}
@@ -316,7 +316,7 @@ public final class HttpTracker extends Tracker {
 		
 		Arrays.stream(trackerSessions).forEach(ts -> {
 			final BinaryEncodedDictionary scrapeInfo = (BinaryEncodedDictionary)files.get(
-					new BinaryEncodedString(ts.getInfoHash().getBytes()));
+					new BinaryEncodedString(ts.getTorrentView().getInfoHash().getBytes()));
 			if(scrapeInfo != null) {
 				final BinaryEncodedInteger complete = (BinaryEncodedInteger)scrapeInfo.get(
 						BinaryEncodingKeys.KEY_COMPLETE);

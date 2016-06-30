@@ -19,7 +19,9 @@
 */
 package org.matic.torrent.queue;
 
+import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import org.matic.torrent.hash.InfoHash;
 
@@ -32,6 +34,7 @@ public final class QueuedTorrent {
     private final InfoHash infoHash;
 
     private final ObjectProperty<TorrentStatus> status = new SimpleObjectProperty<>();
+    private final IntegerProperty priority;
 	
 	public QueuedTorrent(final QueuedTorrentMetaData metaData, final QueuedTorrentProgress progress) {
 		this.metaData = metaData;
@@ -39,6 +42,7 @@ public final class QueuedTorrent {
         this.infoHash = metaData.getInfoHash();
 
         this.status.set(progress.getStatus());
+        priority = new SimpleIntegerProperty(progress.getTorrentPriority());
 	}
 
     public InfoHash getInfoHash() {
@@ -55,6 +59,14 @@ public final class QueuedTorrent {
 
     protected ObjectProperty<TorrentStatus> statusProperty() {
         return status;
+    }
+
+    protected IntegerProperty priorityProperty() {
+        return priority;
+    }
+
+    protected void setPriority(final int priority) {
+        this.priority.set(priority);
     }
 
     public TorrentStatus getStatus() {

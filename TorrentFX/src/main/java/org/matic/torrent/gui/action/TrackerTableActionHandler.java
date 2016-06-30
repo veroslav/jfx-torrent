@@ -17,16 +17,15 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-
 package org.matic.torrent.gui.action;
 
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.ButtonType;
 import javafx.stage.Window;
-import org.matic.torrent.gui.model.TrackerView;
+import org.matic.torrent.gui.model.TorrentView;
+import org.matic.torrent.gui.model.TrackableView;
 import org.matic.torrent.gui.table.TrackerTable;
-import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.preferences.ApplicationPreferences;
 import org.matic.torrent.preferences.GuiProperties;
 import org.matic.torrent.queue.QueuedTorrentManager;
@@ -49,13 +48,12 @@ public final class TrackerTableActionHandler {
 	 * 
 	 * @param urls User entered tracker url:s to add.
 	 * @param torrentManager Torrent manager.
-	 * @param infoHash Target tracked torrent's info hash.
+	 * @param torrentView View of the target tracked torrent.
 	 * @param trackerTable Tracker table to which to add trackers views.
 	 */
     public void onTrackersAdded(final Collection<String> urls, final QueuedTorrentManager torrentManager,
-                                      final InfoHash infoHash, final TrackerTable trackerTable) {
-        urls.forEach(url -> trackerTable.addTracker(new TrackerView(
-                torrentManager.addTracker(url, infoHash))));
+                                      final TorrentView torrentView, final TrackerTable trackerTable) {
+        urls.forEach(url -> trackerTable.addTracker(torrentManager.addTracker(url, torrentView)));
     }
 
 	/**
@@ -64,12 +62,12 @@ public final class TrackerTableActionHandler {
 	 * @param trackerViews Tracker views to update
 	 * @param trackerManager Target tracker manager
 	 */
-	public void onTrackerUpdate(final Collection<TrackerView> trackerViews, final TrackerManager trackerManager) {
+	public void onTrackerUpdate(final Collection<TrackableView> trackerViews, final TrackerManager trackerManager) {
 		if(trackerViews.isEmpty()) {
 			return;
 		}
 		
-		trackerViews.forEach(tv -> trackerManager.issueAnnounce(tv.getTrackerName(), tv.getTorrent(), Tracker.Event.UPDATE));
+		trackerViews.forEach(tv -> trackerManager.issueAnnounce(tv.getName(), tv.getTorrentView(), Tracker.Event.UPDATE));
 	}
 	
 	/**
@@ -77,10 +75,10 @@ public final class TrackerTableActionHandler {
 	 * 
 	 * @param trackerViews Tracker views to delete
 	 * @param trackerManager Target tracker manager
-	 * @param trackerTable Tracker table from which to delete trackers views
+	 * @param trackableTable Tracker table from which to delete trackers views
 	 */
-	public void onTrackerDeletion(final Collection<TrackerView> trackerViews, final TrackerManager trackerManager,
-			final TrackerTable trackerTable, final Window owner) {		
+	public void onTrackerDeletion(final Collection<TrackableView> trackerViews, final TrackerManager trackerManager,
+                                  final TrackerTable trackableTable, final Window owner) {
 		if(trackerViews.isEmpty()) {
 			return;
 		}
@@ -104,9 +102,9 @@ public final class TrackerTableActionHandler {
 		}
 		if(!confirmTrackerDeletion || shouldDeleteTracker) {
 			trackerViews.forEach(tv -> {
-				final boolean removed = trackerManager.removeTracker(tv.getTrackerName(), tv.getTorrent());
+				final boolean removed = trackerManager.removeTracker(tv.getName(), tv.getTorrentView());
 				if(removed) {
-					trackerTable.removeTracker(tv);
+					trackableTable.removeTracker(tv);
 				}
 			});
 		}

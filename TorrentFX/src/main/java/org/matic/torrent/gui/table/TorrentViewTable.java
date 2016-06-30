@@ -38,8 +38,10 @@ import org.matic.torrent.gui.model.TorrentView;
 import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.preferences.CssProperties;
 import org.matic.torrent.preferences.GuiProperties;
+import org.matic.torrent.utils.UnitConverter;
 
 import java.util.LinkedHashMap;
+import java.util.TimeZone;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -51,8 +53,12 @@ import java.util.function.Consumer;
  */
 public final class TorrentViewTable {
 
-	private static final String PRIORITY_COLUMN_NAME = "#";
-	private static final String NAME_COLUMN_NAME = "Name";
+	private static final String PRIORITY_COLUMN_LABEL = "#";
+	private static final String NAME_COLUMN_LABEL = "Name";
+	private static final String SIZE_COLUMN_LABEL = "Size";
+	private static final String SELECTED_SIZE_COLUMN_LABEL = "Selected Size";
+	private static final String ADDED_COLUMN_LABEL = "Added";
+	private static final String TRACKER_COLUMN_LABEL = "Tracker";
 
 	private final TableView<TorrentView> torrentJobTable = new TableView<>();
 	
@@ -68,6 +74,10 @@ public final class TorrentViewTable {
 	public boolean contains(final InfoHash torrentInfoHash) {
 		return torrentJobTable.getItems().contains(torrentInfoHash);
 	}
+
+    public void refresh() {
+        TableUtils.refresh(torrentJobTable);
+    }
 	
 	/**
 	 * Create a binding that updates the target when this table becomes empty 
@@ -114,6 +124,7 @@ public final class TorrentViewTable {
 	private void initComponents() {
 		torrentJobTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 		torrentJobTable.setTableMenuButtonVisible(false);
+		torrentJobTable.setRowFactory(t -> new TorrentViewTableRow<>());
 		
 		final Text emptyTorrentListPlaceholder = new Text("Go to 'File->Add Torrent...' to add torrents.");
 		emptyTorrentListPlaceholder.getStyleClass().add(CssProperties.TORRENT_LIST_EMPTY_TEXT);
@@ -147,13 +158,33 @@ public final class TorrentViewTable {
 		final Callback<CellDataFeatures<TorrentView, Number>, ObservableValue<Number>> priorityValueFactory =
 				tj -> tj.getValue().priorityProperty();
 		final Callback<CellDataFeatures<TorrentView, String>, ObservableValue<String>> nameValueFactory =
-				tj -> new ReadOnlyObjectWrapper<String>(tj.getValue().getFileName());
+				tj -> new ReadOnlyObjectWrapper<>(tj.getValue().getFileName());
+		final Callback<CellDataFeatures<TorrentView, Number>, ObservableValue<Number>> sizeValueFactory =
+				tj -> new ReadOnlyObjectWrapper<>(tj.getValue().getTotalLength());
+		final Callback<CellDataFeatures<TorrentView, Number>, ObservableValue<Number>> selectedSizeValueFactory =
+				tj -> tj.getValue().selectedLengthProperty();
+		final Callback<CellDataFeatures<TorrentView, Number>, ObservableValue<Number>> addedValueFactory =
+				tj -> new ReadOnlyObjectWrapper<>(tj.getValue().getAddedOnTime());
+		final Callback<CellDataFeatures<TorrentView, String>, ObservableValue<String>> trackerValueFactory =
+				tj -> new ReadOnlyObjectWrapper<>(tj.getValue().getTrackerUrl());
 		
 		final LinkedHashMap<String, TableColumn<TorrentView, ?>> columnMappings = new LinkedHashMap<>();
-		columnMappings.put(PRIORITY_COLUMN_NAME, TableUtils.buildColumn(priorityValueFactory,
-				val -> String.valueOf(val.getPriority()), GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, PRIORITY_COLUMN_NAME));
-		columnMappings.put(NAME_COLUMN_NAME, TableUtils.buildColumn(nameValueFactory, tj -> tj.getFileName(),
-				GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, NAME_COLUMN_NAME));
+		columnMappings.put(PRIORITY_COLUMN_LABEL, TableUtils.buildColumn(priorityValueFactory,
+				val -> String.valueOf(val.getPriority()), GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, PRIORITY_COLUMN_LABEL));
+		columnMappings.put(NAME_COLUMN_LABEL, TableUtils.buildColumn(nameValueFactory, tj -> tj.getFileName(),
+				GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, NAME_COLUMN_LABEL));
+		columnMappings.put(SIZE_COLUMN_LABEL, TableUtils.buildColumn(sizeValueFactory, tj -> 
+			UnitConverter.formatByteCount(tj.getTotalLength()),
+				GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, SIZE_COLUMN_LABEL));
+		columnMappings.put(SELECTED_SIZE_COLUMN_LABEL, TableUtils.buildColumn(selectedSizeValueFactory, tj -> 
+			UnitConverter.formatByteCount(tj.getSelectedLength()),
+				GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, SELECTED_SIZE_COLUMN_LABEL));
+		columnMappings.put(ADDED_COLUMN_LABEL, TableUtils.buildColumn(addedValueFactory, tj -> 
+			UnitConverter.formatMillisToDate(tj.getAddedOnTime(), TimeZone.getDefault()),
+				GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, ADDED_COLUMN_LABEL));
+		columnMappings.put(TRACKER_COLUMN_LABEL, TableUtils.buildColumn(trackerValueFactory, tj -> tj.getTrackerUrl(),
+				GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, TRACKER_COLUMN_LABEL));
+		
 		return columnMappings;
 	}
 }

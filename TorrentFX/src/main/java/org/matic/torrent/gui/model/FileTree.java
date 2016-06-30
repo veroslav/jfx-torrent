@@ -20,6 +20,7 @@
 package org.matic.torrent.gui.model;
 
 import org.matic.torrent.codec.BinaryEncodedList;
+import org.matic.torrent.queue.FilePriority;
 import org.matic.torrent.queue.QueuedTorrentMetaData;
 import org.matic.torrent.queue.QueuedTorrentProgress;
 
@@ -46,10 +47,19 @@ public final class FileTree {
     }
 
     public String getName() {
-        return progress != null? progress.getName() : metaData.getName();
+        return metaData.getName();
     }
 
     public BinaryEncodedList getFiles() {
         return metaData.getFiles();
+    }
+
+    public FilePriority getFilePriority(final long fileId) {
+        final FilePriority filePriority = progress.getFilePriority(String.valueOf(fileId));
+        return filePriority != null? filePriority : FilePriority.NORMAL;
+    }
+
+    public void setFilePriority(final long fileId, final FilePriority priority) {
+        progress.setFilePriority(String.valueOf(fileId), priority);
     }
 }

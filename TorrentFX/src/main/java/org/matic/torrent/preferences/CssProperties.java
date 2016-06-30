@@ -1,6 +1,6 @@
 /*
-* This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015 Vedran Matic
+* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
+* Copyright (C) 2015-2016 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -26,9 +26,13 @@ package org.matic.torrent.preferences;
  * @author Vedran Matic
  *
  */
-public class CssProperties {
+public final class CssProperties {
+	
+	private CssProperties() {}
 
 	public static final String TORRENT_LIST_EMPTY_TEXT = "empty-torrent-list-text";
+	public static final String ALTERNATE_LIST_ROW_EVEN = "table-row-even";
+	public static final String ALTERNATE_LIST_ROW_ODD = "table-row-odd";
 	
 	public static final String STATUS_BAR_LABEL = "status-bar-label";
 	public static final String STATUS_BAR = "status-bar";

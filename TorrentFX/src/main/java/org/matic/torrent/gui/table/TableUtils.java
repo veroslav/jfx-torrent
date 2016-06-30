@@ -1,6 +1,6 @@
 /*
-* This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015 Vedran Matic
+* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
+* Copyright (C) 2015-2016 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,6 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-
 package org.matic.torrent.gui.table;
 
 import javafx.application.Platform;
@@ -34,6 +33,9 @@ import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableColumn.CellDataFeatures;
 import javafx.scene.control.TableColumnBase;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TreeItem;
+import javafx.scene.control.TreeTableView;
 import javafx.scene.layout.StackPane;
 import javafx.util.Callback;
 import org.matic.torrent.gui.GuiUtils;
@@ -60,6 +62,24 @@ import java.util.stream.Collectors;
  *
  */
 public final class TableUtils {
+
+    public static <T> void refresh(final TableView<T> table) {
+        final ObservableList<T> items = table.getItems();
+        Platform.runLater(() -> {
+            table.setItems(null);
+            table.layout();
+            table.setItems(items);
+        });
+    }
+
+    public static <T> void refresh(final TreeTableView<T> table) {
+        final TreeItem<T> root = table.getRoot();
+        Platform.runLater(() -> {
+            table.setRoot(null);
+            table.layout();
+            table.setRoot(root);
+        });
+    }
 
 	/**
 	 * Build a styled column header

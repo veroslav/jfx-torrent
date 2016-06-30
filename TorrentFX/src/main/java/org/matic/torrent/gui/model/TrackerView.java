@@ -19,180 +19,61 @@
 */
 package org.matic.torrent.gui.model;
 
-import javafx.beans.property.IntegerProperty;
-import javafx.beans.property.LongProperty;
-import javafx.beans.property.SimpleIntegerProperty;
-import javafx.beans.property.SimpleLongProperty;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.property.StringProperty;
-import org.matic.torrent.queue.QueuedTorrent;
 import org.matic.torrent.queue.TorrentStatus;
-import org.matic.torrent.tracking.beans.TrackableSessionView;
+import org.matic.torrent.tracking.Tracker;
+import org.matic.torrent.tracking.TrackerSession;
 
-public final class TrackerView {
+public final class TrackerView extends TrackableView {
 
-	private final IntegerProperty downloaded = new SimpleIntegerProperty(0);
-	private final IntegerProperty leechers = new SimpleIntegerProperty(0);
-	private final IntegerProperty seeds = new SimpleIntegerProperty(0);
-	private final LongProperty minInterval = new SimpleLongProperty(0);
-	private final LongProperty nextUpdate = new SimpleLongProperty(0);
-	private final LongProperty interval = new SimpleLongProperty(0);
+    private static final String TRACKER_MESSAGE_NULL = "null";		//Sometimes returned as a tracker message
+    private Tracker.Status trackerStatus;
 
-	private final StringProperty status = new SimpleStringProperty();
-	private final StringProperty trackerName;
-	
-	private final TrackableSessionView trackableSessionView;
+	private final TrackerSession trackerSession;
 
-	private long lastUserRequestedUpdate = 0;
-	private long lastTrackerResponse = 0;
-
-	public TrackerView(final TrackableSessionView trackableSessionView) {
-		this.trackableSessionView = trackableSessionView;
-		this.trackerName = new SimpleStringProperty(trackableSessionView.getName());
-	}
-	
-	public void update() {
-        trackableSessionView.updateValues();
-		this.lastTrackerResponse = trackableSessionView.getLastTrackerResponse();
-		//setTorrentStatus(trackableSessionView.getTorrent().getStatus());
-		status.set(trackableSessionView.getStatus());
-		nextUpdate.set(trackableSessionView.getNextUpdate());
-		interval.set(trackableSessionView.getInterval());
-		minInterval.set(trackableSessionView.getMinInterval());
-		downloaded.set(trackableSessionView.getDownloaded());
-		leechers.set(trackableSessionView.getLeechers());
-		seeds.set(trackableSessionView.getSeeders());
-	}
-	
-	public void setLastTrackerResponse(final long lastTrackerResponse) {
-		this.lastTrackerResponse = lastTrackerResponse;
-	}
-	
-	public void setStatus(final String status) {
-		this.status.set(status);
-	}
-	
-	public long getLastUserRequestedUpdate() {
-		return lastUserRequestedUpdate;
-	}
-	
-	/*public void setLastUserRequestedUpdate(final long lastUserRequestedUpdate) {
-		this.lastUserRequestedUpdate = lastUserRequestedUpdate;
-	}*/
-
-	public QueuedTorrent getTorrent() {
-		return trackableSessionView.getTorrent();
-	}
-		
-	public TorrentStatus getTorrentStatus() {
-		return trackableSessionView.getTorrent().getStatus();
-	}
-	
-	/*public void setTorrentStatus(final TorrentStatus torrentStatus) {
-		this.trackableSessionView.getTorrent().getProgress().setStatus(torrentStatus);
-	}*/
-
-	public String getStatus() {
-		return status.get();
-	}
-	
-	public StringProperty statusProperty() {
-		return status;
+	public TrackerView(final TrackerSession trackerSession) {
+        super(trackerSession);
+		this.trackerSession = trackerSession;
 	}
 
-	public long getLastTrackerResponse() {
-		return lastTrackerResponse;
-	}
+    @Override
+    public boolean isUserManaged() {
+        return true;
+    }
 
-	public long getMinInterval() {
-		return minInterval.get();
-	}
-	
-	public LongProperty minIntervalProperty() {
-		return minInterval;
-	}
+    @Override
+    public void update() {
+        super.minInterval.set(super.trackableSession.getMinInterval());
+        super.interval.set(super.trackableSession.getInterval());
+        super.downloaded.set(super.trackableSession.getDownloaded());
+        super.leechers.set(super.trackableSession.getLeechers());
+        super.seeders.set(super.trackableSession.getSeeders());
 
-	public long getInterval() {
-		return interval.get();
-	}
-	
-	public LongProperty intervalProperty() {
-		return interval;
-	}
+        trackerStatus = trackerSession.getTrackerStatus();
+        lastResponse = trackerStatus == Tracker.Status.CONNECTION_TIMEOUT?
+                trackerSession.getTracker().getLastResponse() : trackerSession.getLastAnnounceResponse();
+        super.nextUpdate.set(super.trackableSession.getInterval() - (System.currentTimeMillis() - lastResponse));
 
-	public int getDownloaded() {
-		return downloaded.get();
-	}
-	
-	public IntegerProperty downloadedProperty() {
-		return downloaded;
-	}
-	
-	public long getNextUpdate() {
-		return nextUpdate.get();
-	}
-	
-	public LongProperty nextUpdateProperty() {
-		return nextUpdate;
-	}
-	
-	public int getLeechers() {
-		return leechers.get();
-	}
-	
-	public IntegerProperty leechersProperty() {
-		return leechers;
-	}
-	
-	public int getSeeds() {
-		return seeds.get();
-	}
-	
-	public IntegerProperty seedsProperty() {
-		return seeds;
-	}
-	
-	public String getTrackerName() {
-		return trackerName.get();
-	}
-	
-	public StringProperty trackerNameProperty() {
-		return trackerName;
-	}
+        final TorrentStatus torrentStatus = super.trackableSession.getTorrentView().getStatus();
+        final String trackerMessage = trackerSession.getTrackerMessage();
+        final String statusMessage = trackerMessage != null && !trackerMessage.equals(TRACKER_MESSAGE_NULL)?
+                trackerMessage : Tracker.getStatusMessage(trackerStatus);
 
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((trackerName == null) ? 0 : trackerName.hashCode());
-		return result;
-	}
+        final boolean isTrackerScraped = trackerStatus == Tracker.Status.SCRAPE_OK ||
+                trackerStatus == Tracker.Status.SCRAPE_NOT_SUPPORTED;
 
-	@Override
-	public boolean equals(final Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		TrackerView other = (TrackerView) obj;
-		if (trackerName == null) {
-			if (other.trackerName != null)
-				return false;
-		} else if (!trackerName.equals(other.trackerName))
-			return false;
-		return true;
-	}
+        String displayedMessage = "";
+        if((trackerStatus != Tracker.Status.UPDATING && super.getNextUpdate() >= 1000 &&
+                (torrentStatus == TorrentStatus.ACTIVE))) {
+            displayedMessage = statusMessage;
+        }
+        else if(torrentStatus == TorrentStatus.STOPPED && isTrackerScraped) {
+            displayedMessage = Tracker.getStatusMessage(trackerStatus);
+        }
 
-	@Override
-	public String toString() {
-		return "TrackerView [downloaded=" + downloaded + ", leechers="
-				+ leechers + ", seeds=" + seeds + ", minInterval="
-				+ minInterval + ", nextUpdate=" + nextUpdate + ", interval="
-				+ interval + ", status=" + status + ", trackerName="
-				+ trackerName + ", trackableSessionView=" + trackableSessionView
-				+ ", lastUserRequestedUpdate=" + lastUserRequestedUpdate
-				+ ", lastTrackerResponse=" + lastTrackerResponse + "]";
-	}
+        super.status.set(displayedMessage);
+    }
+    @Override
+    public String getName() {
+        return trackerSession.getTracker().getUrl();
+    }
 }

@@ -192,11 +192,11 @@ public final class FileTreeViewer {
 		if(treeItem == currentTree.getRoot()) {
 			return;
 		}		
-		final List<Integer> priorities = treeItem.getChildren().stream().map(child -> 
-			child.getValue().priorityProperty().get()).distinct().collect(Collectors.toList());
+		final List<FilePriority> priorities = treeItem.getChildren().stream().map(child -> 
+			child.getValue().getPriority()).distinct().collect(Collectors.toList());
 		
-		treeItem.getValue().priorityProperty().set(priorities.size() > 1? 
-				FilePriority.MIXED.getValue() : priorities.get(0));
+		treeItem.getValue().setPriority(priorities.size() > 1? 
+				FilePriority.MIXED : priorities.get(0));
 		
 		onUpdateParentPriority(treeItem.getParent());
 	}
@@ -207,16 +207,16 @@ public final class FileTreeViewer {
 	 * @param parent Parent for which the priority has been changed
 	 * @param priority New priority
 	 */
-	protected void onUpdateChildrenPriority(final TreeItem<TorrentFileEntry> parent, final int priority) {
+	protected void onUpdateChildrenPriority(final TreeItem<TorrentFileEntry> parent, final FilePriority priority) {
 		parent.getChildren().forEach(c -> {
 			final CheckBoxTreeItem<TorrentFileEntry> child = (CheckBoxTreeItem<TorrentFileEntry>)c; 			
 			if(!child.isLeaf()) {
 				onUpdateChildrenPriority(child, priority);
 			}
 			final boolean isSelected = child.isSelected();
-			child.setSelected(!isSelected && priority != FilePriority.SKIP.getValue() ||
-					isSelected && priority == FilePriority.SKIP.getValue() || isSelected);
-			child.getValue().priorityProperty().set(priority);
+			child.setSelected(!isSelected && priority != FilePriority.SKIP ||
+					isSelected && priority == FilePriority.SKIP || isSelected);
+			child.getValue().setPriority(priority);
 		});
 	}
 	
@@ -255,32 +255,45 @@ public final class FileTreeViewer {
 	}
 	
 	private TreeItem<TorrentFileEntry> buildSingleFileTree(final FileTree fileTree) {
+        final int fileId = 0;
 		final String fileName = fileTree.getName();
 		final long fileLength = fileTree.getLength();
 		final TorrentFileEntry fileEntry = new TorrentFileEntry(fileName, ". (current path)", 
 				fileLength, true, ImageUtils.getFileTypeImage(fileName));
 		fileEntry.setPieceCount((long)Math.ceil(fileLength / fileTree.getPieceLength()));
+        fileEntry.setFirstPiece(0);
 		
 		final TreeItem<TorrentFileEntry> treeItem = initTreeItem(fileEntry);		
 		final CheckBoxTreeItem<TorrentFileEntry> root = new CheckBoxTreeItem<>(new TorrentFileEntry(
 				"root", ". (current path)", fileLength, true, null));			
 		root.getChildren().add(treeItem);
+
+        fileEntry.selectedProperty().addListener((obs, oldV, newV) -> {
+            root.getValue().updateSelectionLength(newV? fileLength : -fileLength);
+            fileTree.setFilePriority(fileId, newV? FilePriority.NORMAL : FilePriority.SKIP);
+        });
+
+        fileEntry.priorityProperty().addListener((obs, oldV, newV) ->
+                fileTree.setFilePriority(fileId, newV));
 		
-		fileEntry.selectedProperty().addListener((obs, oldV, newV) ->
-			root.getValue().updateSelectionSize(newV? fileLength : -fileLength));
+		final FilePriority filePriority = fileTree.getFilePriority(fileId);
+		if(filePriority == FilePriority.SKIP || filePriority == FilePriority.MIXED) {
+			fileEntry.setSelected(false);
+		}
 		
 		return root;
 	}
 	
 	private TreeItem<TorrentFileEntry> buildMultiFileTree(final FileTree fileTree) {
 		final String fileName = fileTree.getName();
-		final TorrentFileEntry fileDirEntry = new TorrentFileEntry(fileName, ". (current path)", 0L, true, null);					
+		final TorrentFileEntry fileDirEntry = new TorrentFileEntry(fileName, ". (current path)", 0L, false , null);
 		final CheckBoxTreeItem<TorrentFileEntry> fileDirTreeItem = new CheckBoxTreeItem<>(fileDirEntry);
 		final TorrentEntryNode<TreeItem<TorrentFileEntry>> fileDirNode = new TorrentEntryNode<>(fileName, fileDirTreeItem);
 		
 		fileDirTreeItem.selectedProperty().bindBidirectional(fileDirEntry.selectedProperty());
 		
 		long fileLengthRead = 0;
+        int fileCounter = 0;
 		
 		//Iterate through all the files contained by this torrent
 		final Iterator<BinaryEncodable> fileIterator = fileTree.getFiles().iterator();
@@ -299,7 +312,7 @@ public final class FileTreeViewer {
 				final String pathName = filePaths.get(i).toString();
 				pathBuilder.append(pathName);
 				if(!currentNode.contains(pathName)) {										
-					final TorrentFileEntry fileEntry = new TorrentFileEntry(pathName, pathBuilder.toString(), 0L, true, null);
+					final TorrentFileEntry fileEntry = new TorrentFileEntry(pathName, pathBuilder.toString(), 0L, false, null);
 					final TreeItem<TorrentFileEntry> treeItem = initTreeItem(fileEntry);
 					currentNode.getData().getChildren().add(treeItem);		
 					
@@ -327,13 +340,28 @@ public final class FileTreeViewer {
 			
 			final TorrentEntryNode<TreeItem<TorrentFileEntry>> childNode = new TorrentEntryNode<>(leafName, treeItem);					
 			currentNode.add(childNode);		
-			
+
+            final int fileId = fileCounter;
+
 			//Update file sizes for all of the childNode's parents in the tree
-			final Consumer<CheckBoxTreeItem<TorrentFileEntry>> fileSizePropagation = item -> 
-				fileEntry.selectedProperty().addListener((obs, oldV, newV) -> 
-					item.getValue().updateSelectionSize(newV? fileLength : -fileLength));
+			final Consumer<CheckBoxTreeItem<TorrentFileEntry>> fileSizePropagation = item -> {
+				final TorrentFileEntry parentEntry = item.getValue(); 
+				parentEntry.updateLength(fileEntry.getLength());
+				parentEntry.setPieceCount((long)Math.ceil(((double)parentEntry.getLength()) / fileTree.getPieceLength()));
+                fileEntry.selectedProperty().addListener((obs, oldV, newV) -> {
+                    parentEntry.updateSelectionLength(newV? fileLength : -fileLength);
+                    fileTree.setFilePriority(fileId, newV? FilePriority.NORMAL : FilePriority.SKIP);
+                });
+			};
 			applyOnParents(treeItem, fileSizePropagation);
-			fileEntry.setSelected(true);
+            final FilePriority filePriority = fileTree.getFilePriority(fileId);
+            if(filePriority != FilePriority.SKIP && filePriority != FilePriority.MIXED) {
+                fileEntry.setSelected(true);
+            }
+            fileEntry.priorityProperty().addListener((obs, oldV, newV) ->
+                    fileTree.setFilePriority(fileId, newV));
+
+            ++fileCounter;
 		}
 		return fileDirTreeItem;
 	}
@@ -356,8 +384,7 @@ public final class FileTreeViewer {
 				final long affectedFileSize = (newValue? -fileSize: fileSize);
 				selectedFilesSize.set(selectedFilesSize.get() - affectedFileSize);*/
 			}		
-			treeItem.getValue().priorityProperty().set(newValue? 
-					FilePriority.NORMAL.getValue() : FilePriority.SKIP.getValue());
+			treeItem.getValue().setPriority(newValue? FilePriority.NORMAL : FilePriority.SKIP);
 			
 			currentTree.getSelectionModel().select(treeItem);									
 			currentTree.requestFocus();

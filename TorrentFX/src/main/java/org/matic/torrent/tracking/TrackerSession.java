@@ -1,6 +1,6 @@
 /*
-* This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015 Vedran Matic
+* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
+* Copyright (C) 2015-2016 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -17,101 +17,56 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-
 package org.matic.torrent.tracking;
 
-import org.matic.torrent.hash.InfoHash;
+import org.matic.torrent.gui.model.TorrentView;
 import org.matic.torrent.peer.ClientProperties;
-import org.matic.torrent.queue.QueuedTorrent;
 
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-public final class TrackerSession {
+public final class TrackerSession extends TrackableSession {
 
 	private Tracker.Event lastAcknowledgedTrackerEvent = Tracker.Event.STOPPED;
-	
-	private final QueuedTorrent queuedTorrent;	
 	private final Tracker tracker;
 	
 	private Tracker.Status trackerStatus = Tracker.Status.UNKNOWN;
 	private String trackerMessage = null;
-	
-	private final AtomicInteger downloaded = new AtomicInteger(0);
-	private final AtomicInteger leechers = new AtomicInteger(0);
-	private final AtomicInteger seeders = new AtomicInteger(0);	
-			
-	private final AtomicLong minInterval = new AtomicLong(Tracker.MIN_INTERVAL_DEFAULT_VALUE);
+
 	private final AtomicLong lastAnnounceResponse = new AtomicLong(0);
 	private final AtomicLong lastScrapeResponse = new AtomicLong(0);
-	private final AtomicLong interval = new AtomicLong(0);	
 		
 	private final int key = ClientProperties.generateUniqueId();
 	private final int transactionId = ClientProperties.generateUniqueId();	
 
-	public TrackerSession(final QueuedTorrent queuedTorrent, final Tracker tracker) {
-		this.queuedTorrent = queuedTorrent;
-		this.tracker = tracker;		
+	public TrackerSession(final TorrentView torrentView, final Tracker tracker) {
+        super(torrentView);
+		this.tracker = tracker;
+        super.minInterval.set(Tracker.MIN_INTERVAL_DEFAULT_VALUE);
 	}
+
+    @Override
+    public String getStatus() {
+        return Tracker.getStatusMessage(trackerStatus);
+    }
 	
-	public final synchronized void setTrackerMessage(final String trackerMessage) {
+	public synchronized void setTrackerMessage(final String trackerMessage) {
 		this.trackerMessage = trackerMessage;
 	}
 	
-	public final synchronized String getTrackerMessage() {
+	public synchronized String getTrackerMessage() {
 		return trackerMessage;
 	}
 	
-	public final void setTrackerStatus(final Tracker.Status trackerStatus) {
+	public void setTrackerStatus(final Tracker.Status trackerStatus) {
 		synchronized(this.trackerStatus) {
 			this.trackerStatus = trackerStatus;
 		}
 	}
 	
-	public final Tracker.Status getTrackerStatus() {
+	public Tracker.Status getTrackerStatus() {
 		synchronized(this.trackerStatus) {
 			return trackerStatus;
 		}
-	}
-	
-	public final int getDownloaded() {
-		return downloaded.get();
-	}
-
-	public final void setDownloaded(final int downloaded) {
-		this.downloaded.set(downloaded);
-	}
-
-	public final int getLeechers() {
-		return leechers.get();
-	}
-
-	public final void setLeechers(final int leechers) {
-		this.leechers.set(leechers);
-	}
-
-	public final int getSeeders() {
-		return seeders.get();
-	}
-
-	public final void setSeeders(final int seeders) {
-		this.seeders.set(seeders);
-	}
-
-	public final long getMinInterval() {
-		return minInterval.get();
-	}
-
-	public final void setMinInterval(final long minInterval) {
-		this.minInterval.set(minInterval);
-	}
-
-	public final long getInterval() {
-		return interval.get();
-	}
-
-	public final void setInterval(final long interval) {
-		this.interval.set(interval);
 	}
 
 	public long getLastTrackerResponse() {
@@ -130,21 +85,17 @@ public final class TrackerSession {
 		this.lastScrapeResponse.set(lastScrapeResponse);		
 	}
 	
-	public final int getTransactionId() {
+	public int getTransactionId() {
 		return transactionId;
 	}
 	
-	public final int getKey() {
+	public int getKey() {
 		return key;
 	}
 	
-	public InfoHash getInfoHash() {
-		return queuedTorrent.getMetaData().getInfoHash();
-	}
-	
-	public QueuedTorrent getTorrent() {
-		return queuedTorrent;
-	}
+	public TorrentView getTorrentView() {
+		return torrentView;
+	}	
 	
 	/**
 	 * Return the last announced tracker event acknowledged by the tracker
@@ -172,7 +123,7 @@ public final class TrackerSession {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result
-				+ ((queuedTorrent == null) ? 0 : queuedTorrent.hashCode());
+				+ ((torrentView == null) ? 0 : torrentView.hashCode());
 		result = prime * result + ((tracker == null) ? 0 : tracker.hashCode());
 		return result;
 	}
@@ -186,10 +137,10 @@ public final class TrackerSession {
 		if (getClass() != obj.getClass())
 			return false;
 		TrackerSession other = (TrackerSession) obj;
-		if (queuedTorrent == null) {
-			if (other.queuedTorrent != null)
+		if (torrentView == null) {
+			if (other.torrentView != null)
 				return false;
-		} else if (!queuedTorrent.equals(other.queuedTorrent))
+		} else if (!torrentView.equals(other.torrentView))
 			return false;
 		if (tracker == null) {
 			if (other.tracker != null)
@@ -199,9 +150,17 @@ public final class TrackerSession {
 		return true;
 	}
 
-	@Override
-	public String toString() {
-		return "TrackerSession [infoHash=" + queuedTorrent + ", tracker=" + tracker
-				+ ", downloaded = " + downloaded + ", leechers = " + leechers + ", seeders = " + seeders + "]";
-	}
+    @Override
+    public String toString() {
+        return "TrackerSession{" +
+                "lastAcknowledgedTrackerEvent=" + lastAcknowledgedTrackerEvent +
+                ", tracker=" + tracker +
+                ", trackerStatus=" + trackerStatus +
+                ", trackerMessage='" + trackerMessage + '\'' +
+                ", lastAnnounceResponse=" + lastAnnounceResponse +
+                ", lastScrapeResponse=" + lastScrapeResponse +
+                ", key=" + key +
+                ", transactionId=" + transactionId +
+                '}';
+    }
 }

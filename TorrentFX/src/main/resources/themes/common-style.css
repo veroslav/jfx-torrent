@@ -116,7 +116,7 @@
 }
 
 .option-category-selection-list {
-	-fx-min-width: 130;	
+	-fx-min-width: 130;
 }
 
 .option-category-selection-list .tree-cell .tree-disclosure-node {

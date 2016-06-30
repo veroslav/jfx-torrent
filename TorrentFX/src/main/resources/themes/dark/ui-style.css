@@ -172,16 +172,16 @@
     -fx-background-color: transparent;
 }
 
-.table-row-cell:odd, .tree-table-row-cell:odd {
-    -fx-background-color: -list-control-background;
-}
-
-.table-row-cell:odd:empty, .tree-table-row-cell:odd:empty {
-    -fx-background-color: transparent;
-}
-
 .table-row-cell:selected, .tree-table-row-cell:selected {
     -fx-background-color: -selection-color;
+}
+
+.table-row-odd {
+	-fx-background-color: -list-control-background;
+}
+
+.table-row-even {
+	-fx-background-color: -primary-color;
 }
 
 .text { 

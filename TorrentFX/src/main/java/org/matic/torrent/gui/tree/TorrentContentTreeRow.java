@@ -1,5 +1,5 @@
-/* This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015 Vedran Matic
+/* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
+* Copyright (C) 2015-2016 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -16,8 +16,15 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-
 package org.matic.torrent.gui.tree;
+
+import java.util.Arrays;
+
+import org.matic.torrent.gui.model.TorrentFileEntry;
+import org.matic.torrent.preferences.ApplicationPreferences;
+import org.matic.torrent.preferences.CssProperties;
+import org.matic.torrent.preferences.GuiProperties;
+import org.matic.torrent.queue.FilePriority;
 
 import javafx.scene.control.CheckBoxTreeItem;
 import javafx.scene.control.ContextMenu;
@@ -28,10 +35,6 @@ import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.TreeTableRow;
-import org.matic.torrent.gui.model.TorrentFileEntry;
-import org.matic.torrent.queue.FilePriority;
-
-import java.util.Arrays;
 
 public final class TorrentContentTreeRow extends TreeTableRow<TorrentFileEntry> {
 	private final ContextMenu contextMenu = new ContextMenu();
@@ -70,17 +73,28 @@ public final class TorrentContentTreeRow extends TreeTableRow<TorrentFileEntry> 
 		contextMenu.getItems().addAll(selectMenuItem, unselectMenuItem, new SeparatorMenuItem(), 
 				selectAllMenuItem, selectNoneMenuItem, new SeparatorMenuItem(), 
 				collapseFolderTreeMenuItem, expandFolderTreeMenuItem, new SeparatorMenuItem(), 
-				priorityTreeMenu);		
+				priorityTreeMenu);
 	}
 				
 	@Override
-	protected final void updateItem(final TorrentFileEntry item, final boolean empty) {					
-		super.updateItem(item, empty);			
+	protected void updateItem(final TorrentFileEntry item, final boolean empty) {					
+		super.updateItem(item, empty);
 		
-		if(empty) {
+		if(empty) {			
             setContextMenu(null);
+            return;
         } 
-		else {
+		else {				
+			if(this.getIndex() % 2 != 0 && ApplicationPreferences.getProperty(
+					GuiProperties.ALTERNATE_LIST_ROW_COLOR, false)) {
+                getStyleClass().removeAll(CssProperties.ALTERNATE_LIST_ROW_EVEN);
+				getStyleClass().add(CssProperties.ALTERNATE_LIST_ROW_ODD);                
+            }
+            else {
+                getStyleClass().removeAll(CssProperties.ALTERNATE_LIST_ROW_ODD);
+            	getStyleClass().add(CssProperties.ALTERNATE_LIST_ROW_EVEN);
+            }
+			
 			final CheckBoxTreeItem<TorrentFileEntry> treeItem = (CheckBoxTreeItem<TorrentFileEntry>)super.getTreeItem();
 			expandFolderTreeMenuItem.setDisable(treeItem.isLeaf() || treeItem.isExpanded());
 			collapseFolderTreeMenuItem.setDisable((treeItem.isLeaf() && (treeItem.getParent() == 
@@ -91,9 +105,9 @@ public final class TorrentContentTreeRow extends TreeTableRow<TorrentFileEntry> 
 					!treeItem.isLeaf() && !treeItem.isIndeterminate() && !treeItem.isSelected());
             setContextMenu(contextMenu);		                
             
-            final FilePriority filePriority = FilePriority.values()[item.priorityProperty().get()];
+            final FilePriority filePriority = item.getPriority();
             if(filePriority != FilePriority.MIXED) {
-            	priorityMenuItems[item.priorityProperty().get()].setSelected(true);
+            	priorityMenuItems[item.getPriority().getValue()].setSelected(true);
             }
             else {
             	final Toggle selectedPriorityToggle = radioMenuGroup.getSelectedToggle();
@@ -134,14 +148,14 @@ public final class TorrentContentTreeRow extends TreeTableRow<TorrentFileEntry> 
 	
 	private void onPriorityAction(final RadioMenuItem priorityMenuItem) {
 		final CheckBoxTreeItem<TorrentFileEntry> treeItem = (CheckBoxTreeItem<TorrentFileEntry>)getTreeItem();
-		final int newPriorityValue = Integer.parseInt(priorityMenuItem.getId());
-		if(treeItem.getValue().priorityProperty().get() != newPriorityValue) { 
+		final FilePriority newPriorityValue = FilePriority.valueOf(priorityMenuItem.getId());
+		if(treeItem.getValue().getPriority() != newPriorityValue) { 
 			if(treeItem.isIndeterminate()) {
 				treeItem.setSelected(true);
-				treeItem.getValue().selectedProperty().set(newPriorityValue != FilePriority.SKIP.getValue());
+				treeItem.getValue().selectedProperty().set(newPriorityValue != FilePriority.SKIP);
 			}
 			else {
-				treeItem.setSelected(newPriorityValue != FilePriority.SKIP.getValue());
+				treeItem.setSelected(newPriorityValue != FilePriority.SKIP);
 			}
 								
 			if(!treeItem.isLeaf()) {

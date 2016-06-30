@@ -17,7 +17,6 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-
 package org.matic.torrent.gui.window;
 
 import javafx.geometry.HPos;
@@ -46,8 +45,11 @@ import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Window;
+import org.matic.torrent.codec.BinaryEncodedDictionary;
 import org.matic.torrent.codec.BinaryEncodedInteger;
+import org.matic.torrent.codec.BinaryEncodedList;
 import org.matic.torrent.codec.BinaryEncodedString;
+import org.matic.torrent.codec.BinaryEncodingKeys;
 import org.matic.torrent.gui.action.enums.BorderStyle;
 import org.matic.torrent.gui.custom.TitledBorderPane;
 import org.matic.torrent.gui.model.FileTree;
@@ -59,6 +61,8 @@ import org.matic.torrent.io.DiskUtilities;
 import org.matic.torrent.preferences.CssProperties;
 import org.matic.torrent.preferences.GuiProperties;
 import org.matic.torrent.queue.QueuedTorrentMetaData;
+import org.matic.torrent.queue.QueuedTorrentProgress;
+import org.matic.torrent.queue.TorrentStatus;
 import org.matic.torrent.utils.UnitConverter;
 
 import java.io.File;
@@ -99,39 +103,25 @@ public final class AddTorrentWindow {
 	private final Text fileSizeText;
 	
 	private final TreeTableView<TorrentFileEntry> fileView = new TreeTableView<>();
-	private final QueuedTorrentMetaData metaData;		
-	private final FileTreeViewer fileTreeViewer;
+	private final QueuedTorrentMetaData metaData;
+    private final QueuedTorrentProgress progress;
+    private final FileTreeViewer fileTreeViewer;
 	
 	private final Dialog<ButtonType> window;
-		
-	private final String creationDate;
-	private final String fileName;
-	private final String comment;
 	
 	private Optional<Long> availableDiskSpace;
 
 	public AddTorrentWindow(final Window owner, final QueuedTorrentMetaData metaData,
                             final FileTreeViewer fileTreeViewer) {
-		
-		final BinaryEncodedInteger creationDateInSeconds = metaData.getCreationDate();
-		creationDate = creationDateInSeconds != null? UnitConverter.formatMillisToDate(
-				creationDateInSeconds.getValue() * 1000, TimeZone.getDefault()) : "";
-		
 		this.metaData = metaData;
+        this.fileTreeViewer = fileTreeViewer;
 		
 		final Path savePath = Paths.get(System.getProperty("user.home"));
 		availableDiskSpace = DiskUtilities.getAvailableDiskSpace(savePath);
 		
-		savePathCombo = new ComboBox<String>();
+		savePathCombo = new ComboBox<>();
 		savePathCombo.getItems().add(savePath.toString());		
-		
-		final BinaryEncodedString metaDataComment = metaData.getComment();
-		comment = metaDataComment != null? metaDataComment.toString() : "";
-		fileName = metaData.getName();
-		
-		this.fileTreeViewer = fileTreeViewer;
-		fileView.setRoot(this.fileTreeViewer.createTreeView(fileView, new FileTree(metaData, null)));
-		
+
 		window = new Dialog<>();
 		window.initOwner(owner);
 		
@@ -146,24 +136,25 @@ public final class AddTorrentWindow {
 		fileSizeText.getStyleClass().add("text");
 		
 		fileSizeLabel = new TextFlow();
-		
-		fileSizeLabel.getChildren().addAll(fileSizeText, diskSpaceText);	
-		
-		labelCombo = new ComboBox<String>();
+        fileSizeLabel.getChildren().addAll(fileSizeText, diskSpaceText);
+
+		labelCombo = new ComboBox<>();
 		advancedButton = new Button("Advanced...");
-		
-		updateDiskUsageLabel();		
-		fileView.getRoot().getValue().selectionSizeProperty().addListener((obs, oldV, newV) -> updateDiskUsageLabel());
-		//fileView.getRoot().getValue().selectedProperty().addListener((obs, oldV, newV) -> updateDiskUsageLabel());
-		
-		nameTextField = new TextField(fileName);		
-		
-		collapseAllButton = new Button("Collapse All");
-		expandAllButton = new Button("Expand All");
-		selectNoneButton = new Button("Select None");
-		selectAllButton = new Button("Select All");
-		browseButton = new Button("...");
-		
+
+        nameTextField = new TextField(metaData.getName());
+
+        collapseAllButton = new Button("Collapse All");
+        expandAllButton = new Button("Expand All");
+        selectNoneButton = new Button("Select None");
+        selectAllButton = new Button("Select All");
+        browseButton = new Button("...");
+
+        this.progress = createInitialProgress();
+        fileView.setRoot(fileTreeViewer.createTreeView(fileView, new FileTree(metaData, progress)));
+
+ 		updateDiskUsageLabel();
+        fileView.getRoot().getValue().selectionLengthProperty().addListener((obs, oldV, newV) -> updateDiskUsageLabel());
+
 		initComponents();
 	}
 	
@@ -173,13 +164,37 @@ public final class AddTorrentWindow {
 		fileTreeViewer.restoreDefault();
 		
 		if(result.isPresent() && result.get() == ButtonType.OK) {			
-			return new AddedTorrentOptions(metaData, fileView.getRoot(), 
-					nameTextField.getText(), savePathCombo.getValue(), labelCombo.getValue(),
+			return new AddedTorrentOptions(metaData, progress, fileView.getRoot(),
 					startTorrentCheckbox.isSelected(), createSubFolderCheckbox.isSelected(),
 					addToTopQueueCheckbox.isSelected(), skipHashCheckbox.isSelected());
 		}		
 		return null;		
 	}
+
+    private QueuedTorrentProgress createInitialProgress() {
+        final BinaryEncodedDictionary state = new BinaryEncodedDictionary();
+        state.put(BinaryEncodingKeys.KEY_NAME, new BinaryEncodedString(nameTextField.getText()));
+
+        //state.put(BinaryEncodingKeys.KEY_PATH, new BinaryEncodedString(savePathCombo.getSelectionModel().getSelectedItem()));
+        //state.put(BinaryEncodingKeys.STATE_KEY_LABEL, new BinaryEncodedString(labelCombo.getSelectionModel().getSelectedItem()));
+
+        final TorrentStatus targetStatus = startTorrentCheckbox.isSelected()? TorrentStatus.ACTIVE : TorrentStatus.STOPPED;
+        state.put(BinaryEncodingKeys.STATE_KEY_TORRENT_STATUS, new BinaryEncodedString(targetStatus.name()));
+
+        final BinaryEncodedList trackerList = new BinaryEncodedList();
+        metaData.getAnnounceList().stream().flatMap(l -> ((BinaryEncodedList)l).stream()).forEach(
+                u -> trackerList.add(new BinaryEncodedString(u.toString())));
+
+        final String announceUrl = metaData.getAnnounceUrl();
+        if(announceUrl != null) {
+            trackerList.add(new BinaryEncodedString(announceUrl));
+        }
+
+        state.put(BinaryEncodingKeys.KEY_ANNOUNCE_LIST, trackerList);
+
+        final QueuedTorrentProgress progress = new QueuedTorrentProgress(state);
+        return progress;
+    }
 	
 	private void initComponents() {				
 		createSubFolderCheckbox.setSelected(true);
@@ -216,7 +231,7 @@ public final class AddTorrentWindow {
 		TreeTableUtils.setupFileListingView(fileView, fileTreeViewer);
 		
 		window.setHeaderText(null);
-		window.setTitle(fileName + " - Add New Torrent");
+		window.setTitle(metaData.getName() + " - Add New Torrent");
 		
 		window.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 
@@ -226,11 +241,11 @@ public final class AddTorrentWindow {
 	
 	private void updateDiskUsageLabel() {
 		final TorrentFileEntry fileEntry = fileView.getRoot().getValue();
-		final long totalFilesLength = fileEntry.getSize();
+		final long totalFilesLength = fileEntry.getLength();
 		final StringBuilder fileSizeBuilder = new StringBuilder();
-		final long fileSelectionLength = fileEntry.getSelectionSize();
+		final long fileSelectionLength = fileEntry.getSelectionLength();
 		fileSizeBuilder.append(UnitConverter.formatByteCount(fileSelectionLength));
-		
+
 		if(fileSelectionLength < totalFilesLength) {
 			fileSizeBuilder.append(" (of ");
 			fileSizeBuilder.append(UnitConverter.formatByteCount(totalFilesLength));
@@ -268,7 +283,7 @@ public final class AddTorrentWindow {
 	
 	private void onBrowseForTargetDirectory() {
 		final StringBuilder chooserTitle = new StringBuilder("Choose where to download '");
-		chooserTitle.append(fileName);
+		chooserTitle.append(metaData.getName());
 		chooserTitle.append("' to:");
 		
 		final DirectoryChooser directoryChooser = new DirectoryChooser();
@@ -328,16 +343,22 @@ public final class AddTorrentWindow {
 		labelPane.getColumnConstraints().addAll(nameColumnConstraints, valueColumnConstraints);
 		
 		labelPane.add(new Label("Name:"), 0, 0);
-		labelPane.add(new Label(fileName), 1, 0);
+		labelPane.add(new Label(metaData.getName()), 1, 0);
 		
-		labelPane.add(new Label("Comment:"), 0, 1);	
-		labelPane.add(new Label(comment), 1, 1);
+		labelPane.add(new Label("Comment:"), 0, 1);
+
+        final BinaryEncodedString comment = metaData.getComment();
+        labelPane.add(new Label(comment != null? comment.toString() : ""), 1, 1);
 		
 		labelPane.add(new Label("Size:"), 0, 2);			
 		labelPane.add(fileSizeLabel, 1, 2);
 		
-		labelPane.add(new Label("Date:"), 0, 3);			
-		labelPane.add(new Label(creationDate), 1, 3);
+		labelPane.add(new Label("Date:"), 0, 3);
+
+        final BinaryEncodedInteger creationDateInSeconds = metaData.getCreationDate();
+        final String creationDate = creationDateInSeconds != null? UnitConverter.formatMillisToDate(
+                creationDateInSeconds.getValue() * 1000, TimeZone.getDefault()) : "";
+        labelPane.add(new Label(creationDate), 1, 3);
 		
 		final HBox expandCollapseButtonsPane = new HBox(10);
 		expandCollapseButtonsPane.setAlignment(Pos.CENTER_LEFT);

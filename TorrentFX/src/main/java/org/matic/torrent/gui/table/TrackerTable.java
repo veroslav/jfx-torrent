@@ -20,6 +20,7 @@
 package org.matic.torrent.gui.table;
 
 import javafx.beans.binding.BooleanBinding;
+import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.ObservableList;
 import javafx.scene.control.CheckMenuItem;
@@ -36,7 +37,7 @@ import javafx.scene.input.KeyCode;
 import javafx.stage.Window;
 import javafx.util.Callback;
 import org.matic.torrent.gui.GuiUtils;
-import org.matic.torrent.gui.model.TrackerView;
+import org.matic.torrent.gui.model.TrackableView;
 import org.matic.torrent.gui.window.AddTrackerWindow;
 import org.matic.torrent.preferences.GuiProperties;
 import org.matic.torrent.queue.TorrentStatus;
@@ -47,12 +48,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class TrackerTable {	
+public final class TrackerTable {
 	
 	private static final long MIN_USER_REQUESTED_ANNOUNCE_DELAY = 60000;	//60 s
 	
@@ -80,7 +82,7 @@ public class TrackerTable {
 	private final MenuItem updateTrackerMenuItem = new MenuItem(UPDATE_TRACKER);
 	private final MenuItem addTrackerMenuItem = new MenuItem(ADD_TRACKER);
 
-	private final TableView<TrackerView> trackerTable = new TableView<>();
+	private final TableView<TrackableView> trackableTable = new TableView<>();
 	
 	public TrackerTable() {
 		initComponents();
@@ -88,32 +90,36 @@ public class TrackerTable {
 		createContextMenu();
 	}
 	
-	public void setContent(final List<TrackerView> trackerViews) {
-		trackerTable.getItems().clear();		
-		trackerTable.getItems().addAll(trackerViews);
+	public void setContent(final Set<TrackableView> trackableViews) {
+		trackableTable.getItems().clear();
+		trackableTable.getItems().addAll(trackableViews);
 	}
+
+    public void refresh() {
+        TableUtils.refresh(trackableTable);
+    }
 	
 	/**
 	 * Update tracker view beans with the latest tracker statistics
 	 */
 	public void updateContent() {
-		trackerTable.getItems().forEach(TrackerView::update);
+		trackableTable.getItems().forEach(TrackableView::update);
 	}
 	
-	public boolean addTracker(final TrackerView trackerView) {
-		final ObservableList<TrackerView> tableItems = trackerTable.getItems();
+	public boolean addTracker(final TrackableView trackerView) {
+		final ObservableList<TrackableView> tableItems = trackableTable.getItems();
 		if(tableItems.contains(trackerView)) {
 			return false;
 		}
 		return tableItems.add(trackerView);
 	}
 	
-	public boolean removeTracker(final TrackerView trackerView) {
-		return trackerTable.getItems().remove(trackerView);
+	public boolean removeTracker(final TrackableView trackerView) {
+		return trackableTable.getItems().remove(trackerView);
 	}
 	
 	public void wrapWith(final ScrollPane wrapper) {
-		wrapper.setContent(trackerTable);
+		wrapper.setContent(trackableTable);
 	}
 	
 	/**
@@ -121,11 +127,11 @@ public class TrackerTable {
 	 * 
 	 * @param handler Target handler
 	 */
-	public final void onTrackerDeletionRequested(final Consumer<Collection<TrackerView>> handler) {	
+	public void onTrackerDeletionRequested(final Consumer<Collection<TrackableView>> handler) {
 		final Runnable deleter = () -> 
-			handler.accept(getDeletableTrackers(trackerTable.getSelectionModel().getSelectedItems()));
+			handler.accept(getDeletableTrackers(trackableTable.getSelectionModel().getSelectedItems()));
 		removeTrackerMenuItem.setOnAction(e -> deleter.run());
-		trackerTable.setOnKeyReleased(e -> {
+		trackableTable.setOnKeyReleased(e -> {
 			if(e.getCode().equals(KeyCode.DELETE)) {
 				deleter.run();
 			}
@@ -137,13 +143,13 @@ public class TrackerTable {
 	 * 
 	 * @param handler Target handler
 	 */
-	public final void onTrackerUpdateRequested(final Consumer<Collection<TrackerView>> handler) {
+	public void onTrackableUpdateRequested(final Consumer<Collection<TrackableView>> handler) {
 		updateTrackerMenuItem.setOnAction(e -> {			
-			final Collection<TrackerView> updatableTrackers =
-					getUpdatableTrackers(trackerTable.getSelectionModel().getSelectedItems());
-			handler.accept(updatableTrackers);
+			final Collection<TrackableView> updatableTrackables =
+					getUpdatableTrackables(trackableTable.getSelectionModel().getSelectedItems());
+			handler.accept(updatableTrackables);
 			final long currentTime = System.currentTimeMillis();
-			updatableTrackers.forEach(tv -> tv.setLastTrackerResponse(currentTime));
+			updatableTrackables.forEach(tv -> tv.setLastUserRequestedUpdate(currentTime));
 		});
 	}
 	
@@ -154,7 +160,7 @@ public class TrackerTable {
 	 * @param addTrackerWindowOwner Add torrent window owner
 	 * @param disablementBinding When to disable the tracker addition
 	 */
-	public final void onTrackersAdded(final Consumer<Collection<String>> handler,
+	public void onTrackersAdded(final Consumer<Collection<String>> handler,
 			final Window addTrackerWindowOwner, final BooleanBinding disablementBinding) {
 		addTrackerMenuItem.disableProperty().bind(disablementBinding);
 		addTrackerMenuItem.setOnAction(e -> {
@@ -167,26 +173,26 @@ public class TrackerTable {
 	/**
 	 * Sort the table based on the current sort order and latest table entry values
 	 */
-	public final void sort() {
-		final List<TableColumn<TrackerView, ?>> sortOrder = new ArrayList<>(trackerTable.getSortOrder());
-		trackerTable.getSortOrder().clear();
-		trackerTable.getSortOrder().addAll(sortOrder);
+	public void sort() {
+		final List<TableColumn<TrackableView, ?>> sortOrder = new ArrayList<>(trackableTable.getSortOrder());
+		trackableTable.getSortOrder().clear();
+		trackableTable.getSortOrder().addAll(sortOrder);
 	}
 	
 	/**
 	 * Store any changes to column order, visibility, and/or size
 	 */
 	public void storeColumnStates() {		
-		TableUtils.storeColumnStates(trackerTable.getColumns(), GuiProperties.TRACKER_TAB_COLUMN_VISIBILITY,
+		TableUtils.storeColumnStates(trackableTable.getColumns(), GuiProperties.TRACKER_TAB_COLUMN_VISIBILITY,
 			GuiProperties.DEFAULT_TRACKER_TAB_COLUMN_VISIBILITIES, GuiProperties.TRACKER_TAB_COLUMN_SIZE,
 			GuiProperties.DEFAULT_TRACKER_TAB_COLUMN_SIZES, GuiProperties.TRACKER_TAB_COLUMN_ORDER,
 			GuiProperties.DEFAULT_TRACKER_TAB_COLUMN_ORDER);		
 	}
 	
 	private void initComponents() {
-		trackerTable.setPlaceholder(GuiUtils.getEmptyTablePlaceholder());
-		trackerTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
-		trackerTable.setTableMenuButtonVisible(false);
+		trackableTable.setPlaceholder(GuiUtils.getEmptyTablePlaceholder());
+		trackableTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+		trackableTable.setTableMenuButtonVisible(false);
 		
 		addTrackerMenuItem.setId(ADD_TRACKER);
 	}
@@ -219,22 +225,22 @@ public class TrackerTable {
 			removeTrackerMenuItem.setDisable(true);
 			updateTrackerMenuItem.setDisable(true);
 		});
-		trackerTable.setContextMenu(contextMenu);		
-		trackerTable.setRowFactory(table -> {			
-			final TableRow<TrackerView> tableRow = new TableRow<>();
+		trackableTable.setContextMenu(contextMenu);
+		trackableTable.setRowFactory(table -> {
+			final TableRow<TrackableView> tableRow = new TrackerTableRow<>();
 			tableRow.setContextMenu(contextMenu);			
 			tableRow.setOnContextMenuRequested(cme -> {	
-				final TrackerView trackerView = tableRow.getItem();
-				if(trackerView == null) {
+				final TrackableView trackableView = tableRow.getItem();
+				if(trackableView == null) {
 					return;
 				}
-				final Collection<TrackerView> deletableTrackers = getDeletableTrackers(
-						trackerTable.getSelectionModel().getSelectedItems());
+				final Collection<TrackableView> deletableTrackers = getDeletableTrackers(
+						trackableTable.getSelectionModel().getSelectedItems());
 				removeTrackerMenuItem.setDisable(deletableTrackers.isEmpty());
 				removeTrackerMenuItem.setText(deletableTrackers.size() > 1? REMOVE_TRACKER + "s" : REMOVE_TRACKER);
 							
-				final Collection<TrackerView> updatableTrackers = getUpdatableTrackers(
-						trackerTable.getSelectionModel().getSelectedItems());
+				final Collection<TrackableView> updatableTrackers = getUpdatableTrackables(
+						trackableTable.getSelectionModel().getSelectedItems());
 				updateTrackerMenuItem.setDisable(updatableTrackers.isEmpty());
 				updateTrackerMenuItem.setText(updatableTrackers.size() > 1? UPDATE_TRACKER + "s" : UPDATE_TRACKER);
 			});
@@ -243,42 +249,38 @@ public class TrackerTable {
 		});
 	}
 	
-	private Collection<TrackerView> getUpdatableTrackers(final Collection<TrackerView> selectedRows) {
+	private Collection<TrackableView> getUpdatableTrackables(final Collection<TrackableView> selectedRows) {
 		return selectedRows.stream().filter(tv -> {
 			final long currentTime = System.currentTimeMillis();
-			return tv.getTorrentStatus() == TorrentStatus.ACTIVE && tv.getNextUpdate() > 0 &&
+			return tv.getTorrentView().getStatus() == TorrentStatus.ACTIVE && tv.getNextUpdate() > 0 &&
 					tv.getStatus().equals(Tracker.getStatusMessage(Tracker.Status.WORKING)) &&
-					((currentTime - tv.getLastTrackerResponse()) >= tv.getMinInterval()) &&
+					((currentTime - tv.getLastResponse()) >= tv.getMinInterval()) &&
 					(currentTime - tv.getLastUserRequestedUpdate() > MIN_USER_REQUESTED_ANNOUNCE_DELAY);
 		}).collect(Collectors.toList());			
 	}
 	
-	private Collection<TrackerView> getDeletableTrackers(final Collection<TrackerView> selectedRows) {
-		return selectedRows.stream().filter(tv ->
-			!(tv.getTrackerName().equals("[DHT]") ||
-					tv.getTrackerName().equals("[Local Peer Discovery]") ||
-					tv.getTrackerName().equals("[Peer Exchange]"))
-		).collect(Collectors.toList());
+	private Collection<TrackableView> getDeletableTrackers(final Collection<TrackableView> selectedRows) {
+		return selectedRows.stream().filter(TrackableView::isUserManaged).collect(Collectors.toList());
 	}
 	
 	private void createColumns() {									
-		final LinkedHashMap<String, TableColumn<TrackerView, ?>> columnMappings = buildColumnMappings();
+		final LinkedHashMap<String, TableColumn<TrackableView, ?>> columnMappings = buildColumnMappings();
 		final BiConsumer<String, Double> columnResizer = (columnId, targetWidth) -> {				
-			final TableColumn<TrackerView,?> tableColumn = columnMappings.get(columnId);						
-			trackerTable.getColumns().add(tableColumn);
-			trackerTable.resizeColumn(tableColumn, targetWidth - tableColumn.getWidth());			
+			final TableColumn<TrackableView,?> tableColumn = columnMappings.get(columnId);
+			trackableTable.getColumns().add(tableColumn);
+			trackableTable.resizeColumn(tableColumn, targetWidth - tableColumn.getWidth());
 		};
-		final TableState<TrackerView> columnState = TableUtils.loadColumnStates(columnMappings, columnResizer,
+		final TableState<TrackableView> columnState = TableUtils.loadColumnStates(columnMappings, columnResizer,
 				GuiProperties.TRACKER_TAB_COLUMN_VISIBILITY, GuiProperties.DEFAULT_TRACKER_TAB_COLUMN_VISIBILITIES,
 				GuiProperties.TRACKER_TAB_COLUMN_SIZE, GuiProperties.DEFAULT_TRACKER_TAB_COLUMN_SIZES,
 				GuiProperties.TRACKER_TAB_COLUMN_ORDER, GuiProperties.DEFAULT_TRACKER_TAB_COLUMN_ORDER);
 		
-		TableUtils.addTableHeaderContextMenus(trackerTable.getColumns(), columnState, columnResizer);
+		TableUtils.addTableHeaderContextMenus(trackableTable.getColumns(), columnState, columnResizer);
 	}
 	
-	private LinkedHashMap<String, TableColumn<TrackerView, ?>> buildColumnMappings() {
-		final Function<TrackerView, String> updateInValueConverter = tv -> {			
-			if(tv.getTorrent().getStatus() == TorrentStatus.STOPPED) {
+	private LinkedHashMap<String, TableColumn<TrackableView, ?>> buildColumnMappings() {
+		final Function<TrackableView, String> updateInValueConverter = tv -> {
+			if(tv.getTorrentView().getStatus() == TorrentStatus.STOPPED) {
 				return "";
 			}
 			final long nextUpdateValue = tv.getNextUpdate();			
@@ -291,38 +293,38 @@ public class TrackerTable {
 			}
 		}; 		
 		
-		final Function<TrackerView, String> intervalValueConverter = tv -> {
+		final Function<TrackableView, String> intervalValueConverter = tv -> {
 			final long interval = tv.getInterval(); 
-			return (tv.getTorrent().getStatus() != TorrentStatus.STOPPED) && (interval > 0)?
+			return (tv.getTorrentView().getStatus() != TorrentStatus.STOPPED) && (interval > 0)?
 					UnitConverter.formatMillisToTime(interval) : "";
 		};
 		
-		final Function<TrackerView, String> minIntervalValueConverter =
-                tv -> tv.getTorrent().getStatus() != TorrentStatus.STOPPED?
+		final Function<TrackableView, String> minIntervalValueConverter =
+                tv -> tv.getTorrentView().getStatus() != TorrentStatus.STOPPED?
 					UnitConverter.formatMillisToTime(tv.getMinInterval()) : "";
 		
-		final Callback<CellDataFeatures<TrackerView, String>, ObservableValue<String>> nameValueFactory =
-				tv -> tv.getValue().trackerNameProperty();
-		final Callback<CellDataFeatures<TrackerView, String>, ObservableValue<String>> statusValueFactory =
+		final Callback<CellDataFeatures<TrackableView, String>, ObservableValue<String>> nameValueFactory =
+                tv -> new ReadOnlyObjectWrapper<>(tv.getValue().getName());
+		final Callback<CellDataFeatures<TrackableView, String>, ObservableValue<String>> statusValueFactory =
 				tv -> tv.getValue().statusProperty();
-		final Callback<CellDataFeatures<TrackerView, Number>, ObservableValue<Number>> nextUpdateValueFactory =
+		final Callback<CellDataFeatures<TrackableView, Number>, ObservableValue<Number>> nextUpdateValueFactory =
 				tv -> tv.getValue().nextUpdateProperty();
-		final Callback<CellDataFeatures<TrackerView, Number>, ObservableValue<Number>> intervalValueFactory =
+		final Callback<CellDataFeatures<TrackableView, Number>, ObservableValue<Number>> intervalValueFactory =
 				tv -> tv.getValue().intervalProperty();
-		final Callback<CellDataFeatures<TrackerView, Number>, ObservableValue<Number>> minIntervalValueFactory =
+		final Callback<CellDataFeatures<TrackableView, Number>, ObservableValue<Number>> minIntervalValueFactory =
 				tv -> tv.getValue().minIntervalProperty();
-		final Callback<CellDataFeatures<TrackerView, Number>, ObservableValue<Number>> seedsValueFactory =
+		final Callback<CellDataFeatures<TrackableView, Number>, ObservableValue<Number>> seedsValueFactory =
 				tv -> tv.getValue().seedsProperty();
-		final Callback<CellDataFeatures<TrackerView, Number>, ObservableValue<Number>> peersValueFactory =
+		final Callback<CellDataFeatures<TrackableView, Number>, ObservableValue<Number>> peersValueFactory =
 				tv -> tv.getValue().leechersProperty();
-		final Callback<CellDataFeatures<TrackerView, Number>, ObservableValue<Number>> downloadedValueFactory =
+		final Callback<CellDataFeatures<TrackableView, Number>, ObservableValue<Number>> downloadedValueFactory =
 				tv -> tv.getValue().downloadedProperty();
 				
-		final LinkedHashMap<String, TableColumn<TrackerView, ?>> columnMappings = new LinkedHashMap<>();
+		final LinkedHashMap<String, TableColumn<TrackableView, ?>> columnMappings = new LinkedHashMap<>();
 		columnMappings.put(NAME_COLUMN_NAME, TableUtils.buildColumn(nameValueFactory,
-				TrackerView::getTrackerName, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, NAME_COLUMN_NAME));
+				TrackableView::getName, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, NAME_COLUMN_NAME));
 		columnMappings.put(STATUS_COLUMN_NAME, TableUtils.buildColumn(statusValueFactory,
-				TrackerView::getStatus, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, STATUS_COLUMN_NAME));
+				TrackableView::getStatus, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, STATUS_COLUMN_NAME));
 		columnMappings.put(UPDATE_IN_COLUMN_NAME, TableUtils.buildColumn(nextUpdateValueFactory,
 				updateInValueConverter, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, UPDATE_IN_COLUMN_NAME));
 		columnMappings.put(INTERVAL_COLUMN_NAME, TableUtils.buildColumn(intervalValueFactory,
@@ -330,7 +332,7 @@ public class TrackerTable {
 		columnMappings.put(MIN_INTERVAL_COLUMN_NAME, TableUtils.buildColumn(minIntervalValueFactory,
 				minIntervalValueConverter, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, MIN_INTERVAL_COLUMN_NAME));
         columnMappings.put(SEEDS_COLUMN_NAME, TableUtils.buildColumn(seedsValueFactory,
-                val -> String.valueOf(val.getSeeds()), GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, SEEDS_COLUMN_NAME));
+                val -> String.valueOf(val.getSeeders()), GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, SEEDS_COLUMN_NAME));
         columnMappings.put(PEERS_COLUMN_NAME, TableUtils.buildColumn(peersValueFactory,
                 val -> String.valueOf(val.getLeechers()), GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, PEERS_COLUMN_NAME));
         columnMappings.put(DOWNLOADED_COLUMN_NAME, TableUtils.buildColumn(downloadedValueFactory, val ->

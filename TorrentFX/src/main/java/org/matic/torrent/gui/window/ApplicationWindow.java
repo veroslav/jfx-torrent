@@ -71,7 +71,7 @@ import org.matic.torrent.gui.custom.StatusBar;
 import org.matic.torrent.gui.image.ImageUtils;
 import org.matic.torrent.gui.model.TorrentFileEntry;
 import org.matic.torrent.gui.model.TorrentView;
-import org.matic.torrent.gui.model.TrackerView;
+import org.matic.torrent.gui.model.TrackableView;
 import org.matic.torrent.gui.table.TableUtils;
 import org.matic.torrent.gui.table.TorrentViewTable;
 import org.matic.torrent.gui.table.TrackerTable;
@@ -86,7 +86,6 @@ import org.matic.torrent.queue.QueuedTorrentManager;
 import org.matic.torrent.queue.QueuedTorrentMetaData;
 import org.matic.torrent.queue.TorrentStatus;
 import org.matic.torrent.tracking.TrackerManager;
-import org.matic.torrent.tracking.beans.TrackerSessionView;
 import org.matic.torrent.utils.PeriodicTask;
 import org.matic.torrent.utils.PeriodicTaskRunner;
 
@@ -100,6 +99,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.prefs.PreferenceChangeEvent;
+import java.util.prefs.PreferenceChangeListener;
 import java.util.stream.Collectors;
 
 /**
@@ -108,7 +109,7 @@ import java.util.stream.Collectors;
  * @author vedran
  *
  */
-public final class ApplicationWindow {
+public final class ApplicationWindow implements PreferenceChangeListener {
 	
 	private static final List<String> TAB_NAMES = Arrays.asList(GuiProperties.FILES_TAB_ID,
 			GuiProperties.INFO_TAB_ID, GuiProperties.PEERS_TAB_ID, GuiProperties.TRACKERS_TAB_ID,
@@ -170,8 +171,8 @@ public final class ApplicationWindow {
 	//Menu item for showing or hiding the tab icons
 	private final CheckMenuItem showTabIconsMenuItem = new CheckMenuItem("_Icons on Tabs");
 	
-	//Mapping between a torrent's info hash and it's tracker views
-	private final Map<InfoHash, List<TrackerView>> trackerViewMappings = new HashMap<>();
+	//Mapping between a torrent and it's tracker views
+	private final Map<TorrentView, Set<TrackableView>> trackableViewMappings = new HashMap<>();
 	
 	//Mapping between toolbar's buttons and their icon paths
 	private final Map<String, Button> toolbarButtonsMap = new HashMap<>();
@@ -196,8 +197,22 @@ public final class ApplicationWindow {
 		this.trackerManager = trackerManager;
 		this.queuedTorrentManager = queuedTorrentManager;
 		
-		initComponents();
+		initComponents();			
 	}
+
+    @Override
+    public void preferenceChange(final PreferenceChangeEvent changeEvent) {
+        final String propName = changeEvent.getKey();
+        if(propName.startsWith("gui.")) {
+            switch(propName) {
+                case GuiProperties.ALTERNATE_LIST_ROW_COLOR:
+                    TableUtils.refresh(fileContentTree);
+                    torrentViewTable.refresh();
+                    trackerTable.refresh();
+                    break;
+            }
+        }
+    }
 	
 	private void initComponents() {		
 		setMenuAccelerators();				
@@ -212,11 +227,12 @@ public final class ApplicationWindow {
 		torrentViewTable.addSelectionListener(this::onTorrentJobSelection);
 		trackerTable.onTrackerDeletionRequested(views ->
 			trackerTableActionHandler.onTrackerDeletion(views, trackerManager, trackerTable, stage));
-		trackerTable.onTrackerUpdateRequested(views ->
+		trackerTable.onTrackableUpdateRequested(views ->
 			trackerTableActionHandler.onTrackerUpdate(views, trackerManager));
         trackerTable.onTrackersAdded(urls -> trackerTableActionHandler.onTrackersAdded(urls, queuedTorrentManager,
-                torrentViewTable.getSelectedJobs().get(0).getInfoHash(), trackerTable), stage,
+                torrentViewTable.getSelectedJobs().get(0), trackerTable), stage,
                 torrentViewTable.bindOnEmpty());
+        ApplicationPreferences.addPreferenceChangeListener(this);
 		
 		TreeTableUtils.addFileListingViewColumns(fileContentTree, true);		
 		TreeTableUtils.setupFileListingView(fileContentTree, fileTreeViewer);
@@ -268,6 +284,7 @@ public final class ApplicationWindow {
 		else {
 			stage.centerOnScreen();
 		}
+		
 		return scene;
 	}
 	
@@ -320,7 +337,6 @@ public final class ApplicationWindow {
 					break;
 				case GuiProperties.FILES_TAB_ID:
 					//Update and render file progress statistics if Files tab is selected
-					//TODO: Implement fully
 					TreeTableUtils.sort(fileContentTree);
 					break;
 				case GuiProperties.INFO_TAB_ID:
@@ -769,7 +785,7 @@ public final class ApplicationWindow {
 		}
 
         final TorrentView torrentView = queuedTorrentManager.add(metaData, torrentOptions.getProgress());
-		if(!torrentExists) {
+		if(!torrentExists) {			
             loadTorrent(torrentView, torrentOptions.getTorrentContents());
 		}
 		fileTreeViewer.show(infoHash);
@@ -790,12 +806,11 @@ public final class ApplicationWindow {
 	}
 	
 	private void loadTorrent(final TorrentView torrentView, final TreeItem<TorrentFileEntry> contents) {
-		final Set<TrackerSessionView> trackerSessionViews = torrentView.getTrackerSessionViews();
-		final ObservableList<TrackerView> trackerViews = FXCollections.observableArrayList(
-				trackerSessionViews.stream().map(TrackerView::new).collect(Collectors.toList()));
-					
-		trackerViewMappings.put(torrentView.getInfoHash(), trackerViews);
-		trackerTable.setContent(trackerViews);		
+		torrentView.selectedLengthProperty().bind(contents.getValue().selectionLengthProperty());
+		final Set<TrackableView> trackableViews = torrentView.getTrackableViews();
+
+		trackableViewMappings.put(torrentView, trackableViews);
+		trackerTable.setContent(trackableViews);
 		torrentViewTable.addJob(torrentView);
 		fileTreeViewer.attach(torrentView.getInfoHash(), contents);
 	}
@@ -830,8 +845,7 @@ public final class ApplicationWindow {
 				torrentDeletionConfirmed = answer.isPresent() && answer.get() == ButtonType.OK;				
 			}
 			if(!showConfirmAlert || torrentDeletionConfirmed) {
-				selectedTorrentJobs.stream().map(
-						TorrentView::getInfoHash).forEach(t -> {
+				selectedTorrentJobs.stream().forEach(t -> {
 							try {
 	                            queuedTorrentManager.remove(t);
 							} catch (final IOException ioe) {
@@ -848,7 +862,7 @@ public final class ApplicationWindow {
 				if(newSelection.isEmpty()) {
 					fileTreeViewer.hide();
 	                infoPane.setContent(null);
-					trackerTable.setContent(FXCollections.emptyObservableList());
+					trackerTable.setContent(FXCollections.emptyObservableSet());
 				}
 				else {
 					final TorrentView selectedJob = newSelection.get(0);
@@ -867,7 +881,7 @@ public final class ApplicationWindow {
 		final boolean torrentSelected = selectedTorrentView != null;
 		if(torrentSelected) {		
 			fileTreeViewer.show(selectedTorrentView.getInfoHash());
-			trackerTable.setContent(trackerViewMappings.get(selectedTorrentView.getInfoHash()));
+			trackerTable.setContent(trackableViewMappings.get(selectedTorrentView));
             infoPane.setContent(selectedTorrentView);
 			updateGui();
 		}
@@ -1006,6 +1020,9 @@ public final class ApplicationWindow {
 		final boolean isShuttingDown = windowActionHandler.onWindowClose(event, stage);
 		
 		if(isShuttingDown) {
+            //Stop listening for preference changes
+            ApplicationPreferences.removePreferenceChangeListener(this);
+
 			//Stop updating periodic tasks
 			guiUpdateTaskRunner.cancel();
 			

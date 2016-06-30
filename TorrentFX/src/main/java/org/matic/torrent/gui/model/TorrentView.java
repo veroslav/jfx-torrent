@@ -20,14 +20,15 @@
 package org.matic.torrent.gui.model;
 
 import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.LongProperty;
 import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleLongProperty;
 import org.matic.torrent.codec.BinaryEncodedInteger;
 import org.matic.torrent.codec.BinaryEncodedString;
 import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.queue.QueuedTorrent;
 import org.matic.torrent.queue.QueuedTorrentMetaData;
 import org.matic.torrent.queue.TorrentStatus;
-import org.matic.torrent.tracking.beans.TrackerSessionView;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -37,7 +38,8 @@ public final class TorrentView {
     private final AvailabilityView availabilityView;
     private final QueuedTorrent queuedTorrent;
 
-    private final IntegerProperty priority;
+    private final LongProperty selectedLength;
+    private final IntegerProperty priority;    
 
     private long elapsedTime;
     private long downloadedBytes;
@@ -66,24 +68,29 @@ public final class TorrentView {
     private long completionTime;
     private long havePieces;
 
-    private final Set<TrackerSessionView> trackerSessionViews = new LinkedHashSet<>();
+    private final Set<TrackableView> trackableViews = new LinkedHashSet<>();
 
 	public TorrentView(final QueuedTorrent queuedTorrent) {
 		this.priority = new SimpleIntegerProperty(0);
+		this.selectedLength = new SimpleLongProperty(0);
         this.queuedTorrent = queuedTorrent;
 
         availabilityView = new AvailabilityView(this.queuedTorrent.getMetaData().getTotalPieces());
 	}
-    public void addTrackerSessionViews(final Set<TrackerSessionView> trackerSessionViews) {
-        this.trackerSessionViews.addAll(trackerSessionViews);
+    public void addTrackableViews(final Set<? extends TrackableView> trackableViews) {
+        this.trackableViews.addAll(trackableViews);
     }
 
     public FileTree getFileTree() {
         return new FileTree(queuedTorrent.getMetaData(), queuedTorrent.getProgress());
     }
 
-    public Set<TrackerSessionView> getTrackerSessionViews() {
-        return trackerSessionViews;
+    public Set<TrackableView> getTrackableViews() {
+        return trackableViews;
+    }
+    
+    public String getTrackerUrl() {
+    	return queuedTorrent.getMetaData().getAnnounceUrl();
     }
 
     public InfoHash getInfoHash() {
@@ -92,6 +99,14 @@ public final class TorrentView {
 
     public QueuedTorrentMetaData getMetaData() {
         return queuedTorrent.getMetaData();
+    }
+    
+    public LongProperty selectedLengthProperty() {
+    	return selectedLength;
+    }
+    
+    public long getSelectedLength() {
+    	return selectedLength.get();
     }
 
     public IntegerProperty priorityProperty() {
@@ -226,4 +241,29 @@ public final class TorrentView {
     public long getHavePieces() {
         return havePieces;
     }
+    
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((queuedTorrent == null) ? 0 : queuedTorrent.hashCode());
+		return result;
+	}
+	
+	@Override
+	public boolean equals(final Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		TorrentView other = (TorrentView) obj;
+		if (queuedTorrent == null) {
+			if (other.queuedTorrent != null)
+				return false;
+		} else if (!queuedTorrent.equals(other.queuedTorrent))
+			return false;
+		return true;
+	}
 }

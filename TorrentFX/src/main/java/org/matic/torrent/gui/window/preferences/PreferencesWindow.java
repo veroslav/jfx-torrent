@@ -1,6 +1,6 @@
 /*
-* This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015 Vedran Matic
+* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
+* Copyright (C) 2015-2016 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,6 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-
 package org.matic.torrent.gui.window.preferences;
 
 import javafx.beans.property.BooleanProperty;
@@ -47,7 +46,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * A window showing all program preferences that can be changed by the user
+ * A window showing all program preferences that can be changed by the user.
  * 
  * @author vedran
  *
@@ -61,7 +60,7 @@ public final class PreferencesWindow {
 	//Whether any of the preferences has been changed by the user
 	private final BooleanProperty preferencesChanged = new SimpleBooleanProperty(false);
 	
-	private final CategoryContentPane[] categoryContentPanes = new CategoryContentPane[4];
+	private final CategoryContentPane[] categoryContentPanes = new CategoryContentPane[6];
 	
 	private final Dialog<ButtonType> window;
 	
@@ -70,24 +69,25 @@ public final class PreferencesWindow {
 	
 	public PreferencesWindow(final Window owner, final FileActionHandler fileActionHandler) {
 		optionGroupMappings = new HashMap<>();
-		
-		categoryContentPanes[0] = new UiSettingsContentPane(preferencesChanged);
-		categoryContentPanes[1] = new DirectoriesContentPane(owner, fileActionHandler, preferencesChanged);
-		categoryContentPanes[2] = new BitTorrentContentPane(preferencesChanged);
-		categoryContentPanes[3] = new UiExtrasContentPane(preferencesChanged, owner.getScene());
+
+        categoryContentPanes[0] = new UiSettingsContentPane(preferencesChanged);
+        categoryContentPanes[1] = new DirectoriesContentPane(owner, fileActionHandler, preferencesChanged);
+        categoryContentPanes[2] = new ConnectionContentPane(preferencesChanged);
+        categoryContentPanes[3] = new BitTorrentContentPane(preferencesChanged);
+        categoryContentPanes[4] = new QueueingContentPane(preferencesChanged);
+        categoryContentPanes[5] = new UiExtrasContentPane(preferencesChanged, owner.getScene());
 		
 		window = new Dialog<>();
 		window.initOwner(owner);		
 		initComponents();
 	}
 	
-	public final void showAndWait() {
+	public void showAndWait() {
 		window.showAndWait();
 	}
 	
 	private void initComponents() {				
 		final Node contentLayout = layoutContent();
-		optionCategoriesTreeView.setMinWidth(130);
 		optionCategoriesTreeView.getStyleClass().add(CssProperties.OPTION_CATEGORY_LIST);
 		optionCategoriesTreeView.setRoot(buildOptionCategories());
 		optionCategoriesTreeView.setShowRoot(false);		
@@ -138,7 +138,7 @@ public final class PreferencesWindow {
 		
 		final SplitPane mainLayout = new SplitPane();        
 		mainLayout.setOrientation(Orientation.HORIZONTAL);
-		mainLayout.setDividerPosition(0, 0.50);
+		mainLayout.setDividerPosition(0, 0.20);
 		mainLayout.getItems().addAll(optionCategoriesTreeView, optionCardLayout);
 		
 		mainLayout.setPrefSize(770, 500);
@@ -153,17 +153,17 @@ public final class PreferencesWindow {
 		final String generalOptionName = "General";
 		final String uiSettingsOptionName = categoryContentPanes[0].getName();
 		final String directoriesOptionName = categoryContentPanes[1].getName();
-		final String connectionOptionName = "Connection";
+		final String connectionOptionName = categoryContentPanes[2].getName();
 		final String bandwidthOptionName = "Bandwidth";
-		final String bitTorrentOptionName = categoryContentPanes[2].getName();
+		final String bitTorrentOptionName = categoryContentPanes[3].getName();
 		final String transferCapOptionName = "Transfer Cap";
-		final String queueingOptionName = "Queueing";
+		final String queueingOptionName = categoryContentPanes[4].getName();
 		final String schedulerOptionName = "Scheduler";
 		final String remoteOptionName = "Remote";
 		
 		//Advanced option names
 		final String advancedOptionName = "Advanced";
-		final String uiExtrasOptionName = "UI Extras";
+		final String uiExtrasOptionName = categoryContentPanes[5].getName();
 		final String diskCacheOptionName = "Disk Cache";
 		final String webUiOptionName = "Web UI";
 		final String runProgramOptionName = "Run Program";
@@ -172,17 +172,17 @@ public final class PreferencesWindow {
 		optionGroupMappings.put(generalOptionName, buildGeneralOptionsView());
 		optionGroupMappings.put(uiSettingsOptionName, categoryContentPanes[0].build());
 		optionGroupMappings.put(directoriesOptionName, categoryContentPanes[1].build());
-		optionGroupMappings.put(connectionOptionName, buildConnectionOptionsView());
+		optionGroupMappings.put(connectionOptionName, categoryContentPanes[2].build());
 		optionGroupMappings.put(bandwidthOptionName, buildBandwidthOptionsView());
-		optionGroupMappings.put(bitTorrentOptionName, categoryContentPanes[2].build());
+		optionGroupMappings.put(bitTorrentOptionName, categoryContentPanes[3].build());
 		optionGroupMappings.put(transferCapOptionName, buildTransferCapOptionsView());
-		optionGroupMappings.put(queueingOptionName, buildQueueingOptionsView());
+		optionGroupMappings.put(queueingOptionName, categoryContentPanes[4].build());
 		optionGroupMappings.put(schedulerOptionName, buildSchedulerOptionsView());
 		optionGroupMappings.put(remoteOptionName, buildRemoteOptionsView());
 		
 		//Advanced option mappings
 		optionGroupMappings.put(advancedOptionName, buildAdvancedOptionsView());
-		optionGroupMappings.put(uiExtrasOptionName, categoryContentPanes[3].build());
+		optionGroupMappings.put(uiExtrasOptionName, categoryContentPanes[5].build());
 		optionGroupMappings.put(diskCacheOptionName, buildDiskCacheOptionsView());
 		optionGroupMappings.put(webUiOptionName, buildWebUiOptionsView());
 		optionGroupMappings.put(runProgramOptionName, buildRunProgramOptionsView());
@@ -223,11 +223,7 @@ public final class PreferencesWindow {
 	private Pane buildGeneralOptionsView() {
 		return new Pane(new Label("GENERAL"));
 	}
-	
-	private Pane buildConnectionOptionsView() {
-		return new Pane(new Label("CONNECTION"));
-	}
-	
+
 	private Pane buildBandwidthOptionsView() {
 		return new Pane(new Label("BANDWIDTH"));
 	}
@@ -235,11 +231,7 @@ public final class PreferencesWindow {
 	private Pane buildTransferCapOptionsView() {
 		return new Pane(new Label("TRANSFER CAP"));
 	}
-	
-	private Pane buildQueueingOptionsView() {
-		return new Pane(new Label("QUEUEING"));
-	}
-	
+
 	private Pane buildSchedulerOptionsView() {
 		return new Pane(new Label("SCHEDULER"));
 	}

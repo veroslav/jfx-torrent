@@ -19,26 +19,30 @@
 */
 package org.matic.torrent.queue;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import org.matic.torrent.codec.BinaryEncodedList;
 import org.matic.torrent.codec.BinaryEncodedString;
 import org.matic.torrent.gui.model.TorrentView;
+import org.matic.torrent.gui.model.TrackerView;
 import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.io.DataPersistenceSupport;
 import org.matic.torrent.tracking.Tracker;
 import org.matic.torrent.tracking.TrackerManager;
-import org.matic.torrent.tracking.beans.TrackerSessionView;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.prefs.PreferenceChangeEvent;
+import java.util.prefs.PreferenceChangeListener;
 import java.util.stream.Collectors;
 
-public final class QueuedTorrentManager {
+public final class QueuedTorrentManager implements PreferenceChangeListener {
 
-	private final List<QueuedTorrent> queuedTorrents = new ArrayList<>();
+    private final ObservableList<QueuedTorrent> queuedTorrents = FXCollections.observableArrayList();
+    private final QueueController queueController = new QueueController(queuedTorrents);
 	private final TrackerManager trackerManager;
     private final DataPersistenceSupport persistenceSupport;
 	
@@ -48,24 +52,30 @@ public final class QueuedTorrentManager {
 	}
 
     /**
+     * @see PreferenceChangeListener#preferenceChange(PreferenceChangeEvent)
+     */
+    @Override
+    public void preferenceChange(final PreferenceChangeEvent event) {
+        final String eventKey = event.getKey();
+        if(eventKey.startsWith("transfer.max.torrents")) {
+            queueController.onQueueLimitsChanged(eventKey, event.getNewValue());
+        }
+    }
+
+    /**
      * Allow the user to schedule a torrent's status change from the GUI.
      *
-     * @param infoHash Target torrent's info hash.
+     * @param torrentView A view of the target torrent.
      * @param requestedStatus Target status to change to.
      */
-    public void requestStatusChange(final InfoHash infoHash, final TorrentStatus requestedStatus) {
+    public void requestStatusChange(final TorrentView torrentView, final TorrentStatus requestedStatus) {
         synchronized(queuedTorrents) {
-            match(infoHash).ifPresent(torrent -> {
-                final TorrentStatus currentStatus = torrent.getStatus();
-
-                if(currentStatus == requestedStatus || (requestedStatus != TorrentStatus.ACTIVE &&
-                        requestedStatus != TorrentStatus.STOPPED)) {
-                    return;
+            match(torrentView.getInfoHash()).ifPresent(torrent -> {
+                final boolean statusChanged = queueController.changeStatus(torrent, requestedStatus);
+                if(statusChanged) {
+                    trackerManager.issueTorrentEvent(torrentView, requestedStatus == TorrentStatus.ACTIVE?
+                            Tracker.Event.STARTED : Tracker.Event.STOPPED);
                 }
-
-                torrent.setStatus(requestedStatus);
-                trackerManager.issueTorrentEvent(torrent, requestedStatus == TorrentStatus.ACTIVE?
-                        Tracker.Event.STARTED : Tracker.Event.STOPPED);
             });
         }
     }
@@ -108,34 +118,38 @@ public final class QueuedTorrentManager {
 		synchronized(queuedTorrents) {
             final Optional<QueuedTorrent> torrent = match(metaData.getInfoHash());
             final Set<String> trackerUrls = progress.getTrackerUrls();
-            final Set<TrackerSessionView> trackerSessionViews = new LinkedHashSet<>();
-            final QueuedTorrent matchedTorrent;
+            final Set<TrackerView> trackerViews = new LinkedHashSet<>();
+            final TorrentView torrentView;
 
             if (!torrent.isPresent()) {
                 //New torrent, add it
-                matchedTorrent = new QueuedTorrent(metaData, progress);
+            	final QueuedTorrent newTorrent = new QueuedTorrent(metaData, progress);
+                torrentView = new TorrentView(newTorrent);
 
-                if (!persistenceSupport.isPersisted(matchedTorrent.getInfoHash())) {
+                if (!persistenceSupport.isPersisted(newTorrent.getInfoHash())) {
                     progress.setAddedOn(System.currentTimeMillis());
-                    persistenceSupport.store(matchedTorrent.getMetaData(), matchedTorrent.getProgress());
+                    persistenceSupport.store(newTorrent.getMetaData(), newTorrent.getProgress());
                 }
 
-                queuedTorrents.add(matchedTorrent);
-                trackerSessionViews.addAll(trackerUrls.stream().map(
-                        t -> trackerManager.addTracker(t, matchedTorrent)).collect(Collectors.toSet()));
+                queuedTorrents.add(newTorrent);
+                trackerViews.addAll(trackerUrls.stream().map(
+                        t -> trackerManager.addTracker(t, torrentView)).collect(Collectors.toSet()));
+                torrentView.priorityProperty().bind(newTorrent.priorityProperty());
             } else {
+                //TODO: Get rid of else and simply call QueuedTorrentManager.addTracker()
                 //Merge trackers, the torrent already exists
-                matchedTorrent = torrent.get();
+            	final QueuedTorrent matchedTorrent = torrent.get();
+                torrentView = new TorrentView(matchedTorrent);
                 final BinaryEncodedList announceList = matchedTorrent.getMetaData().getAnnounceList();
                 final List<BinaryEncodedString> newUrls = trackerUrls.stream().map(BinaryEncodedString::new).filter(
                         url -> !announceList.contains(url)).collect(Collectors.toList());
-                trackerSessionViews.addAll(newUrls.stream().map(url -> {
+                trackerViews.addAll(newUrls.stream().map(url -> {
                     announceList.add(url);
-                    return trackerManager.addTracker(url.getValue(), matchedTorrent);
+                    return trackerManager.addTracker(url.getValue(), torrentView);
                 }).collect(Collectors.toSet()));
             }
-            final TorrentView torrentView = new TorrentView(matchedTorrent);
-            torrentView.addTrackerSessionViews(trackerSessionViews);
+            
+            torrentView.addTrackableViews(trackerViews);
             return torrentView;
         }
 	}
@@ -144,30 +158,30 @@ public final class QueuedTorrentManager {
      * Add a new tracker to a torrent.
      *
      * @param url New tracker's url.
-     * @param infoHash Target torrent's info hash.
+     * @param torrentView View to the target torrent.
      * @return A view to the added tracker.
      */
-    public TrackerSessionView addTracker(final String url, final InfoHash infoHash) {
+    public TrackerView addTracker(final String url, final TorrentView torrentView) {
         synchronized(queuedTorrents) {
-            final Optional<QueuedTorrent> torrent = match(infoHash);
-            return torrent.isPresent()? trackerManager.addTracker(url, torrent.get()) : null;
+            final Optional<QueuedTorrent> torrent = match(torrentView.getInfoHash());
+            return torrent.isPresent()? trackerManager.addTracker(url, torrentView) : null;
         }
     }
 	
 	/**
 	 * Remove and stop managing a torrent.
 	 * 
-	 * @param infoHash Info hash of the torrent to be removed.
+	 * @param torrentView A view of the torrent to be removed.
 	 * @return Whether the target torrent was successfully removed.
      * @throws IOException If the torrent can't be removed from the disk.
 	 */
-	public boolean remove(final InfoHash infoHash) throws IOException {
+	public boolean remove(final TorrentView torrentView) throws IOException {
         synchronized (queuedTorrents) {
             final QueuedTorrent targetTorrent = queuedTorrents.stream().filter(
-                    t -> t.getInfoHash().equals(infoHash)).findFirst().orElse(null);
+                    t -> t.getInfoHash().equals(torrentView.getInfoHash())).findFirst().orElse(null);
             if(targetTorrent != null) {
                 queuedTorrents.remove(targetTorrent);
-                trackerManager.removeTorrent(targetTorrent);
+                trackerManager.removeTorrent(torrentView);
                 persistenceSupport.delete(targetTorrent.getInfoHash());
                 return true;
             }

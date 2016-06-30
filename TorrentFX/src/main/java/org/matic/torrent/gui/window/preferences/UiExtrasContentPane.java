@@ -39,7 +39,7 @@ import org.matic.torrent.preferences.GuiProperties;
 
 public class UiExtrasContentPane extends CategoryContentPane {
 
-	private static final String UI_EXTRAS_CONTENT_PANE_NAME = "UI Settings";
+	private static final String UI_EXTRAS_CONTENT_PANE_NAME = "UI Settings ";
 	
 	private final ComboBox<ApplicationTheme> themeOptionsComboBox = new ComboBox<>();
 	private final Scene scene;
@@ -47,12 +47,12 @@ public class UiExtrasContentPane extends CategoryContentPane {
 	protected UiExtrasContentPane(final BooleanProperty preferencesChanged, final Scene scene) {
 		super(UI_EXTRAS_CONTENT_PANE_NAME, preferencesChanged);
 		this.scene = scene;
-		initComponents(preferencesChanged);
+		initComponents(preferencesChanged);		
 	}
 
 	@Override
 	public void onSaveContentChanges() {
-		if(preferencesChanged.get()) {			
+		if(preferencesChanged.get()) {	
 			final String targetTheme = themeOptionsComboBox.getSelectionModel().getSelectedItem().name().toLowerCase();
 			final String targetUiStyle = GuiProperties.THEME_STYLESHEET_PATH_TEMPLATE.replace("?", targetTheme)
 					+ GuiProperties.THEME_UI_STYLE_CSS;

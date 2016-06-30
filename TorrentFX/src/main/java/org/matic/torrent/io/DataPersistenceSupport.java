@@ -134,14 +134,14 @@ public final class DataPersistenceSupport {
 				e.printStackTrace();
 			}
 			
-			QueuedTorrentProgress progress = null;
+			final QueuedTorrentProgress progress;
 			try(final BufferedInputStream bis = new BufferedInputStream(new FileInputStream(statePath))) {
 				progress = new QueuedTorrentProgress(decoder.decode(bis));
+				loadedTorrents.add(new LoadedTorrentData(metaData, progress));
 			}		
 			catch(final IOException | BinaryDecoderException e) {
 				e.printStackTrace();
-			}
-			loadedTorrents.add(new LoadedTorrentData(metaData, progress));
+			}			
 		});
 		
 		return loadedTorrents;

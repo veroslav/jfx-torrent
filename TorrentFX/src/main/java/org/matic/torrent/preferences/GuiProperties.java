@@ -90,9 +90,9 @@ public final class GuiProperties {
 	public static final String TORRENT_JOBS_TAB_COLUMN_VISIBILITY = "gui.columns.visibility.jobs";	
 	public static final String TORRENT_JOBS_TAB_COLUMN_ORDER = "gui.columns.order.jobs";		
 	public static final String TORRENT_JOBS_TAB_COLUMN_SIZE = "gui.columns.size.jobs";
-	public static final String DEFAULT_TORRENT_JOBS_TAB_COLUMN_VISIBILITIES = "true:true";
-	public static final String DEFAULT_TORRENT_JOBS_TAB_COLUMN_ORDER = "#:Name";
-	public static final String DEFAULT_TORRENT_JOBS_COLUMN_SIZES = "40:200";
+	public static final String DEFAULT_TORRENT_JOBS_TAB_COLUMN_VISIBILITIES = "true:true:true:true:true:true";
+	public static final String DEFAULT_TORRENT_JOBS_TAB_COLUMN_ORDER = "#:Name:Size:Selected Size:Added:Tracker";
+	public static final String DEFAULT_TORRENT_JOBS_COLUMN_SIZES = "40:200:80:80:80:120";
 	
 	public static final String DEFAULT_INFO_COLUMN_ORDER = "Name:Path:Size:Priority";
 	public static final String DEFAULT_INFO_COLUMN_SIZES = "230:150:140:90";

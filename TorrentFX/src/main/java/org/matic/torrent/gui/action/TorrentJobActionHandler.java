@@ -25,7 +25,7 @@ import org.matic.torrent.gui.model.TorrentView;
 import org.matic.torrent.queue.QueuedTorrentManager;
 import org.matic.torrent.queue.TorrentStatus;
 
-public class TorrentJobActionHandler {
+public final class TorrentJobActionHandler {
 
 	public void onRequestTorrentStateChange(final QueuedTorrentManager torrentManager,
                                             final ObservableList<TorrentView> selectedTorrents,
@@ -35,6 +35,6 @@ public class TorrentJobActionHandler {
         stopButton.setDisable(requestedStatus == TorrentStatus.STOPPED);
 
         selectedTorrents.stream().forEach(tv ->
-                torrentManager.requestStatusChange(tv.getInfoHash(), requestedStatus));
+                torrentManager.requestStatusChange(tv, requestedStatus));
 	}
 }

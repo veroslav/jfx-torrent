@@ -81,11 +81,11 @@ public final class TorrentMain extends Application {
 	private static void startup() {
         UDP_TRACKER_CONNECTION_MANAGER.addTrackerListener(TRACKER_MANAGER);
         UDP_TRACKER_CONNECTION_MANAGER.manage("", UdpConnectionManager.UDP_TRACKER_PORT);
-        ApplicationPreferences.addPreferenceChangeListener(TRACKER_MANAGER);
+        ApplicationPreferences.addPreferenceChangeListener(TORRENT_MANAGER);
 	}
 	
 	private static void cleanup() {
-		ApplicationPreferences.removePreferenceChangeListener(TRACKER_MANAGER);
+		ApplicationPreferences.removePreferenceChangeListener(TORRENT_MANAGER);
         UDP_TRACKER_CONNECTION_MANAGER.removeTrackerListener(TRACKER_MANAGER);
 
         if(DHT_CONNECTION_MANAGER != UDP_TRACKER_CONNECTION_MANAGER) {

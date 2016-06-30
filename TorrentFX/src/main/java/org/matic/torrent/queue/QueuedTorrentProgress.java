@@ -19,6 +19,7 @@
 */
 package org.matic.torrent.queue;
 
+import org.matic.torrent.codec.BinaryEncodable;
 import org.matic.torrent.codec.BinaryEncodedDictionary;
 import org.matic.torrent.codec.BinaryEncodedInteger;
 import org.matic.torrent.codec.BinaryEncodedList;
@@ -27,6 +28,7 @@ import org.matic.torrent.codec.BinaryEncodingKeys;
 
 import java.io.IOException;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 
 public final class QueuedTorrentProgress {
@@ -38,10 +40,11 @@ public final class QueuedTorrentProgress {
 	}
 	
 	public String getName() {
-		return torrentState.get(BinaryEncodingKeys.KEY_NAME).toString();
+        final BinaryEncodable name = torrentState.get(BinaryEncodingKeys.KEY_NAME);
+		return name != null? name.toString() : null;
 	}
 	
-	public void setName(final String name) {
+	protected void setName(final String name) {
 		torrentState.put(BinaryEncodingKeys.KEY_NAME, new BinaryEncodedString(name));
 	}
 	
@@ -64,6 +67,50 @@ public final class QueuedTorrentProgress {
 		return trackerUrls;
 	}
 
+    protected void setTorrentPriority(final int priority) {
+        torrentState.put(BinaryEncodingKeys.STATE_KEY_PRIORITY, new BinaryEncodedInteger(priority));
+    }
+
+    public int getTorrentPriority() {
+        final BinaryEncodedInteger priority = (BinaryEncodedInteger)torrentState.get(BinaryEncodingKeys.STATE_KEY_PRIORITY);
+        return priority != null? (int)priority.getValue() : 0;
+    }
+
+    public void setFilePriorities(final Map<String, FilePriority> filePrios) {
+        BinaryEncodedDictionary filePrioMap = (BinaryEncodedDictionary)torrentState.get(
+                BinaryEncodingKeys.STATE_KEY_FILE_PRIO);
+        if(filePrioMap == null) {
+            filePrioMap = new BinaryEncodedDictionary();
+            torrentState.put(BinaryEncodingKeys.STATE_KEY_FILE_PRIO, filePrioMap);
+        }
+        final BinaryEncodedDictionary finalFilePrioMap = filePrioMap;
+        filePrios.forEach((path, prio) -> finalFilePrioMap.put(
+                new BinaryEncodedString(path), new BinaryEncodedString(prio.toString())));
+    }
+
+    public void setFilePriority(final String fileId, final FilePriority priority) {
+        BinaryEncodedDictionary filePrioMap = (BinaryEncodedDictionary)torrentState.get(
+                BinaryEncodingKeys.STATE_KEY_FILE_PRIO);
+        if(filePrioMap == null) {
+            filePrioMap = new BinaryEncodedDictionary();
+            torrentState.put(BinaryEncodingKeys.STATE_KEY_FILE_PRIO, filePrioMap);
+        }
+        filePrioMap.put(new BinaryEncodedString(fileId), new BinaryEncodedInteger(priority.getValue()));
+    }
+
+    public FilePriority getFilePriority(final String fileId) {
+        final BinaryEncodedDictionary filePriorityMap = (BinaryEncodedDictionary)torrentState.get(
+                BinaryEncodingKeys.STATE_KEY_FILE_PRIO);
+        if(filePriorityMap == null) {
+            return FilePriority.NORMAL;
+        }
+        final BinaryEncodedInteger filePriority = (BinaryEncodedInteger)filePriorityMap.get(new BinaryEncodedString(fileId));
+        if(filePriority == null) {
+            return FilePriority.NORMAL;
+        }
+        return FilePriority.values()[(int)filePriority.getValue()];
+    }
+
     protected void setAddedOn(final long addedOnMillis) {
         torrentState.put(BinaryEncodingKeys.STATE_KEY_ADDED_ON, new BinaryEncodedInteger(addedOnMillis));
     }
@@ -72,7 +119,7 @@ public final class QueuedTorrentProgress {
         return ((BinaryEncodedInteger)torrentState.get(BinaryEncodingKeys.STATE_KEY_ADDED_ON)).getValue();
     }
 
-	public void setStatus(final TorrentStatus status) {
+	protected void setStatus(final TorrentStatus status) {
 		torrentState.put(BinaryEncodingKeys.STATE_KEY_TORRENT_STATUS, new BinaryEncodedString(status.name()));
 	}
 	

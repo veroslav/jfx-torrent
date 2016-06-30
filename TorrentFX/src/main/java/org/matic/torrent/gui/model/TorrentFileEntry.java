@@ -1,6 +1,6 @@
 /*
-* This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015 Vedran Matic
+* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
+* Copyright (C) 2015-2016 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -20,18 +20,19 @@
 
 package org.matic.torrent.gui.model;
 
+import org.matic.torrent.queue.FilePriority;
+
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
-import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.LongProperty;
+import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
-import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleLongProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.scene.image.Image;
-import org.matic.torrent.queue.FilePriority;
 
 /**
  * A representation of a file entry in a torrent meta data file. It is used for
@@ -43,7 +44,7 @@ import org.matic.torrent.queue.FilePriority;
 public final class TorrentFileEntry {
 	
 	private final DoubleProperty progress;
-	private final IntegerProperty priority;
+	private final ObjectProperty<FilePriority> priority;
 	
 	private final BooleanProperty selected;
 	private final StringProperty name;
@@ -51,15 +52,15 @@ public final class TorrentFileEntry {
 	
 	private final LongProperty pieceCount;
 	private final LongProperty firstPiece;
-	private final LongProperty selectionSize;
-	private final LongProperty size;
+	private final LongProperty selectionLength;
+	private final LongProperty length;
 	private final LongProperty done;
 	
 	private final Image fileImage;
 	
 	public TorrentFileEntry(final String name, final String path, 
-			final long size, final boolean selected, final Image fileImage) {
-		this.priority = new SimpleIntegerProperty(FilePriority.NORMAL.getValue());
+			final long length, final boolean selected, final Image fileImage) {
+		this.priority = new SimpleObjectProperty<>(FilePriority.NORMAL);
 		this.progress = new SimpleDoubleProperty();
 		
 		this.selected = new SimpleBooleanProperty(selected);		
@@ -68,35 +69,39 @@ public final class TorrentFileEntry {
 		
 		this.pieceCount = new SimpleLongProperty();
 		this.firstPiece = new SimpleLongProperty();
-		this.selectionSize = new SimpleLongProperty(selected? size : 0);
-		this.size = new SimpleLongProperty(size);
+		this.selectionLength = new SimpleLongProperty(selected? length : 0);
+		this.length = new SimpleLongProperty(length);
 		this.done = new SimpleLongProperty();
 		
 		this.fileImage = fileImage;
 	}
 	
-	public final Image getImage() {
+	public Image getImage() {
 		return fileImage;
 	}
 	
-	public final void setSelected(final boolean selected) {		
+	public void setSelected(final boolean selected) {		
 		this.selected.set(selected);
 	}
 	
-	public final boolean isSelected() {	
+	public boolean isSelected() {	
 		return selected.get();
 	}
 	
-	public final long getSize() {
-		return size.get();
+	public long getLength() {
+		return length.get();
 	}
 	
-	public final long getSelectionSize() {
-		return selectionSize.get();
+	public void updateLength(final long lengthDiff) {
+		length.set(length.get() + lengthDiff);
 	}
 	
-	public final void updateSelectionSize(final long sizeDiff) {
-		selectionSize.set(selectionSize.get() + sizeDiff);
+	public long getSelectionLength() {
+		return selectionLength.get();
+	}
+	
+	public void updateSelectionLength(final long sizeLength) {
+		selectionLength.set(selectionLength.get() + sizeLength);
 	}
 	
 	public void setFirstPiece(final long firstPiece) {
@@ -119,42 +124,52 @@ public final class TorrentFileEntry {
 		this.done.set(done);
 	}
 	
+	public void setPriority(final FilePriority priority) {
+		this.priority.set(priority);
+	}
+	
+	public FilePriority getPriority() {
+		return priority.get();
+	}
+	
 	public LongProperty doneProperty() {
 		return done;
 	}
 		
-	public final BooleanProperty selectedProperty() {		
+	public BooleanProperty selectedProperty() {		
 		return selected;
 	}
 	
-	public final StringProperty nameProperty() {
+	public StringProperty nameProperty() {
 		return name;
 	}
 	
-	public final StringProperty pathProperty() {
+	public StringProperty pathProperty() {
 		return path;
 	}
 	
-	public final IntegerProperty priorityProperty() {
+	public ObjectProperty<FilePriority> priorityProperty() {
 		return priority;
 	}
 	
-	public final DoubleProperty progressProperty() {
+	public DoubleProperty progressProperty() {
 		return progress;
 	}
 	
-	public final LongProperty sizeProperty() {
-		return size;
+	public LongProperty lengthProperty() {
+		return length;
 	}
 	
-	public final LongProperty selectionSizeProperty() {
-		return selectionSize;
+	public LongProperty selectionLengthProperty() {
+		return selectionLength;
 	}
 
 	@Override
 	public String toString() {
-		return "TorrentContentModel [selected=" + selected + ", name=" + name
-				+ ", path=" + path + ", size=" + selectionSize + "]";
-	}	
+		return "TorrentFileEntry [progress=" + progress + ", priority=" + priority + ", selected=" + selected
+				+ ", name=" + name + ", path=" + path + ", pieceCount=" + pieceCount + ", firstPiece=" + firstPiece
+				+ ", selectionLength=" + selectionLength + ", length=" + length + ", done=" + done + ", fileImage="
+				+ fileImage + "]";
+	}
 }
 
