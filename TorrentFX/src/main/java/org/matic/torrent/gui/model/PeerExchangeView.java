@@ -17,18 +17,30 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-package org.matic.torrent.preferences;
+package org.matic.torrent.gui.model;
 
-public final class TransferProperties {
+import org.matic.torrent.tracking.TrackableSession;
 
-	//Torrent addition options
-	public static final String START_DOWNLOADS_AUTOMATICALLY = "transfer.download.auto";
+public final class PeerExchangeView extends TrackableView {
 
-    public static final String ACTIVE_TORRENTS_LIMIT = "transfer.max.torrents.active";
-    public static final String DOWNLOADING_TORRENTS_LIMIT = "transfer.max.torrents.downloading";
-    public static final String UPLOADING_TORRENTS_LIMIT = "transfer.max.torrents.uploading";
+private static final String NAME = "[Peer Exchange]";
+	
+	public PeerExchangeView(final TrackableSession trackableSession) {
+		super(trackableSession);
+	}
 
-    public static final int DEFAULT_ACTIVE_TORRENTS_LIMIT = 5;
-    public static final int DEFAULT_DOWNLOADING_TORRENTS_LIMIT = 3;
-    public static final int DEFAULT_UPLOADING_TORRENTS_LIMIT = 3;
+	@Override
+	public void update() {
+        super.setStatus("inactive");
+	}
+
+	@Override
+	public String getName() {
+		return NAME;
+	}
+
+	@Override
+	public boolean isUserManaged() {
+		return false;
+	}
 }

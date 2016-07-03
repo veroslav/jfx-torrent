@@ -17,18 +17,20 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-package org.matic.torrent.preferences;
+package org.matic.torrent.gui.action.enums;
 
-public final class TransferProperties {
-
-	//Torrent addition options
-	public static final String START_DOWNLOADS_AUTOMATICALLY = "transfer.download.auto";
-
-    public static final String ACTIVE_TORRENTS_LIMIT = "transfer.max.torrents.active";
-    public static final String DOWNLOADING_TORRENTS_LIMIT = "transfer.max.torrents.downloading";
-    public static final String UPLOADING_TORRENTS_LIMIT = "transfer.max.torrents.uploading";
-
-    public static final int DEFAULT_ACTIVE_TORRENTS_LIMIT = 5;
-    public static final int DEFAULT_DOWNLOADING_TORRENTS_LIMIT = 3;
-    public static final int DEFAULT_UPLOADING_TORRENTS_LIMIT = 3;
+public enum TorrentClickAction {
+	SHOW_PROPERTIES("Show Properties"), START_OR_STOP("Start/Stop"),
+    OPEN_FOLDER("Open Folder");
+	
+	private final String label;
+	
+	TorrentClickAction(final String label) {
+		this.label = label;
+	}
+	
+	@Override
+	public String toString() {
+		return label;
+	}
 }

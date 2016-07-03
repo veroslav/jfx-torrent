@@ -59,8 +59,6 @@ public final class UrlLoaderTask extends Task<BinaryEncodedDictionary> {
         connection.setInstanceFollowRedirects(true);
         initConnection(connection);
 
-        HttpURLConnection.setFollowRedirects(true);
-
         int responseCode = connection.getResponseCode();
         boolean isRedirect = false;
 

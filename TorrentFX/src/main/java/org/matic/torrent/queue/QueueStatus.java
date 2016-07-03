@@ -1,6 +1,6 @@
 /*
-* This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015 Vedran Matic
+* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
+* Copyright (C) 2015-2016 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -17,20 +17,6 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
+package org.matic.torrent.queue;
 
-package org.matic.torrent.gui.action.enums;
-
-public enum SeedingTorrentClickAction {
-	OPEN_FOLDER("Open Folder");
-	
-	private final String label;
-	
-	SeedingTorrentClickAction(final String label) {
-		this.label = label;
-	}
-	
-	@Override
-	public String toString() {
-		return label;
-	}
-}
+public enum QueueStatus {ACTIVE, INACTIVE, QUEUED, FORCED}

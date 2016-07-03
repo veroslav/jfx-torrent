@@ -85,7 +85,7 @@ public final class TreeTableUtils {
 		final TreeTableColumn<TorrentFileEntry, FileNameColumnModel> fileNameColumn = buildFileNameColumn();
 		columnMappings.put(NAME_COLUMN_NAME, fileNameColumn);
 		columnMappings.put(PATH_COLUMN_NAME, buildPathColumn());
-		columnMappings.put(SIZE_COLUMN_NAME, buildSimpleLongValueColumn(SIZE_COLUMN_NAME, "size", 
+		columnMappings.put(SIZE_COLUMN_NAME, buildSimpleLongValueColumn(SIZE_COLUMN_NAME, "length",
 						GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, GuiUtils.rightPadding(), 
 						tfe -> UnitConverter.formatByteCount(tfe.lengthProperty().get())));
 		columnMappings.put(PRIORITY_COLUMN_NAME, buildPriorityColumn());
@@ -129,7 +129,7 @@ public final class TreeTableUtils {
 		final TreeTableColumn<TorrentFileEntry, Long> longValueColumn = new TreeTableColumn<TorrentFileEntry, Long>(columnName);
 		longValueColumn.setId(columnName);
 		longValueColumn.setGraphic(TableUtils.buildColumnHeader(longValueColumn, style));
-		longValueColumn.setCellValueFactory(new TreeItemPropertyValueFactory<TorrentFileEntry, Long>(propertyName));
+		longValueColumn.setCellValueFactory(new TreeItemPropertyValueFactory<>(propertyName));
 		longValueColumn.setCellFactory(column -> new TreeTableCell<TorrentFileEntry, Long>() {
 			final Label valueLabel = new Label();			
 			
@@ -194,7 +194,7 @@ public final class TreeTableUtils {
 		final TreeTableColumn<TorrentFileEntry, String> pathColumn =
 				new TreeTableColumn<TorrentFileEntry, String>(PATH_COLUMN_NAME);
 		pathColumn.setId(PATH_COLUMN_NAME);		
-		pathColumn.setCellValueFactory(new TreeItemPropertyValueFactory<TorrentFileEntry, String>("path"));
+		pathColumn.setCellValueFactory(new TreeItemPropertyValueFactory<>("path"));
 		pathColumn.setGraphic(TableUtils.buildColumnHeader(pathColumn, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME));		
 		
 		return pathColumn;
@@ -205,7 +205,7 @@ public final class TreeTableUtils {
 		final TreeTableColumn<TorrentFileEntry, Double> progressColumn = 
 				new TreeTableColumn<TorrentFileEntry, Double>(PROGRESS_COLUMN_NAME);
 		progressColumn.setId(PROGRESS_COLUMN_NAME);
-		progressColumn.setCellValueFactory(new TreeItemPropertyValueFactory<TorrentFileEntry, Double>("progress"));
+		progressColumn.setCellValueFactory(new TreeItemPropertyValueFactory<>("progress"));
 		progressColumn.setGraphic(TableUtils.buildColumnHeader(progressColumn, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME));
 		progressColumn.setCellFactory(column -> new ProgressBarTreeTableCell<TorrentFileEntry>() {			
 			@Override

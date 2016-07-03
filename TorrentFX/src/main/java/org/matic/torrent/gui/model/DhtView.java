@@ -1,6 +1,6 @@
 /*
-* This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015 Vedran Matic
+* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
+* Copyright (C) 2015-2016 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -17,20 +17,30 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
+package org.matic.torrent.gui.model;
 
-package org.matic.torrent.gui.action.enums;
+import org.matic.torrent.tracking.TrackableSession;
 
-public enum DownloadingTorrentClickAction {
-	SHOW_PROPERTIES("Show Properties");
+public final class DhtView extends TrackableView {
 	
-	private final String label;
+	private static final String NAME = "[DHT]";
 	
-	DownloadingTorrentClickAction(final String label) {
-		this.label = label;
+	public DhtView(final TrackableSession trackableSession) {
+		super(trackableSession);
 	}
-	
+
 	@Override
-	public String toString() {
-		return label;
+	public void update() {
+        super.setStatus("inactive");
+	}
+
+	@Override
+	public String getName() {
+		return NAME;
+	}
+
+	@Override
+	public boolean isUserManaged() {
+		return false;
 	}
 }

@@ -24,12 +24,13 @@ import javafx.collections.ObservableList;
 import org.matic.torrent.preferences.ApplicationPreferences;
 import org.matic.torrent.preferences.TransferProperties;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public final class QueueController {
-    private enum QueueStatus {ACTIVE, INACTIVE, QUEUED, FORCED}
 
     private final Map<QueueStatus, List<QueuedTorrent>> queueStatus = new HashMap<>();
     private final ObservableList<QueuedTorrent> torrents;
@@ -41,13 +42,15 @@ public final class QueueController {
     private int maxUploadingTorrents = (int)ApplicationPreferences.getProperty(
             TransferProperties.UPLOADING_TORRENTS_LIMIT, 3);
 
-    public QueueController(final ObservableList<QueuedTorrent> torrents) {
+    protected QueueController(final ObservableList<QueuedTorrent> torrents) {
         this.torrents = torrents;
+
+        Arrays.stream(QueueStatus.values()).forEach(qs -> queueStatus.put(qs, new ArrayList<>()));
 
         handleTorrentsAdded(torrents);
 
         this.torrents.addListener((ListChangeListener<QueuedTorrent>) l ->  {
-            if(l.next()) {
+            if(!l.next()) {
                 return;
             }
             if(l.wasAdded()) {
@@ -59,18 +62,41 @@ public final class QueueController {
         });
     }
 
-    public void onQueueLimitsChanged(final String limitName, final String newValue) {
+    protected void onQueueLimitsChanged(final String limitName, final int newQueueLimit) {
         switch(limitName) {
             case TransferProperties.ACTIVE_TORRENTS_LIMIT:
+                maxActiveTorrents = newQueueLimit;
+                synchronized(torrents) {
+                    final List<QueuedTorrent> activeQueue = queueStatus.get(QueueStatus.ACTIVE);
+                    if(newQueueLimit < activeQueue.size()) {
+                        while(activeQueue.size() > newQueueLimit) {
+                            final QueuedTorrent torrentToInactivate = activeQueue.remove(activeQueue.size() - 1);
+                            queueStatus.get(QueueStatus.INACTIVE).add(0, torrentToInactivate);
+                            torrentToInactivate.setQueueStatus(QueueStatus.INACTIVE);
+                            torrentToInactivate.setStatus(TorrentStatus.STOPPED);
+                        }
+                    }
+                    else {
+                        final List<QueuedTorrent> inactiveQueue = queueStatus.get(QueueStatus.INACTIVE);
+                        while(!inactiveQueue.isEmpty() && activeQueue.size() < newQueueLimit) {
+                            final QueuedTorrent torrentToActivate = inactiveQueue.remove(0);
+                            queueStatus.get(QueueStatus.ACTIVE).add(torrentToActivate);
+                            torrentToActivate.setQueueStatus(QueueStatus.ACTIVE);
+                            torrentToActivate.setStatus(TorrentStatus.ACTIVE);
+                        }
+                    }
+                }
                 break;
             case TransferProperties.DOWNLOADING_TORRENTS_LIMIT:
+                maxDownloadingTorrents = newQueueLimit;
                 break;
             case TransferProperties.UPLOADING_TORRENTS_LIMIT:
+                maxUploadingTorrents = newQueueLimit;
                 break;
         }
     }
 
-    public boolean changeStatus(final QueuedTorrent torrent, final TorrentStatus newStatus) {
+    protected boolean changeStatus(final QueuedTorrent torrent, final TorrentStatus newStatus) {
         final TorrentStatus currentStatus = torrent.getStatus();
 
         if(currentStatus == newStatus || (newStatus != TorrentStatus.ACTIVE &&
@@ -79,7 +105,30 @@ public final class QueueController {
         }
 
         synchronized(torrents) {
-            torrent.setStatus(newStatus);
+            if(currentStatus == TorrentStatus.ACTIVE && newStatus == TorrentStatus.STOPPED) {
+                if(!queueStatus.get(torrent.getQueueStatus()).remove(torrent)) {
+                    return false;
+                }
+                queueStatus.get(QueueStatus.INACTIVE).add(0, torrent);
+                torrent.setQueueStatus(QueueStatus.INACTIVE);
+                torrent.setStatus(TorrentStatus.STOPPED);
+            }
+            else if(currentStatus == TorrentStatus.STOPPED && newStatus == TorrentStatus.ACTIVE) {
+                if(!queueStatus.get(torrent.getQueueStatus()).remove(torrent)) {
+                    return false;
+                }
+                final List<QueuedTorrent> activeTorrents = queueStatus.get(QueueStatus.ACTIVE);
+                if(activeTorrents.size() < maxActiveTorrents) {
+                    activeTorrents.add(torrent);
+                    torrent.setQueueStatus(QueueStatus.ACTIVE);
+                    torrent.setStatus(TorrentStatus.ACTIVE);
+                }
+                else {
+                    queueStatus.get(QueueStatus.QUEUED).add(torrent);
+                    torrent.setQueueStatus(QueueStatus.QUEUED);
+                }
+            }
+
         }
         return true;
     }
@@ -87,10 +136,34 @@ public final class QueueController {
     private void handleTorrentsAdded(final List<?extends QueuedTorrent> addedTorrents) {
         synchronized(torrents) {
             addedTorrents.forEach(t -> {
+
+                //TODO: Remove listener when torrent is removed
                 t.priorityProperty().addListener((obs, oldV, newV) ->
                         t.getProgress().setTorrentPriority(newV.intValue()));
-                if(t.getStatus() != TorrentStatus.ACTIVE) {
 
+                final int activeTorrents = queueStatus.get(QueueStatus.ACTIVE).size();
+                final int inactiveTorrents = queueStatus.get(QueueStatus.INACTIVE).size();
+                final int queuedTorrents = queueStatus.get(QueueStatus.QUEUED).size();
+
+                if(t.getStatus() != TorrentStatus.ACTIVE) {
+                    t.setPriority(activeTorrents + inactiveTorrents + queuedTorrents + 1);
+                    insertIntoQueue(QueueStatus.INACTIVE, t);
+                }
+                else {
+                    if(queueStatus.containsKey(QueueStatus.ACTIVE) &&
+                            queueStatus.get(QueueStatus.ACTIVE).size() < maxActiveTorrents) {
+                        t.setPriority(activeTorrents + 1);
+                        insertIntoQueue(QueueStatus.ACTIVE, t);
+                    }
+                    else if(t.isForciblyQueued()) {
+                        t.setPriority(-1);
+                        insertIntoQueue(QueueStatus.FORCED, t);
+                    }
+                    else {
+                        t.setPriority(activeTorrents + queuedTorrents + 1);
+                        insertIntoQueue(QueueStatus.QUEUED, t);
+                        t.setStatus(TorrentStatus.STOPPED);
+                    }
                 }
             });
         }
@@ -98,7 +171,17 @@ public final class QueueController {
 
     private void handleTorrentsRemoved(final List<?extends QueuedTorrent> removedTorrents) {
         synchronized(torrents) {
-
+            removedTorrents.forEach(t -> {
+                final boolean torrentRemoved = queueStatus.get(t.getQueueStatus()).remove(t);
+                if(torrentRemoved) {
+                    t.setStatus(TorrentStatus.STOPPED);
+                }
+            });
         }
+    }
+
+    private void insertIntoQueue(final QueueStatus queue, final QueuedTorrent torrent) {
+        queueStatus.get(queue).add(torrent);
+        torrent.setQueueStatus(queue);
     }
 }

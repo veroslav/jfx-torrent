@@ -39,8 +39,6 @@ public abstract class TrackableSession {
         this.torrentView = torrentView;
     }
 
-    public abstract String getStatus();
-
     public TorrentView getTorrentView() {
         return torrentView;
     }

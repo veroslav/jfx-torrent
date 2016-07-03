@@ -32,61 +32,61 @@ import java.util.Iterator;
 
 /**
  * A convenience class that provides easier access to a torrent's meta data.
- * 
+ *
  * @author Vedran Matic
  *
  */
 public final class QueuedTorrentMetaData {
 
-	private final BinaryEncodedDictionary infoDictionary;
-	private final BinaryEncodedDictionary metaData;
-	
-	private final InfoHash infoHash;
-	
-	public QueuedTorrentMetaData(final BinaryEncodedDictionary metaData) {
-		this.metaData = metaData;
-		this.infoDictionary = (BinaryEncodedDictionary)metaData.get(BinaryEncodingKeys.KEY_INFO);
-		this.infoHash = new InfoHash(((BinaryEncodedString)metaData.get(
-				BinaryEncodingKeys.KEY_INFO_HASH)).getBytes());
-	}
-	
-	public BinaryEncodable remove(final BinaryEncodedString keyName) {
-		return metaData.remove(keyName);
-	}
-	
-	public InfoHash getInfoHash() {
-		return infoHash;
-	}
+    private final BinaryEncodedDictionary infoDictionary;
+    private final BinaryEncodedDictionary metaData;
+
+    private final InfoHash infoHash;
+
+    public QueuedTorrentMetaData(final BinaryEncodedDictionary metaData) {
+        this.metaData = metaData;
+        this.infoDictionary = (BinaryEncodedDictionary)metaData.get(BinaryEncodingKeys.KEY_INFO);
+        this.infoHash = new InfoHash(((BinaryEncodedString)metaData.get(
+                BinaryEncodingKeys.KEY_INFO_HASH)).getBytes());
+    }
+
+    public BinaryEncodable remove(final BinaryEncodedString keyName) {
+        return metaData.remove(keyName);
+    }
+
+    public InfoHash getInfoHash() {
+        return infoHash;
+    }
 
     public boolean isSingleFile() {
         return getSingleFileLength() != null;
     }
 
-	public String getAnnounceUrl() {
-		final BinaryEncodedString url = (BinaryEncodedString)metaData.get(BinaryEncodingKeys.KEY_ANNOUNCE);
-		return url == null? null : url.toString();
-	}
-	
-	public BinaryEncodedList getAnnounceList() {
-		final BinaryEncodedList announceList = (BinaryEncodedList)metaData.get(BinaryEncodingKeys.KEY_ANNOUNCE_LIST);
-		return announceList == null? new BinaryEncodedList() : announceList;		
-	}
-	
-	public BinaryEncodedString getComment() {
-		return (BinaryEncodedString)metaData.get(BinaryEncodingKeys.KEY_COMMENT);
-	}
-	
-	public BinaryEncodedInteger getCreationDate() {
-		return (BinaryEncodedInteger)metaData.get(BinaryEncodingKeys.KEY_CREATION_DATE);
-	}
+    public String getAnnounceUrl() {
+        final BinaryEncodedString url = (BinaryEncodedString)metaData.get(BinaryEncodingKeys.KEY_ANNOUNCE);
+        return url == null? null : url.toString();
+    }
+
+    public BinaryEncodedList getAnnounceList() {
+        final BinaryEncodedList announceList = (BinaryEncodedList)metaData.get(BinaryEncodingKeys.KEY_ANNOUNCE_LIST);
+        return announceList == null? new BinaryEncodedList() : announceList;
+    }
+
+    public BinaryEncodedString getComment() {
+        return (BinaryEncodedString)metaData.get(BinaryEncodingKeys.KEY_COMMENT);
+    }
+
+    public BinaryEncodedInteger getCreationDate() {
+        return (BinaryEncodedInteger)metaData.get(BinaryEncodingKeys.KEY_CREATION_DATE);
+    }
 
     public BinaryEncodedString getCreatedBy() {
         return (BinaryEncodedString)metaData.get(BinaryEncodingKeys.KEY_CREATED_BY);
     }
-	
-	public BinaryEncodedList getFiles() {
-		return (BinaryEncodedList)infoDictionary.get(BinaryEncodingKeys.KEY_FILES);
-	}
+
+    public BinaryEncodedList getFiles() {
+        return (BinaryEncodedList)infoDictionary.get(BinaryEncodingKeys.KEY_FILES);
+    }
 
     public long getTotalLength() {
         if(isSingleFile()) {
@@ -103,10 +103,10 @@ public final class QueuedTorrentMetaData {
 
         return length;
     }
-	
-	public String getName() {
-		return infoDictionary.get(BinaryEncodingKeys.KEY_NAME).toString();
-	}
+
+    public String getName() {
+        return infoDictionary.get(BinaryEncodingKeys.KEY_NAME).toString();
+    }
 
     public long getPieceLength() {
         return ((BinaryEncodedInteger)infoDictionary.get(BinaryEncodingKeys.KEY_PIECE_LENGTH)).getValue();
@@ -116,9 +116,9 @@ public final class QueuedTorrentMetaData {
         return (int)Math.ceil(((double)getTotalLength()) / getPieceLength());
     }
 
-	public byte[] toExportableValue() throws IOException {
-		return metaData.toExportableValue();
-	}
+    public byte[] toExportableValue() throws IOException {
+        return metaData.toExportableValue();
+    }
 
     private BinaryEncodedInteger getSingleFileLength() {
         return (BinaryEncodedInteger)infoDictionary.get(BinaryEncodingKeys.KEY_LENGTH);

@@ -17,18 +17,28 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-package org.matic.torrent.preferences;
+package org.matic.torrent.queue;
 
-public final class TransferProperties {
+/**
+ * A bean containing the data from which to queue a torrent.
+ *
+ * @author Vedran Matic
+ */
+public final class TorrentTemplate {
 
-	//Torrent addition options
-	public static final String START_DOWNLOADS_AUTOMATICALLY = "transfer.download.auto";
+    private final QueuedTorrentMetaData metaData;
+    private final QueuedTorrentProgress progress;
 
-    public static final String ACTIVE_TORRENTS_LIMIT = "transfer.max.torrents.active";
-    public static final String DOWNLOADING_TORRENTS_LIMIT = "transfer.max.torrents.downloading";
-    public static final String UPLOADING_TORRENTS_LIMIT = "transfer.max.torrents.uploading";
+    public TorrentTemplate(final QueuedTorrentMetaData metaData, final QueuedTorrentProgress progress) {
+        this.metaData = metaData;
+        this.progress = progress;
+    }
 
-    public static final int DEFAULT_ACTIVE_TORRENTS_LIMIT = 5;
-    public static final int DEFAULT_DOWNLOADING_TORRENTS_LIMIT = 3;
-    public static final int DEFAULT_UPLOADING_TORRENTS_LIMIT = 3;
+    public QueuedTorrentMetaData getMetaData() {
+        return metaData;
+    }
+
+    public QueuedTorrentProgress getProgress() {
+        return progress;
+    }
 }

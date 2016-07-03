@@ -1,6 +1,6 @@
 /*
-* This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015 Vedran Matic
+* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
+* Copyright (C) 2015-2016 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,6 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-
 package org.matic.torrent.tracking;
 
 import org.matic.torrent.codec.BinaryDecoder;
@@ -252,14 +251,12 @@ public final class HttpTracker extends Tracker {
 	private TrackerResponse sendRequest(final String url) {		
 		try {			
 			final URL targetUrl = new URL(url);
-			
-			//HttpURLConnection.setFollowRedirects(false);
 			final HttpURLConnection connection = (HttpURLConnection)targetUrl.openConnection();			
 			connection.setRequestProperty(NetworkUtilities.HTTP_ACCEPT_CHARSET, StandardCharsets.UTF_8.name());
 			connection.setRequestProperty(NetworkUtilities.HTTP_USER_AGENT_NAME, NetworkUtilities.getHttpUserAgent());			
 			connection.setRequestProperty(NetworkUtilities.HTTP_ACCEPT_ENCODING, NetworkUtilities.HTTP_GZIP_ENCODING);
 			connection.setConnectTimeout(NetworkUtilities.HTTP_CONNECTION_TIMEOUT);
-			connection.setInstanceFollowRedirects(false);
+			connection.setInstanceFollowRedirects(true);
 			
 			final int responseCode = connection.getResponseCode();
 			
@@ -283,7 +280,10 @@ public final class HttpTracker extends Tracker {
 		}
 		catch(final BinaryDecoderException bde) {
 			return new TrackerResponse(TrackerResponse.Type.INVALID_RESPONSE, bde.getMessage());
-		}		
+		}
+        catch(final UnknownHostException uhe) {
+            return new TrackerResponse(TrackerResponse.Type.INVALID_URL, "No such host is known.");
+        }
 		catch(final MalformedURLException mue) {
 			return new TrackerResponse(TrackerResponse.Type.INVALID_URL, mue.getMessage());
 		}

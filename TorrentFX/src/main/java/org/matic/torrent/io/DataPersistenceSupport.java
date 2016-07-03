@@ -25,6 +25,7 @@ import org.matic.torrent.exception.BinaryDecoderException;
 import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.queue.QueuedTorrentMetaData;
 import org.matic.torrent.queue.QueuedTorrentProgress;
+import org.matic.torrent.queue.TorrentTemplate;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -41,32 +42,32 @@ import java.util.List;
 import java.util.Set;
 
 public final class DataPersistenceSupport {
-	
-	private static final String TORRENT_FILE_EXTENSION = ".torrent";
-	private static final String STATE_FILE_EXTENSION = ".state";
+
+    private static final String TORRENT_FILE_EXTENSION = ".torrent";
+    private static final String STATE_FILE_EXTENSION = ".state";
 
     private final String workPath;
 
     public DataPersistenceSupport(final String workPath) {
         this.workPath = workPath;
     }
-	
-	/**
-	 * Delete a torrent's meta data (.torrent) and state (.state) files from the disk
-	 * 
-	 * @param infoHash Info hash if the torrent to be deleted
-	 * @throws IOException If the files to delete can't be found
-	 */
-	public void delete(final InfoHash infoHash) throws IOException {
+
+    /**
+     * Delete a torrent's meta data (.torrent) and state (.state) files from the disk
+     *
+     * @param infoHash Info hash if the torrent to be deleted
+     * @throws IOException If the files to delete can't be found
+     */
+    public void delete(final InfoHash infoHash) throws IOException {
         final Path targetPath = Paths.get(workPath);
         final Path torrentFilePath = Paths.get(targetPath.toString(),
                 infoHash.toString() + TORRENT_FILE_EXTENSION);
         final Path stateFilePath = Paths.get(targetPath.toString(),
                 infoHash.toString() + STATE_FILE_EXTENSION);
-		
-		Files.deleteIfExists(torrentFilePath);
-		Files.deleteIfExists(stateFilePath);
-	}
+
+        Files.deleteIfExists(torrentFilePath);
+        Files.deleteIfExists(stateFilePath);
+    }
 
     /**
      * Check whether a torrent has been stored on the disk.
@@ -77,104 +78,104 @@ public final class DataPersistenceSupport {
     public boolean isPersisted(final InfoHash infoHash) {
         return Files.exists(Paths.get(workPath + infoHash.toString().toLowerCase() + STATE_FILE_EXTENSION));
     }
-	
-	/**
-	 * Save a torrent's meta data (.torrent) and state (.state) files to the disk.
-	 * 
-	 * @param metaData Meta data to be saved.
+
+    /**
+     * Save a torrent's meta data (.torrent) and state (.state) files to the disk.
+     *
+     * @param metaData Meta data to be saved.
      * @param progress Torrent's progress to be saved.
-	 */
+     */
     public void store(final QueuedTorrentMetaData metaData, final QueuedTorrentProgress progress) {
         storeMetaData(metaData);
         storeProgress(progress, metaData.getInfoHash().toString().toLowerCase());
     }
-	
-	/**
-	 * Load all of the torrents and their state data from their disk location.
-	 * 
-	 * @return Loaded torrents.
-	 */
-	public List<LoadedTorrentData> loadAll() {
-		final List<LoadedTorrentData> loadedTorrents = new ArrayList<>();
-		final BinaryDecoder decoder = new BinaryDecoder();
-		
-		final Set<String> torrentNames = new HashSet<>();
-		final Path path = Paths.get(workPath);
-		
-		try {
-			Files.createDirectories(path);
-		}
-		catch (final IOException ioe) {
-			ioe.printStackTrace();
-		}
-		
-		try(final DirectoryStream<Path> directoryStream = Files.newDirectoryStream(path)) {
-			directoryStream.forEach(p -> {				
-				if(p.toString().endsWith(TORRENT_FILE_EXTENSION)) {
-					final String filePath = p.toString();					
-					final int suffixIndex = filePath.lastIndexOf('.');
-					torrentNames.add(filePath.substring(0, suffixIndex)); 
-				}				
-			});
-		}
-		catch (final IOException ioe) {
-			ioe.printStackTrace();
-			return loadedTorrents;
-		}
-			
-		torrentNames.forEach(n -> {	
-			final String metaDataPath = n + TORRENT_FILE_EXTENSION;
-			final String statePath = n + STATE_FILE_EXTENSION;
-			
-			QueuedTorrentMetaData metaData = null;			
-			try(final BufferedInputStream bis = new BufferedInputStream(new FileInputStream(metaDataPath))) {
-				metaData = new QueuedTorrentMetaData(decoder.decode(bis));
-			}		
-			catch(final IOException | BinaryDecoderException e) {
-				e.printStackTrace();
-			}
-			
-			final QueuedTorrentProgress progress;
-			try(final BufferedInputStream bis = new BufferedInputStream(new FileInputStream(statePath))) {
-				progress = new QueuedTorrentProgress(decoder.decode(bis));
-				loadedTorrents.add(new LoadedTorrentData(metaData, progress));
-			}		
-			catch(final IOException | BinaryDecoderException e) {
-				e.printStackTrace();
-			}			
-		});
-		
-		return loadedTorrents;
-	}
 
-	private boolean storeMetaData(final QueuedTorrentMetaData metaData) {
-		final String metaDataFileLocation = workPath + metaData.getInfoHash().toString() + TORRENT_FILE_EXTENSION;
-		
-		if(Files.exists(Paths.get(metaDataFileLocation))) {
-			return true;
-		}
-		
-		metaData.remove(BinaryEncodingKeys.KEY_INFO_HASH);
+    /**
+     * Load all of the torrents and their state data from their disk location.
+     *
+     * @return Loaded torrents.
+     */
+    public List<TorrentTemplate> loadAll() {
+        final List<TorrentTemplate> loadedTorrents = new ArrayList<>();
+        final BinaryDecoder decoder = new BinaryDecoder();
 
-		try(final BufferedOutputStream writer = new BufferedOutputStream(new FileOutputStream(metaDataFileLocation))) {			
-				writer.write(metaData.toExportableValue());
-				writer.flush();
-		}
-		catch(final IOException ioe) {
-			return false;
-		}
-		return true;
-	}
+        final Set<String> torrentNames = new HashSet<>();
+        final Path path = Paths.get(workPath);
 
-	private boolean storeProgress(final QueuedTorrentProgress progress, final String infoHash) {
-		try(final BufferedOutputStream writer = new BufferedOutputStream(new FileOutputStream(
-				workPath + infoHash.toString() + STATE_FILE_EXTENSION))) {
-				writer.write(progress.toExportableValue());
-				writer.flush();
-		}
-		catch(final IOException ioe) {
-			return false;
-		}
-		return true;
-	}
+        try {
+            Files.createDirectories(path);
+        }
+        catch (final IOException ioe) {
+            ioe.printStackTrace();
+        }
+
+        try(final DirectoryStream<Path> directoryStream = Files.newDirectoryStream(path)) {
+            directoryStream.forEach(p -> {
+                if(p.toString().endsWith(TORRENT_FILE_EXTENSION)) {
+                    final String filePath = p.toString();
+                    final int suffixIndex = filePath.lastIndexOf('.');
+                    torrentNames.add(filePath.substring(0, suffixIndex));
+                }
+            });
+        }
+        catch (final IOException ioe) {
+            ioe.printStackTrace();
+            return loadedTorrents;
+        }
+
+        torrentNames.forEach(n -> {
+            final String metaDataPath = n + TORRENT_FILE_EXTENSION;
+            final String statePath = n + STATE_FILE_EXTENSION;
+
+            QueuedTorrentMetaData metaData = null;
+            try(final BufferedInputStream bis = new BufferedInputStream(new FileInputStream(metaDataPath))) {
+                metaData = new QueuedTorrentMetaData(decoder.decode(bis));
+            }
+            catch(final IOException | BinaryDecoderException e) {
+                e.printStackTrace();
+            }
+
+            final QueuedTorrentProgress progress;
+            try(final BufferedInputStream bis = new BufferedInputStream(new FileInputStream(statePath))) {
+                progress = new QueuedTorrentProgress(decoder.decode(bis));
+                loadedTorrents.add(new TorrentTemplate(metaData, progress));
+            }
+            catch(final IOException | BinaryDecoderException e) {
+                e.printStackTrace();
+            }
+        });
+
+        return loadedTorrents;
+    }
+
+    private boolean storeMetaData(final QueuedTorrentMetaData metaData) {
+        final String metaDataFileLocation = workPath + metaData.getInfoHash().toString() + TORRENT_FILE_EXTENSION;
+
+        if(Files.exists(Paths.get(metaDataFileLocation))) {
+            return true;
+        }
+
+        metaData.remove(BinaryEncodingKeys.KEY_INFO_HASH);
+
+        try(final BufferedOutputStream writer = new BufferedOutputStream(new FileOutputStream(metaDataFileLocation))) {
+            writer.write(metaData.toExportableValue());
+            writer.flush();
+        }
+        catch(final IOException ioe) {
+            return false;
+        }
+        return true;
+    }
+
+    private boolean storeProgress(final QueuedTorrentProgress progress, final String infoHash) {
+        try(final BufferedOutputStream writer = new BufferedOutputStream(new FileOutputStream(
+                workPath + infoHash.toString() + STATE_FILE_EXTENSION))) {
+            writer.write(progress.toExportableValue());
+            writer.flush();
+        }
+        catch(final IOException ioe) {
+            return false;
+        }
+        return true;
+    }
 }

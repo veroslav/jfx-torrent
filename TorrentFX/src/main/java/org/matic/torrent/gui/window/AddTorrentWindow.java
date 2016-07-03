@@ -74,72 +74,74 @@ import java.util.TimeZone;
 
 /**
  * A window showing contents of a torrent to be opened and added to a list of torrents
- * 
+ *
  * @author vedran
  *
  */
 public final class AddTorrentWindow {
-	
-	private final CheckBox createSubFolderCheckbox;
-	private final CheckBox dontShowAgainCheckbox;
-	private final CheckBox addToTopQueueCheckbox;
-	private final CheckBox startTorrentCheckbox;
-	private final CheckBox skipHashCheckbox;		
-	
-	private final ComboBox<String> savePathCombo;
-	private final ComboBox<String> labelCombo;
-	
-	private final TextField nameTextField;
-	
-	private final Button collapseAllButton;
-	private final Button expandAllButton;
-	private final Button selectNoneButton;
-	private final Button selectAllButton;
-	private final Button advancedButton;
-	private final Button browseButton;
-	
-	private final TextFlow fileSizeLabel;
-	private final Text diskSpaceText;
-	private final Text fileSizeText;
-	
-	private final TreeTableView<TorrentFileEntry> fileView = new TreeTableView<>();
-	private final QueuedTorrentMetaData metaData;
+
+    private final CheckBox createSubFolderCheckbox;
+    private final CheckBox dontShowAgainCheckbox;
+    private final CheckBox addToTopQueueCheckbox;
+    private final CheckBox startTorrentCheckbox;
+    private final CheckBox skipHashCheckbox;
+
+    private final ComboBox<String> savePathCombo;
+    private final ComboBox<String> labelCombo;
+
+    private final TextField nameTextField;
+
+    private final Button collapseAllButton;
+    private final Button expandAllButton;
+    private final Button selectNoneButton;
+    private final Button selectAllButton;
+    private final Button advancedButton;
+    private final Button browseButton;
+
+    private final TextFlow fileSizeLabel;
+    private final Text diskSpaceText;
+    private final Text fileSizeText;
+
+    private final TreeTableView<TorrentFileEntry> fileView = new TreeTableView<>();
+
+    private final BinaryEncodedDictionary state;
+    private final QueuedTorrentMetaData metaData;
     private final QueuedTorrentProgress progress;
     private final FileTreeViewer fileTreeViewer;
-	
-	private final Dialog<ButtonType> window;
-	
-	private Optional<Long> availableDiskSpace;
 
-	public AddTorrentWindow(final Window owner, final QueuedTorrentMetaData metaData,
+    private final Dialog<ButtonType> window;
+
+    private Optional<Long> availableDiskSpace;
+
+    public AddTorrentWindow(final Window owner, final QueuedTorrentMetaData metaData,
                             final FileTreeViewer fileTreeViewer) {
-		this.metaData = metaData;
+        this.metaData = metaData;
         this.fileTreeViewer = fileTreeViewer;
-		
-		final Path savePath = Paths.get(System.getProperty("user.home"));
-		availableDiskSpace = DiskUtilities.getAvailableDiskSpace(savePath);
-		
-		savePathCombo = new ComboBox<>();
-		savePathCombo.getItems().add(savePath.toString());		
 
-		window = new Dialog<>();
-		window.initOwner(owner);
-		
-		dontShowAgainCheckbox = new CheckBox("Don't show this again");
-		addToTopQueueCheckbox = new CheckBox("Add to top of queue");
-		createSubFolderCheckbox = new CheckBox("Create subfolder");
-		startTorrentCheckbox = new CheckBox("Start torrent");
-		skipHashCheckbox = new CheckBox("Skip hash check");
-				
-		diskSpaceText = new Text();
-		fileSizeText = new Text();			
-		fileSizeText.getStyleClass().add("text");
-		
-		fileSizeLabel = new TextFlow();
+        final Path savePath = Paths.get(System.getProperty("user.home"));
+        availableDiskSpace = DiskUtilities.getAvailableDiskSpace(savePath);
+
+        savePathCombo = new ComboBox<>();
+        savePathCombo.getItems().add(savePath.toString());
+
+        window = new Dialog<>();
+        window.initOwner(owner);
+
+        dontShowAgainCheckbox = new CheckBox("Don't show this again");
+        addToTopQueueCheckbox = new CheckBox("Add to top of queue");
+        createSubFolderCheckbox = new CheckBox("Create subfolder");
+        startTorrentCheckbox = new CheckBox("Start torrent");
+        skipHashCheckbox = new CheckBox("Skip hash check");
+
+        diskSpaceText = new Text();
+        fileSizeText = new Text();
+        fileSizeText.getStyleClass().add("text");
+
+        fileSizeLabel = new TextFlow();
         fileSizeLabel.getChildren().addAll(fileSizeText, diskSpaceText);
 
-		labelCombo = new ComboBox<>();
-		advancedButton = new Button("Advanced...");
+        labelCombo = new ComboBox<>();
+        advancedButton = new Button("Advanced...");
 
         nameTextField = new TextField(metaData.getName());
 
@@ -149,29 +151,33 @@ public final class AddTorrentWindow {
         selectAllButton = new Button("Select All");
         browseButton = new Button("...");
 
-        this.progress = createInitialProgress();
+        this.state = createInitialProgressState();
+        this.progress = new QueuedTorrentProgress(state);
         fileView.setRoot(fileTreeViewer.createTreeView(fileView, new FileTree(metaData, progress)));
 
- 		updateDiskUsageLabel();
+        updateDiskUsageLabel();
         fileView.getRoot().getValue().selectionLengthProperty().addListener((obs, oldV, newV) -> updateDiskUsageLabel());
 
-		initComponents();
-	}
-	
-	public AddedTorrentOptions showAndWait() {
-		final Optional<ButtonType> result = window.showAndWait();
-		storeColumnStates();
-		fileTreeViewer.restoreDefault();
-		
-		if(result.isPresent() && result.get() == ButtonType.OK) {			
-			return new AddedTorrentOptions(metaData, progress, fileView.getRoot(),
-					startTorrentCheckbox.isSelected(), createSubFolderCheckbox.isSelected(),
-					addToTopQueueCheckbox.isSelected(), skipHashCheckbox.isSelected());
-		}		
-		return null;		
-	}
+        initComponents();
+    }
 
-    private QueuedTorrentProgress createInitialProgress() {
+    public AddedTorrentOptions showAndWait() {
+        final Optional<ButtonType> result = window.showAndWait();
+        storeColumnStates();
+        fileTreeViewer.restoreDefault();
+
+        if(result.isPresent() && result.get() == ButtonType.OK) {
+            final TorrentStatus targetStatus = startTorrentCheckbox.isSelected()?
+                    TorrentStatus.ACTIVE : TorrentStatus.STOPPED;
+            state.put(BinaryEncodingKeys.STATE_KEY_TORRENT_STATUS, new BinaryEncodedString(targetStatus.name()));
+            return new AddedTorrentOptions(metaData, progress, fileView.getRoot(),
+                    createSubFolderCheckbox.isSelected(),
+                    addToTopQueueCheckbox.isSelected(), skipHashCheckbox.isSelected());
+        }
+        return null;
+    }
+
+    private BinaryEncodedDictionary createInitialProgressState() {
         final BinaryEncodedDictionary state = new BinaryEncodedDictionary();
         state.put(BinaryEncodingKeys.KEY_NAME, new BinaryEncodedString(nameTextField.getText()));
 
@@ -182,8 +188,8 @@ public final class AddTorrentWindow {
         state.put(BinaryEncodingKeys.STATE_KEY_TORRENT_STATUS, new BinaryEncodedString(targetStatus.name()));
 
         final BinaryEncodedList trackerList = new BinaryEncodedList();
-        metaData.getAnnounceList().stream().flatMap(l -> ((BinaryEncodedList)l).stream()).forEach(
-                u -> trackerList.add(new BinaryEncodedString(u.toString())));
+        metaData.getAnnounceList().stream().flatMap(l ->
+                ((BinaryEncodedList)l).stream()).forEach(trackerList::add);
 
         final String announceUrl = metaData.getAnnounceUrl();
         if(announceUrl != null) {
@@ -191,268 +197,266 @@ public final class AddTorrentWindow {
         }
 
         state.put(BinaryEncodingKeys.KEY_ANNOUNCE_LIST, trackerList);
-
-        final QueuedTorrentProgress progress = new QueuedTorrentProgress(state);
-        return progress;
+        return state;
     }
-	
-	private void initComponents() {				
-		createSubFolderCheckbox.setSelected(true);
-		startTorrentCheckbox.setSelected(true);
-		labelCombo.setEditable(true);
-		
-		savePathCombo.setMinWidth(400);
-		savePathCombo.setMaxWidth(400);
-		savePathCombo.setEditable(true);
-		savePathCombo.getSelectionModel().selectFirst();
-		savePathCombo.setOnAction(event -> {
-			final Path targetDownloadPath = Paths.get(savePathCombo.getSelectionModel().getSelectedItem());
-			availableDiskSpace = DiskUtilities.getAvailableDiskSpace(targetDownloadPath);
-			updateDiskUsageLabel();
-		});
-		
-		browseButton.setTooltip(new Tooltip("Browse for download directory"));
-		browseButton.setOnAction(event -> onBrowseForTargetDirectory());
-		
-		selectAllButton.setOnAction(event -> {
-			fileTreeViewer.selectAllEntries();
-			selectAllButton.requestFocus();
-		});
-		
-		selectNoneButton.setOnAction(event -> {
-			fileTreeViewer.unselectAllEntries();
-			selectNoneButton.requestFocus();
-		});
-		
-		collapseAllButton.setOnAction(event -> fileTreeViewer.collapseAll());
-		expandAllButton.setOnAction(event -> fileTreeViewer.expandAll());
-		
-		TreeTableUtils.addFileListingViewColumns(fileView, false);		
-		TreeTableUtils.setupFileListingView(fileView, fileTreeViewer);
-		
-		window.setHeaderText(null);
-		window.setTitle(metaData.getName() + " - Add New Torrent");
-		
-		window.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 
-		window.setResizable(true);		
-		window.getDialogPane().setContent(layoutContent());
-	}
-	
-	private void updateDiskUsageLabel() {
-		final TorrentFileEntry fileEntry = fileView.getRoot().getValue();
-		final long totalFilesLength = fileEntry.getLength();
-		final StringBuilder fileSizeBuilder = new StringBuilder();
-		final long fileSelectionLength = fileEntry.getSelectionLength();
-		fileSizeBuilder.append(UnitConverter.formatByteCount(fileSelectionLength));
+    private void initComponents() {
+        createSubFolderCheckbox.setSelected(true);
+        startTorrentCheckbox.setSelected(true);
+        labelCombo.setEditable(true);
 
-		if(fileSelectionLength < totalFilesLength) {
-			fileSizeBuilder.append(" (of ");
-			fileSizeBuilder.append(UnitConverter.formatByteCount(totalFilesLength));
-			fileSizeBuilder.append(")");
-		}
-		
-		final StringBuilder diskSpaceBuilder = new StringBuilder();
-		diskSpaceBuilder.append(" (disk space: ");				
-		
-		fileSizeText.setText(fileSizeBuilder.toString());	
-		
-		try {
-			final long availableDiskSpaceValue = availableDiskSpace.orElseThrow(() ->
-				new IOException("Disk usage can't be calculated"));
-			final long remainingDiskSpace = availableDiskSpaceValue - fileSelectionLength;
-			
-			if(remainingDiskSpace < 0) {
-				diskSpaceBuilder.append(UnitConverter.formatByteCount(Math.abs(remainingDiskSpace)));
-				diskSpaceBuilder.append(" too short)");
-				diskSpaceText.setText(diskSpaceBuilder.toString());
-				diskSpaceText.setStyle(CssProperties.ERROR_TEXT_COLOR);
-			}
-			else {
-				diskSpaceBuilder.append(UnitConverter.formatByteCount(remainingDiskSpace));
-				diskSpaceBuilder.append(")");
-				diskSpaceText.setText(diskSpaceBuilder.toString());
-				diskSpaceText.getStyleClass().add("text");
-			}	
-		} catch(final IOException ioe) {
-			diskSpaceBuilder.append("can't be calculated)");
-			diskSpaceText.setText(diskSpaceBuilder.toString());
-			diskSpaceText.setStyle(CssProperties.ERROR_TEXT_COLOR);
-		}
-	}
-	
-	private void onBrowseForTargetDirectory() {
-		final StringBuilder chooserTitle = new StringBuilder("Choose where to download '");
-		chooserTitle.append(metaData.getName());
-		chooserTitle.append("' to:");
-		
-		final DirectoryChooser directoryChooser = new DirectoryChooser();
-		directoryChooser.setInitialDirectory(new File(System.getProperty("user.home")));
-		directoryChooser.setTitle(chooserTitle.toString());
-		
-		final File selectedDirectory = directoryChooser.showDialog(window.getOwner());
-		
-		if(selectedDirectory != null) {
-			final String selectedTargetDirectory = selectedDirectory.getAbsolutePath();
-			if(!savePathCombo.getItems().contains(selectedTargetDirectory)) {
-				savePathCombo.getItems().add(selectedTargetDirectory);
-			}
-			savePathCombo.getSelectionModel().select(selectedTargetDirectory);
-		}		
-	}
-	
-	private Node layoutContent() {
-		final BorderPane mainPane = new BorderPane();
-		mainPane.setPrefHeight(500);
-		mainPane.setPrefWidth(1100);
-		
-		final Node torrentContentsPane = buildTorrentContentsPane();
-		
-		BorderPane.setMargin(torrentContentsPane, new Insets(0, 0, 0, 10));
-		
-		mainPane.setLeft(buildLeftPane());
-		mainPane.setCenter(torrentContentsPane);
-		
-		return mainPane;
-	}
-	
-	private Pane buildLeftPane() {
-		final VBox northPane = new VBox();		
-		northPane.getChildren().addAll(buildSaveOptionsPane(), buildNamePane(), buildTorrentOptionsPane());
-		
-		final HBox advancedPane = new HBox(10);
-		advancedPane.setAlignment(Pos.BOTTOM_LEFT);
-		advancedPane.getChildren().addAll(advancedButton, dontShowAgainCheckbox);		
-		
-		final BorderPane centerPane = new BorderPane();	
-		centerPane.setBottom(advancedPane);
-		
-		final BorderPane leftPane = new BorderPane();
-		leftPane.setTop(northPane);
-		leftPane.setCenter(centerPane);
-		
-		return leftPane;
-	}
-	
-	private Node buildTorrentContentsPane() {
-		final GridPane labelPane = new GridPane();
-		
-		final ColumnConstraints nameColumnConstraints = new ColumnConstraints(100);		
-		final ColumnConstraints valueColumnConstraints = new ColumnConstraints();			
-		
-		labelPane.getColumnConstraints().addAll(nameColumnConstraints, valueColumnConstraints);
-		
-		labelPane.add(new Label("Name:"), 0, 0);
-		labelPane.add(new Label(metaData.getName()), 1, 0);
-		
-		labelPane.add(new Label("Comment:"), 0, 1);
+        savePathCombo.setMinWidth(400);
+        savePathCombo.setMaxWidth(400);
+        savePathCombo.setEditable(true);
+        savePathCombo.getSelectionModel().selectFirst();
+        savePathCombo.setOnAction(event -> {
+            final Path targetDownloadPath = Paths.get(savePathCombo.getSelectionModel().getSelectedItem());
+            availableDiskSpace = DiskUtilities.getAvailableDiskSpace(targetDownloadPath);
+            updateDiskUsageLabel();
+        });
+
+        browseButton.setTooltip(new Tooltip("Browse for download directory"));
+        browseButton.setOnAction(event -> onBrowseForTargetDirectory());
+
+        selectAllButton.setOnAction(event -> {
+            fileTreeViewer.selectAllEntries();
+            selectAllButton.requestFocus();
+        });
+
+        selectNoneButton.setOnAction(event -> {
+            fileTreeViewer.unselectAllEntries();
+            selectNoneButton.requestFocus();
+        });
+
+        collapseAllButton.setOnAction(event -> fileTreeViewer.collapseAll());
+        expandAllButton.setOnAction(event -> fileTreeViewer.expandAll());
+
+        TreeTableUtils.addFileListingViewColumns(fileView, false);
+        TreeTableUtils.setupFileListingView(fileView, fileTreeViewer);
+
+        window.setHeaderText(null);
+        window.setTitle(metaData.getName() + " - Add New Torrent");
+
+        window.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+        window.setResizable(true);
+        window.getDialogPane().setContent(layoutContent());
+    }
+
+    private void updateDiskUsageLabel() {
+        final TorrentFileEntry fileEntry = fileView.getRoot().getValue();
+        final long totalFilesLength = fileEntry.getLength();
+        final StringBuilder fileSizeBuilder = new StringBuilder();
+        final long fileSelectionLength = fileEntry.getSelectionLength();
+        fileSizeBuilder.append(UnitConverter.formatByteCount(fileSelectionLength));
+
+        if(fileSelectionLength < totalFilesLength) {
+            fileSizeBuilder.append(" (of ");
+            fileSizeBuilder.append(UnitConverter.formatByteCount(totalFilesLength));
+            fileSizeBuilder.append(")");
+        }
+
+        final StringBuilder diskSpaceBuilder = new StringBuilder();
+        diskSpaceBuilder.append(" (disk space: ");
+
+        fileSizeText.setText(fileSizeBuilder.toString());
+
+        try {
+            final long availableDiskSpaceValue = availableDiskSpace.orElseThrow(() ->
+                    new IOException("Disk usage can't be calculated"));
+            final long remainingDiskSpace = availableDiskSpaceValue - fileSelectionLength;
+
+            if(remainingDiskSpace < 0) {
+                diskSpaceBuilder.append(UnitConverter.formatByteCount(Math.abs(remainingDiskSpace)));
+                diskSpaceBuilder.append(" too short)");
+                diskSpaceText.setText(diskSpaceBuilder.toString());
+                diskSpaceText.setStyle(CssProperties.ERROR_TEXT_COLOR);
+            }
+            else {
+                diskSpaceBuilder.append(UnitConverter.formatByteCount(remainingDiskSpace));
+                diskSpaceBuilder.append(")");
+                diskSpaceText.setText(diskSpaceBuilder.toString());
+                diskSpaceText.getStyleClass().add("text");
+            }
+        } catch(final IOException ioe) {
+            diskSpaceBuilder.append("can't be calculated)");
+            diskSpaceText.setText(diskSpaceBuilder.toString());
+            diskSpaceText.setStyle(CssProperties.ERROR_TEXT_COLOR);
+        }
+    }
+
+    private void onBrowseForTargetDirectory() {
+        final StringBuilder chooserTitle = new StringBuilder("Choose where to download '");
+        chooserTitle.append(metaData.getName());
+        chooserTitle.append("' to:");
+
+        final DirectoryChooser directoryChooser = new DirectoryChooser();
+        directoryChooser.setInitialDirectory(new File(System.getProperty("user.home")));
+        directoryChooser.setTitle(chooserTitle.toString());
+
+        final File selectedDirectory = directoryChooser.showDialog(window.getOwner());
+
+        if(selectedDirectory != null) {
+            final String selectedTargetDirectory = selectedDirectory.getAbsolutePath();
+            if(!savePathCombo.getItems().contains(selectedTargetDirectory)) {
+                savePathCombo.getItems().add(selectedTargetDirectory);
+            }
+            savePathCombo.getSelectionModel().select(selectedTargetDirectory);
+        }
+    }
+
+    private Node layoutContent() {
+        final BorderPane mainPane = new BorderPane();
+        mainPane.setPrefHeight(500);
+        mainPane.setPrefWidth(1100);
+
+        final Node torrentContentsPane = buildTorrentContentsPane();
+
+        BorderPane.setMargin(torrentContentsPane, new Insets(0, 0, 0, 10));
+
+        mainPane.setLeft(buildLeftPane());
+        mainPane.setCenter(torrentContentsPane);
+
+        return mainPane;
+    }
+
+    private Pane buildLeftPane() {
+        final VBox northPane = new VBox();
+        northPane.getChildren().addAll(buildSaveOptionsPane(), buildNamePane(), buildTorrentOptionsPane());
+
+        final HBox advancedPane = new HBox(10);
+        advancedPane.setAlignment(Pos.BOTTOM_LEFT);
+        advancedPane.getChildren().addAll(advancedButton, dontShowAgainCheckbox);
+
+        final BorderPane centerPane = new BorderPane();
+        centerPane.setBottom(advancedPane);
+
+        final BorderPane leftPane = new BorderPane();
+        leftPane.setTop(northPane);
+        leftPane.setCenter(centerPane);
+
+        return leftPane;
+    }
+
+    private Node buildTorrentContentsPane() {
+        final GridPane labelPane = new GridPane();
+
+        final ColumnConstraints nameColumnConstraints = new ColumnConstraints(100);
+        final ColumnConstraints valueColumnConstraints = new ColumnConstraints();
+
+        labelPane.getColumnConstraints().addAll(nameColumnConstraints, valueColumnConstraints);
+
+        labelPane.add(new Label("Name:"), 0, 0);
+        labelPane.add(new Label(metaData.getName()), 1, 0);
+
+        labelPane.add(new Label("Comment:"), 0, 1);
 
         final BinaryEncodedString comment = metaData.getComment();
         labelPane.add(new Label(comment != null? comment.toString() : ""), 1, 1);
-		
-		labelPane.add(new Label("Size:"), 0, 2);			
-		labelPane.add(fileSizeLabel, 1, 2);
-		
-		labelPane.add(new Label("Date:"), 0, 3);
+
+        labelPane.add(new Label("Size:"), 0, 2);
+        labelPane.add(fileSizeLabel, 1, 2);
+
+        labelPane.add(new Label("Date:"), 0, 3);
 
         final BinaryEncodedInteger creationDateInSeconds = metaData.getCreationDate();
         final String creationDate = creationDateInSeconds != null? UnitConverter.formatMillisToDate(
                 creationDateInSeconds.getValue() * 1000, TimeZone.getDefault()) : "";
         labelPane.add(new Label(creationDate), 1, 3);
-		
-		final HBox expandCollapseButtonsPane = new HBox(10);
-		expandCollapseButtonsPane.setAlignment(Pos.CENTER_LEFT);
-		expandCollapseButtonsPane.getChildren().addAll(expandAllButton, collapseAllButton);
-		
-		final HBox selectionButtonsPane = new HBox(10);
-		selectionButtonsPane.setAlignment(Pos.CENTER_RIGHT);
-		selectionButtonsPane.getChildren().addAll(selectAllButton, selectNoneButton);
-		
-		final BorderPane buttonsPane = new BorderPane();
-		buttonsPane.setLeft(expandCollapseButtonsPane);
-		buttonsPane.setRight(selectionButtonsPane);
-		
-		final VBox northPane = new VBox(10);
-		northPane.getChildren().addAll(labelPane, buttonsPane);
-		
-		final ScrollPane torrentContentsScroll = new ScrollPane();
-		torrentContentsScroll.setContent(fileView);
-		torrentContentsScroll.setFitToWidth(true);
-		torrentContentsScroll.setFitToHeight(true);
-		
-		final BorderPane torrentContentsPane = new BorderPane();
-		torrentContentsPane.setPrefWidth(450);
-		torrentContentsPane.setTop(northPane);
-		torrentContentsPane.setCenter(torrentContentsScroll);
-		
-		BorderPane.setMargin(northPane, new Insets(0, 0, 10, 0));
-		
-		final TitledBorderPane borderedTorrentContentsPane = new TitledBorderPane("Torrent Contents",
-				torrentContentsPane, BorderStyle.AMPLE, TitledBorderPane.PRIMARY_BORDER_COLOR_STYLE);
-				
-		return borderedTorrentContentsPane;
-	}
-	
-	private Node buildSaveOptionsPane() {
-		final BorderPane saveLocationPane = new BorderPane();
-		saveLocationPane.setCenter(savePathCombo);
-		saveLocationPane.setRight(browseButton);
-		
-		BorderPane.setMargin(browseButton, new Insets(0, 0, 0, 10));
-		
-		final VBox saveOptionsPane = new VBox(10);
-		saveOptionsPane.getChildren().addAll(saveLocationPane, createSubFolderCheckbox);
 
-		final TitledBorderPane borderedSaveOptionsPane = new TitledBorderPane("Save In",
-				saveOptionsPane, BorderStyle.AMPLE, TitledBorderPane.PRIMARY_BORDER_COLOR_STYLE);
-		
-		return borderedSaveOptionsPane;
-	}
-	
-	private Node buildNamePane() {
-		final StackPane namePane = new StackPane(nameTextField);				
-		final TitledBorderPane borderedNamePane = new TitledBorderPane("Name",
-				namePane, BorderStyle.AMPLE, TitledBorderPane.PRIMARY_BORDER_COLOR_STYLE);
-		
-		return borderedNamePane;
-	}
-	
-	private Node buildTorrentOptionsPane() {
-		final HBox labelPane = new HBox(5);		
-		labelPane.getChildren().addAll(new Label("Label: "), labelCombo);
-		labelPane.setAlignment(Pos.CENTER);
-		HBox.setHgrow(labelCombo, Priority.ALWAYS);		
-		labelCombo.setMaxWidth(Double.MAX_VALUE);
-		
-		final GridPane torrentOptionsPane = new GridPane();
-		torrentOptionsPane.setVgap(5);
-		
-		final ColumnConstraints nameColumnConstraints = new ColumnConstraints(200);		
-		final ColumnConstraints valueColumnConstraints = new ColumnConstraints();
-		valueColumnConstraints.setFillWidth(true);
-		valueColumnConstraints.setMaxWidth(Double.MAX_VALUE);
-		valueColumnConstraints.setHalignment(HPos.LEFT);				
-		
-		torrentOptionsPane.getColumnConstraints().addAll(nameColumnConstraints, valueColumnConstraints);
-		
-		torrentOptionsPane.add(skipHashCheckbox, 0, 0);
-		torrentOptionsPane.add(labelPane, 1, 0);
-		
-		torrentOptionsPane.add(startTorrentCheckbox, 0, 1);	
-		torrentOptionsPane.add(addToTopQueueCheckbox, 1, 1);
-		
-		GridPane.setHgrow(labelPane, Priority.ALWAYS);
+        final HBox expandCollapseButtonsPane = new HBox(10);
+        expandCollapseButtonsPane.setAlignment(Pos.CENTER_LEFT);
+        expandCollapseButtonsPane.getChildren().addAll(expandAllButton, collapseAllButton);
 
-		final TitledBorderPane borderedTorrentOptionsPane = new TitledBorderPane("Torrent Options",
-				torrentOptionsPane, BorderStyle.AMPLE, TitledBorderPane.PRIMARY_BORDER_COLOR_STYLE);
-		
-		return borderedTorrentOptionsPane;
-	}
-	
-	private void storeColumnStates() {
-		TableUtils.storeColumnStates(fileView.getColumns(), GuiProperties.INFO_COLUMN_VISIBILITY,
-				GuiProperties.DEFAULT_INFO_COLUMN_VISIBILITIES, GuiProperties.INFO_COLUMN_SIZE,
-				GuiProperties.DEFAULT_INFO_COLUMN_SIZES, GuiProperties.INFO_COLUMN_ORDER,
-				GuiProperties.DEFAULT_INFO_COLUMN_ORDER);
-	}
+        final HBox selectionButtonsPane = new HBox(10);
+        selectionButtonsPane.setAlignment(Pos.CENTER_RIGHT);
+        selectionButtonsPane.getChildren().addAll(selectAllButton, selectNoneButton);
+
+        final BorderPane buttonsPane = new BorderPane();
+        buttonsPane.setLeft(expandCollapseButtonsPane);
+        buttonsPane.setRight(selectionButtonsPane);
+
+        final VBox northPane = new VBox(10);
+        northPane.getChildren().addAll(labelPane, buttonsPane);
+
+        final ScrollPane torrentContentsScroll = new ScrollPane();
+        torrentContentsScroll.setContent(fileView);
+        torrentContentsScroll.setFitToWidth(true);
+        torrentContentsScroll.setFitToHeight(true);
+
+        final BorderPane torrentContentsPane = new BorderPane();
+        torrentContentsPane.setPrefWidth(450);
+        torrentContentsPane.setTop(northPane);
+        torrentContentsPane.setCenter(torrentContentsScroll);
+
+        BorderPane.setMargin(northPane, new Insets(0, 0, 10, 0));
+
+        final TitledBorderPane borderedTorrentContentsPane = new TitledBorderPane("Torrent Contents",
+                torrentContentsPane, BorderStyle.AMPLE, TitledBorderPane.PRIMARY_BORDER_COLOR_STYLE);
+
+        return borderedTorrentContentsPane;
+    }
+
+    private Node buildSaveOptionsPane() {
+        final BorderPane saveLocationPane = new BorderPane();
+        saveLocationPane.setCenter(savePathCombo);
+        saveLocationPane.setRight(browseButton);
+
+        BorderPane.setMargin(browseButton, new Insets(0, 0, 0, 10));
+
+        final VBox saveOptionsPane = new VBox(10);
+        saveOptionsPane.getChildren().addAll(saveLocationPane, createSubFolderCheckbox);
+
+        final TitledBorderPane borderedSaveOptionsPane = new TitledBorderPane("Save In",
+                saveOptionsPane, BorderStyle.AMPLE, TitledBorderPane.PRIMARY_BORDER_COLOR_STYLE);
+
+        return borderedSaveOptionsPane;
+    }
+
+    private Node buildNamePane() {
+        final StackPane namePane = new StackPane(nameTextField);
+        final TitledBorderPane borderedNamePane = new TitledBorderPane("Name",
+                namePane, BorderStyle.AMPLE, TitledBorderPane.PRIMARY_BORDER_COLOR_STYLE);
+
+        return borderedNamePane;
+    }
+
+    private Node buildTorrentOptionsPane() {
+        final HBox labelPane = new HBox(5);
+        labelPane.getChildren().addAll(new Label("Label: "), labelCombo);
+        labelPane.setAlignment(Pos.CENTER);
+        HBox.setHgrow(labelCombo, Priority.ALWAYS);
+        labelCombo.setMaxWidth(Double.MAX_VALUE);
+
+        final GridPane torrentOptionsPane = new GridPane();
+        torrentOptionsPane.setVgap(5);
+
+        final ColumnConstraints nameColumnConstraints = new ColumnConstraints(200);
+        final ColumnConstraints valueColumnConstraints = new ColumnConstraints();
+        valueColumnConstraints.setFillWidth(true);
+        valueColumnConstraints.setMaxWidth(Double.MAX_VALUE);
+        valueColumnConstraints.setHalignment(HPos.LEFT);
+
+        torrentOptionsPane.getColumnConstraints().addAll(nameColumnConstraints, valueColumnConstraints);
+
+        torrentOptionsPane.add(skipHashCheckbox, 0, 0);
+        torrentOptionsPane.add(labelPane, 1, 0);
+
+        torrentOptionsPane.add(startTorrentCheckbox, 0, 1);
+        torrentOptionsPane.add(addToTopQueueCheckbox, 1, 1);
+
+        GridPane.setHgrow(labelPane, Priority.ALWAYS);
+
+        final TitledBorderPane borderedTorrentOptionsPane = new TitledBorderPane("Torrent Options",
+                torrentOptionsPane, BorderStyle.AMPLE, TitledBorderPane.PRIMARY_BORDER_COLOR_STYLE);
+
+        return borderedTorrentOptionsPane;
+    }
+
+    private void storeColumnStates() {
+        TableUtils.storeColumnStates(fileView.getColumns(), GuiProperties.INFO_COLUMN_VISIBILITY,
+                GuiProperties.DEFAULT_INFO_COLUMN_VISIBILITIES, GuiProperties.INFO_COLUMN_SIZE,
+                GuiProperties.DEFAULT_INFO_COLUMN_SIZES, GuiProperties.INFO_COLUMN_ORDER,
+                GuiProperties.DEFAULT_INFO_COLUMN_ORDER);
+    }
 }

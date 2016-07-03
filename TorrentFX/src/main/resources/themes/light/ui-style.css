@@ -136,6 +136,10 @@
     -fx-background-color: #E2EDF9;
 }
 
+.table-row-odd {
+	-fx-background-color: #F0F0F0;
+}
+
 .titled-border-compact {
   -fx-border-color: #CCCCCC;
 }

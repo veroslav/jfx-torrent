@@ -148,7 +148,7 @@ public final class TorrentContentTreeRow extends TreeTableRow<TorrentFileEntry> 
 	
 	private void onPriorityAction(final RadioMenuItem priorityMenuItem) {
 		final CheckBoxTreeItem<TorrentFileEntry> treeItem = (CheckBoxTreeItem<TorrentFileEntry>)getTreeItem();
-		final FilePriority newPriorityValue = FilePriority.valueOf(priorityMenuItem.getId());
+		final FilePriority newPriorityValue = FilePriority.values()[Integer.parseInt(priorityMenuItem.getId())];
 		if(treeItem.getValue().getPriority() != newPriorityValue) { 
 			if(treeItem.isIndeterminate()) {
 				treeItem.setSelected(true);

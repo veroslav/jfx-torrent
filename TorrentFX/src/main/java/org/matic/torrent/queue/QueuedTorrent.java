@@ -19,43 +19,54 @@
 */
 package org.matic.torrent.queue;
 
+import java.util.Objects;
+
+import org.matic.torrent.hash.InfoHash;
+
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleObjectProperty;
-import org.matic.torrent.hash.InfoHash;
-
-import java.util.Objects;
 
 public final class QueuedTorrent {
 
-	private final QueuedTorrentMetaData metaData;
-	private final QueuedTorrentProgress progress;
+    private final QueuedTorrentMetaData metaData;
+    private final QueuedTorrentProgress progress;
     private final InfoHash infoHash;
 
     private final ObjectProperty<TorrentStatus> status = new SimpleObjectProperty<>();
     private final IntegerProperty priority;
-	
-	public QueuedTorrent(final QueuedTorrentMetaData metaData, final QueuedTorrentProgress progress) {
-		this.metaData = metaData;
-		this.progress = progress;
+
+    private QueueStatus queueStatus = QueueStatus.INACTIVE;
+
+    public QueuedTorrent(final QueuedTorrentMetaData metaData, final QueuedTorrentProgress progress) {
+        this.metaData = metaData;
+        this.progress = progress;
         this.infoHash = metaData.getInfoHash();
 
         this.status.set(progress.getStatus());
         priority = new SimpleIntegerProperty(progress.getTorrentPriority());
-	}
+    }
 
     public InfoHash getInfoHash() {
         return infoHash;
     }
-	
-	public QueuedTorrentMetaData getMetaData() {
-		return metaData;
-	}
-	
-	public QueuedTorrentProgress getProgress() {
-		return progress;
-	}
+
+    public QueuedTorrentMetaData getMetaData() {
+        return metaData;
+    }
+
+    public QueuedTorrentProgress getProgress() {
+        return progress;
+    }
+
+    protected void setQueueStatus(final QueueStatus queueStatus) {
+        this.queueStatus = queueStatus;
+    }
+
+    public QueueStatus getQueueStatus() {
+        return queueStatus;
+    }
 
     protected ObjectProperty<TorrentStatus> statusProperty() {
         return status;
@@ -63,6 +74,10 @@ public final class QueuedTorrent {
 
     protected IntegerProperty priorityProperty() {
         return priority;
+    }
+
+    protected int getPriority() {
+        return priority.get();
     }
 
     protected void setPriority(final int priority) {
@@ -75,6 +90,10 @@ public final class QueuedTorrent {
 
     protected void setStatus(final TorrentStatus status) {
         this.status.set(status);
+    }
+
+    protected boolean isForciblyQueued() {
+        return progress.isForciblyQueued();
     }
 
     @Override

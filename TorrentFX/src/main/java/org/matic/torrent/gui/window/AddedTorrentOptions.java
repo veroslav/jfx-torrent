@@ -27,45 +27,42 @@ import org.matic.torrent.queue.QueuedTorrentProgress;
 /**
  * A bean containing all of the options selected by the user, during the addition of
  * a new torrent.
- * 
+ *
  * @author vedran
  *
  */
 public final class AddedTorrentOptions {
-	
-	private final TreeItem<TorrentFileEntry> torrentContents;
-	private final QueuedTorrentProgress progress;
-	private final QueuedTorrentMetaData metaData;
 
-	private final boolean createSubfolder;
-	private final boolean skipHashCheck;
-	private final boolean addToTopQueue;
-	private final boolean startTorrent;
+    private final TreeItem<TorrentFileEntry> torrentContents;
+    private final QueuedTorrentProgress progress;
+    private final QueuedTorrentMetaData metaData;
 
-	public AddedTorrentOptions(final QueuedTorrentMetaData metaData, final QueuedTorrentProgress progress,
-			final TreeItem<TorrentFileEntry> torrentContents, final boolean startTorrent, final boolean createSubfolder,
-			final boolean addToTopQueue, final boolean skipHashCheck) {
-		this.metaData = metaData;
+    private final boolean createSubfolder;
+    private final boolean skipHashCheck;
+    private final boolean addToTopQueue;
+
+    public AddedTorrentOptions(final QueuedTorrentMetaData metaData, final QueuedTorrentProgress progress,
+                               final TreeItem<TorrentFileEntry> torrentContents, final boolean createSubfolder,
+                               final boolean addToTopQueue, final boolean skipHashCheck) {
+        this.metaData = metaData;
         this.progress = progress;
-		this.torrentContents = torrentContents;
+        this.torrentContents = torrentContents;
+        this.createSubfolder = createSubfolder;
+        this.addToTopQueue = addToTopQueue;
+        this.skipHashCheck = skipHashCheck;
+    }
 
-		this.startTorrent = startTorrent;
-		this.createSubfolder = createSubfolder;
-		this.addToTopQueue = addToTopQueue;
-		this.skipHashCheck = skipHashCheck;
-	}
-	
-	public QueuedTorrentMetaData getMetaData() {
-		return metaData;
-	}
-	
-	public QueuedTorrentProgress getProgress() {
-		return progress;
-	}
-	
-	public TreeItem<TorrentFileEntry> getTorrentContents() {
-		return torrentContents;
-	}
+    public QueuedTorrentMetaData getMetaData() {
+        return metaData;
+    }
+
+    public QueuedTorrentProgress getProgress() {
+        return progress;
+    }
+
+    public TreeItem<TorrentFileEntry> getTorrentContents() {
+        return torrentContents;
+    }
 
     public boolean shouldCreateSubfolder() {
         return createSubfolder;
@@ -88,7 +85,6 @@ public final class AddedTorrentOptions {
                 ", createSubfolder=" + createSubfolder +
                 ", skipHashCheck=" + skipHashCheck +
                 ", addToTopQueue=" + addToTopQueue +
-                ", startTorrent=" + startTorrent +
                 '}';
     }
 }

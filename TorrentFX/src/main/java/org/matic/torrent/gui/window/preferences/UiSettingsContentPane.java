@@ -19,14 +19,6 @@
 */
 package org.matic.torrent.gui.window.preferences;
 
-import org.matic.torrent.gui.action.enums.BorderStyle;
-import org.matic.torrent.gui.action.enums.DownloadingTorrentClickAction;
-import org.matic.torrent.gui.action.enums.SeedingTorrentClickAction;
-import org.matic.torrent.gui.custom.TitledBorderPane;
-import org.matic.torrent.preferences.ApplicationPreferences;
-import org.matic.torrent.preferences.GuiProperties;
-import org.matic.torrent.preferences.TransferProperties;
-
 import javafx.beans.property.BooleanProperty;
 import javafx.collections.FXCollections;
 import javafx.scene.Node;
@@ -39,6 +31,12 @@ import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import org.matic.torrent.gui.action.enums.BorderStyle;
+import org.matic.torrent.gui.action.enums.TorrentClickAction;
+import org.matic.torrent.gui.custom.TitledBorderPane;
+import org.matic.torrent.preferences.ApplicationPreferences;
+import org.matic.torrent.preferences.GuiProperties;
+import org.matic.torrent.preferences.TransferProperties;
 
 public final class UiSettingsContentPane extends CategoryContentPane {
 	
@@ -68,8 +66,8 @@ public final class UiSettingsContentPane extends CategoryContentPane {
 			"Show options to change the name and location of the torrent data");
 	
 	//Double Click action options
-	private final ComboBox<DownloadingTorrentClickAction> downloadingTorrentOptionsComboBox = new ComboBox<>();
-	private final ComboBox<SeedingTorrentClickAction> seedingTorrentOptionsComboBox = new ComboBox<>();
+	private final ComboBox<TorrentClickAction> downloadingTorrentOptionsComboBox = new ComboBox<>();
+	private final ComboBox<TorrentClickAction> seedingTorrentOptionsComboBox = new ComboBox<>();
 	
 	public UiSettingsContentPane(final BooleanProperty preferencesChanged) {
 		super(UI_SETTINGS_CONTENT_PANE_NAME, preferencesChanged);
@@ -134,10 +132,10 @@ public final class UiSettingsContentPane extends CategoryContentPane {
 
 	private void initComponents(final BooleanProperty preferencesChanged) {
 		downloadingTorrentOptionsComboBox.setItems(
-				FXCollections.observableArrayList(DownloadingTorrentClickAction.values()));
+				FXCollections.observableArrayList(TorrentClickAction.values()));
 		
 		seedingTorrentOptionsComboBox.setItems(
-				FXCollections.observableArrayList(SeedingTorrentClickAction.values()));
+				FXCollections.observableArrayList(TorrentClickAction.values()));
 		
 		setComboBoxActions(preferencesChanged);
 		setCheckBoxActions(preferencesChanged);
@@ -146,17 +144,17 @@ public final class UiSettingsContentPane extends CategoryContentPane {
 	
 	private void setComboBoxActions(final BooleanProperty preferencesChanged) {
 		downloadingTorrentOptionsComboBox.setOnAction(e -> preferencesChanged.set(true));
-		final DownloadingTorrentClickAction downloadingTorrentOnClickAction = 
-				DownloadingTorrentClickAction.valueOf(ApplicationPreferences.getProperty(
+		final TorrentClickAction downloadingTorrentOnClickAction =
+				TorrentClickAction.valueOf(ApplicationPreferences.getProperty(
 				GuiProperties.CLICK_ON_DOWNLOADING_TORRENT_ACTION,
-				DownloadingTorrentClickAction.SHOW_PROPERTIES.name()));
+				TorrentClickAction.SHOW_PROPERTIES.name()));
 		downloadingTorrentOptionsComboBox.getSelectionModel().select(downloadingTorrentOnClickAction);
 		
 		seedingTorrentOptionsComboBox.setOnAction(e -> preferencesChanged.set(true));
-		final SeedingTorrentClickAction seedingTorrentOnClickAction = 
-				SeedingTorrentClickAction.valueOf(ApplicationPreferences.getProperty(
+		final TorrentClickAction seedingTorrentOnClickAction =
+				TorrentClickAction.valueOf(ApplicationPreferences.getProperty(
 				GuiProperties.CLICK_ON_SEEDING_TORRENT_ACTION,
-				SeedingTorrentClickAction.OPEN_FOLDER.name()));
+				TorrentClickAction.OPEN_FOLDER.name()));
 		seedingTorrentOptionsComboBox.getSelectionModel().select(seedingTorrentOnClickAction);
 	}
 	

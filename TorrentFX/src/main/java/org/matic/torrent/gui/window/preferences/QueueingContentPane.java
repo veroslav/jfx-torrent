@@ -53,12 +53,29 @@ public final class QueueingContentPane extends CategoryContentPane {
 	public void onSaveContentChanges() {
 		if(super.preferencesChanged.get()) {
 			//Apply changed values
-			ApplicationPreferences.setProperty(
-					TransferProperties.ACTIVE_TORRENTS_LIMIT, activeTorrentsLimitField.getText());
-			ApplicationPreferences.setProperty(
-					TransferProperties.DOWNLOADING_TORRENTS_LIMIT, activeDownloadsLimitField.getText());
-			ApplicationPreferences.setProperty(
-					TransferProperties.UPLOADING_TORRENTS_LIMIT, activeUploadsLimitField.getText());
+            final String activeTorrentsLimit = String.valueOf(ApplicationPreferences.getProperty(
+                    TransferProperties.ACTIVE_TORRENTS_LIMIT, TransferProperties.DEFAULT_ACTIVE_TORRENTS_LIMIT));
+            final String typedActiveTorrentsLimit = activeTorrentsLimitField.getText();
+            if(!activeTorrentsLimit.equals(typedActiveTorrentsLimit)) {
+                ApplicationPreferences.setProperty(
+                        TransferProperties.ACTIVE_TORRENTS_LIMIT, typedActiveTorrentsLimit);
+            }
+
+            final String activeDownloadsLimit = String.valueOf(ApplicationPreferences.getProperty(
+                    TransferProperties.DOWNLOADING_TORRENTS_LIMIT, TransferProperties.DEFAULT_DOWNLOADING_TORRENTS_LIMIT));
+            final String typedActiveDownloadsLimit = activeDownloadsLimitField.getText();
+            if(!activeDownloadsLimit.equals(typedActiveDownloadsLimit)) {
+                ApplicationPreferences.setProperty(
+                        TransferProperties.DOWNLOADING_TORRENTS_LIMIT, typedActiveDownloadsLimit);
+            }
+
+            final String activeUploadsLimit = String.valueOf(ApplicationPreferences.getProperty(
+                    TransferProperties.UPLOADING_TORRENTS_LIMIT, TransferProperties.DEFAULT_UPLOADING_TORRENTS_LIMIT));
+            final String typedActiveUploadsLimit = activeUploadsLimitField.getText();
+            if(!activeUploadsLimit.equals(typedActiveUploadsLimit)) {
+                ApplicationPreferences.setProperty(
+                        TransferProperties.UPLOADING_TORRENTS_LIMIT, typedActiveUploadsLimit);
+            }
 		}		
 	}
 
@@ -79,11 +96,11 @@ public final class QueueingContentPane extends CategoryContentPane {
 	
 	protected void initComponents(final BooleanProperty preferencesChanged) {
 		activeTorrentsLimitField.setText(String.valueOf(ApplicationPreferences.getProperty(
-				TransferProperties.ACTIVE_TORRENTS_LIMIT, 5)));
+				TransferProperties.ACTIVE_TORRENTS_LIMIT, TransferProperties.DEFAULT_ACTIVE_TORRENTS_LIMIT)));
 		activeDownloadsLimitField.setText(String.valueOf(ApplicationPreferences.getProperty(
-				TransferProperties.DOWNLOADING_TORRENTS_LIMIT, 3)));
+				TransferProperties.DOWNLOADING_TORRENTS_LIMIT, TransferProperties.DEFAULT_DOWNLOADING_TORRENTS_LIMIT)));
 		activeUploadsLimitField.setText(String.valueOf(ApplicationPreferences.getProperty(
-				TransferProperties.UPLOADING_TORRENTS_LIMIT, 3)));
+				TransferProperties.UPLOADING_TORRENTS_LIMIT, TransferProperties.DEFAULT_UPLOADING_TORRENTS_LIMIT)));
 
         addListeners(preferencesChanged);
 	}

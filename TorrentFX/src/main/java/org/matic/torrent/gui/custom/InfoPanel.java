@@ -42,7 +42,7 @@ import java.util.TimeZone;
  * @author Vedran Matic
  *
  */
-public final class InfoPane extends VBox {
+public final class InfoPanel extends VBox {
 	
 	private static final Insets LABEL_PADDING = new Insets(3);
 	
@@ -76,7 +76,7 @@ public final class InfoPane extends VBox {
 	private final Label saveAsValueLabel = new Label();	
 	private final Label hashValueLabel = new Label();		
 	
-	public InfoPane() {
+	public InfoPanel() {
 		initComponents();
 	}
 	
@@ -125,7 +125,7 @@ public final class InfoPane extends VBox {
 				+ "/s (avg. " + averageDownloadSpeed + "/s)");
 		
 		final long downLimit = clear? 0 : torrentView.getDownloadLimit();
-		downLimitValueLabel.setText(clear? "" : downLimit == -1? "\u221E" :
+		downLimitValueLabel.setText(clear? "" : downLimit == 0? "\u221E" :
 			UnitConverter.formatByteCount(downLimit) + "/s");
 		statusValueLabel.setText(clear? "" : torrentView.getStatus().name());
 		remainingValueLabel.setText(clear? "" : UnitConverter.formatByteCount(torrentView.getRemainingBytes()));
@@ -137,7 +137,7 @@ public final class InfoPane extends VBox {
 				+ "/s (avg. " + averageUploadSpeed + "/s)");
 		
 		final long upLimit = clear? 0 : torrentView.getUploadLimit();
-		upLimitValueLabel.setText(clear? "" : upLimit == -1? "\u221E" :
+		upLimitValueLabel.setText(clear? "" : upLimit == 0? "\u221E" :
 			UnitConverter.formatByteCount(upLimit) + "/s");
 		
 		wastedValueLabel.setText(clear? "" : UnitConverter.formatByteCount(torrentView.getWastedBytes())

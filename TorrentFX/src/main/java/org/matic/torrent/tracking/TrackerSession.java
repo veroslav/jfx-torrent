@@ -44,10 +44,10 @@ public final class TrackerSession extends TrackableSession {
         super.minInterval.set(Tracker.MIN_INTERVAL_DEFAULT_VALUE);
 	}
 
-    @Override
+    /*@Override
     public String getStatus() {
         return Tracker.getStatusMessage(trackerStatus);
-    }
+    }*/
 	
 	public synchronized void setTrackerMessage(final String trackerMessage) {
 		this.trackerMessage = trackerMessage;

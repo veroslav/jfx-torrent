@@ -32,40 +32,50 @@ import java.util.Map;
 import java.util.Set;
 
 public final class QueuedTorrentProgress {
-	
-	private final BinaryEncodedDictionary torrentState;
 
-	public QueuedTorrentProgress(final BinaryEncodedDictionary torrentState) {
-		this.torrentState = torrentState;
-	}
-	
-	public String getName() {
+    private final BinaryEncodedDictionary torrentState;
+
+    public QueuedTorrentProgress(final BinaryEncodedDictionary torrentState) {
+        this.torrentState = torrentState;
+    }
+
+    public String getName() {
         final BinaryEncodable name = torrentState.get(BinaryEncodingKeys.KEY_NAME);
-		return name != null? name.toString() : null;
-	}
-	
-	protected void setName(final String name) {
-		torrentState.put(BinaryEncodingKeys.KEY_NAME, new BinaryEncodedString(name));
-	}
-	
-	public void addTrackerUrls(final Set<String> trackerUrls) {
-		final BinaryEncodedList trackerList = new BinaryEncodedList();		
-		trackerUrls.forEach(t -> trackerList.add(new BinaryEncodedString(t)));		
-		torrentState.put(BinaryEncodingKeys.KEY_ANNOUNCE_LIST, trackerList);
-	}
-	
-	public Set<String> getTrackerUrls() {
-		final BinaryEncodedList trackerList = (BinaryEncodedList)torrentState.get(
-				BinaryEncodingKeys.KEY_ANNOUNCE_LIST);
-		
-		final Set<String> trackerUrls = new LinkedHashSet<>();
-		
-		if(trackerList != null && trackerList.size() > 0) {			
-			trackerList.stream().forEach(t -> trackerUrls.add(t.toString()));
-		}
-		
-		return trackerUrls;
-	}
+        return name != null? name.toString() : null;
+    }
+
+    protected void setName(final String name) {
+        torrentState.put(BinaryEncodingKeys.KEY_NAME, new BinaryEncodedString(name));
+    }
+
+    public void addTrackerUrls(final Set<String> trackerUrls) {
+        final BinaryEncodedList trackerList = new BinaryEncodedList();
+        trackerUrls.forEach(t -> trackerList.add(new BinaryEncodedString(t)));
+        torrentState.put(BinaryEncodingKeys.KEY_ANNOUNCE_LIST, trackerList);
+    }
+
+    public Set<String> getTrackerUrls() {
+        final BinaryEncodedList trackerList = (BinaryEncodedList)torrentState.get(
+                BinaryEncodingKeys.KEY_ANNOUNCE_LIST);
+
+        final Set<String> trackerUrls = new LinkedHashSet<>();
+
+        if(trackerList != null && trackerList.size() > 0) {
+            trackerList.stream().forEach(t -> trackerUrls.add(t.toString()));
+        }
+
+        return trackerUrls;
+    }
+
+    protected boolean isForciblyQueued() {
+        final BinaryEncodedString forciblyQueued = (BinaryEncodedString)torrentState.get(
+                BinaryEncodingKeys.STATE_FORCED_QUEUE);
+        return forciblyQueued != null? Boolean.parseBoolean(forciblyQueued.getValue()) : false;
+    }
+
+    protected void setForciblyQueued(final boolean forciblyQueued) {
+        torrentState.put(BinaryEncodingKeys.STATE_FORCED_QUEUE, new BinaryEncodedString(String.valueOf(forciblyQueued)));
+    }
 
     protected void setTorrentPriority(final int priority) {
         torrentState.put(BinaryEncodingKeys.STATE_KEY_PRIORITY, new BinaryEncodedInteger(priority));
@@ -119,15 +129,15 @@ public final class QueuedTorrentProgress {
         return ((BinaryEncodedInteger)torrentState.get(BinaryEncodingKeys.STATE_KEY_ADDED_ON)).getValue();
     }
 
-	protected void setStatus(final TorrentStatus status) {
-		torrentState.put(BinaryEncodingKeys.STATE_KEY_TORRENT_STATUS, new BinaryEncodedString(status.name()));
-	}
-	
-	protected TorrentStatus getStatus() {
-		return TorrentStatus.valueOf(torrentState.get(BinaryEncodingKeys.STATE_KEY_TORRENT_STATUS).toString());
-	}
+    protected void setStatus(final TorrentStatus status) {
+        torrentState.put(BinaryEncodingKeys.STATE_KEY_TORRENT_STATUS, new BinaryEncodedString(status.name()));
+    }
 
-	public byte[] toExportableValue() throws IOException {
-		return torrentState.toExportableValue();
-	}
+    protected TorrentStatus getStatus() {
+        return TorrentStatus.valueOf(torrentState.get(BinaryEncodingKeys.STATE_KEY_TORRENT_STATUS).toString());
+    }
+
+    public byte[] toExportableValue() throws IOException {
+        return torrentState.toExportableValue();
+    }
 }
