@@ -171,14 +171,14 @@ public final class QueuedTorrentManager implements PreferenceChangeListener {
                 final Set<String> trackerUrls = progress.getTrackerUrls();
                 final Set<TrackableView> trackableViews = new LinkedHashSet<>();
 
-                trackableViews.addAll(trackerUrls.stream().map(
-                        t -> trackerManager.addTracker(t, torrentView)).collect(Collectors.toSet()));
-                torrentView.priorityProperty().bind(newTorrent.priorityProperty());
-
                 final TrackableView[] internalTrackables = {new DhtView(new DhtSession(torrentView)),
                         new LocalPeerDiscoveryView(new LocalPeerDiscoverySession(torrentView)),
                         new PeerExchangeView(new PeerExchangeSession(torrentView))};
                 trackableViews.addAll(Arrays.asList(internalTrackables));
+
+                trackableViews.addAll(trackerUrls.stream().map(
+                        t -> trackerManager.addTracker(t, torrentView)).collect(Collectors.toSet()));
+                torrentView.priorityProperty().bind(newTorrent.priorityProperty());
                 torrentView.addTrackableViews(trackableViews);
                 return torrentView;
             }).collect(Collectors.toList());
@@ -206,13 +206,12 @@ public final class QueuedTorrentManager implements PreferenceChangeListener {
             final List<BinaryEncodedString> newUrls = trackerUrls.stream().map(BinaryEncodedString::new).filter(
                     url -> !announceList.contains(url)).collect(Collectors.toList());
 
-            final Set<TrackerView> trackableViews = new LinkedHashSet<>();
-            trackableViews.addAll(newUrls.stream().map(url -> {
+            final List<TrackerView> trackableViews = newUrls.stream().map(url -> {
                 announceList.add(url);
                 return trackerManager.addTracker(url.getValue(), torrentView);
-            }).collect(Collectors.toSet()));
+            }).collect(Collectors.toList());
 
-            return trackableViews;
+            return new LinkedHashSet<>(trackableViews);
         }
     }
 

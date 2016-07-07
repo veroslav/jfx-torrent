@@ -24,7 +24,7 @@ import org.matic.torrent.peer.ClientProperties;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-public final class TrackerSession extends TrackableSession {
+public class TrackerSession extends TrackableSession {
 
 	private Tracker.Event lastAcknowledgedTrackerEvent = Tracker.Event.STOPPED;
 	private final Tracker tracker;
@@ -44,11 +44,6 @@ public final class TrackerSession extends TrackableSession {
         super.minInterval.set(Tracker.MIN_INTERVAL_DEFAULT_VALUE);
 	}
 
-    /*@Override
-    public String getStatus() {
-        return Tracker.getStatusMessage(trackerStatus);
-    }*/
-	
 	public synchronized void setTrackerMessage(final String trackerMessage) {
 		this.trackerMessage = trackerMessage;
 	}

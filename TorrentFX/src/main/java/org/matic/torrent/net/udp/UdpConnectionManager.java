@@ -55,7 +55,7 @@ import java.util.concurrent.TimeUnit;
  * @author vedran
  *
  */
-public final class UdpConnectionManager {
+public class UdpConnectionManager {
 	
 	public static final int DEFAULT_UDP_PORT = 45895;
 	public static final int UDP_TRACKER_PORT = Integer.parseInt(ApplicationPreferences.getProperty(

@@ -899,9 +899,11 @@ public final class ApplicationWindow implements PreferenceChangeListener {
             updateGui();
         }
         toolbarButtonsMap.get(ImageUtils.DOWNLOAD_ICON_LOCATION).setDisable(!torrentSelected ||
-                selectedTorrentView.getStatus() == TorrentStatus.ACTIVE);
+                selectedTorrentView.getStatus() == TorrentStatus.ACTIVE ||
+                selectedTorrentView.getQueueStatus() == QueueStatus.QUEUED);
         toolbarButtonsMap.get(ImageUtils.STOP_ICON_LOCATION).setDisable(!torrentSelected ||
-                selectedTorrentView.getStatus() == TorrentStatus.STOPPED && selectedTorrentView.getQueueStatus() != QueueStatus.QUEUED);
+                selectedTorrentView.getStatus() == TorrentStatus.STOPPED
+                        && selectedTorrentView.getQueueStatus() != QueueStatus.QUEUED);
 
         toolbarButtonsMap.get(ImageUtils.UP_ICON_LOCATION).setDisable(!torrentSelected);
         toolbarButtonsMap.get(ImageUtils.DOWN_ICON_LOCATION).setDisable(!torrentSelected);

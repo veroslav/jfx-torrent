@@ -96,11 +96,15 @@ public class TrackerManager implements TrackerResponseListener, UdpTrackerRespon
 	private final ScheduledExecutorService requestScheduler;
 	
 	public TrackerManager(final UdpConnectionManager udpTrackerConnectionManager, final int requestWorkers) {
-		this.udpTrackerConnectionManager = udpTrackerConnectionManager;
-        this.requestScheduler = Executors.newScheduledThreadPool(requestWorkers);
-		
-		tcpRequestExecutor.allowCoreThreadTimeOut(true);
+        this(udpTrackerConnectionManager, Executors.newScheduledThreadPool(requestWorkers));
 	}
+
+    protected TrackerManager(final UdpConnectionManager udpTrackerConnectionManager,
+                             final ScheduledExecutorService requestScheduler) {
+        this.udpTrackerConnectionManager = udpTrackerConnectionManager;
+        this.requestScheduler = requestScheduler;
+        tcpRequestExecutor.allowCoreThreadTimeOut(true);
+    }
 	
 	/**
 	 * @see TrackerResponseListener#onAnnounceResponseReceived(AnnounceResponse, TrackerSession)
@@ -299,7 +303,7 @@ public class TrackerManager implements TrackerResponseListener, UdpTrackerRespon
 		synchronized(trackerSessions) {		
 			trackerSessions.putIfAbsent(torrentView, new LinkedHashSet<>());
 
-            if(trackerSessions.get(torrentView).contains(torrentView)) {
+            if(trackerSessions.get(torrentView).contains(trackerSession)) {
                 return trackerView;
             }
 

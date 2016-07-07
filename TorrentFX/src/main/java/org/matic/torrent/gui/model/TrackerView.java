@@ -28,12 +28,12 @@ public final class TrackerView extends TrackableView {
     private static final String TRACKER_MESSAGE_NULL = "null";		//Sometimes returned as a tracker message
     private Tracker.Status trackerStatus;
 
-	private final TrackerSession trackerSession;
+    private final TrackerSession trackerSession;
 
-	public TrackerView(final TrackerSession trackerSession) {
+    public TrackerView(final TrackerSession trackerSession) {
         super(trackerSession);
-		this.trackerSession = trackerSession;
-	}
+        this.trackerSession = trackerSession;
+    }
 
     @Override
     public boolean isUserManaged() {
@@ -72,6 +72,7 @@ public final class TrackerView extends TrackableView {
 
         super.status.set(displayedMessage);
     }
+
     @Override
     public String getName() {
         return trackerSession.getTracker().getUrl();

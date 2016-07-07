@@ -44,7 +44,7 @@ public class QueuedTorrent {
 
     private QueueStatus queueStatus;
 
-    protected QueuedTorrent(final QueuedTorrentMetaData metaData, final QueuedTorrentProgress progress) {
+    public QueuedTorrent(final QueuedTorrentMetaData metaData, final QueuedTorrentProgress progress) {
         this.metaData = metaData;
         this.progress = progress;
         this.infoHash = metaData.getInfoHash();
@@ -95,7 +95,7 @@ public class QueuedTorrent {
         return status.get();
     }
 
-    protected final void setStatus(final TorrentStatus status) {
+    public final void setStatus(final TorrentStatus status) {
         this.status.set(status);
     }
 
