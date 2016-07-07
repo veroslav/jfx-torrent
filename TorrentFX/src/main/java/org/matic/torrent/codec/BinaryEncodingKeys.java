@@ -28,6 +28,7 @@ public final class BinaryEncodingKeys {
     public static final BinaryEncodedString STATE_KEY_FILE_PRIO = new BinaryEncodedString("file prio");
     public static final BinaryEncodedString STATE_KEY_ADDED_ON = new BinaryEncodedString("added on");
     public static final BinaryEncodedString STATE_KEY_PRIORITY = new BinaryEncodedString("priority");
+    public static final BinaryEncodedString STATE_KEY_QUEUE_NAME = new BinaryEncodedString("queue");
     public static final BinaryEncodedString STATE_KEY_TORRENT = new BinaryEncodedString("torrent");
     public static final BinaryEncodedString STATE_KEY_LABEL = new BinaryEncodedString("label");
 

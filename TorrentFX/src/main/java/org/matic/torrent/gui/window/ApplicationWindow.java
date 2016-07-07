@@ -19,6 +19,52 @@
 */
 package org.matic.torrent.gui.window;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.prefs.PreferenceChangeEvent;
+import java.util.prefs.PreferenceChangeListener;
+import java.util.stream.Collectors;
+
+import org.matic.torrent.gui.action.FileActionHandler;
+import org.matic.torrent.gui.action.TabActionHandler;
+import org.matic.torrent.gui.action.TorrentJobActionHandler;
+import org.matic.torrent.gui.action.TrackerTableActionHandler;
+import org.matic.torrent.gui.action.WindowActionHandler;
+import org.matic.torrent.gui.action.enums.ApplicationTheme;
+import org.matic.torrent.gui.custom.InfoPanel;
+import org.matic.torrent.gui.custom.StatusBar;
+import org.matic.torrent.gui.image.ImageUtils;
+import org.matic.torrent.gui.model.TorrentFileEntry;
+import org.matic.torrent.gui.model.TorrentView;
+import org.matic.torrent.gui.model.TrackableView;
+import org.matic.torrent.gui.table.TableUtils;
+import org.matic.torrent.gui.table.TorrentViewTable;
+import org.matic.torrent.gui.table.TrackerTable;
+import org.matic.torrent.gui.tree.FileTreeViewer;
+import org.matic.torrent.gui.tree.TreeTableUtils;
+import org.matic.torrent.hash.InfoHash;
+import org.matic.torrent.peer.ClientProperties;
+import org.matic.torrent.preferences.ApplicationPreferences;
+import org.matic.torrent.preferences.CssProperties;
+import org.matic.torrent.preferences.GuiProperties;
+import org.matic.torrent.queue.QueuedTorrentManager;
+import org.matic.torrent.queue.QueuedTorrentMetaData;
+import org.matic.torrent.queue.TorrentTemplate;
+import org.matic.torrent.queue.enums.PriorityChange;
+import org.matic.torrent.queue.enums.QueueStatus;
+import org.matic.torrent.queue.enums.TorrentStatus;
+import org.matic.torrent.tracking.TrackerManager;
+import org.matic.torrent.utils.PeriodicTask;
+import org.matic.torrent.utils.PeriodicTaskRunner;
+
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
@@ -60,49 +106,6 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.util.Duration;
-import org.matic.torrent.gui.action.FileActionHandler;
-import org.matic.torrent.gui.action.TabActionHandler;
-import org.matic.torrent.gui.action.TorrentJobActionHandler;
-import org.matic.torrent.gui.action.TrackerTableActionHandler;
-import org.matic.torrent.gui.action.WindowActionHandler;
-import org.matic.torrent.gui.action.enums.ApplicationTheme;
-import org.matic.torrent.gui.custom.InfoPanel;
-import org.matic.torrent.gui.custom.StatusBar;
-import org.matic.torrent.gui.image.ImageUtils;
-import org.matic.torrent.gui.model.TorrentFileEntry;
-import org.matic.torrent.gui.model.TorrentView;
-import org.matic.torrent.gui.model.TrackableView;
-import org.matic.torrent.gui.table.TableUtils;
-import org.matic.torrent.gui.table.TorrentViewTable;
-import org.matic.torrent.gui.table.TrackerTable;
-import org.matic.torrent.gui.tree.FileTreeViewer;
-import org.matic.torrent.gui.tree.TreeTableUtils;
-import org.matic.torrent.hash.InfoHash;
-import org.matic.torrent.peer.ClientProperties;
-import org.matic.torrent.preferences.ApplicationPreferences;
-import org.matic.torrent.preferences.CssProperties;
-import org.matic.torrent.preferences.GuiProperties;
-import org.matic.torrent.queue.QueuedTorrentManager;
-import org.matic.torrent.queue.QueuedTorrentMetaData;
-import org.matic.torrent.queue.TorrentStatus;
-import org.matic.torrent.queue.TorrentTemplate;
-import org.matic.torrent.tracking.TrackerManager;
-import org.matic.torrent.utils.PeriodicTask;
-import org.matic.torrent.utils.PeriodicTaskRunner;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.Consumer;
-import java.util.prefs.PreferenceChangeEvent;
-import java.util.prefs.PreferenceChangeListener;
-import java.util.stream.Collectors;
 
 /**
  * A main application window, showing all of the GUI components.
@@ -574,6 +577,12 @@ public final class ApplicationWindow implements PreferenceChangeListener {
                         torrentViewTable.getSelectedJobs(), TorrentStatus.STOPPED,
                         toolbarButtonsMap.get(ImageUtils.DOWNLOAD_ICON_LOCATION),
                         toolbarButtonsMap.get(ImageUtils.STOP_ICON_LOCATION)));
+        toolbarButtonsMap.get(ImageUtils.UP_ICON_LOCATION).setOnAction(
+                event -> torrentJobActionHandler.onRequestTorrentPriorityChange(queuedTorrentManager,
+                        torrentViewTable.getSelectedJobs(), PriorityChange.HIGHER));
+        toolbarButtonsMap.get(ImageUtils.DOWN_ICON_LOCATION).setOnAction(
+                event -> torrentJobActionHandler.onRequestTorrentPriorityChange(queuedTorrentManager,
+                        torrentViewTable.getSelectedJobs(), PriorityChange.LOWER));
 
         final String themeName = ApplicationPreferences.getProperty(GuiProperties.APPLICATION_THEME, "light");
         refreshToolbarIcons(toolbarButtonsMap, themeName);
@@ -892,10 +901,12 @@ public final class ApplicationWindow implements PreferenceChangeListener {
         toolbarButtonsMap.get(ImageUtils.DOWNLOAD_ICON_LOCATION).setDisable(!torrentSelected ||
                 selectedTorrentView.getStatus() == TorrentStatus.ACTIVE);
         toolbarButtonsMap.get(ImageUtils.STOP_ICON_LOCATION).setDisable(!torrentSelected ||
-                selectedTorrentView.getStatus() == TorrentStatus.STOPPED);
+                selectedTorrentView.getStatus() == TorrentStatus.STOPPED && selectedTorrentView.getQueueStatus() != QueueStatus.QUEUED);
 
-        final Button removeButton = toolbarButtonsMap.get(ImageUtils.DELETE_ICON_LOCATION);
-        removeButton.setDisable(!torrentSelected);
+        toolbarButtonsMap.get(ImageUtils.UP_ICON_LOCATION).setDisable(!torrentSelected);
+        toolbarButtonsMap.get(ImageUtils.DOWN_ICON_LOCATION).setDisable(!torrentSelected);
+
+        toolbarButtonsMap.get(ImageUtils.DELETE_ICON_LOCATION).setDisable(!torrentSelected);
     }
 
     private void onDeleteButtonStateChanged(final Button deleteButton, final boolean disabled) {

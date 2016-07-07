@@ -20,8 +20,6 @@
 
 package org.matic.torrent.gui.model;
 
-import org.matic.torrent.queue.FilePriority;
-
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.LongProperty;
@@ -33,6 +31,7 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.scene.image.Image;
+import org.matic.torrent.queue.enums.FilePriority;
 
 /**
  * A representation of a file entry in a torrent meta data file. It is used for

@@ -17,9 +17,8 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
+package org.matic.torrent.queue.enums;
 
-package org.matic.torrent.queue;
-
-public enum TorrentStatus {
-    ACTIVE, STOPPED, ERROR
+public enum PriorityChange {
+	HIGHER, LOWER, FORCED
 }

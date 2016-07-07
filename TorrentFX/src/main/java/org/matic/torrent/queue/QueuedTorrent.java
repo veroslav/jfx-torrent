@@ -22,13 +22,18 @@ package org.matic.torrent.queue;
 import java.util.Objects;
 
 import org.matic.torrent.hash.InfoHash;
+import org.matic.torrent.queue.enums.QueueStatus;
+import org.matic.torrent.queue.enums.TorrentStatus;
 
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleObjectProperty;
 
-public final class QueuedTorrent {
+public class QueuedTorrent {
+
+    public static final int FORCED_PRIORITY = -1;
+    public static final int UKNOWN_PRIORITY = 0;
 
     private final QueuedTorrentMetaData metaData;
     private final QueuedTorrentProgress progress;
@@ -37,67 +42,69 @@ public final class QueuedTorrent {
     private final ObjectProperty<TorrentStatus> status = new SimpleObjectProperty<>();
     private final IntegerProperty priority;
 
-    private QueueStatus queueStatus = QueueStatus.INACTIVE;
+    private QueueStatus queueStatus;
 
-    public QueuedTorrent(final QueuedTorrentMetaData metaData, final QueuedTorrentProgress progress) {
+    protected QueuedTorrent(final QueuedTorrentMetaData metaData, final QueuedTorrentProgress progress) {
         this.metaData = metaData;
         this.progress = progress;
         this.infoHash = metaData.getInfoHash();
 
         this.status.set(progress.getStatus());
+        this.queueStatus = progress.getQueueStatus();
         priority = new SimpleIntegerProperty(progress.getTorrentPriority());
     }
 
-    public InfoHash getInfoHash() {
+    public final InfoHash getInfoHash() {
         return infoHash;
     }
 
-    public QueuedTorrentMetaData getMetaData() {
+    public final QueuedTorrentMetaData getMetaData() {
         return metaData;
     }
 
-    public QueuedTorrentProgress getProgress() {
+    public final QueuedTorrentProgress getProgress() {
         return progress;
     }
 
-    protected void setQueueStatus(final QueueStatus queueStatus) {
+    protected final void setQueueStatus(final QueueStatus queueStatus) {
         this.queueStatus = queueStatus;
     }
 
-    public QueueStatus getQueueStatus() {
+    public final QueueStatus getQueueStatus() {
         return queueStatus;
     }
 
-    protected ObjectProperty<TorrentStatus> statusProperty() {
+    protected final ObjectProperty<TorrentStatus> statusProperty() {
         return status;
     }
 
-    protected IntegerProperty priorityProperty() {
+    protected final IntegerProperty priorityProperty() {
         return priority;
     }
 
-    protected int getPriority() {
+    protected final int getPriority() {
         return priority.get();
     }
 
-    protected void setPriority(final int priority) {
+    protected final void setPriority(final int priority) {
+        progress.setForced(priority == FORCED_PRIORITY);
         this.priority.set(priority);
     }
 
-    public TorrentStatus getStatus() {
+    public final TorrentStatus getStatus() {
         return status.get();
     }
 
-    protected void setStatus(final TorrentStatus status) {
+    protected final void setStatus(final TorrentStatus status) {
         this.status.set(status);
     }
 
-    protected boolean isForciblyQueued() {
-        return progress.isForciblyQueued();
+    protected final boolean isForced() {
+        return progress.isForced();
     }
 
     @Override
-    public boolean equals(final Object o) {
+    public final boolean equals(final Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         QueuedTorrent that = (QueuedTorrent) o;
@@ -105,7 +112,16 @@ public final class QueuedTorrent {
     }
 
     @Override
-    public int hashCode() {
+    public final int hashCode() {
         return Objects.hash(infoHash);
+    }
+
+    @Override
+    public String toString() {
+        return "QueuedTorrent{" +
+                "infoHash=" + infoHash +
+                ", queueStatus=" + queueStatus +
+                ", priority=" + priority +
+                '}';
     }
 }

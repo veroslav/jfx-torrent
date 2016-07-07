@@ -1,4 +1,5 @@
-/* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
+/*
+* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
 * Copyright (C) 2015-2016 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
@@ -16,36 +17,8 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-package org.matic.torrent.queue;
+package org.matic.torrent.queue.enums;
 
-/**
- * Possible priorities for a file download
- * 
- * @author vedran
- *
- */
-public enum FilePriority {
-	SKIP(0), LOWEST(1), LOW(2), NORMAL(3), HIGH(4), HIGHEST(5), MIXED(6);
-	
-	private static final String[] NAMES = {"Skip", "Lowest",
-		"Low", "Normal", "High", "Highest", "Mixed"};
-	
-	private final int value;
-	
-	FilePriority(final int priority) {
-		this.value = priority;
-	}
-	
-	public final int getValue() {
-		return value;
-	}
-
-	@Override
-	public final String toString() {	
-		return FilePriority.NAMES[value];
-	}
-
-	public static String valueOf(int i) {
-		return FilePriority.NAMES[i];
-	}	
+public enum TorrentStatus {
+    ACTIVE, STOPPED, ERROR
 }

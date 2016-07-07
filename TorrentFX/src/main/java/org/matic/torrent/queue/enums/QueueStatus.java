@@ -17,6 +17,6 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-package org.matic.torrent.queue;
+package org.matic.torrent.queue.enums;
 
-public enum QueueStatus {ACTIVE, INACTIVE, QUEUED, FORCED}
+public enum QueueStatus {ACTIVE, INACTIVE, QUEUED, FORCED, NOT_ON_QUEUE}

@@ -18,14 +18,6 @@
 */
 package org.matic.torrent.gui.tree;
 
-import java.util.Arrays;
-
-import org.matic.torrent.gui.model.TorrentFileEntry;
-import org.matic.torrent.preferences.ApplicationPreferences;
-import org.matic.torrent.preferences.CssProperties;
-import org.matic.torrent.preferences.GuiProperties;
-import org.matic.torrent.queue.FilePriority;
-
 import javafx.scene.control.CheckBoxTreeItem;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Menu;
@@ -35,6 +27,13 @@ import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.TreeTableRow;
+import org.matic.torrent.gui.model.TorrentFileEntry;
+import org.matic.torrent.preferences.ApplicationPreferences;
+import org.matic.torrent.preferences.CssProperties;
+import org.matic.torrent.preferences.GuiProperties;
+import org.matic.torrent.queue.enums.FilePriority;
+
+import java.util.Arrays;
 
 public final class TorrentContentTreeRow extends TreeTableRow<TorrentFileEntry> {
 	private final ContextMenu contextMenu = new ContextMenu();

@@ -41,7 +41,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public final class DataPersistenceSupport {
+public class DataPersistenceSupport {
 
     private static final String TORRENT_FILE_EXTENSION = ".torrent";
     private static final String STATE_FILE_EXTENSION = ".state";

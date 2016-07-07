@@ -19,7 +19,7 @@
 */
 package org.matic.torrent.gui.model;
 
-import org.matic.torrent.queue.TorrentStatus;
+import org.matic.torrent.queue.enums.TorrentStatus;
 import org.matic.torrent.tracking.Tracker;
 import org.matic.torrent.tracking.TrackerSession;
 

@@ -41,6 +41,11 @@ import org.matic.torrent.gui.model.TrackableView;
 import org.matic.torrent.gui.model.TrackerView;
 import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.io.DataPersistenceSupport;
+import org.matic.torrent.preferences.ApplicationPreferences;
+import org.matic.torrent.preferences.TransferProperties;
+import org.matic.torrent.queue.enums.PriorityChange;
+import org.matic.torrent.queue.enums.QueueStatus;
+import org.matic.torrent.queue.enums.TorrentStatus;
 import org.matic.torrent.tracking.Tracker;
 import org.matic.torrent.tracking.TrackerManager;
 import org.matic.torrent.tracking.methods.dht.DhtSession;
@@ -53,7 +58,15 @@ import javafx.collections.ObservableList;
 public final class QueuedTorrentManager implements PreferenceChangeListener {
 
     private final ObservableList<QueuedTorrent> queuedTorrents = FXCollections.observableArrayList();
-    private final QueueController queueController = new QueueController(queuedTorrents);
+    private final int maxActiveTorrents = (int) ApplicationPreferences.getProperty(
+            TransferProperties.ACTIVE_TORRENTS_LIMIT, 5);
+    private final int maxDownloadingTorrentsLimit = (int)ApplicationPreferences.getProperty(
+            TransferProperties.DOWNLOADING_TORRENTS_LIMIT, 3);
+    private int maxUploadingTorrents = (int)ApplicationPreferences.getProperty(
+            TransferProperties.UPLOADING_TORRENTS_LIMIT, 3);
+
+    private final QueueController queueController = new QueueController(queuedTorrents, maxActiveTorrents,
+            maxDownloadingTorrentsLimit, maxUploadingTorrents);
     private final TrackerManager trackerManager;
     private final DataPersistenceSupport persistenceSupport;
 
@@ -79,10 +92,23 @@ public final class QueuedTorrentManager implements PreferenceChangeListener {
      * @param torrentView A view of the target torrent.
      * @param requestedStatus Target status to change to.
      */
-    public void requestStatusChange(final TorrentView torrentView, final TorrentStatus requestedStatus) {
+    public void requestTorrentStatusChange(final TorrentView torrentView, final TorrentStatus requestedStatus) {
         synchronized(queuedTorrents) {
             match(torrentView.getInfoHash()).ifPresent(torrent ->
                     queueController.changeStatus(torrent, requestedStatus));
+        }
+    }
+
+    /**
+     * Allow the user to change priority for a torrent (either higher, lower or to forcibly activate a torrent).
+     *
+     * @param torrentView A view of the target torrent.
+     * @param priorityChange Target priority to be applied.
+     */
+    public void requestTorrentPriorityChange(final TorrentView torrentView, final PriorityChange priorityChange) {
+        synchronized(queuedTorrents) {
+            match(torrentView.getInfoHash()).ifPresent(torrent ->
+                    queueController.onPriorityChangeRequested(torrent, priorityChange));
         }
     }
 
@@ -106,9 +132,11 @@ public final class QueuedTorrentManager implements PreferenceChangeListener {
         synchronized(queuedTorrents) {
             queuedTorrents.forEach(t -> {
                 final QueuedTorrentProgress progress = t.getProgress();
-                final TorrentStatus status = t.getQueueStatus() == QueueStatus.INACTIVE?
-                        TorrentStatus.STOPPED : TorrentStatus.ACTIVE;
+                final TorrentStatus status = t.getQueueStatus() == QueueStatus.ACTIVE?
+                        TorrentStatus.ACTIVE : TorrentStatus.STOPPED;
                 progress.setStatus(status);
+                progress.setQueueStatus(t.getQueueStatus());
+
                 persistenceSupport.store(t.getMetaData(), progress);
             });
         }

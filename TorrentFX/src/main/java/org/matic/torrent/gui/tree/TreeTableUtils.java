@@ -32,7 +32,7 @@ import org.matic.torrent.gui.table.TableState;
 import org.matic.torrent.gui.table.TableUtils;
 import org.matic.torrent.preferences.CssProperties;
 import org.matic.torrent.preferences.GuiProperties;
-import org.matic.torrent.queue.FilePriority;
+import org.matic.torrent.queue.enums.FilePriority;
 import org.matic.torrent.utils.UnitConverter;
 
 import javafx.beans.property.ReadOnlyObjectWrapper;

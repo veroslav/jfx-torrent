@@ -32,6 +32,7 @@ import org.matic.torrent.gui.GuiUtils;
 import org.matic.torrent.gui.model.AvailabilityView;
 import org.matic.torrent.gui.model.TorrentView;
 import org.matic.torrent.preferences.CssProperties;
+import org.matic.torrent.queue.enums.QueueStatus;
 import org.matic.torrent.utils.UnitConverter;
 
 import java.util.TimeZone;
@@ -127,7 +128,8 @@ public final class InfoPanel extends VBox {
 		final long downLimit = clear? 0 : torrentView.getDownloadLimit();
 		downLimitValueLabel.setText(clear? "" : downLimit == 0? "\u221E" :
 			UnitConverter.formatByteCount(downLimit) + "/s");
-		statusValueLabel.setText(clear? "" : torrentView.getStatus().name());
+
+		statusValueLabel.setText(clear? "" : buildStatusMessage(torrentView.getQueueStatus()));
 		remainingValueLabel.setText(clear? "" : UnitConverter.formatByteCount(torrentView.getRemainingBytes()));
 		uploadedValueLabel.setText(clear? "" : UnitConverter.formatByteCount(torrentView.getUploadedBytes()));
 
@@ -148,6 +150,21 @@ public final class InfoPanel extends VBox {
 			+ " connected (" + torrentView.getPeersInSwarm() + " in swarm)");
 		shareRatioValueLabel.setText(clear? "" : torrentView.getShareRatio());
 	}
+
+    private String buildStatusMessage(final QueueStatus queueStatus) {
+        switch(queueStatus) {
+            case ACTIVE:
+                return "Active";
+            case QUEUED:
+                return "Queued";
+            case INACTIVE:
+                return "Stopped";
+            case FORCED:
+                return "Active (Forced)";
+            default:
+                return "";
+        }
+    }
 	
 	private void initComponents() {		
 		final VBox progressPane = new VBox();

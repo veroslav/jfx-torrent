@@ -28,7 +28,8 @@ import org.matic.torrent.codec.BinaryEncodedString;
 import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.queue.QueuedTorrent;
 import org.matic.torrent.queue.QueuedTorrentMetaData;
-import org.matic.torrent.queue.TorrentStatus;
+import org.matic.torrent.queue.enums.QueueStatus;
+import org.matic.torrent.queue.enums.TorrentStatus;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -197,6 +198,10 @@ public final class TorrentView {
         return queuedTorrent.getStatus();
     }
 
+    public QueueStatus getQueueStatus() {
+        return queuedTorrent.getQueueStatus();
+    }
+
     public String getSaveDirectory() {
         return saveDirectory;
     }
@@ -266,4 +271,11 @@ public final class TorrentView {
 			return false;
 		return true;
 	}
+
+    @Override
+    public String toString() {
+        return "TorrentView{" +
+                "queuedTorrent=" + queuedTorrent +
+                '}';
+    }
 }

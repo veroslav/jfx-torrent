@@ -62,7 +62,7 @@ import org.matic.torrent.preferences.CssProperties;
 import org.matic.torrent.preferences.GuiProperties;
 import org.matic.torrent.queue.QueuedTorrentMetaData;
 import org.matic.torrent.queue.QueuedTorrentProgress;
-import org.matic.torrent.queue.TorrentStatus;
+import org.matic.torrent.queue.enums.TorrentStatus;
 import org.matic.torrent.utils.UnitConverter;
 
 import java.io.File;

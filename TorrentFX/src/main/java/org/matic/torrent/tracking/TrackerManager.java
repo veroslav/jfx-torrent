@@ -33,7 +33,7 @@ import org.matic.torrent.net.udp.UdpConnectionManager;
 import org.matic.torrent.net.udp.UdpRequest;
 import org.matic.torrent.net.udp.UdpTrackerResponse;
 import org.matic.torrent.peer.ClientProperties;
-import org.matic.torrent.queue.TorrentStatus;
+import org.matic.torrent.queue.enums.TorrentStatus;
 import org.matic.torrent.tracking.Tracker.Event;
 import org.matic.torrent.tracking.TrackerRequest.Type;
 import org.matic.torrent.tracking.listeners.PeerFoundListener;
@@ -72,7 +72,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-public final class TrackerManager implements TrackerResponseListener, UdpTrackerResponseListener {
+public class TrackerManager implements TrackerResponseListener, UdpTrackerResponseListener {
 	
 	public static final int DEFAULT_REQUEST_SCHEDULER_POOL_SIZE = 1;
 	
@@ -280,7 +280,7 @@ public final class TrackerManager implements TrackerResponseListener, UdpTracker
 	 */
 	public void issueTorrentEvent(final TorrentView torrentView, Tracker.Event event) {
 		synchronized(trackerSessions) {
-			trackerSessions.get(torrentView).forEach(ts -> issueAnnounce(ts, event));
+            trackerSessions.get(torrentView).forEach(ts -> issueAnnounce(ts, event));
 		}
 	}
 	
@@ -298,6 +298,11 @@ public final class TrackerManager implements TrackerResponseListener, UdpTracker
 		
 		synchronized(trackerSessions) {		
 			trackerSessions.putIfAbsent(torrentView, new LinkedHashSet<>());
+
+            if(trackerSessions.get(torrentView).contains(torrentView)) {
+                return trackerView;
+            }
+
 			trackerSessions.compute(torrentView, (key, sessions) -> {
 				sessions.add(trackerSession);
 				return sessions;

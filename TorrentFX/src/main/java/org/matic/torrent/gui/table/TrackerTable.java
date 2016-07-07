@@ -41,7 +41,7 @@ import org.matic.torrent.gui.model.TrackableView;
 import org.matic.torrent.gui.model.TrackerView;
 import org.matic.torrent.gui.window.AddTrackerWindow;
 import org.matic.torrent.preferences.GuiProperties;
-import org.matic.torrent.queue.TorrentStatus;
+import org.matic.torrent.queue.enums.TorrentStatus;
 import org.matic.torrent.tracking.Tracker;
 import org.matic.torrent.utils.UnitConverter;
 

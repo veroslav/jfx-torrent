@@ -31,7 +31,7 @@ import org.matic.torrent.gui.image.ImageUtils;
 import org.matic.torrent.gui.model.FileTree;
 import org.matic.torrent.gui.model.TorrentFileEntry;
 import org.matic.torrent.hash.InfoHash;
-import org.matic.torrent.queue.FilePriority;
+import org.matic.torrent.queue.enums.FilePriority;
 
 import java.util.HashMap;
 import java.util.Iterator;

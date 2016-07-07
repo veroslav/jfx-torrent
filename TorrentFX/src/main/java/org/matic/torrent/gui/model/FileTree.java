@@ -20,9 +20,9 @@
 package org.matic.torrent.gui.model;
 
 import org.matic.torrent.codec.BinaryEncodedList;
-import org.matic.torrent.queue.FilePriority;
 import org.matic.torrent.queue.QueuedTorrentMetaData;
 import org.matic.torrent.queue.QueuedTorrentProgress;
+import org.matic.torrent.queue.enums.FilePriority;
 
 public final class FileTree {
 

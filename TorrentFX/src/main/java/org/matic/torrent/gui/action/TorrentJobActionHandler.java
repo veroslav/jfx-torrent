@@ -23,18 +23,25 @@ import javafx.collections.ObservableList;
 import javafx.scene.control.Button;
 import org.matic.torrent.gui.model.TorrentView;
 import org.matic.torrent.queue.QueuedTorrentManager;
-import org.matic.torrent.queue.TorrentStatus;
+import org.matic.torrent.queue.enums.PriorityChange;
+import org.matic.torrent.queue.enums.TorrentStatus;
 
 public final class TorrentJobActionHandler {
 
-	public void onRequestTorrentStateChange(final QueuedTorrentManager torrentManager,
+    public void onRequestTorrentStateChange(final QueuedTorrentManager torrentManager,
                                             final ObservableList<TorrentView> selectedTorrents,
                                             final TorrentStatus requestedStatus, final Button startButton,
                                             final Button stopButton) {
         startButton.setDisable(requestedStatus == TorrentStatus.ACTIVE);
         stopButton.setDisable(requestedStatus == TorrentStatus.STOPPED);
 
-        selectedTorrents.stream().forEach(tv ->
-                torrentManager.requestStatusChange(tv, requestedStatus));
-	}
+        selectedTorrents.forEach(tv ->
+                torrentManager.requestTorrentStatusChange(tv, requestedStatus));
+    }
+
+    public void onRequestTorrentPriorityChange(final QueuedTorrentManager torrentManager,
+                                               final ObservableList<TorrentView> torrentViews, final PriorityChange priorityChange) {
+        torrentViews.forEach(tv ->
+                torrentManager.requestTorrentPriorityChange(tv, priorityChange));
+    }
 }
