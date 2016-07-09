@@ -27,7 +27,6 @@ import org.matic.torrent.codec.BinaryEncodedString;
 import org.matic.torrent.codec.BinaryEncodingKeys;
 import org.matic.torrent.queue.enums.FilePriority;
 import org.matic.torrent.queue.enums.QueueStatus;
-import org.matic.torrent.queue.enums.TorrentStatus;
 
 import java.io.IOException;
 import java.util.LinkedHashSet;
@@ -132,19 +131,11 @@ public final class QueuedTorrentProgress {
         return ((BinaryEncodedInteger)torrentState.get(BinaryEncodingKeys.STATE_KEY_ADDED_ON)).getValue();
     }
 
-    protected void setStatus(final TorrentStatus status) {
-        torrentState.put(BinaryEncodingKeys.STATE_KEY_TORRENT_STATUS, new BinaryEncodedString(status.name()));
-    }
-
-    protected TorrentStatus getStatus() {
-        return TorrentStatus.valueOf(torrentState.get(BinaryEncodingKeys.STATE_KEY_TORRENT_STATUS).toString());
-    }
-
-    protected void setQueueStatus(final QueueStatus status) {
+    public void setQueueStatus(final QueueStatus status) {
         torrentState.put(BinaryEncodingKeys.STATE_KEY_QUEUE_NAME, new BinaryEncodedString(status.name()));
     }
 
-    protected QueueStatus getQueueStatus() {
+    public QueueStatus getQueueStatus() {
         final BinaryEncodedString queueStatus = (BinaryEncodedString)torrentState.get(BinaryEncodingKeys.STATE_KEY_QUEUE_NAME);
         return queueStatus != null? QueueStatus.valueOf(queueStatus.toString()) : QueueStatus.NOT_ON_QUEUE;
     }

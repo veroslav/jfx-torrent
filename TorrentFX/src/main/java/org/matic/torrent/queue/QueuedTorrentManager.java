@@ -19,18 +19,8 @@
 */
 package org.matic.torrent.queue;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.prefs.PreferenceChangeEvent;
-import java.util.prefs.PreferenceChangeListener;
-import java.util.stream.Collectors;
-
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import org.matic.torrent.codec.BinaryEncodedList;
 import org.matic.torrent.codec.BinaryEncodedString;
 import org.matic.torrent.gui.model.DhtView;
@@ -44,7 +34,6 @@ import org.matic.torrent.io.DataPersistenceSupport;
 import org.matic.torrent.preferences.ApplicationPreferences;
 import org.matic.torrent.preferences.TransferProperties;
 import org.matic.torrent.queue.enums.PriorityChange;
-import org.matic.torrent.queue.enums.QueueStatus;
 import org.matic.torrent.queue.enums.TorrentStatus;
 import org.matic.torrent.tracking.Tracker;
 import org.matic.torrent.tracking.TrackerManager;
@@ -52,8 +41,17 @@ import org.matic.torrent.tracking.methods.dht.DhtSession;
 import org.matic.torrent.tracking.methods.peerdiscovery.LocalPeerDiscoverySession;
 import org.matic.torrent.tracking.methods.pex.PeerExchangeSession;
 
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.prefs.PreferenceChangeEvent;
+import java.util.prefs.PreferenceChangeListener;
+import java.util.stream.Collectors;
 
 public final class QueuedTorrentManager implements PreferenceChangeListener {
 
@@ -119,6 +117,7 @@ public final class QueuedTorrentManager implements PreferenceChangeListener {
      */
     public List<TorrentView> loadPersisted() {
         final List<TorrentTemplate> loadedTorrentTemplates = persistenceSupport.loadAll();
+        Collections.sort(loadedTorrentTemplates);
 
         synchronized(queuedTorrents) {
             return addTorrents(loadedTorrentTemplates);
@@ -132,9 +131,6 @@ public final class QueuedTorrentManager implements PreferenceChangeListener {
         synchronized(queuedTorrents) {
             queuedTorrents.forEach(t -> {
                 final QueuedTorrentProgress progress = t.getProgress();
-                final TorrentStatus status = t.getQueueStatus() == QueueStatus.ACTIVE?
-                        TorrentStatus.ACTIVE : TorrentStatus.STOPPED;
-                progress.setStatus(status);
                 progress.setQueueStatus(t.getQueueStatus());
 
                 persistenceSupport.store(t.getMetaData(), progress);
@@ -165,7 +161,6 @@ public final class QueuedTorrentManager implements PreferenceChangeListener {
                 }
 
                 final TorrentView torrentView = new TorrentView(newTorrent);
-                newTorrent.statusProperty().addListener((obs, oldV, newV) -> onTorrentStatusChanged(torrentView, newV));
                 queuedTorrents.add(newTorrent);
 
                 final Set<String> trackerUrls = progress.getTrackerUrls();
@@ -178,6 +173,7 @@ public final class QueuedTorrentManager implements PreferenceChangeListener {
 
                 trackableViews.addAll(trackerUrls.stream().map(
                         t -> trackerManager.addTracker(t, torrentView)).collect(Collectors.toSet()));
+                newTorrent.statusProperty().addListener((obs, oldV, newV) -> onTorrentStatusChanged(torrentView, newV));
                 torrentView.priorityProperty().bind(newTorrent.priorityProperty());
                 torrentView.addTrackableViews(trackableViews);
                 return torrentView;

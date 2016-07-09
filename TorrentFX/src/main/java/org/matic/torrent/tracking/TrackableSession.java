@@ -19,10 +19,10 @@
 */
 package org.matic.torrent.tracking;
 
+import org.matic.torrent.gui.model.TorrentView;
+
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-
-import org.matic.torrent.gui.model.TorrentView;
 
 public abstract class TrackableSession {
 

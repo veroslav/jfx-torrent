@@ -40,7 +40,9 @@ import org.matic.torrent.preferences.CssProperties;
 import org.matic.torrent.preferences.GuiProperties;
 import org.matic.torrent.utils.UnitConverter;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.TimeZone;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -77,6 +79,15 @@ public final class TorrentViewTable {
 
     public void refresh() {
         TableUtils.refresh(torrentJobTable);
+    }
+
+    /**
+     * Sort the table based on the current sort order and latest table entry values
+     */
+    public void sort() {
+        final List<TableColumn<TorrentView, ?>> sortOrder = new ArrayList<>(torrentJobTable.getSortOrder());
+        torrentJobTable.getSortOrder().clear();
+        torrentJobTable.getSortOrder().addAll(sortOrder);
     }
 	
 	/**
@@ -167,10 +178,13 @@ public final class TorrentViewTable {
 				tj -> new ReadOnlyObjectWrapper<>(tj.getValue().getAddedOnTime());
 		final Callback<CellDataFeatures<TorrentView, String>, ObservableValue<String>> trackerValueFactory =
 				tj -> new ReadOnlyObjectWrapper<>(tj.getValue().getTrackerUrl());
-		
+
+        final TableColumn<TorrentView, ?> priorityColumn = TableUtils.buildColumn(priorityValueFactory,
+                val -> String.valueOf(val.getPriority()), GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, PRIORITY_COLUMN_LABEL);
+        torrentJobTable.getSortOrder().add(priorityColumn);
+
 		final LinkedHashMap<String, TableColumn<TorrentView, ?>> columnMappings = new LinkedHashMap<>();
-		columnMappings.put(PRIORITY_COLUMN_LABEL, TableUtils.buildColumn(priorityValueFactory,
-				val -> String.valueOf(val.getPriority()), GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, PRIORITY_COLUMN_LABEL));
+		columnMappings.put(PRIORITY_COLUMN_LABEL, priorityColumn);
 		columnMappings.put(NAME_COLUMN_LABEL, TableUtils.buildColumn(nameValueFactory, tj -> tj.getFileName(),
 				GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, NAME_COLUMN_LABEL));
 		columnMappings.put(SIZE_COLUMN_LABEL, TableUtils.buildColumn(sizeValueFactory, tj -> 

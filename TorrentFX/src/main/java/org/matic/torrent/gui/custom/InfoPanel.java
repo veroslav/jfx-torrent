@@ -106,7 +106,7 @@ public final class InfoPanel extends VBox {
                 creationTime, TimeZone.getDefault()));
 		addedOnValueLabel.setText(clear? "" : UnitConverter.formatMillisToDate(
                 torrentView.getAddedOnTime(), TimeZone.getDefault()));
-		hashValueLabel.setText(clear? "" : torrentView.getHash());
+		hashValueLabel.setText(clear? "" : torrentView.getInfoHash().toString().toUpperCase());
 		commentValueLabel.setText(clear? "" : torrentView.getComment());
 		piecesValueLabel.setText(clear? "" : torrentView.getTotalPieces() + " x "
 				+ UnitConverter.formatByteCount(torrentView.getPieceLength()) + " (have "

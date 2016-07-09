@@ -211,10 +211,6 @@ public final class TorrentView {
         return comment != null? comment.getValue() : "";
     }
 
-    public String getHash() {
-        return queuedTorrent.getInfoHash().toString().toUpperCase();
-    }
-
     public Long getCreationTime() {
         final BinaryEncodedInteger creationTime = queuedTorrent.getMetaData().getCreationDate();
         return creationTime != null? creationTime.getValue() * 1000: null;

@@ -24,7 +24,7 @@ package org.matic.torrent.queue;
  *
  * @author Vedran Matic
  */
-public final class TorrentTemplate {
+public final class TorrentTemplate implements Comparable<TorrentTemplate> {
 
     private final QueuedTorrentMetaData metaData;
     private final QueuedTorrentProgress progress;
@@ -40,5 +40,21 @@ public final class TorrentTemplate {
 
     public QueuedTorrentProgress getProgress() {
         return progress;
+    }
+
+    @Override
+    public int compareTo(final TorrentTemplate other) {
+        final int thisPriority = progress.getTorrentPriority();
+        final int otherPriority = other.getProgress().getTorrentPriority();
+
+        if(thisPriority < otherPriority) {
+            return -1;
+        }
+        else if(otherPriority < thisPriority) {
+            return 1;
+        }
+        else {
+            return 0;
+        }
     }
 }

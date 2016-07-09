@@ -19,6 +19,33 @@
 */
 package org.matic.torrent.gui.window;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Optional;
+import java.util.TimeZone;
+
+import org.matic.torrent.codec.BinaryEncodedDictionary;
+import org.matic.torrent.codec.BinaryEncodedInteger;
+import org.matic.torrent.codec.BinaryEncodedList;
+import org.matic.torrent.codec.BinaryEncodedString;
+import org.matic.torrent.codec.BinaryEncodingKeys;
+import org.matic.torrent.gui.action.enums.BorderStyle;
+import org.matic.torrent.gui.custom.TitledBorderPane;
+import org.matic.torrent.gui.model.FileTree;
+import org.matic.torrent.gui.model.TorrentFileEntry;
+import org.matic.torrent.gui.table.TableUtils;
+import org.matic.torrent.gui.tree.FileTreeViewer;
+import org.matic.torrent.gui.tree.TreeTableUtils;
+import org.matic.torrent.io.DiskUtilities;
+import org.matic.torrent.preferences.CssProperties;
+import org.matic.torrent.preferences.GuiProperties;
+import org.matic.torrent.queue.QueuedTorrentMetaData;
+import org.matic.torrent.queue.QueuedTorrentProgress;
+import org.matic.torrent.queue.enums.QueueStatus;
+import org.matic.torrent.utils.UnitConverter;
+
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -45,32 +72,6 @@ import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Window;
-import org.matic.torrent.codec.BinaryEncodedDictionary;
-import org.matic.torrent.codec.BinaryEncodedInteger;
-import org.matic.torrent.codec.BinaryEncodedList;
-import org.matic.torrent.codec.BinaryEncodedString;
-import org.matic.torrent.codec.BinaryEncodingKeys;
-import org.matic.torrent.gui.action.enums.BorderStyle;
-import org.matic.torrent.gui.custom.TitledBorderPane;
-import org.matic.torrent.gui.model.FileTree;
-import org.matic.torrent.gui.model.TorrentFileEntry;
-import org.matic.torrent.gui.table.TableUtils;
-import org.matic.torrent.gui.tree.FileTreeViewer;
-import org.matic.torrent.gui.tree.TreeTableUtils;
-import org.matic.torrent.io.DiskUtilities;
-import org.matic.torrent.preferences.CssProperties;
-import org.matic.torrent.preferences.GuiProperties;
-import org.matic.torrent.queue.QueuedTorrentMetaData;
-import org.matic.torrent.queue.QueuedTorrentProgress;
-import org.matic.torrent.queue.enums.TorrentStatus;
-import org.matic.torrent.utils.UnitConverter;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Optional;
-import java.util.TimeZone;
 
 /**
  * A window showing contents of a torrent to be opened and added to a list of torrents
@@ -167,9 +168,11 @@ public final class AddTorrentWindow {
         fileTreeViewer.restoreDefault();
 
         if(result.isPresent() && result.get() == ButtonType.OK) {
-            final TorrentStatus targetStatus = startTorrentCheckbox.isSelected()?
-                    TorrentStatus.ACTIVE : TorrentStatus.STOPPED;
-            state.put(BinaryEncodingKeys.STATE_KEY_TORRENT_STATUS, new BinaryEncodedString(targetStatus.name()));
+            final QueueStatus targetStatus = startTorrentCheckbox.isSelected()?
+                    QueueStatus.ACTIVE : QueueStatus.INACTIVE;
+            progress.setQueueStatus(targetStatus);
+            //state.put(BinaryEncodingKeys.STATE_KEY_TORRENT_STATUS, new BinaryEncodedString(targetStatus.name()));
+
             return new AddedTorrentOptions(metaData, progress, fileView.getRoot(),
                     createSubFolderCheckbox.isSelected(),
                     addToTopQueueCheckbox.isSelected(), skipHashCheckbox.isSelected());
@@ -184,8 +187,8 @@ public final class AddTorrentWindow {
         //state.put(BinaryEncodingKeys.KEY_PATH, new BinaryEncodedString(savePathCombo.getSelectionModel().getSelectedItem()));
         //state.put(BinaryEncodingKeys.STATE_KEY_LABEL, new BinaryEncodedString(labelCombo.getSelectionModel().getSelectedItem()));
 
-        final TorrentStatus targetStatus = startTorrentCheckbox.isSelected()? TorrentStatus.ACTIVE : TorrentStatus.STOPPED;
-        state.put(BinaryEncodingKeys.STATE_KEY_TORRENT_STATUS, new BinaryEncodedString(targetStatus.name()));
+        final QueueStatus targetStatus = startTorrentCheckbox.isSelected()? QueueStatus.ACTIVE : QueueStatus.INACTIVE;
+        state.put(BinaryEncodingKeys.STATE_KEY_QUEUE_NAME, new BinaryEncodedString(targetStatus.name()));
 
         final BinaryEncodedList trackerList = new BinaryEncodedList();
         metaData.getAnnounceList().stream().flatMap(l ->

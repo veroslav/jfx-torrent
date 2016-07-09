@@ -19,20 +19,18 @@
 */
 package org.matic.torrent.queue;
 
-import java.util.Objects;
-
-import org.matic.torrent.hash.InfoHash;
-import org.matic.torrent.queue.enums.QueueStatus;
-import org.matic.torrent.queue.enums.TorrentStatus;
-
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import org.matic.torrent.hash.InfoHash;
+import org.matic.torrent.queue.enums.QueueStatus;
+import org.matic.torrent.queue.enums.TorrentStatus;
+
+import java.util.Objects;
 
 public class QueuedTorrent {
 
-    public static final int FORCED_PRIORITY = -1;
     public static final int UKNOWN_PRIORITY = 0;
 
     private final QueuedTorrentMetaData metaData;
@@ -49,7 +47,8 @@ public class QueuedTorrent {
         this.progress = progress;
         this.infoHash = metaData.getInfoHash();
 
-        this.status.set(progress.getStatus());
+        this.status.set(progress.getQueueStatus() != QueueStatus.INACTIVE?
+                TorrentStatus.ACTIVE : TorrentStatus.STOPPED);
         this.queueStatus = progress.getQueueStatus();
         priority = new SimpleIntegerProperty(progress.getTorrentPriority());
     }
@@ -87,7 +86,6 @@ public class QueuedTorrent {
     }
 
     protected final void setPriority(final int priority) {
-        progress.setForced(priority == FORCED_PRIORITY);
         this.priority.set(priority);
     }
 
@@ -101,6 +99,10 @@ public class QueuedTorrent {
 
     protected final boolean isForced() {
         return progress.isForced();
+    }
+
+    protected final void setForced(final boolean forced) {
+        progress.setForced(forced);
     }
 
     @Override

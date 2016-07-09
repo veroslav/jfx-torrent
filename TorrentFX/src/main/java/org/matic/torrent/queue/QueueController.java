@@ -19,6 +19,13 @@
 */
 package org.matic.torrent.queue;
 
+import javafx.collections.ListChangeListener;
+import javafx.collections.ObservableList;
+import org.matic.torrent.preferences.TransferProperties;
+import org.matic.torrent.queue.enums.PriorityChange;
+import org.matic.torrent.queue.enums.QueueStatus;
+import org.matic.torrent.queue.enums.TorrentStatus;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -26,15 +33,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Consumer;
-
-import org.matic.torrent.preferences.TransferProperties;
-import org.matic.torrent.queue.enums.PriorityChange;
-import org.matic.torrent.queue.enums.QueueStatus;
-import org.matic.torrent.queue.enums.TorrentStatus;
-
-import javafx.collections.ListChangeListener;
-import javafx.collections.ObservableList;
 
 public final class QueueController {
 
@@ -70,19 +68,15 @@ public final class QueueController {
     }
 
     protected boolean onPriorityChangeRequested(final QueuedTorrent torrent, final PriorityChange priorityChange) {
-        synchronized(torrents) {
-            switch(torrent.getQueueStatus()) {
-                case ACTIVE:
-                    return handleActiveTorrentPriorityChange(torrent, priorityChange);
-                case INACTIVE:
-                    return handleInactiveTorrentPriorityChange(torrent, priorityChange);
-                case QUEUED:
-                    return handleQueuedTorrentPriorityChange(torrent, priorityChange);
-                case FORCED:
-                    return handleForcedTorrentPriorityChange(torrent, priorityChange);
-                default:
-                    return false;
-            }
+        switch(priorityChange) {
+            case HIGHER:
+                return handlePriorityRaised(torrent);
+            case LOWER:
+                return handlePriorityLowered(torrent);
+            case FORCED:
+                return handlePriorityForced(torrent);
+            default:
+                return false;
         }
     }
 
@@ -120,17 +114,108 @@ public final class QueueController {
     }
 
     protected boolean changeStatus(final QueuedTorrent torrent, final TorrentStatus newStatus) {
-        final TorrentStatus currentStatus = torrent.getStatus();
+        final QueueStatus queue = torrent.getQueueStatus();
 
+        if(newStatus == TorrentStatus.ACTIVE && queue == QueueStatus.INACTIVE) {
+            return onStartTorrent(torrent);
+        }
+        else if(newStatus == TorrentStatus.STOPPED && queue != QueueStatus.INACTIVE) {
+            return onStopTorrent(torrent);
+        }
+
+        return false;
+    }
+
+    private boolean onStartTorrent(final QueuedTorrent torrent) {
         synchronized(torrents) {
-            if(currentStatus == TorrentStatus.ACTIVE && newStatus == TorrentStatus.STOPPED) {
-                return onStopActiveTorrent(torrent);
-            } else if(currentStatus == TorrentStatus.STOPPED && newStatus == TorrentStatus.ACTIVE) {
-                return onStartStoppedTorrent(torrent);
-            } else if(currentStatus == TorrentStatus.STOPPED && newStatus == TorrentStatus.STOPPED &&
-                    torrent.getQueueStatus() == QueueStatus.QUEUED) {
-                return onStopQueuedTorrent(torrent);
+            if(queueStatus.get(QueueStatus.INACTIVE).remove(torrent)) {
+                final List<QueuedTorrent> activeTorrents = queueStatus.get(QueueStatus.ACTIVE);
+
+                if(activeTorrents.size() < maxActiveTorrents) {
+                    insertIntoQueue(QueueStatus.ACTIVE, torrent);
+                    torrent.setStatus(TorrentStatus.ACTIVE);
+                    return true;
+                }
+
+                final Optional<QueuedTorrent> lowerPrioActiveTorrent = activeTorrents.stream().filter(
+                        t -> t.getPriority() > torrent.getPriority()).findFirst();
+
+                if(lowerPrioActiveTorrent.isPresent()) {
+                    //We found a currently active torrent with a lower priority, replace it
+                    final QueuedTorrent activeTorrent = lowerPrioActiveTorrent.get();
+                    final int insertionIndex = activeTorrents.indexOf(activeTorrent);
+
+                    activeTorrents.remove(insertionIndex);
+                    activeTorrent.setQueueStatus(QueueStatus.QUEUED);
+                    activeTorrent.setStatus(TorrentStatus.STOPPED);
+
+                    final List<QueuedTorrent> queuedTorrents = queueStatus.get(QueueStatus.QUEUED);
+                    final Optional<QueuedTorrent> lowerPrioQueuedTorrent = queuedTorrents.stream().filter(
+                            t -> t.getPriority() > activeTorrent.getPriority()).findFirst();
+
+                    if(lowerPrioQueuedTorrent.isPresent()) {
+                        queuedTorrents.add(queuedTorrents.indexOf(lowerPrioQueuedTorrent.get()), activeTorrent);
+                    } else {
+                        queuedTorrents.add(activeTorrent);
+                    }
+
+                    activeTorrents.add(insertionIndex, torrent);
+                    torrent.setQueueStatus(QueueStatus.ACTIVE);
+                    torrent.setStatus(TorrentStatus.ACTIVE);
+                }
+                else {
+                    //All active torrents have higher priority, queue the torrent instead
+                    final List<QueuedTorrent> queuedTorrents = queueStatus.get(QueueStatus.QUEUED);
+                    final Optional<QueuedTorrent> lowerPrioQueuedTorrent = queuedTorrents.stream().filter(
+                            t -> t.getPriority() > torrent.getPriority()).findFirst();
+
+                    if(lowerPrioActiveTorrent.isPresent()) {
+                        queuedTorrents.add(queuedTorrents.indexOf(lowerPrioQueuedTorrent.get()), torrent);
+                    } else {
+                        queuedTorrents.add(torrent);
+                    }
+
+                    torrent.setQueueStatus(QueueStatus.QUEUED);
+                    torrent.setStatus(TorrentStatus.STOPPED);
+                }
+                return true;
             }
+            return false;
+        }
+    }
+
+    private boolean onStopTorrent(final QueuedTorrent torrent) {
+        synchronized(torrents) {
+            switch(torrent.getQueueStatus()) {
+                case ACTIVE:
+                    return onStopActiveTorrent(torrent);
+                case QUEUED:
+                    return onStopQueuedTorrent(torrent);
+                case FORCED:
+                    return onStopForcedTorrent(torrent);
+                default:
+                    return false;
+            }
+        }
+    }
+
+    private boolean onStopForcedTorrent(final QueuedTorrent torrent) {
+        if(queueStatus.get(QueueStatus.FORCED).remove(torrent)) {
+            torrent.setForced(false);
+            torrent.setStatus(TorrentStatus.STOPPED);
+            torrent.setQueueStatus(QueueStatus.INACTIVE);
+
+            final List<QueuedTorrent> inactiveTorrents = queueStatus.get(QueueStatus.INACTIVE);
+            final Optional<QueuedTorrent> lowerPrioInactiveTorrent = inactiveTorrents.stream().filter(
+                    t -> t.getPriority() > torrent.getPriority()).findFirst();
+
+            if(lowerPrioInactiveTorrent.isPresent()) {
+                inactiveTorrents.add(inactiveTorrents.indexOf(lowerPrioInactiveTorrent.get()), torrent);
+            } else {
+                inactiveTorrents.add(torrent);
+            }
+
+            return true;
         }
         return false;
     }
@@ -138,102 +223,55 @@ public final class QueueController {
     private boolean onStopQueuedTorrent(final QueuedTorrent torrent) {
         if(queueStatus.get(QueueStatus.QUEUED).remove(torrent)) {
             torrent.setQueueStatus(QueueStatus.INACTIVE);
-            torrent.setStatus(TorrentStatus.STOPPED);
-
             final List<QueuedTorrent> inactiveTorrents = queueStatus.get(QueueStatus.INACTIVE);
             final Optional<QueuedTorrent> lowerPrioInactiveTorrent = inactiveTorrents.stream().filter(
                     t -> t.getPriority() > torrent.getPriority()).findFirst();
+
             if(lowerPrioInactiveTorrent.isPresent()) {
                 inactiveTorrents.add(inactiveTorrents.indexOf(lowerPrioInactiveTorrent.get()), torrent);
-            }
-            else {
+            } else {
                 inactiveTorrents.add(torrent);
             }
+
             return true;
         }
         return false;
     }
 
-    private boolean onStartStoppedTorrent(final QueuedTorrent torrent) {
-        if(!queueStatus.get(QueueStatus.INACTIVE).remove(torrent)) {
-            return false;
-        }
-
-        final List<QueuedTorrent> activeTorrents = queueStatus.get(QueueStatus.ACTIVE);
-        final Optional<QueuedTorrent> lowerPrioActiveTorrent = activeTorrents.stream().filter(
-                t -> t.getPriority() > torrent.getPriority()).findFirst();
-
-        if(activeTorrents.isEmpty() || (activeTorrents.size() < maxActiveTorrents)) {
-            if(lowerPrioActiveTorrent.isPresent()) {
-                activeTorrents.add(activeTorrents.indexOf(lowerPrioActiveTorrent.get()), torrent);
-            }
-            else {
-                activeTorrents.add(torrent);
-            }
-            torrent.setQueueStatus(QueueStatus.ACTIVE);
-            torrent.setStatus(TorrentStatus.ACTIVE);
-        } else {
-            final List<QueuedTorrent> queuedTorrents = queueStatus.get(QueueStatus.QUEUED);
-            if(lowerPrioActiveTorrent.isPresent()) {
-                final QueuedTorrent lowestPrioActiveTorrent = activeTorrents.remove(activeTorrents.size() - 1);
-                lowestPrioActiveTorrent.setQueueStatus(QueueStatus.QUEUED);
-                lowestPrioActiveTorrent.setStatus(TorrentStatus.STOPPED);
-                queuedTorrents.add(0, lowestPrioActiveTorrent);
-
-                if(activeTorrents.isEmpty()) {
-                    activeTorrents.add(torrent);
-                }
-                else {
-                    final int insertionIndex = lowerPrioActiveTorrent.get().equals(lowestPrioActiveTorrent)?
-                            activeTorrents.size() - 1 : activeTorrents.indexOf(lowerPrioActiveTorrent.get());
-                    activeTorrents.add(insertionIndex, torrent);
-                }
-
-                torrent.setQueueStatus(QueueStatus.ACTIVE);
-                torrent.setStatus(TorrentStatus.ACTIVE);
-            } else {
-                final Optional<QueuedTorrent> lowerPrioQueuedTorrent = queuedTorrents.stream().filter(
-                        t -> t.getPriority() > torrent.getPriority()).findFirst();
-                if(lowerPrioQueuedTorrent.isPresent()) {
-                    queuedTorrents.add(queuedTorrents.indexOf(lowerPrioQueuedTorrent.get()), torrent);
-                } else {
-                    queuedTorrents.add(torrent);
-                }
-                torrent.setQueueStatus(QueueStatus.QUEUED);
-            }
-        }
-        return true;
-    }
-
     private boolean onStopActiveTorrent(final QueuedTorrent torrent) {
         final List<QueuedTorrent> activeTorrents = queueStatus.get(QueueStatus.ACTIVE);
-        final int torrentIndex = activeTorrents.indexOf(torrent);
-        if(torrentIndex == -1) {
-            return false;
-        }
+        if(activeTorrents.remove(torrent)) {
+            torrent.setStatus(TorrentStatus.STOPPED);
+            torrent.setQueueStatus(QueueStatus.INACTIVE);
 
-        final List<QueuedTorrent> inactiveTorrents = queueStatus.get(QueueStatus.INACTIVE);
-        final Optional<QueuedTorrent> lowerPrioInactiveTorrent = inactiveTorrents.stream().filter(
-                t -> t.getPriority() > torrent.getPriority()).findFirst();
-        if(lowerPrioInactiveTorrent.isPresent()) {
-            inactiveTorrents.add(inactiveTorrents.indexOf(lowerPrioInactiveTorrent.get()), torrent);
-        }
-        else {
-            inactiveTorrents.add(torrent);
-        }
+            final List<QueuedTorrent> inactiveTorrents = queueStatus.get(QueueStatus.INACTIVE);
+            final Optional<QueuedTorrent> lowerPrioInactiveTorrent = inactiveTorrents.stream().filter(
+                    t -> t.getPriority() > torrent.getPriority()).findFirst();
 
-        activeTorrents.remove(torrentIndex);
-        torrent.setQueueStatus(QueueStatus.INACTIVE);
-        torrent.setStatus(TorrentStatus.STOPPED);
+            if(lowerPrioInactiveTorrent.isPresent()) {
+                inactiveTorrents.add(inactiveTorrents.indexOf(lowerPrioInactiveTorrent.get()), torrent);
+            } else {
+                inactiveTorrents.add(torrent);
+            }
 
-        final List<QueuedTorrent> queuedTorrents = queueStatus.get(QueueStatus.QUEUED);
-        if(!queuedTorrents.isEmpty()) {
-            final QueuedTorrent queuedTorrent = queuedTorrents.remove(0);
-            insertIntoQueue(QueueStatus.ACTIVE, queuedTorrent);
-            queuedTorrent.setStatus(TorrentStatus.ACTIVE);
+            final List<QueuedTorrent> queuedTorrents = queueStatus.get(QueueStatus.QUEUED);
+            if(!queuedTorrents.isEmpty()) {
+                final QueuedTorrent queuedTorrent = queuedTorrents.remove(0);
+                queuedTorrent.setQueueStatus(QueueStatus.ACTIVE);
+                final Optional<QueuedTorrent> lowerPrioActiveTorrent = activeTorrents.stream().filter(
+                        t -> t.getPriority() > torrent.getPriority()).findFirst();
+
+                if(lowerPrioActiveTorrent.isPresent()) {
+                    activeTorrents.add(activeTorrents.indexOf(lowerPrioActiveTorrent.get()), queuedTorrent);
+                } else {
+                    activeTorrents.add(queuedTorrent);
+                }
+
+                queuedTorrent.setStatus(TorrentStatus.ACTIVE);
+            }
+            return true;
         }
-
-        return true;
+        return false;
     }
 
     protected int getQueueSize(final QueueStatus queue) {
@@ -242,169 +280,117 @@ public final class QueueController {
         }
     }
 
-    private boolean handleForcedTorrentPriorityChange(final QueuedTorrent torrent,
-                                                      final PriorityChange priorityChange) {
-        final List<QueuedTorrent> forcedTorrents = queueStatus.get(QueueStatus.FORCED);
-        final int torrentIndex = forcedTorrents.indexOf(torrent);
-        if(torrentIndex == -1) {
-            return false;
-        }
-        if(priorityChange == PriorityChange.HIGHER) {
-            if(torrentIndex > 0) {
-                Collections.swap(forcedTorrents, torrentIndex - 1, torrentIndex);
-                return true;
+    private boolean handlePriorityRaised(final QueuedTorrent torrent) {
+        synchronized(torrents) {
+            final QueueStatus queue = torrent.getQueueStatus();
+            final List<QueuedTorrent> matchingQueueTorrents = queueStatus.get(queue);
+            final int torrentIndex = matchingQueueTorrents.indexOf(torrent);
+            if(torrentIndex == -1 || torrent.getPriority() == 1) {
+                return false;
             }
-        } else if(priorityChange == PriorityChange.LOWER) {
-            if(torrentIndex < forcedTorrents.size() - 1) {
-                Collections.swap(forcedTorrents, torrentIndex + 1, torrentIndex);
-                return true;
+            torrent.setPriority(torrent.getPriority() - 1);
+            final Optional<QueuedTorrent> matchingPrioTorrent = torrents.stream().filter(
+                    t -> !t.equals(torrent) && t.getPriority() == torrent.getPriority()).findAny();
+            if(!matchingPrioTorrent.isPresent()) {
+                return false;
             }
-        }
-        return false;
-    }
+            matchingPrioTorrent.get().setPriority(torrent.getPriority() + 1);
 
-    private boolean handleInactiveTorrentPriorityChange(final QueuedTorrent torrent,
-                                                        final PriorityChange priorityChange) {
-        final List<QueuedTorrent> inactiveTorrents = queueStatus.get(QueueStatus.INACTIVE);
-        final int torrentIndex = inactiveTorrents.indexOf(torrent);
-        if(torrentIndex == -1) {
-            return false;
-        }
-        if(priorityChange == PriorityChange.HIGHER) {
             if(torrentIndex > 0) {
-                final QueuedTorrent higherPrioTorrent = inactiveTorrents.get(torrentIndex - 1);
-                higherPrioTorrent.setPriority(higherPrioTorrent.getPriority() + 1);
-                torrent.setPriority(torrent.getPriority() - 1);
-                Collections.swap(inactiveTorrents, torrentIndex - 1, torrentIndex);
-                return true;
-            }
-        } else if(priorityChange == PriorityChange.LOWER) {
-            if(torrentIndex < inactiveTorrents.size() - 1) {
-                final QueuedTorrent lowerPrioTorrent = inactiveTorrents.get(torrentIndex + 1);
-                lowerPrioTorrent.setPriority(lowerPrioTorrent.getPriority() - 1);
-                torrent.setPriority(torrent.getPriority() + 1);
-                Collections.swap(inactiveTorrents, torrentIndex + 1, torrentIndex);
-                return true;
-            }
-        } else {
-            //Forced
-            torrent.setPriority(QueuedTorrent.FORCED_PRIORITY);
-            inactiveTorrents.stream().filter(t -> t.getPriority() > torrent.getPriority())
-                    .forEach(t -> t.setPriority(t.getPriority() - 1));
-            inactiveTorrents.remove(torrentIndex);
-            insertIntoQueue(QueueStatus.FORCED, torrent);
-            torrent.setStatus(TorrentStatus.ACTIVE);
-            return true;
-        }
-        return false;
-    }
-
-    private boolean handleQueuedTorrentPriorityChange(final QueuedTorrent torrent,
-                                                      final PriorityChange priorityChange) {
-        final List<QueuedTorrent> queuedTorrents = queueStatus.get(QueueStatus.QUEUED);
-        final int torrentIndex = queuedTorrents.indexOf(torrent);
-        if(torrentIndex == -1) {
-            return false;
-        }
-        if(priorityChange == PriorityChange.HIGHER) {
-            if(torrentIndex > 0) {
-                final QueuedTorrent higherPrioTorrent = queuedTorrents.get(torrentIndex - 1);
-                higherPrioTorrent.setPriority(higherPrioTorrent.getPriority() + 1);
-                torrent.setPriority(torrent.getPriority() - 1);
-                Collections.swap(queuedTorrents, torrentIndex - 1, torrentIndex);
-                return true;
-            } else {
+                final QueuedTorrent higherPrioTorrent = matchingQueueTorrents.get(torrentIndex - 1);
+                if(higherPrioTorrent.getPriority() > torrent.getPriority()) {
+                    Collections.swap(matchingQueueTorrents, torrentIndex - 1, torrentIndex);
+                }
+            } else if(queue == QueueStatus.QUEUED) {
                 final List<QueuedTorrent> activeTorrents = queueStatus.get(QueueStatus.ACTIVE);
-                final QueuedTorrent lowestActiveTorrent = activeTorrents.remove(activeTorrents.size() - 1);
-                queuedTorrents.remove(torrentIndex);
-                insertIntoQueue(QueueStatus.QUEUED, lowestActiveTorrent);
-                insertIntoQueue(QueueStatus.ACTIVE, torrent);
-                torrent.setPriority(torrent.getPriority() - 1);
-                torrent.setStatus(TorrentStatus.ACTIVE);
-                lowestActiveTorrent.setPriority(lowestActiveTorrent.getPriority() + 1);
-                lowestActiveTorrent.setStatus(TorrentStatus.STOPPED);
-                return true;
-            }
-        } else if(priorityChange == PriorityChange.LOWER) {
-            if(!queuedTorrents.isEmpty() && torrentIndex < queuedTorrents.size() -1) {
-                final QueuedTorrent lowerPrioTorrent = queuedTorrents.get(torrentIndex + 1);
-                lowerPrioTorrent.setPriority(lowerPrioTorrent.getPriority() - 1);
-                torrent.setPriority(torrent.getPriority() + 1);
-                Collections.swap(queuedTorrents, torrentIndex + 1, torrentIndex);
-                return true;
-            }
-        } else {
-            //Forced
-            torrent.setPriority(QueuedTorrent.FORCED_PRIORITY);
-            queuedTorrents.stream().filter(t -> t.getPriority() > torrent.getPriority())
-                    .forEach(t -> t.setPriority(t.getPriority() - 1));
-            queuedTorrents.remove(torrentIndex);
-            insertIntoQueue(QueueStatus.FORCED, torrent);
-            torrent.setStatus(TorrentStatus.ACTIVE);
-            return true;
-        }
-        return false;
-    }
+                final QueuedTorrent lowestActiveTorrent = activeTorrents.get(activeTorrents.size() - 1);
 
-    private boolean handleActiveTorrentPriorityChange(final QueuedTorrent torrent,
-                                                      final PriorityChange priorityChange) {
-        final List<QueuedTorrent> activeTorrents = queueStatus.get(QueueStatus.ACTIVE);
-        final int torrentIndex = activeTorrents.indexOf(torrent);
-        if(torrentIndex == -1) {
-            return false;
-        }
-        if(priorityChange == PriorityChange.HIGHER) {
-            if(torrentIndex > 0) {
-                final QueuedTorrent higherPrioTorrent = activeTorrents.get(torrentIndex - 1);
-                higherPrioTorrent.setPriority(higherPrioTorrent.getPriority() + 1);
-                torrent.setPriority(torrent.getPriority() - 1);
-                Collections.swap(activeTorrents, torrentIndex - 1, torrentIndex);
-                return true;
-            }
-        } else if(priorityChange == PriorityChange.LOWER) {
-            if(torrentIndex < activeTorrents.size() - 1) {
-                final QueuedTorrent lowerPrioTorrent = activeTorrents.get(torrentIndex + 1);
-                lowerPrioTorrent.setPriority(lowerPrioTorrent.getPriority() - 1);
-                torrent.setPriority(torrent.getPriority() + 1);
-                Collections.swap(activeTorrents, torrentIndex + 1, torrentIndex);
-                return true;
-            } else {
-                final List<QueuedTorrent> queuedTorrents = queueStatus.get(QueueStatus.QUEUED);
-                if(!queuedTorrents.isEmpty()) {
-                    final QueuedTorrent highestQueuedTorrent = queuedTorrents.remove(0);
-                    activeTorrents.remove(torrentIndex);
-                    insertIntoQueue(QueueStatus.ACTIVE, highestQueuedTorrent);
-                    insertIntoQueue(QueueStatus.QUEUED, torrent);
-                    torrent.setPriority(torrent.getPriority() + 1);
-                    torrent.setStatus(TorrentStatus.STOPPED);
-                    highestQueuedTorrent.setPriority(highestQueuedTorrent.getPriority() - 1);
-                    highestQueuedTorrent.setStatus(TorrentStatus.ACTIVE);
+                if(lowestActiveTorrent.getPriority() > torrent.getPriority()) {
+                    matchingQueueTorrents.remove(torrentIndex);
+                    activeTorrents.remove(activeTorrents.size() - 1);
+                    insertIntoQueue(QueueStatus.QUEUED, lowestActiveTorrent);
+                    insertIntoQueue(QueueStatus.ACTIVE, torrent);
+                    torrent.setStatus(TorrentStatus.ACTIVE);
+                    lowestActiveTorrent.setStatus(TorrentStatus.STOPPED);
                 }
             }
-        } else {
-            //Forced
-            for(int i = torrentIndex + 1; i < activeTorrents.size(); ++i) {
-                final QueuedTorrent lowerPrioTorrent = activeTorrents.get(i);
-                lowerPrioTorrent.setPriority(lowerPrioTorrent.getPriority() - 1);
-            }
-            activeTorrents.stream().filter(t -> t.getPriority() > torrent.getPriority())
-                    .forEach(t -> t.setPriority(t.getPriority() - 1));
-            activeTorrents.remove(torrentIndex);
-            insertIntoQueue(QueueStatus.FORCED, torrent);
-            torrent.setPriority(QueuedTorrent.FORCED_PRIORITY);
-
-            final List<QueuedTorrent> queuedTorrents = queueStatus.get(QueueStatus.QUEUED);
-            if(!queuedTorrents.isEmpty()) {
-                final QueuedTorrent highestQueuedTorrent = queuedTorrents.remove(0);
-                insertIntoQueue(QueueStatus.ACTIVE, highestQueuedTorrent);
-                highestQueuedTorrent.setPriority(highestQueuedTorrent.getPriority() - 1);
-                highestQueuedTorrent.setStatus(TorrentStatus.ACTIVE);
-            }
-
-            queuedTorrents.forEach(t -> t.setPriority(t.getPriority() - 1));
-            queueStatus.get(QueueStatus.INACTIVE).forEach(t -> t.setPriority(t.getPriority() - 1));
+            return true;
         }
-        return false;
+    }
+
+    private boolean handlePriorityLowered(final QueuedTorrent torrent) {
+        synchronized(torrents) {
+            final QueueStatus queue = torrent.getQueueStatus();
+            final List<QueuedTorrent> matchingQueueTorrents = queueStatus.get(queue);
+            final int torrentIndex = matchingQueueTorrents.indexOf(torrent);
+            final int torrentCount = queueStatus.values().size();
+            if(torrentIndex == -1 || torrent.getPriority() == torrentCount) {
+                return false;
+            }
+            torrent.setPriority(torrent.getPriority() + 1);
+            final Optional<QueuedTorrent> matchingPrioTorrent = torrents.stream().filter(
+                    t -> !t.equals(torrent) && t.getPriority() == torrent.getPriority()).findAny();
+            if(!matchingPrioTorrent.isPresent()) {
+                return false;
+            }
+            matchingPrioTorrent.get().setPriority(torrent.getPriority() - 1);
+
+            if(torrentIndex < matchingQueueTorrents.size() - 1) {
+                final QueuedTorrent lowerPrioTorrent = matchingQueueTorrents.get(torrentIndex + 1);
+                if(lowerPrioTorrent.getPriority() < torrent.getPriority()) {
+                    Collections.swap(matchingQueueTorrents, torrentIndex + 1, torrentIndex);
+                }
+            } else if(queue == QueueStatus.ACTIVE) {
+                final List<QueuedTorrent> queuedTorrents = queueStatus.get(QueueStatus.QUEUED);
+                if(!queuedTorrents.isEmpty()) {
+                    final QueuedTorrent highestQueuedTorrent = queuedTorrents.get(0);
+
+                    if(highestQueuedTorrent.getPriority() - 1 < torrent.getPriority()) {
+                        matchingQueueTorrents.remove(torrentIndex);
+                        queuedTorrents.remove(0);
+                        insertIntoQueue(QueueStatus.ACTIVE, highestQueuedTorrent);
+                        insertIntoQueue(QueueStatus.QUEUED, torrent);
+                        torrent.setStatus(TorrentStatus.STOPPED);
+                        highestQueuedTorrent.setStatus(TorrentStatus.ACTIVE);
+                    }
+                }
+            }
+            return true;
+        }
+    }
+
+    private boolean handlePriorityForced(final QueuedTorrent torrent) {
+        synchronized(torrents) {
+            final QueueStatus queue = torrent.getQueueStatus();
+            if(queue == QueueStatus.FORCED || queueStatus.get(queue).indexOf(torrent) == -1) {
+                return false;
+            }
+            switch(queue) {
+                case ACTIVE:
+                    final List<QueuedTorrent> activeTorrents = queueStatus.get(QueueStatus.ACTIVE);
+                    activeTorrents.remove(torrent);
+                    torrent.setForced(true);
+                    insertIntoQueue(QueueStatus.FORCED, torrent);
+
+                    final List<QueuedTorrent> queuedTorrents = queueStatus.get(QueueStatus.QUEUED);
+                    if(!queuedTorrents.isEmpty()) {
+                        final QueuedTorrent highestQueuedTorrent = queuedTorrents.remove(0);
+                        insertIntoQueue(QueueStatus.ACTIVE, highestQueuedTorrent);
+                        highestQueuedTorrent.setStatus(TorrentStatus.ACTIVE);
+                    }
+                    break;
+                case INACTIVE:
+                case QUEUED:
+                    queueStatus.get(queue).remove(torrent);
+                    torrent.setForced(true);
+                    insertIntoQueue(QueueStatus.FORCED, torrent);
+                    torrent.setStatus(TorrentStatus.ACTIVE);
+                    break;
+                default:
+                    return false;
+            }
+            return true;
+        }
     }
 
     private void handleTorrentsAdded(final List<?extends QueuedTorrent> addedTorrents) {
@@ -413,29 +399,34 @@ public final class QueueController {
                 t.priorityProperty().addListener((obs, oldV, newV) ->
                         t.getProgress().setTorrentPriority(newV.intValue()));
 
-                final int forcedTorrents = queueStatus.get(QueueStatus.FORCED).size();
-                final int torrentsInQueue = queueStatus.get(QueueStatus.ACTIVE).size() +
+                final int activeTorrents = queueStatus.get(QueueStatus.ACTIVE).size();
+                final int torrentsInQueue = activeTorrents +
                         queueStatus.get(QueueStatus.INACTIVE).size() +
-                        queueStatus.get(QueueStatus.QUEUED).size() + forcedTorrents;
+                        queueStatus.get(QueueStatus.QUEUED).size() +
+                        queueStatus.get(QueueStatus.FORCED).size();
 
-                final int priority = t.getPriority() != QueuedTorrent.UKNOWN_PRIORITY?
-                        t.getPriority() : torrentsInQueue - forcedTorrents + 1;
+                t.setPriority(torrentsInQueue + 1);
 
-                if(t.getStatus() != TorrentStatus.ACTIVE) {
-                    t.setPriority(priority);
-                    insertIntoQueue(t.getQueueStatus() != QueueStatus.NOT_ON_QUEUE? t.getQueueStatus() : QueueStatus.INACTIVE, t);
+                final QueueStatus queue = t.getQueueStatus();
+
+                if(t.isForced()) {
+                    insertIntoQueue(QueueStatus.FORCED, t);
+                    t.setStatus(TorrentStatus.ACTIVE);
+                } else if((queue == QueueStatus.NOT_ON_QUEUE && t.getStatus() == TorrentStatus.STOPPED)
+                        || queue == QueueStatus.INACTIVE) {
+                    //Inactive torrent
+                    insertIntoQueue(QueueStatus.INACTIVE, t);
+                    t.setStatus(TorrentStatus.STOPPED);
+                } else if(((queue == QueueStatus.NOT_ON_QUEUE && t.getStatus() == TorrentStatus.ACTIVE)
+                        || queue == QueueStatus.ACTIVE || queue == QueueStatus.QUEUED)
+                        && activeTorrents < maxActiveTorrents) {
+                    //Active torrent
+                    insertIntoQueue(QueueStatus.ACTIVE, t);
+                    t.setStatus(TorrentStatus.ACTIVE);
                 } else {
-                    if(t.isForced()) {
-                        t.setPriority(QueuedTorrent.FORCED_PRIORITY);
-                        insertIntoQueue(QueueStatus.FORCED, t);
-                    } else if(queueStatus.get(QueueStatus.ACTIVE).size() < maxActiveTorrents) {
-                        t.setPriority(priority);
-                        insertIntoQueue(QueueStatus.ACTIVE, t);
-                    } else {
-                        t.setPriority(priority);
-                        insertIntoQueue(QueueStatus.QUEUED, t);
-                        t.setStatus(TorrentStatus.STOPPED);
-                    }
+                    //Queue torrent
+                    insertIntoQueue(QueueStatus.QUEUED, t);
+                    t.setStatus(TorrentStatus.STOPPED);
                 }
             });
         }
@@ -444,43 +435,31 @@ public final class QueueController {
     private void handleTorrentsRemoved(final List<?extends QueuedTorrent> removedTorrents) {
         synchronized(torrents) {
             removedTorrents.forEach(t -> {
-                if(queueStatus.get(t.getQueueStatus()).indexOf(t) == -1) {
+                if(!queueStatus.get(t.getQueueStatus()).remove(t)) {
                     return;
                 }
-                updatePrioritiesOnTorrentRemoval(t);
+                t.setStatus(TorrentStatus.STOPPED);
 
-                final List<QueuedTorrent> queuedTorrents = queueStatus.get(QueueStatus.QUEUED);
-                if(!queuedTorrents.isEmpty()) {
-                    final QueuedTorrent highestQueuedTorrent = queuedTorrents.remove(0);
-                    insertIntoQueue(QueueStatus.ACTIVE, highestQueuedTorrent);
-                    highestQueuedTorrent.setStatus(TorrentStatus.ACTIVE);
+                torrents.forEach(other -> {
+                    if(other.getPriority() > t.getPriority()) {
+                        other.setPriority(other.getPriority() - 1);
+                    }
+                });
+
+                if(t.getQueueStatus() == QueueStatus.ACTIVE) {
+                    final List<QueuedTorrent> queuedTorrents = queueStatus.get(QueueStatus.QUEUED);
+                    if (!queuedTorrents.isEmpty()) {
+                        final QueuedTorrent highestQueuedTorrent = queuedTorrents.remove(0);
+                        insertIntoQueue(QueueStatus.ACTIVE, highestQueuedTorrent);
+                        highestQueuedTorrent.setStatus(TorrentStatus.ACTIVE);
+                    }
                 }
+
+                t.setPriority(QueuedTorrent.UKNOWN_PRIORITY);
+                t.setQueueStatus(QueueStatus.NOT_ON_QUEUE);
+                t.setForced(false);
             });
         }
-    }
-
-    private void updatePrioritiesOnTorrentRemoval(final QueuedTorrent removedTorrent) {
-        final QueueStatus queue = removedTorrent.getQueueStatus();
-        if(queue != QueueStatus.FORCED) {
-            final Consumer<QueuedTorrent> priorityUpdater = t -> {
-                final int priority = t.getPriority();
-                if(priority > removedTorrent.getPriority()) {
-                    t.setPriority(priority - 1);
-                }
-            };
-            queueStatus.get(QueueStatus.ACTIVE).forEach(priorityUpdater::accept);
-            queueStatus.get(QueueStatus.QUEUED).forEach(priorityUpdater::accept);
-            queueStatus.get(QueueStatus.INACTIVE).forEach(priorityUpdater::accept);
-        }
-
-        removeFromQueue(removedTorrent);
-        queueStatus.get(queue).remove(removedTorrent);
-    }
-
-    private void removeFromQueue(final QueuedTorrent torrent) {
-        torrent.setStatus(TorrentStatus.STOPPED);
-        torrent.setPriority(QueuedTorrent.UKNOWN_PRIORITY);
-        torrent.setQueueStatus(QueueStatus.NOT_ON_QUEUE);
     }
 
     private void insertIntoQueue(final QueueStatus queue, final QueuedTorrent torrent) {

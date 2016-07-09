@@ -31,16 +31,12 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import org.matic.torrent.TorrentMain;
 import org.matic.torrent.gui.action.enums.BorderStyle;
 import org.matic.torrent.gui.custom.TitledBorderPane;
 import org.matic.torrent.peer.ClientProperties;
 import org.matic.torrent.preferences.ApplicationPreferences;
 import org.matic.torrent.preferences.GuiProperties;
 import org.matic.torrent.preferences.NetworkProperties;
-
-import java.security.SecureRandom;
-import java.util.Random;
 
 public final class ConnectionContentPane extends CategoryContentPane {
 	

@@ -19,6 +19,8 @@
 */
 package org.matic.torrent.queue;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -30,9 +32,6 @@ import org.matic.torrent.preferences.TransferProperties;
 import org.matic.torrent.queue.enums.PriorityChange;
 import org.matic.torrent.queue.enums.QueueStatus;
 import org.matic.torrent.queue.enums.TorrentStatus;
-
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 
 public final class QueueControllerTest {
 
@@ -52,7 +51,7 @@ public final class QueueControllerTest {
         final QueueController unitUnderTest = new QueueController(
                 torrents, maxActiveTorrents, maxDownloadingTorrents, maxUploadingTorrents);
 
-        final QueuedTorrent torrent = buildTorrent("1", TorrentStatus.ACTIVE);
+        final QueuedTorrent torrent = buildTorrent("1", QueueStatus.ACTIVE);
         torrents.add(torrent);
 
         Assert.assertEquals(1, unitUnderTest.getQueueSize(QueueStatus.ACTIVE));
@@ -68,7 +67,7 @@ public final class QueueControllerTest {
         final QueueController unitUnderTest = new QueueController(
                 torrents, maxActiveTorrents, maxDownloadingTorrents, maxUploadingTorrents);
 
-        final QueuedTorrent torrent = buildTorrent("1", TorrentStatus.STOPPED);
+        final QueuedTorrent torrent = buildTorrent("1", QueueStatus.INACTIVE);
         torrents.add(torrent);
 
         Assert.assertEquals(1, unitUnderTest.getQueueSize(QueueStatus.INACTIVE));
@@ -81,7 +80,7 @@ public final class QueueControllerTest {
 
     @Test
     public void testAddActiveTorrentOneOtherActiveTorrentWithinQueueLimit() {
-        final QueuedTorrent otherTorrent = buildTorrent("1", TorrentStatus.ACTIVE);
+        final QueuedTorrent otherTorrent = buildTorrent("1", QueueStatus.ACTIVE);
         torrents.add(otherTorrent);
 
         final QueueController unitUnderTest = new QueueController(
@@ -89,7 +88,7 @@ public final class QueueControllerTest {
 
         Assert.assertEquals(1, unitUnderTest.getQueueSize(QueueStatus.ACTIVE));
 
-        final QueuedTorrent torrentToAdd = buildTorrent("2", TorrentStatus.ACTIVE);
+        final QueuedTorrent torrentToAdd = buildTorrent("2", QueueStatus.ACTIVE);
         torrents.add(torrentToAdd);
 
         Assert.assertEquals(2, unitUnderTest.getQueueSize(QueueStatus.ACTIVE));
@@ -107,7 +106,7 @@ public final class QueueControllerTest {
 
     @Test
     public void testAddActiveTorrentOneOtherActiveTorrentOutsideQueueLimit() {
-        final QueuedTorrent otherTorrent = buildTorrent("1", TorrentStatus.ACTIVE);
+        final QueuedTorrent otherTorrent = buildTorrent("1", QueueStatus.ACTIVE);
         torrents.add(otherTorrent);
 
         final QueueController unitUnderTest = new QueueController(
@@ -115,7 +114,7 @@ public final class QueueControllerTest {
 
         Assert.assertEquals(1, unitUnderTest.getQueueSize(QueueStatus.ACTIVE));
 
-        final QueuedTorrent torrentToAdd = buildTorrent("2", TorrentStatus.ACTIVE);
+        final QueuedTorrent torrentToAdd = buildTorrent("2", QueueStatus.ACTIVE);
         torrents.add(torrentToAdd);
 
         Assert.assertEquals(1, unitUnderTest.getQueueSize(QueueStatus.ACTIVE));
@@ -134,7 +133,7 @@ public final class QueueControllerTest {
 
     @Test
     public void testAddForcedTorrentOneOtherActiveTorrentOutsideQueueLimit() {
-        final QueuedTorrent otherTorrent = buildTorrent("1", TorrentStatus.ACTIVE);
+        final QueuedTorrent otherTorrent = buildTorrent("1", QueueStatus.ACTIVE);
         torrents.add(otherTorrent);
 
         final QueueController unitUnderTest = new QueueController(
@@ -142,8 +141,8 @@ public final class QueueControllerTest {
 
         Assert.assertEquals(1, unitUnderTest.getQueueSize(QueueStatus.ACTIVE));
 
-        final QueuedTorrent torrentToAdd = buildTorrent("2", TorrentStatus.ACTIVE);
-        torrentToAdd.getProgress().setForced(true);
+        final QueuedTorrent torrentToAdd = buildTorrent("2", QueueStatus.ACTIVE);
+        torrentToAdd.setForced(true);
 
         torrents.add(torrentToAdd);
 
@@ -155,7 +154,7 @@ public final class QueueControllerTest {
         Assert.assertEquals(TorrentStatus.ACTIVE, otherTorrent.getStatus());
         Assert.assertFalse(otherTorrent.isForced());
 
-        Assert.assertEquals(QueuedTorrent.FORCED_PRIORITY, torrentToAdd.getPriority());
+        Assert.assertEquals(2, torrentToAdd.getPriority());
         Assert.assertEquals(QueueStatus.FORCED, torrentToAdd.getQueueStatus());
         Assert.assertEquals(TorrentStatus.ACTIVE, torrentToAdd.getStatus());
         Assert.assertTrue(torrentToAdd.isForced());
@@ -163,10 +162,10 @@ public final class QueueControllerTest {
 
     @Test
     public void testAddActiveTorrentOneActiveOneInactiveTorrentOutsideQueueLimit() {
-        final QueuedTorrent activeTorrent = buildTorrent("1", TorrentStatus.ACTIVE);
+        final QueuedTorrent activeTorrent = buildTorrent("1", QueueStatus.ACTIVE);
         torrents.add(activeTorrent);
 
-        final QueuedTorrent inactiveTorrent = buildTorrent("2", TorrentStatus.STOPPED);
+        final QueuedTorrent inactiveTorrent = buildTorrent("2", QueueStatus.INACTIVE);
         torrents.add(inactiveTorrent);
 
         final QueueController unitUnderTest = new QueueController(
@@ -175,7 +174,7 @@ public final class QueueControllerTest {
         Assert.assertEquals(1, unitUnderTest.getQueueSize(QueueStatus.ACTIVE));
         Assert.assertEquals(1, unitUnderTest.getQueueSize(QueueStatus.INACTIVE));
 
-        final QueuedTorrent torrentToAdd = buildTorrent("3", TorrentStatus.ACTIVE);
+        final QueuedTorrent torrentToAdd = buildTorrent("3", QueueStatus.ACTIVE);
 
         torrents.add(torrentToAdd);
 
@@ -201,10 +200,10 @@ public final class QueueControllerTest {
 
     @Test
     public void testRemoveActiveTorrentOneQueuedTorrent() {
-        final QueuedTorrent activeTorrent = buildTorrent("1", TorrentStatus.ACTIVE);
+        final QueuedTorrent activeTorrent = buildTorrent("1", QueueStatus.ACTIVE);
         torrents.add(activeTorrent);
 
-        final QueuedTorrent queuedTorrent = buildTorrent("2", TorrentStatus.ACTIVE);
+        final QueuedTorrent queuedTorrent = buildTorrent("2", QueueStatus.ACTIVE);
         torrents.add(queuedTorrent);
 
         final QueueController unitUnderTest = new QueueController(
@@ -241,17 +240,17 @@ public final class QueueControllerTest {
 
     @Test
     public void testRemoveOneFromEachQueue() {
-        final QueuedTorrent activeTorrent = buildTorrent("1", TorrentStatus.ACTIVE);
+        final QueuedTorrent activeTorrent = buildTorrent("1", QueueStatus.ACTIVE);
         torrents.add(activeTorrent);
 
-        final QueuedTorrent queuedTorrent = buildTorrent("2", TorrentStatus.ACTIVE);
+        final QueuedTorrent queuedTorrent = buildTorrent("2", QueueStatus.ACTIVE);
         torrents.add(queuedTorrent);
 
-        final QueuedTorrent inactiveTorrent = buildTorrent("3", TorrentStatus.STOPPED);
+        final QueuedTorrent inactiveTorrent = buildTorrent("3", QueueStatus.INACTIVE);
         torrents.add(inactiveTorrent);
 
-        final QueuedTorrent forcedTorrent = buildTorrent("4", TorrentStatus.ACTIVE);
-        forcedTorrent.getProgress().setForced(true);
+        final QueuedTorrent forcedTorrent = buildTorrent("4", QueueStatus.ACTIVE);
+        forcedTorrent.setForced(true);
         torrents.add(forcedTorrent);
 
         final QueueController unitUnderTest = new QueueController(
@@ -272,7 +271,7 @@ public final class QueueControllerTest {
         Assert.assertEquals(TorrentStatus.STOPPED, inactiveTorrent.getStatus());
         Assert.assertFalse(inactiveTorrent.isForced());
 
-        Assert.assertEquals(QueuedTorrent.FORCED_PRIORITY, forcedTorrent.getPriority());
+        Assert.assertEquals(4, forcedTorrent.getPriority());
         Assert.assertEquals(QueueStatus.FORCED, forcedTorrent.getQueueStatus());
         Assert.assertEquals(TorrentStatus.ACTIVE, forcedTorrent.getStatus());
         Assert.assertTrue(forcedTorrent.isForced());
@@ -321,10 +320,10 @@ public final class QueueControllerTest {
 
     @Test
     public void testTorrentPriorityChangeBetweenActiveAndQueuedQueues() {
-        final QueuedTorrent activeTorrent = buildTorrent("1", TorrentStatus.ACTIVE);
+        final QueuedTorrent activeTorrent = buildTorrent("1", QueueStatus.ACTIVE);
         torrents.add(activeTorrent);
 
-        final QueuedTorrent queuedTorrent = buildTorrent("2", TorrentStatus.ACTIVE);
+        final QueuedTorrent queuedTorrent = buildTorrent("2", QueueStatus.ACTIVE);
         torrents.add(queuedTorrent);
 
         final QueueController unitUnderTest = new QueueController(
@@ -378,10 +377,10 @@ public final class QueueControllerTest {
 
     @Test
     public void testActiveTorrentPriorityChange() {
-        final QueuedTorrent firstActiveTorrent = buildTorrent("1", TorrentStatus.ACTIVE);
+        final QueuedTorrent firstActiveTorrent = buildTorrent("1", QueueStatus.ACTIVE);
         torrents.add(firstActiveTorrent);
 
-        final QueuedTorrent secondActiveTorrent = buildTorrent("2", TorrentStatus.ACTIVE);
+        final QueuedTorrent secondActiveTorrent = buildTorrent("2", QueueStatus.ACTIVE);
         torrents.add(secondActiveTorrent);
 
         final QueueController unitUnderTest = new QueueController(
@@ -392,10 +391,10 @@ public final class QueueControllerTest {
 
     @Test
     public void testInactiveTorrentPriorityChange() {
-        final QueuedTorrent firstInactiveTorrent = buildTorrent("1", TorrentStatus.STOPPED);
+        final QueuedTorrent firstInactiveTorrent = buildTorrent("1", QueueStatus.INACTIVE);
         torrents.add(firstInactiveTorrent);
 
-        final QueuedTorrent secondInactiveTorrent = buildTorrent("2", TorrentStatus.STOPPED);
+        final QueuedTorrent secondInactiveTorrent = buildTorrent("2", QueueStatus.INACTIVE);
         torrents.add(secondInactiveTorrent);
 
         final QueueController unitUnderTest = new QueueController(
@@ -406,10 +405,10 @@ public final class QueueControllerTest {
 
     @Test
     public void testQueuedTorrentPriorityChange() {
-        final QueuedTorrent firstQueuedTorrent = buildTorrent("1", TorrentStatus.ACTIVE);
+        final QueuedTorrent firstQueuedTorrent = buildTorrent("1", QueueStatus.ACTIVE);
         torrents.add(firstQueuedTorrent);
 
-        final QueuedTorrent secondQueuedTorrent = buildTorrent("2", TorrentStatus.ACTIVE);
+        final QueuedTorrent secondQueuedTorrent = buildTorrent("2", QueueStatus.ACTIVE);
         torrents.add(secondQueuedTorrent);
 
         final QueueController unitUnderTest = new QueueController(
@@ -420,12 +419,12 @@ public final class QueueControllerTest {
 
     @Test
     public void testForcedTorrentPriorityChange() {
-        final QueuedTorrent firstForcedTorrent = buildTorrent("1", TorrentStatus.ACTIVE);
-        firstForcedTorrent.getProgress().setForced(true);
+        final QueuedTorrent firstForcedTorrent = buildTorrent("1", QueueStatus.ACTIVE);
+        firstForcedTorrent.setForced(true);
         torrents.add(firstForcedTorrent);
 
-        final QueuedTorrent secondForcedTorrent = buildTorrent("2", TorrentStatus.ACTIVE);
-        secondForcedTorrent.getProgress().setForced(true);
+        final QueuedTorrent secondForcedTorrent = buildTorrent("2", QueueStatus.ACTIVE);
+        secondForcedTorrent.setForced(true);
         torrents.add(secondForcedTorrent);
 
         final QueueController unitUnderTest = new QueueController(
@@ -436,7 +435,7 @@ public final class QueueControllerTest {
 
     @Test
     public void testActiveQueueLimitRaisedOneQueuedTorrent() {
-        final QueuedTorrent queuedTorrent = buildTorrent("1", TorrentStatus.ACTIVE);
+        final QueuedTorrent queuedTorrent = buildTorrent("1", QueueStatus.ACTIVE);
         torrents.add(queuedTorrent);
 
         final QueueController unitUnderTest = new QueueController(
@@ -459,7 +458,7 @@ public final class QueueControllerTest {
 
     @Test
     public void testActiveQueueLimitLoweredOneActiveTorrent() {
-        final QueuedTorrent activeTorrent = buildTorrent("1", TorrentStatus.ACTIVE);
+        final QueuedTorrent activeTorrent = buildTorrent("1", QueueStatus.ACTIVE);
         torrents.add(activeTorrent);
 
         final QueueController unitUnderTest = new QueueController(
@@ -482,13 +481,13 @@ public final class QueueControllerTest {
 
     @Test
     public void testActiveQueueLimitRaisedNoQueuedTorrents() {
-        final QueuedTorrent inactiveTorrent = buildTorrent("1", TorrentStatus.STOPPED);
+        final QueuedTorrent inactiveTorrent = buildTorrent("1", QueueStatus.INACTIVE);
         torrents.add(inactiveTorrent);
 
-        final QueuedTorrent activeTorrent = buildTorrent("3", TorrentStatus.ACTIVE);
+        final QueuedTorrent activeTorrent = buildTorrent("3", QueueStatus.ACTIVE);
         torrents.add(activeTorrent);
 
-        final QueuedTorrent forcedTorrent = buildTorrent("2", TorrentStatus.ACTIVE);
+        final QueuedTorrent forcedTorrent = buildTorrent("2", QueueStatus.ACTIVE);
         forcedTorrent.getProgress().setForced(true);
         torrents.add(forcedTorrent);
 
@@ -507,7 +506,7 @@ public final class QueueControllerTest {
         final QueueController unitUnderTest = new QueueController(
                 torrents, 1, maxDownloadingTorrents, maxUploadingTorrents);
 
-        final QueuedTorrent inactiveTorrent = buildTorrent("1", TorrentStatus.STOPPED);
+        final QueuedTorrent inactiveTorrent = buildTorrent("1", QueueStatus.INACTIVE);
         torrents.add(inactiveTorrent);
 
         Assert.assertEquals(1, unitUnderTest.getQueueSize(QueueStatus.INACTIVE));
@@ -516,7 +515,7 @@ public final class QueueControllerTest {
         Assert.assertEquals(QueueStatus.INACTIVE, inactiveTorrent.getQueueStatus());
         Assert.assertEquals(TorrentStatus.STOPPED, inactiveTorrent.getStatus());
 
-        final QueuedTorrent activeTorrent = buildTorrent("2", TorrentStatus.ACTIVE);
+        final QueuedTorrent activeTorrent = buildTorrent("2", QueueStatus.ACTIVE);
         torrents.add(activeTorrent);
 
         Assert.assertEquals(1, unitUnderTest.getQueueSize(QueueStatus.INACTIVE));
@@ -530,7 +529,7 @@ public final class QueueControllerTest {
         Assert.assertEquals(QueueStatus.ACTIVE, activeTorrent.getQueueStatus());
         Assert.assertEquals(TorrentStatus.ACTIVE, activeTorrent.getStatus());
 
-        final QueuedTorrent queuedTorrent = buildTorrent("3", TorrentStatus.ACTIVE);
+        final QueuedTorrent queuedTorrent = buildTorrent("3", QueueStatus.ACTIVE);
         torrents.add(queuedTorrent);
 
         Assert.assertEquals(1, unitUnderTest.getQueueSize(QueueStatus.INACTIVE));
@@ -555,13 +554,13 @@ public final class QueueControllerTest {
         final QueueController unitUnderTest = new QueueController(
                 torrents, 1, maxDownloadingTorrents, maxUploadingTorrents);
 
-        final QueuedTorrent inactiveTorrent = buildTorrent("1", TorrentStatus.STOPPED);
+        final QueuedTorrent inactiveTorrent = buildTorrent("1", QueueStatus.INACTIVE);
         torrents.add(inactiveTorrent);
 
-        final QueuedTorrent activeTorrent = buildTorrent("2", TorrentStatus.ACTIVE);
+        final QueuedTorrent activeTorrent = buildTorrent("2", QueueStatus.ACTIVE);
         torrents.add(activeTorrent);
 
-        final QueuedTorrent queuedTorrent = buildTorrent("3", TorrentStatus.ACTIVE);
+        final QueuedTorrent queuedTorrent = buildTorrent("3", QueueStatus.ACTIVE);
         torrents.add(queuedTorrent);
 
         Assert.assertEquals(1, unitUnderTest.getQueueSize(QueueStatus.INACTIVE));
@@ -622,7 +621,7 @@ public final class QueueControllerTest {
 
     @Test
     public void testStartAndStopInactiveTorrentNoOtherTorrentWithinQueueLimits() {
-        final QueuedTorrent inactiveTorrent = buildTorrent("1", TorrentStatus.STOPPED);
+        final QueuedTorrent inactiveTorrent = buildTorrent("1", QueueStatus.INACTIVE);
         torrents.add(inactiveTorrent);
 
         final QueueController unitUnderTest = new QueueController(
@@ -653,10 +652,10 @@ public final class QueueControllerTest {
 
     @Test
     public void testStopAndRestartActiveTorrentOneQueuedTorrent() {
-        final QueuedTorrent activeTorrent = buildTorrent("1", TorrentStatus.ACTIVE);
+        final QueuedTorrent activeTorrent = buildTorrent("1", QueueStatus.ACTIVE);
         torrents.add(activeTorrent);
 
-        final QueuedTorrent queuedTorrent = buildTorrent("2", TorrentStatus.ACTIVE);
+        final QueuedTorrent queuedTorrent = buildTorrent("2", QueueStatus.ACTIVE);
         torrents.add(queuedTorrent);
 
         final QueueController unitUnderTest = new QueueController(
@@ -705,10 +704,10 @@ public final class QueueControllerTest {
 
     @Test
     public void testStopActiveTorrentAfterQueuedTorrentHasBeenStopped() {
-        final QueuedTorrent activeTorrent = buildTorrent("1", TorrentStatus.ACTIVE);
+        final QueuedTorrent activeTorrent = buildTorrent("1", QueueStatus.ACTIVE);
         torrents.add(activeTorrent);
 
-        final QueuedTorrent queuedTorrent = buildTorrent("2", TorrentStatus.ACTIVE);
+        final QueuedTorrent queuedTorrent = buildTorrent("2", QueueStatus.ACTIVE);
         torrents.add(queuedTorrent);
 
         final QueueController unitUnderTest = new QueueController(
@@ -757,7 +756,7 @@ public final class QueueControllerTest {
 
     @Test
     public void testStopAndRestartActiveTorrentNoOtherTorrents() {
-        final QueuedTorrent activeTorrent = buildTorrent("1", TorrentStatus.ACTIVE);
+        final QueuedTorrent activeTorrent = buildTorrent("1", QueueStatus.ACTIVE);
         torrents.add(activeTorrent);
 
         final QueueController unitUnderTest = new QueueController(
@@ -787,7 +786,7 @@ public final class QueueControllerTest {
 
     @Test
     public void testStartAndStopInactiveTorrentNoOtherTorrents() {
-        final QueuedTorrent inactiveTorrent = buildTorrent("1", TorrentStatus.STOPPED);
+        final QueuedTorrent inactiveTorrent = buildTorrent("1", QueueStatus.INACTIVE);
         torrents.add(inactiveTorrent);
 
         final QueueController unitUnderTest = new QueueController(
@@ -817,16 +816,16 @@ public final class QueueControllerTest {
 
     @Test
     public void testStopAndRestartActiveTorrentMultipleOtherTorrents() {
-        final QueuedTorrent inactiveTorrent = buildTorrent("1", TorrentStatus.STOPPED);
+        final QueuedTorrent inactiveTorrent = buildTorrent("1", QueueStatus.INACTIVE);
         torrents.add(inactiveTorrent);
 
-        final QueuedTorrent activeTorrent = buildTorrent("2", TorrentStatus.ACTIVE);
+        final QueuedTorrent activeTorrent = buildTorrent("2", QueueStatus.ACTIVE);
         torrents.add(activeTorrent);
 
-        final QueuedTorrent queuedTorrent = buildTorrent("3", TorrentStatus.ACTIVE);
+        final QueuedTorrent queuedTorrent = buildTorrent("3", QueueStatus.ACTIVE);
         torrents.add(queuedTorrent);
 
-        final QueuedTorrent forcedTorrent = buildTorrent("4", TorrentStatus.ACTIVE);
+        final QueuedTorrent forcedTorrent = buildTorrent("4", QueueStatus.ACTIVE);
         forcedTorrent.getProgress().setForced(true);
         torrents.add(forcedTorrent);
 
@@ -850,7 +849,7 @@ public final class QueueControllerTest {
         Assert.assertEquals(QueueStatus.QUEUED, queuedTorrent.getQueueStatus());
         Assert.assertEquals(TorrentStatus.STOPPED, queuedTorrent.getStatus());
 
-        Assert.assertEquals(QueuedTorrent.FORCED_PRIORITY, forcedTorrent.getPriority());
+        Assert.assertEquals(4, forcedTorrent.getPriority());
         Assert.assertEquals(QueueStatus.FORCED, forcedTorrent.getQueueStatus());
         Assert.assertEquals(TorrentStatus.ACTIVE, forcedTorrent.getStatus());
 
@@ -873,24 +872,24 @@ public final class QueueControllerTest {
         Assert.assertEquals(QueueStatus.ACTIVE, queuedTorrent.getQueueStatus());
         Assert.assertEquals(TorrentStatus.ACTIVE, queuedTorrent.getStatus());
 
-        Assert.assertEquals(QueuedTorrent.FORCED_PRIORITY, forcedTorrent.getPriority());
+        Assert.assertEquals(4, forcedTorrent.getPriority());
         Assert.assertEquals(QueueStatus.FORCED, forcedTorrent.getQueueStatus());
         Assert.assertEquals(TorrentStatus.ACTIVE, forcedTorrent.getStatus());
     }
 
     @Test
     public void testStartAndStopInactiveTorrentMultipleOtherTorrents() {
-        final QueuedTorrent inactiveTorrent = buildTorrent("1", TorrentStatus.STOPPED);
+        final QueuedTorrent inactiveTorrent = buildTorrent("1", QueueStatus.INACTIVE);
         torrents.add(inactiveTorrent);
 
-        final QueuedTorrent activeTorrent = buildTorrent("2", TorrentStatus.ACTIVE);
+        final QueuedTorrent activeTorrent = buildTorrent("2", QueueStatus.ACTIVE);
         torrents.add(activeTorrent);
 
-        final QueuedTorrent queuedTorrent = buildTorrent("3", TorrentStatus.ACTIVE);
+        final QueuedTorrent queuedTorrent = buildTorrent("3", QueueStatus.ACTIVE);
         torrents.add(queuedTorrent);
 
-        final QueuedTorrent forcedTorrent = buildTorrent("4", TorrentStatus.ACTIVE);
-        forcedTorrent.getProgress().setForced(true);
+        final QueuedTorrent forcedTorrent = buildTorrent("4", QueueStatus.ACTIVE);
+        forcedTorrent.setForced(true);
         torrents.add(forcedTorrent);
 
         final QueueController unitUnderTest = new QueueController(
@@ -913,7 +912,7 @@ public final class QueueControllerTest {
         Assert.assertEquals(QueueStatus.QUEUED, queuedTorrent.getQueueStatus());
         Assert.assertEquals(TorrentStatus.STOPPED, queuedTorrent.getStatus());
 
-        Assert.assertEquals(QueuedTorrent.FORCED_PRIORITY, forcedTorrent.getPriority());
+        Assert.assertEquals(4, forcedTorrent.getPriority());
         Assert.assertEquals(QueueStatus.FORCED, forcedTorrent.getQueueStatus());
         Assert.assertEquals(TorrentStatus.ACTIVE, forcedTorrent.getStatus());
 
@@ -936,7 +935,7 @@ public final class QueueControllerTest {
         Assert.assertEquals(QueueStatus.QUEUED, queuedTorrent.getQueueStatus());
         Assert.assertEquals(TorrentStatus.STOPPED, queuedTorrent.getStatus());
 
-        Assert.assertEquals(QueuedTorrent.FORCED_PRIORITY, forcedTorrent.getPriority());
+        Assert.assertEquals(4, forcedTorrent.getPriority());
         Assert.assertEquals(QueueStatus.FORCED, forcedTorrent.getQueueStatus());
         Assert.assertEquals(TorrentStatus.ACTIVE, forcedTorrent.getStatus());
 
@@ -959,7 +958,7 @@ public final class QueueControllerTest {
         Assert.assertEquals(QueueStatus.QUEUED, queuedTorrent.getQueueStatus());
         Assert.assertEquals(TorrentStatus.STOPPED, queuedTorrent.getStatus());
 
-        Assert.assertEquals(QueuedTorrent.FORCED_PRIORITY, forcedTorrent.getPriority());
+        Assert.assertEquals(4, forcedTorrent.getPriority());
         Assert.assertEquals(QueueStatus.FORCED, forcedTorrent.getQueueStatus());
         Assert.assertEquals(TorrentStatus.ACTIVE, forcedTorrent.getStatus());
     }
@@ -967,11 +966,11 @@ public final class QueueControllerTest {
     @Ignore
     @Test
     public void testStopForcedTorrentAndRestartNormallyWithinQueueLimits() {
-        final QueuedTorrent forcedTorrent = buildTorrent("1", TorrentStatus.ACTIVE);
+        final QueuedTorrent forcedTorrent = buildTorrent("1", QueueStatus.ACTIVE);
         forcedTorrent.getProgress().setForced(true);
         torrents.add(forcedTorrent);
 
-        final QueuedTorrent activeTorrent = buildTorrent("2", TorrentStatus.ACTIVE);
+        final QueuedTorrent activeTorrent = buildTorrent("2", QueueStatus.ACTIVE);
         torrents.add(activeTorrent);
 
         final QueueController unitUnderTest = new QueueController(
@@ -980,11 +979,11 @@ public final class QueueControllerTest {
         Assert.assertEquals(1, unitUnderTest.getQueueSize(QueueStatus.ACTIVE));
         Assert.assertEquals(1, unitUnderTest.getQueueSize(QueueStatus.FORCED));
 
-        Assert.assertEquals(QueuedTorrent.FORCED_PRIORITY, forcedTorrent.getPriority());
+        Assert.assertEquals(1, forcedTorrent.getPriority());
         Assert.assertEquals(QueueStatus.FORCED, forcedTorrent.getQueueStatus());
         Assert.assertEquals(TorrentStatus.ACTIVE, forcedTorrent.getStatus());
 
-        Assert.assertEquals(1, activeTorrent.getPriority());
+        Assert.assertEquals(2, activeTorrent.getPriority());
         Assert.assertEquals(QueueStatus.ACTIVE, activeTorrent.getQueueStatus());
         Assert.assertEquals(TorrentStatus.ACTIVE, activeTorrent.getStatus());
 
@@ -993,7 +992,7 @@ public final class QueueControllerTest {
 
     @Test
     public void testChangePriorityNonExistentTorrent() {
-        final QueuedTorrent unknownTorrent = buildTorrent("2", TorrentStatus.ACTIVE);
+        final QueuedTorrent unknownTorrent = buildTorrent("2", QueueStatus.ACTIVE);
 
         final QueueController unitUnderTest = new QueueController(
                 torrents, 1, maxDownloadingTorrents, maxUploadingTorrents);
@@ -1003,7 +1002,7 @@ public final class QueueControllerTest {
 
     @Test
     public void testChangeStatusNonExistentTorrent() {
-        final QueuedTorrent unknownTorrent = buildTorrent("2", TorrentStatus.ACTIVE);
+        final QueuedTorrent unknownTorrent = buildTorrent("2", QueueStatus.ACTIVE);
 
         final QueueController unitUnderTest = new QueueController(
                 torrents, 1, maxDownloadingTorrents, maxUploadingTorrents);
@@ -1027,7 +1026,7 @@ public final class QueueControllerTest {
         Assert.assertEquals(QueueStatus.ACTIVE, activeTorrent.getQueueStatus());
         Assert.assertEquals(TorrentStatus.ACTIVE, activeTorrent.getStatus());
 
-        Assert.assertEquals(QueuedTorrent.FORCED_PRIORITY, forcedTorrent.getPriority());
+        Assert.assertEquals(3, forcedTorrent.getPriority());
         Assert.assertEquals(QueueStatus.FORCED, forcedTorrent.getQueueStatus());
         Assert.assertEquals(TorrentStatus.ACTIVE, forcedTorrent.getStatus());
     }
@@ -1036,11 +1035,10 @@ public final class QueueControllerTest {
                                                    final QueuedTorrent secondTorrent, final QueueController unitUnderTest) {
         Assert.assertEquals(2, unitUnderTest.getQueueSize(queue));
 
-        Assert.assertEquals(firstTorrent.isForced()? -1 : 1, firstTorrent.getPriority());
-
+        Assert.assertEquals(1, firstTorrent.getPriority());
         Assert.assertEquals(queue, firstTorrent.getQueueStatus());
 
-        Assert.assertEquals(secondTorrent.isForced()? -1 : 2, secondTorrent.getPriority());
+        Assert.assertEquals(2, secondTorrent.getPriority());
         Assert.assertEquals(queue, secondTorrent.getQueueStatus());
 
         //Test changing a torrent's priority within a queue to a higher level within the queue
@@ -1048,10 +1046,10 @@ public final class QueueControllerTest {
 
         Assert.assertEquals(2, unitUnderTest.getQueueSize(queue));
 
-        Assert.assertEquals(firstTorrent.isForced()? -1 : 2, firstTorrent.getPriority());
+        Assert.assertEquals(2, firstTorrent.getPriority());
         Assert.assertEquals(queue, firstTorrent.getQueueStatus());
 
-        Assert.assertEquals(secondTorrent.isForced()? -1 : 1, secondTorrent.getPriority());
+        Assert.assertEquals(1, secondTorrent.getPriority());
         Assert.assertEquals(queue, secondTorrent.getQueueStatus());
 
         //Test changing a torrent's priority within a queue to a lower level within the queue
@@ -1059,21 +1057,20 @@ public final class QueueControllerTest {
 
         Assert.assertEquals(2, unitUnderTest.getQueueSize(queue));
 
-        Assert.assertEquals(firstTorrent.isForced()? -1 : 1, firstTorrent.getPriority());
+        Assert.assertEquals(1, firstTorrent.getPriority());
         Assert.assertEquals(queue, firstTorrent.getQueueStatus());
 
-        Assert.assertEquals(secondTorrent.isForced()? -1 : 2, secondTorrent.getPriority());
+        Assert.assertEquals(2, secondTorrent.getPriority());
         Assert.assertEquals(queue, secondTorrent.getQueueStatus());
     }
 
-    private QueuedTorrent buildTorrent(final String infoHash, final TorrentStatus initialStatus) {
+    private QueuedTorrent buildTorrent(final String infoHash, final QueueStatus targetQueue) {
         final BinaryEncodedDictionary metaDataDict = new BinaryEncodedDictionary();
         metaDataDict.put(BinaryEncodingKeys.KEY_INFO_HASH, new BinaryEncodedString(infoHash));
         final QueuedTorrentMetaData metaData = new QueuedTorrentMetaData(metaDataDict);
 
         final BinaryEncodedDictionary progressDict = new BinaryEncodedDictionary();
-        progressDict.put(BinaryEncodingKeys.STATE_KEY_TORRENT_STATUS, new BinaryEncodedString(initialStatus.name()));
-        //progressDict.get(BinaryEncodingKeys.STATE_KEY_QUEUE_NAME
+        progressDict.put(BinaryEncodingKeys.STATE_KEY_QUEUE_NAME, new BinaryEncodedString(targetQueue.name()));
         final QueuedTorrentProgress progress = new QueuedTorrentProgress(progressDict);
 
         return new QueuedTorrent(metaData, progress);

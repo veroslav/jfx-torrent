@@ -19,13 +19,6 @@
 */
 package org.matic.torrent.queue;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
-
 import org.easymock.EasyMock;
 import org.junit.After;
 import org.junit.Assert;
@@ -39,10 +32,18 @@ import org.matic.torrent.gui.model.TrackableView;
 import org.matic.torrent.gui.model.TrackerView;
 import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.io.DataPersistenceSupport;
+import org.matic.torrent.queue.enums.QueueStatus;
 import org.matic.torrent.queue.enums.TorrentStatus;
 import org.matic.torrent.tracking.Tracker;
 import org.matic.torrent.tracking.TrackerManager;
 import org.matic.torrent.tracking.TrackerSession;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
 public final class QueuedTorrentManagerTest {
 
@@ -59,7 +60,7 @@ public final class QueuedTorrentManagerTest {
         final QueuedTorrentManager unitUnderTest = new QueuedTorrentManager(dataPersistenceSupportMock, trackerManagerMock);
 
         final InfoHash infoHash = new InfoHash("1".getBytes());
-        final TorrentTemplate template = buildTorrentTemplate(infoHash, TorrentStatus.ACTIVE);
+        final TorrentTemplate template = buildTorrentTemplate(infoHash, QueueStatus.ACTIVE);
 
         EasyMock.expect(dataPersistenceSupportMock.isPersisted(infoHash)).andReturn(true);
         EasyMock.replay(dataPersistenceSupportMock, trackerManagerMock);
@@ -80,10 +81,10 @@ public final class QueuedTorrentManagerTest {
         final QueuedTorrentManager unitUnderTest = new QueuedTorrentManager(dataPersistenceSupportMock, trackerManagerMock);
 
         final InfoHash infoHash1 = new InfoHash("1".getBytes());
-        final TorrentTemplate template1 = buildTorrentTemplate(infoHash1, TorrentStatus.ACTIVE);
+        final TorrentTemplate template1 = buildTorrentTemplate(infoHash1, QueueStatus.ACTIVE);
 
         final InfoHash infoHash2 = new InfoHash("2".getBytes());
-        final TorrentTemplate template2 = buildTorrentTemplate(infoHash2, TorrentStatus.STOPPED);
+        final TorrentTemplate template2 = buildTorrentTemplate(infoHash2, QueueStatus.INACTIVE);
 
         EasyMock.expect(dataPersistenceSupportMock.isPersisted(EasyMock.anyObject(InfoHash.class))).andReturn(true).times(2);
         EasyMock.replay(dataPersistenceSupportMock, trackerManagerMock);
@@ -108,8 +109,8 @@ public final class QueuedTorrentManagerTest {
         final QueuedTorrentManager unitUnderTest = new QueuedTorrentManager(dataPersistenceSupportMock, trackerManagerMock);
 
         final InfoHash infoHash = new InfoHash("1".getBytes());
-        final TorrentTemplate template1 = buildTorrentTemplate(infoHash, TorrentStatus.STOPPED);
-        final TorrentTemplate template2 = buildTorrentTemplate(infoHash, TorrentStatus.ACTIVE);
+        final TorrentTemplate template1 = buildTorrentTemplate(infoHash, QueueStatus.INACTIVE);
+        final TorrentTemplate template2 = buildTorrentTemplate(infoHash, QueueStatus.ACTIVE);
 
         EasyMock.expect(dataPersistenceSupportMock.isPersisted(infoHash)).andReturn(true);
         EasyMock.replay(dataPersistenceSupportMock, trackerManagerMock);
@@ -130,7 +131,7 @@ public final class QueuedTorrentManagerTest {
         final QueuedTorrentManager unitUnderTest = new QueuedTorrentManager(dataPersistenceSupportMock, trackerManagerMock);
 
         final InfoHash infoHash = new InfoHash("1".getBytes());
-        final TorrentTemplate template = buildTorrentTemplate(infoHash, TorrentStatus.ACTIVE);
+        final TorrentTemplate template = buildTorrentTemplate(infoHash, QueueStatus.ACTIVE);
         final QueuedTorrent torrent = new QueuedTorrent(template.getMetaData(), template.getProgress());
         final TorrentView view = new TorrentView(torrent);
 
@@ -142,7 +143,7 @@ public final class QueuedTorrentManagerTest {
         final QueuedTorrentManager unitUnderTest = new QueuedTorrentManager(dataPersistenceSupportMock, trackerManagerMock);
 
         final InfoHash infoHash = new InfoHash("1".getBytes());
-        final TorrentTemplate template = buildTorrentTemplate(infoHash, TorrentStatus.ACTIVE);
+        final TorrentTemplate template = buildTorrentTemplate(infoHash, QueueStatus.ACTIVE);
 
         EasyMock.expect(dataPersistenceSupportMock.isPersisted(infoHash)).andReturn(true);
         dataPersistenceSupportMock.delete(infoHash);
@@ -173,7 +174,7 @@ public final class QueuedTorrentManagerTest {
         final QueuedTorrentManager unitUnderTest = new QueuedTorrentManager(dataPersistenceSupportMock, trackerManagerMock);
 
         final InfoHash infoHash = new InfoHash("1".getBytes());
-        final TorrentTemplate template = buildTorrentTemplate(infoHash, TorrentStatus.ACTIVE);
+        final TorrentTemplate template = buildTorrentTemplate(infoHash, QueueStatus.ACTIVE);
 
         EasyMock.expect(dataPersistenceSupportMock.isPersisted(infoHash)).andReturn(true);
         EasyMock.replay(dataPersistenceSupportMock);
@@ -213,7 +214,7 @@ public final class QueuedTorrentManagerTest {
         final QueuedTorrentManager unitUnderTest = new QueuedTorrentManager(dataPersistenceSupportMock, trackerManagerMock);
 
         final InfoHash infoHash = new InfoHash("1".getBytes());
-        final TorrentTemplate template = buildTorrentTemplate(infoHash, TorrentStatus.ACTIVE);
+        final TorrentTemplate template = buildTorrentTemplate(infoHash, QueueStatus.ACTIVE);
 
         final String tracker1 = "mytracker1";
         final String tracker2 = "mytracker2";
@@ -248,7 +249,7 @@ public final class QueuedTorrentManagerTest {
         EasyMock.verify(dataPersistenceSupportMock, trackerManagerMock);
     }
 
-    private TorrentTemplate buildTorrentTemplate(final InfoHash infoHash, final TorrentStatus initialStatus) {
+    private TorrentTemplate buildTorrentTemplate(final InfoHash infoHash, final QueueStatus targetQueue) {
         final BinaryEncodedDictionary metaDataDict = new BinaryEncodedDictionary();
         metaDataDict.put(BinaryEncodingKeys.KEY_INFO_HASH, new BinaryEncodedString(infoHash.getBytes()));
 
@@ -260,7 +261,7 @@ public final class QueuedTorrentManagerTest {
         final QueuedTorrentMetaData metaData = new QueuedTorrentMetaData(metaDataDict);
 
         final BinaryEncodedDictionary progressDict = new BinaryEncodedDictionary();
-        progressDict.put(BinaryEncodingKeys.STATE_KEY_TORRENT_STATUS, new BinaryEncodedString(initialStatus.name()));
+        progressDict.put(BinaryEncodingKeys.STATE_KEY_QUEUE_NAME, new BinaryEncodedString(targetQueue.name()));
         final QueuedTorrentProgress progress = new QueuedTorrentProgress(progressDict);
 
         return new TorrentTemplate(metaData, progress);

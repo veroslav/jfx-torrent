@@ -19,23 +19,6 @@
 */
 package org.matic.torrent.tracking;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-
 import org.easymock.EasyMock;
 import org.junit.After;
 import org.junit.Assert;
@@ -56,6 +39,23 @@ import org.matic.torrent.queue.QueuedTorrentMetaData;
 import org.matic.torrent.queue.QueuedTorrentProgress;
 import org.matic.torrent.queue.enums.TorrentStatus;
 import org.matic.torrent.tracking.listeners.PeerFoundListener;
+
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 public final class TrackerManagerTest {
 
