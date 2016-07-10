@@ -29,9 +29,11 @@ import org.matic.torrent.queue.enums.FilePriority;
 import org.matic.torrent.queue.enums.QueueStatus;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public final class QueuedTorrentProgress {
 
@@ -51,9 +53,22 @@ public final class QueuedTorrentProgress {
     }
 
     public void addTrackerUrls(final Set<String> trackerUrls) {
-        final BinaryEncodedList trackerList = new BinaryEncodedList();
+        BinaryEncodedList list = (BinaryEncodedList)torrentState.get(
+                BinaryEncodingKeys.KEY_ANNOUNCE_LIST);
+
+        final BinaryEncodedList trackerList = list != null? list : new BinaryEncodedList();
+
         trackerUrls.forEach(t -> trackerList.add(new BinaryEncodedString(t)));
         torrentState.put(BinaryEncodingKeys.KEY_ANNOUNCE_LIST, trackerList);
+    }
+
+    public void removeTrackerUrls(final Collection<String> trackerUrls) {
+        final BinaryEncodedList trackerList = (BinaryEncodedList)torrentState.get(
+                BinaryEncodingKeys.KEY_ANNOUNCE_LIST);
+
+        if(trackerList != null) {
+            trackerList.remove(trackerUrls.stream().map(BinaryEncodedString::new).collect(Collectors.toList()));
+        }
     }
 
     public Set<String> getTrackerUrls() {
@@ -62,7 +77,7 @@ public final class QueuedTorrentProgress {
 
         final Set<String> trackerUrls = new LinkedHashSet<>();
 
-        if(trackerList != null && trackerList.size() > 0) {
+        if(trackerList != null) {
             trackerList.stream().forEach(t -> trackerUrls.add(t.toString()));
         }
 

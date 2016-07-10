@@ -33,6 +33,7 @@ import org.matic.torrent.tracking.Tracker;
 import org.matic.torrent.tracking.TrackerManager;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -74,11 +75,12 @@ public final class TrackerTableActionHandler {
      * Handle a tracker deletion by the user
      *
      * @param trackerViews Tracker views to delete
-     * @param trackerManager Target tracker manager
-     * @param trackableTable Tracker table from which to delete trackers views
+     * @param torrentManager Target torrent manager
+     * @param trackerTable Tracker table from which to delete trackers views
      */
-    public void onTrackerDeletion(final Collection<TrackableView> trackerViews, final TrackerManager trackerManager,
-                                  final TrackerTable trackableTable, final Window owner) {
+    public void onTrackerDeletion(final List<TrackableView> trackerViews,
+                                  final QueuedTorrentManager torrentManager,
+                                  final TrackerTable trackerTable, final Window owner) {
         if(trackerViews.isEmpty()) {
             return;
         }
@@ -101,12 +103,8 @@ public final class TrackerTableActionHandler {
             shouldDeleteTracker = selectedButton.isPresent() && selectedButton.get() == ButtonType.OK;
         }
         if(!confirmTrackerDeletion || shouldDeleteTracker) {
-            trackerViews.forEach(tv -> {
-                final boolean removed = trackerManager.removeTracker(tv.getName(), tv.getTorrentView());
-                if(removed) {
-                    trackableTable.removeTracker(tv);
-                }
-            });
+            torrentManager.removeTrackers(trackerViews);
+            trackerTable.removeTrackers(trackerViews);
         }
     }
 }

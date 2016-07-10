@@ -23,6 +23,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
@@ -60,6 +61,10 @@ public final class BinaryEncodedList implements BinaryEncodable {
 	public boolean contains(final BinaryEncodable element) {
 		return list.contains(element);
 	}
+
+    public boolean remove(final Collection<BinaryEncodable> elements) {
+        return list.removeAll(elements);
+    }
 	
 	public Stream<BinaryEncodable> stream() {
 		return list.stream();

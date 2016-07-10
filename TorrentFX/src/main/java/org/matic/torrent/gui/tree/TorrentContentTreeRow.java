@@ -84,7 +84,9 @@ public final class TorrentContentTreeRow extends TreeTableRow<TorrentFileEntry> 
 	protected void updateItem(final TorrentFileEntry item, final boolean empty) {					
 		super.updateItem(item, empty);
 		
-		if(empty) {			
+		if(empty) {
+            getStyleClass().removeAll(CssProperties.ALTERNATE_LIST_ROW_ODD);
+            getStyleClass().add(CssProperties.ALTERNATE_LIST_ROW_EVEN);
             setContextMenu(null);
             return;
         } 

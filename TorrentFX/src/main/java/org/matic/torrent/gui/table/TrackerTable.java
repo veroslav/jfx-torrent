@@ -112,9 +112,11 @@ public final class TrackerTable {
         tableItems.addAll(trackerViews);
     }
 
-    public boolean removeTracker(final TrackableView trackerView) {
-        return trackerTable.getItems().removeIf(
-                tv -> tv.equals(trackerView) && tv.isUserManaged());
+    public boolean removeTrackers(final Collection<TrackableView> trackerViews) {
+        final ObservableList<TrackableView> trackers = trackerTable.getItems();
+
+        return trackerViews.stream().filter(r -> trackers.removeIf(
+                tv -> tv.equals(r) && tv.isUserManaged())).count() > 0;
     }
 
     public void wrapWith(final ScrollPane wrapper) {
@@ -126,7 +128,7 @@ public final class TrackerTable {
      *
      * @param handler Target handler
      */
-    public void onTrackerDeletionRequested(final Consumer<Collection<TrackableView>> handler) {
+    public void onTrackerDeletionRequested(final Consumer<List<TrackableView>> handler) {
         final Runnable deleter = () ->
                 handler.accept(getDeletableTrackers(trackerTable.getSelectionModel().getSelectedItems()));
         removeTrackerMenuItem.setOnAction(e -> deleter.run());
@@ -258,7 +260,7 @@ public final class TrackerTable {
         }).collect(Collectors.toList());
     }
 
-    private Collection<TrackableView> getDeletableTrackers(final Collection<TrackableView> selectedRows) {
+    private List<TrackableView> getDeletableTrackers(final List<TrackableView> selectedRows) {
         return selectedRows.stream().filter(TrackableView::isUserManaged).collect(Collectors.toList());
     }
 

@@ -203,8 +203,8 @@ public final class QueuedTorrentManagerTest {
                 view, Arrays.asList(tracker1, tracker2)));
 
         Assert.assertEquals(2, trackerViews.size());
-        Assert.assertEquals(view1, trackerViews.get(0));
-        Assert.assertEquals(view2, trackerViews.get(1));
+        Assert.assertTrue(trackerViews.contains(view1));
+        Assert.assertTrue(trackerViews.contains(view2));
 
         EasyMock.verify(dataPersistenceSupportMock, trackerManagerMock);
     }

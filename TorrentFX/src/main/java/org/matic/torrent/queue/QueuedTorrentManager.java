@@ -199,15 +199,33 @@ public final class QueuedTorrentManager implements PreferenceChangeListener {
             final QueuedTorrent torrent = matchedTorrent.get();
             final BinaryEncodedList announceList = torrent.getMetaData().getAnnounceList();
 
-            final List<BinaryEncodedString> newUrls = trackerUrls.stream().map(BinaryEncodedString::new).filter(
-                    url -> !announceList.contains(url)).collect(Collectors.toList());
+            final Set<String> newUrls = trackerUrls.stream().map(BinaryEncodedString::new).filter(
+                    url -> !announceList.contains(url)).map(url -> url.getValue()).collect(Collectors.toSet());
 
-            final List<TrackerView> trackableViews = newUrls.stream().map(url -> {
-                announceList.add(url);
-                return trackerManager.addTracker(url.getValue(), torrentView);
-            }).collect(Collectors.toList());
+            torrent.getProgress().addTrackerUrls(newUrls);
+            final List<TrackerView> trackableViews = newUrls.stream().map(url ->
+                    trackerManager.addTracker(url, torrentView)).collect(Collectors.toList());
 
             return new LinkedHashSet<>(trackableViews);
+        }
+    }
+
+    public boolean removeTrackers(final List<TrackableView> trackerViews) {
+        synchronized(queuedTorrents) {
+            if(trackerViews.isEmpty()) {
+                return false;
+            }
+            final InfoHash infoHash = trackerViews.get(0).getTorrentView().getInfoHash();
+
+            final List<String> removedTrackers = trackerViews.stream().filter(tv -> trackerManager.removeTracker(
+                    tv.getName(), tv.getTorrentView())).map(tv -> tv.getName()).collect(Collectors.toList());
+
+            if(!removedTrackers.isEmpty()) {
+                queuedTorrents.stream().filter(t -> t.getInfoHash().equals(infoHash)).forEach(
+                        t -> t.getProgress().removeTrackerUrls(removedTrackers));
+            }
+
+            return !removedTrackers.isEmpty();
         }
     }
 
