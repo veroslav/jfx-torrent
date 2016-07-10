@@ -59,7 +59,7 @@ public final class TorrentFileEntry {
 	
 	public TorrentFileEntry(final String name, final String path, 
 			final long length, final boolean selected, final Image fileImage) {
-		this.priority = new SimpleObjectProperty<>(FilePriority.NORMAL);
+		this.priority = new SimpleObjectProperty<>(selected? FilePriority.NORMAL : FilePriority.SKIP);
 		this.progress = new SimpleDoubleProperty();
 		
 		this.selected = new SimpleBooleanProperty(selected);		
@@ -69,6 +69,7 @@ public final class TorrentFileEntry {
 		this.pieceCount = new SimpleLongProperty();
 		this.firstPiece = new SimpleLongProperty();
 		this.selectionLength = new SimpleLongProperty(selected? length : 0);
+
 		this.length = new SimpleLongProperty(length);
 		this.done = new SimpleLongProperty();
 		
@@ -79,7 +80,7 @@ public final class TorrentFileEntry {
 		return fileImage;
 	}
 	
-	public void setSelected(final boolean selected) {		
+	public void setSelected(final boolean selected) {
 		this.selected.set(selected);
 	}
 	
