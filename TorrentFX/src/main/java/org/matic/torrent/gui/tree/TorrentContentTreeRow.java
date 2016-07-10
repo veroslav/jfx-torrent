@@ -73,6 +73,11 @@ public final class TorrentContentTreeRow extends TreeTableRow<TorrentFileEntry> 
 				selectAllMenuItem, selectNoneMenuItem, new SeparatorMenuItem(), 
 				collapseFolderTreeMenuItem, expandFolderTreeMenuItem, new SeparatorMenuItem(), 
 				priorityTreeMenu);
+
+        selectMenuItem.setOnAction(evt -> onSelectAction());
+        unselectMenuItem.setOnAction(evt -> onUnselectAction());
+        selectAllMenuItem.setOnAction(evt -> fileTreeViewer.selectAllEntries());
+        selectNoneMenuItem.setOnAction(evt -> fileTreeViewer.unselectAllEntries());
 	}
 				
 	@Override
@@ -118,11 +123,7 @@ public final class TorrentContentTreeRow extends TreeTableRow<TorrentFileEntry> 
 		
 		Arrays.asList(priorityMenuItems).stream().forEach(priorityMenuItem -> priorityMenuItem.setOnAction(
 				event -> onPriorityAction(priorityMenuItem)));
-		
-		selectMenuItem.setOnAction(evt -> onSelectAction());
-		unselectMenuItem.setOnAction(evt -> onUnselectAction());
-		selectAllMenuItem.setOnAction(evt -> fileTreeViewer.selectAllEntries());
-		selectNoneMenuItem.setOnAction(evt -> fileTreeViewer.unselectAllEntries());
+
 		expandFolderTreeMenuItem.setOnAction(evt -> fileTreeViewer.onExpandFolderTree(getTreeItem()));
 		collapseFolderTreeMenuItem.setOnAction(evt -> fileTreeViewer.onCollapseTreeItem(getTreeItem()));
 	}

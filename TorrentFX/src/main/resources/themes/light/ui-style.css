@@ -133,7 +133,7 @@
 }
 
 .table-row-cell:selected {
-    -fx-background-color: #E2EDF9;
+    -fx-background-color: #CEE0F5; /*#E2EDF9;*/
 }
 
 .table-row-odd {
@@ -181,5 +181,5 @@
 }
 
 .tree-table-row-cell:selected {
-    -fx-background-color: #E2EDF9;
+    -fx-background-color: #CEE0F5; /*#E2EDF9;*/
 }

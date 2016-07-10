@@ -252,6 +252,11 @@ public final class TreeTableUtils {
 		fileNameColumn.setCellFactory(column -> new CheckBoxTreeTableCell<
 				TorrentFileEntry, FileNameColumnModel>() {	
 			final Label fileNameLabel = new Label();
+
+            {
+                super.setAlignment(Pos.CENTER_LEFT);
+                super.setPadding(new Insets(1, 0, 0, 0));
+            }
 			
 			@Override
 			public final void updateItem(final FileNameColumnModel item, final boolean empty) {				
@@ -292,8 +297,9 @@ public final class TreeTableUtils {
 					fileNameLabel.setGraphic(imageView);
 					
 					final HBox checkBoxPane = new HBox();			
-					checkBoxPane.getChildren().addAll(selectionCheckBox, fileNameLabel);					
-	                setGraphic(checkBoxPane);
+					checkBoxPane.getChildren().addAll(selectionCheckBox, fileNameLabel);
+
+	                super.setGraphic(checkBoxPane);
 				}
 			}			
 		});

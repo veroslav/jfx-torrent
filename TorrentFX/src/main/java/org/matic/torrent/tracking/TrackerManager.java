@@ -284,7 +284,9 @@ public class TrackerManager implements TrackerResponseListener, UdpTrackerRespon
 	 */
 	public void issueTorrentEvent(final TorrentView torrentView, Tracker.Event event) {
 		synchronized(trackerSessions) {
-            trackerSessions.get(torrentView).forEach(ts -> issueAnnounce(ts, event));
+            final Set<TrackerSession> matchingSessions = trackerSessions.get(torrentView);
+            if(matchingSessions != null) {
+                matchingSessions.forEach(ts -> issueAnnounce(ts, event));}
 		}
 	}
 	
