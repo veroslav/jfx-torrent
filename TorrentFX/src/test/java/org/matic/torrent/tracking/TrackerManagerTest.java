@@ -123,7 +123,7 @@ public final class TrackerManagerTest {
                 EasyMock.createMock(Future.class)).times(3);
 
         //Expect notification when a new peer is obtained
-        peerFoundListenerMock.onPeersFound(peers);
+        peerFoundListenerMock.onPeersFound(peers, torrent.getInfoHash(), httpTrackerSession.getTracker().getUrl());
         EasyMock.expectLastCall();
 
         EasyMock.replay(requestSchedulerMock, peerFoundListenerMock);

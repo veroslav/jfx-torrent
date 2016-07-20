@@ -72,7 +72,7 @@ public class UdpConnectionManager {
 	
 	private final ThreadPoolExecutor channelWriterExecutor = new ThreadPoolExecutor(
 			REQUEST_EXECUTOR_THREAD_POOL_SIZE, REQUEST_EXECUTOR_THREAD_POOL_SIZE, 
-			REQUEST_EXECUTOR_WORKER_TIMEOUT, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
+			REQUEST_EXECUTOR_WORKER_TIMEOUT, TimeUnit.SECONDS, new LinkedBlockingQueue<>());
 	
 	private final BlockingQueue<UdpRequest> outgoingMessages;
 	private final Set<UdpTrackerResponseListener> trackerListeners;

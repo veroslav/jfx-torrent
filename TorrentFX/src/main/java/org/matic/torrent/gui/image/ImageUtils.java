@@ -98,7 +98,7 @@ public final class ImageUtils {
 			ICON_SIZE_CATEGORY_LIST, ICON_SIZE_CATEGORY_LIST, true, true);
 	public static final Image RSS_IMAGE = new Image(
 			ApplicationWindow.class.getResourceAsStream(SIDEBAR_RSS_ICON_LOCATION),
-			ICON_SIZE_CATEGORY_LIST, ICON_SIZE_CATEGORY_LIST, true, true);	
+			ICON_SIZE_CATEGORY_LIST, ICON_SIZE_CATEGORY_LIST, true, true);
 	
 	//File type mapping names
 	private static final String FILE_TYPE_IMAGE = "file_type_image";
@@ -116,26 +116,26 @@ public final class ImageUtils {
 	private static final Map<String, Image> FILE_IMAGE_MAPPINGS = new HashMap<>();
 	
 	static {
-		FILE_EXTENSION_MAPPINGS.put(FILE_TYPE_IMAGE, new HashSet<String>(Arrays.asList(
+		FILE_EXTENSION_MAPPINGS.put(FILE_TYPE_IMAGE, new HashSet<>(Arrays.asList(
 				"jpg", "jpeg", "gif", "png", "bmp", "exif", "tiff", "tif", "raw", "webp", "bpg", "img", "svg")));
-		FILE_EXTENSION_MAPPINGS.put(FILE_TYPE_VIDEO, new HashSet<String>(Arrays.asList(
+		FILE_EXTENSION_MAPPINGS.put(FILE_TYPE_VIDEO, new HashSet<>(Arrays.asList(
 				"mp4", "m4p", "mpg", "mpeg", "vob", "mkv", "avi", "mov", "webm", "flv", "ogv", "ogg", "qt",
 				"wmv", "yuv", "rm", "asf", "m4v", "mp2", "mpe", "mpv", "m2v", "m4v", "3gp", "3g2")));
-		FILE_EXTENSION_MAPPINGS.put(FILE_TYPE_SUBTITLE, new HashSet<String>(Arrays.asList(
+		FILE_EXTENSION_MAPPINGS.put(FILE_TYPE_SUBTITLE, new HashSet<>(Arrays.asList(
 				"aqt", "gsub", "jss", "srt", "sub", "ssa", "smi", "pjs", "psb", "rt", "stl", "ssf", "ass",
 				"usf", "idx")));
-		FILE_EXTENSION_MAPPINGS.put(FILE_TYPE_MUSIC, new HashSet<String>(Arrays.asList(
+		FILE_EXTENSION_MAPPINGS.put(FILE_TYPE_MUSIC, new HashSet<>(Arrays.asList(
 				"mp3", "wav", "ac3", "aac", "act", "aiff", "amr", "au", "awb", "dvf", "flac", "gsm", "ivs",
 				"m4a", "mmf", "mpc", "msv", "oga", "opus", "ra", "sln", "tta", "vox", "wma", "wv")));
-		FILE_EXTENSION_MAPPINGS.put(FILE_TYPE_PDF, new HashSet<String>(Arrays.asList("pdf")));
-		FILE_EXTENSION_MAPPINGS.put(FILE_TYPE_PACKAGE, new HashSet<String>(Arrays.asList("a", "ar", "lbr",
+		FILE_EXTENSION_MAPPINGS.put(FILE_TYPE_PDF, new HashSet<>(Arrays.asList("pdf")));
+		FILE_EXTENSION_MAPPINGS.put(FILE_TYPE_PACKAGE, new HashSet<>(Arrays.asList("a", "ar", "lbr",
 				"iso", "mar", "tar", "bz2", "gz", "lz", "lzma", "lzo", "rz", "xz", "z", "7z", "s7z",
 				"ace", "apk", "cab", "dar", "dgc", "dmg", "ear", "ice", "jar", "lzh", "lha", "lzx",
 				"pea", "pim", "rar", "tgz", "z", "bz2", "tbz2", "lzma", "tlz", "war", "wim", "zip",
 				"zipx", "deb", "rpm")));		
-		FILE_EXTENSION_MAPPINGS.put(FILE_TYPE_EBOOK, new HashSet<String>(Arrays.asList("epub", "fb2",
+		FILE_EXTENSION_MAPPINGS.put(FILE_TYPE_EBOOK, new HashSet<>(Arrays.asList("epub", "fb2",
 				"azw", "lit", "prc", "mobi", "pdb")));
-		FILE_EXTENSION_MAPPINGS.put(FILE_TYPE_EXECUTABLE, new HashSet<String>(Arrays.asList("sh", "cmd",
+		FILE_EXTENSION_MAPPINGS.put(FILE_TYPE_EXECUTABLE, new HashSet<>(Arrays.asList("sh", "cmd",
 				"com", "exe")));
 		
 		FILE_IMAGE_MAPPINGS.put(FILE_TYPE_IMAGE, new Image(

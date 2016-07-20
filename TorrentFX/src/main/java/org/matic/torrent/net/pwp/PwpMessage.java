@@ -1,6 +1,6 @@
 /*
-* This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015 Vedran Matic
+* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
+* Copyright (C) 2015-2016 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,6 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-
 package org.matic.torrent.net.pwp;
 
 /**
@@ -28,7 +27,7 @@ package org.matic.torrent.net.pwp;
  */
 public abstract class PwpMessage {
 	
-	public static enum MessageType {
+	public enum MessageType {
 		KEEP_ALIVE, INTERESTED, NOT_INTERESTED, CHOKE, UNCHOKE, REQUEST, HAVE, PIECE,
 		PORT, BITFIELD, HANDSHAKE, CANCEL
 	}

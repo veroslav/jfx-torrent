@@ -113,7 +113,14 @@ public final class GuiProperties {
 	public static final String DEFAULT_TRACKER_TAB_COLUMN_VISIBILITIES = "true:true:true:false:false:true:true:true";	
 	public static final String TRACKER_TAB_COLUMN_ORDER = "gui.columns.order.trackers";
 	public static final String TRACKER_TAB_COLUMN_VISIBILITY = "gui.columns.visibility.trackers";
-	public static final String TRACKER_TAB_COLUMN_SIZE = "gui.columns.size.trackers";			
+	public static final String TRACKER_TAB_COLUMN_SIZE = "gui.columns.size.trackers";
+
+    public static final String DEFAULT_PEER_TAB_COLUMN_ORDER = "IP:Port:Client:Flags:%:Down Speed:Up Speed:Reqs:Uploaded:Downloaded:Peer dl.";
+    public static final String DEFAULT_PEER_TAB_COLUMN_SIZES = "50:50:50:50:50:50:50:50:50:50:50";
+    public static final String DEFAULT_PEER_TAB_COLUMN_VISIBILITIES = "true:false:true:true:false:false:true:true:true:true:true";
+    public static final String PEER_TAB_COLUMN_ORDER = "gui.columns.order.peers";
+    public static final String PEER_TAB_COLUMN_VISIBILITY = "gui.columns.visibility.peers";
+    public static final String PEER_TAB_COLUMN_SIZE = "gui.columns.size.peers";
 	
 	//Visibility of the detailed info tab pane components
 	public static final String TAB_ICONS_VISIBLE = "gui.tab.icons.visible"; 

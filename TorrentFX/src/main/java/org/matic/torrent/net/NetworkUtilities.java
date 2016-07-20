@@ -87,6 +87,7 @@ public final class NetworkUtilities {
 	public static InetSocketAddress getSocketAddressFromNetworkInterface(final String networkInterface, final int port) {
 		try {
 			final NetworkInterface listenInterface = NetworkInterface.getByName(networkInterface);
+
 			if(listenInterface == null) {
 				//Invalid/non-existing network interface specified, use default
 				return new InetSocketAddress(port);

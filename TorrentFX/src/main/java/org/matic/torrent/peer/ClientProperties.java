@@ -1,6 +1,6 @@
 /*
-* This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015 Vedran Matic
+* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
+* Copyright (C) 2015-2016 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,6 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-
 package org.matic.torrent.peer;
 
 import java.nio.charset.Charset;
@@ -43,7 +42,7 @@ public final class ClientProperties {
 	public static final String PEER_ID = ClientProperties.generatePeerId();
 	
 	//Port used for incoming peer-2-peer connections
-	public static final int TCP_PORT = 43893;	
+	public static final int TCP_PORT = 44893;
 	
 	//UTF-8 encoding is used for all string encoding used in the client
 	public static final Charset STRING_ENCODING_CHARSET = StandardCharsets.UTF_8;

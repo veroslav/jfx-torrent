@@ -31,7 +31,7 @@ import java.util.Objects;
 
 public class QueuedTorrent {
 
-    public static final int UKNOWN_PRIORITY = 0;
+    public static final int UNKNOWN_PRIORITY = 0;
 
     private final QueuedTorrentMetaData metaData;
     private final QueuedTorrentProgress progress;
@@ -40,7 +40,7 @@ public class QueuedTorrent {
     private final ObjectProperty<TorrentStatus> status = new SimpleObjectProperty<>();
     private final IntegerProperty priority;
 
-    private QueueStatus queueStatus;
+    private final ObjectProperty<QueueStatus> queueStatus = new SimpleObjectProperty<>();
 
     public QueuedTorrent(final QueuedTorrentMetaData metaData, final QueuedTorrentProgress progress) {
         this.metaData = metaData;
@@ -49,7 +49,7 @@ public class QueuedTorrent {
 
         this.status.set(progress.getQueueStatus() != QueueStatus.INACTIVE?
                 TorrentStatus.ACTIVE : TorrentStatus.STOPPED);
-        this.queueStatus = progress.getQueueStatus();
+        this.queueStatus.set(progress.getQueueStatus());
         priority = new SimpleIntegerProperty(progress.getTorrentPriority());
     }
 
@@ -66,14 +66,18 @@ public class QueuedTorrent {
     }
 
     protected final void setQueueStatus(final QueueStatus queueStatus) {
-        this.queueStatus = queueStatus;
+        this.queueStatus.set(queueStatus);
     }
 
     public final QueueStatus getQueueStatus() {
+        return queueStatus.get();
+    }
+
+    public final ObjectProperty<QueueStatus> queueStatusProperty() {
         return queueStatus;
     }
 
-    protected final ObjectProperty<TorrentStatus> statusProperty() {
+    protected ObjectProperty<TorrentStatus> statusProperty() {
         return status;
     }
 

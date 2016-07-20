@@ -134,7 +134,7 @@ public final class UdpTrackerTest {
         Assert.assertEquals(42, inputStream.readInt());
         Assert.assertEquals(200, inputStream.readInt());
 
-        Assert.assertEquals(UdpConnectionManager.UDP_TRACKER_PORT, inputStream.readShort() & 0xffff);
+        Assert.assertEquals(ClientProperties.TCP_PORT, inputStream.readShort() & 0xffff);
     }
 
     private QueuedTorrent buildTorrent(final byte[] infoHash, final QueueStatus targetQueue) {

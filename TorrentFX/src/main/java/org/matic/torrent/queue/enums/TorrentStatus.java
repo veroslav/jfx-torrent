@@ -20,5 +20,5 @@
 package org.matic.torrent.queue.enums;
 
 public enum TorrentStatus {
-    ACTIVE, STOPPED, ERROR
+    ACTIVE, STOPPED, PAUSED, ERROR
 }

@@ -455,7 +455,7 @@ public final class QueueController {
                     }
                 }
 
-                t.setPriority(QueuedTorrent.UKNOWN_PRIORITY);
+                t.setPriority(QueuedTorrent.UNKNOWN_PRIORITY);
                 t.setQueueStatus(QueueStatus.NOT_ON_QUEUE);
                 t.setForced(false);
             });

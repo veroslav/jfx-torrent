@@ -1,6 +1,6 @@
 /*
-* This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015 Vedran Matic
+* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
+* Copyright (C) 2015-2016 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,6 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-
 package org.matic.torrent.net.pwp;
 
 import java.io.IOException;
@@ -28,87 +27,99 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A class for managing the I/O buffers for a remote peer connection.
+ * A class that keeps track of remote peer connection's writes and reads.
  * 
  * @author vedran
  *
  */
-public final class PwpConnectionIO {
+public final class ClientSession {
 	
-	private static final String PROTOCOL_NAME = "BitTorrent protocol";
+	protected static final String PROTOCOL_NAME = "BitTorrent protocol";
 	private static final String STRING_ENCODING = "UTF-8";
 	
-	private static final byte PROTOCOL_NAME_LENGTH = (byte)PwpConnectionIO.PROTOCOL_NAME.length();
+	protected static final byte PROTOCOL_NAME_LENGTH = (byte) ClientSession.PROTOCOL_NAME.length();
 	private static final int MESSAGE_LENGTH_PREFIX_LENGTH = 4;
 	private static final int HANDSHAKE_MESSAGE_LENGTH = 68;
 	private static final int NO_PAYLOAD_MESSAGE_LENGTH = 5;
 	private static final int RESERVED_BYTES_LENGTH = 8;
 	private static final int INFO_HASH_LENGTH = 20;
 	private static final int PEER_ID_LENGTH = 20;
-	
-	//Default reader and writer buffer sizes 
-	protected static final int WRITER_BUFFER_SIZE = 1024;
-	protected static final int READER_BUFFER_SIZE = 1024;
-	
-	private final ByteBuffer readerBuffer;		
-	private final ByteBuffer writerBuffer;
-	
+
+    //TODO: Initialize buffer immediately and use its position instead of null check
 	//Leftover data, if any, left from a previous read on this session's connection
-	protected ByteBuffer backupReaderBuffer;
+	protected ByteBuffer backupReaderBuffer = null;
+
+    private static final int INPUT_BUFFER_SIZE = 1024;
+    private static final int OUTPUT_BUFFER_SIZE = 1024;
+
+    private final ByteBuffer inputBuffer = ByteBuffer.allocateDirect(INPUT_BUFFER_SIZE);
+    private final ByteBuffer outputBuffer = ByteBuffer.allocateDirect(OUTPUT_BUFFER_SIZE);
+
+    private final List<PwpMessageRequest> messageWriteQueue = new ArrayList<>();
+
+    private final SocketChannel channel;
+    private final PwpPeer peer;
 	
-	public PwpConnectionIO(final int readerBufferSize, final int writerBufferSize) {		
-		readerBuffer = ByteBuffer.allocateDirect(readerBufferSize);
-		writerBuffer = ByteBuffer.allocateDirect(writerBufferSize);
-				
-		backupReaderBuffer = null;
+	public ClientSession(final SocketChannel channel, final PwpPeer peer) {
+        this.channel = channel;
+        this.peer = peer;
 	}
-	
-	/**
-	 * Write as much of input data as possible to a connection
-	 * 
-	 * @param connection Remote connection to write to
-	 * @param data Data to be written
-	 * @return Whether all contents of data have been written to the connection
-	 * @throws IOException If an exception occurs while writing on the connection
-	 */
-	protected boolean write(final SocketChannel connection, final byte[] data) throws IOException {
-		//TODO: Handle BufferOverflowException when putting byte[] in the writerBuffer
-		writerBuffer.put(data);
-		
-		while(writerBuffer.position() > 0) {
-		    writerBuffer.flip();
-		    final int bytesWritten = connection.write(writerBuffer);
-		    writerBuffer.compact();
-		    
-		    if(bytesWritten == 0) {
-		    	//TODO: Store leftover data on the queue, to write when writerBuffer has room again
-		    	return false;
-		    }						    
-		}
-		
-		return true;
-	}
+
+    protected PwpPeer getPeer() {
+        return peer;
+    }
+
+    /**
+     * Write as much of input data as possible to a connection
+
+     * @return Whether all contents of data have been written to the connection
+     * @throws IOException If an exception occurs while writing on the connection
+     */
+    protected boolean flushWriteQueue() throws IOException {
+         while(!messageWriteQueue.isEmpty()) {
+            final PwpMessageRequest message = messageWriteQueue.get(0);
+
+            //If buffer is empty, we process a new message, otherwise we write buffered data
+            if(outputBuffer.position() == 0) {
+                outputBuffer.put(message.getMessageData());
+            }
+
+            outputBuffer.flip();
+            final int bytesWritten = channel.write(outputBuffer);
+            outputBuffer.compact();
+
+            if(bytesWritten == 0) {
+                return false;
+            }
+
+            messageWriteQueue.remove(0);
+        }
+        return true;
+    }
+
+    protected void putOnWriteQueue(final PwpMessageRequest messageRequest) throws IOException {
+        messageWriteQueue.add(messageRequest);
+    }
 
 	/**
 	 * Read as much as possible from a connection and parse the contents as a list of peer-2-peer messages
-	 * 
-	 * @param connection Remote connection to read from
+	 *
 	 * @return A list of parsed peer-wire-protocol messages
 	 * @throws IOException If a string contained by a message can't be properly decoded or the connection is closed
 	 */
-	protected List<PwpMessage> read(final SocketChannel connection) throws IOException {
+	protected List<PwpMessage> read() throws IOException {
 		final List<PwpMessage> messages = new ArrayList<>();
 		
 		int bytesRead = -1;
-		while((bytesRead = connection.read(readerBuffer)) > 0) {
-			messages.addAll(read(readerBuffer));
+		while((bytesRead = channel.read(inputBuffer)) > 0) {
+			messages.addAll(read(inputBuffer));
 		}
-		
+
 		//Check whether the connection was closed or whether it is still active
 		if(bytesRead == -1) {
-			throw new IOException("Connection to peer was closed");
+			throw new IOException("Connection to peer was closed: " + channel.toString());
 		}
-		
+
 		return messages;
 	}
 	
@@ -136,6 +147,7 @@ public final class PwpConnectionIO {
 			}
 			
 			backupReaderBuffer.flip();
+
 			messages.addAll(parse(backupReaderBuffer));
 			backupReaderBuffer = null;
 			
@@ -151,7 +163,7 @@ public final class PwpConnectionIO {
 	private List<PwpMessage> parse(final ByteBuffer buffer) throws UnsupportedEncodingException {
 		final List<PwpMessage> messages = new ArrayList<>();							
 		
-		while(buffer.remaining() >= PwpConnectionIO.NO_PAYLOAD_MESSAGE_LENGTH) {				
+		while(buffer.remaining() >= ClientSession.NO_PAYLOAD_MESSAGE_LENGTH) {
 			final boolean isHandshake = checkForHandshake(buffer.duplicate());
 			
 			if(isHandshake) {
@@ -182,7 +194,7 @@ public final class PwpConnectionIO {
 		}				
 		
 		//Handle the case when exactly 4 bytes remain and they happen to belong to KEEP_ALIVE message
-		if(buffer.remaining() == PwpConnectionIO.MESSAGE_LENGTH_PREFIX_LENGTH) {
+		if(buffer.remaining() == ClientSession.MESSAGE_LENGTH_PREFIX_LENGTH) {
 			final int messageLength = buffer.duplicate().getInt();
 			if(messageLength == 0) {
 				messages.add(new PwpRegularMessage(PwpMessage.MessageType.KEEP_ALIVE, null));
@@ -218,7 +230,7 @@ public final class PwpConnectionIO {
 		//Check whether there is enough data in buffer to completely parse the message
 		if(buffer.remaining() < messageLength - 1) {
 			//Backup remaining buffer data for the partial message
-			final int backupBufferCapacity = messageLength + PwpConnectionIO.MESSAGE_LENGTH_PREFIX_LENGTH;			
+			final int backupBufferCapacity = messageLength + ClientSession.MESSAGE_LENGTH_PREFIX_LENGTH;
 			backupReaderBuffer = fromExistingBuffer(buffer, backupBufferCapacity);
 			
 			backupReaderBuffer.putInt(messageLength);
@@ -234,18 +246,18 @@ public final class PwpConnectionIO {
 	}
 	
 	private PwpMessage parseHandshake(final ByteBuffer buffer) {		
-		if(buffer.remaining() < PwpConnectionIO.HANDSHAKE_MESSAGE_LENGTH) {
+		if(buffer.remaining() < ClientSession.HANDSHAKE_MESSAGE_LENGTH) {
 			//Backup remaining buffer data for the partial HANDSHAKE message						
-			backupReaderBuffer = fromExistingBuffer(buffer, PwpConnectionIO.HANDSHAKE_MESSAGE_LENGTH);			
+			backupReaderBuffer = fromExistingBuffer(buffer, ClientSession.HANDSHAKE_MESSAGE_LENGTH);
 			backupReaderBuffer.put(buffer);
 			return null;
 		}
 		//Parse HANDSHAKE completely, skip 20 bytes [protocol_length + protocol_name] 
-		buffer.position(buffer.position() + PwpConnectionIO.PROTOCOL_NAME_LENGTH + 1);				
+		buffer.position(buffer.position() + ClientSession.PROTOCOL_NAME_LENGTH + 1);
 		
-		final byte[] reservedBytes = new byte[PwpConnectionIO.RESERVED_BYTES_LENGTH];
-		final byte[] infoHash = new byte[PwpConnectionIO.INFO_HASH_LENGTH];
-		final byte[] peerId = new byte[PwpConnectionIO.PEER_ID_LENGTH];
+		final byte[] reservedBytes = new byte[ClientSession.RESERVED_BYTES_LENGTH];
+		final byte[] infoHash = new byte[ClientSession.INFO_HASH_LENGTH];
+		final byte[] peerId = new byte[ClientSession.PEER_ID_LENGTH];
 		
 		buffer.get(reservedBytes);
 		buffer.get(infoHash);
@@ -260,19 +272,19 @@ public final class PwpConnectionIO {
 	}
 	
 	private boolean checkForHandshake(final ByteBuffer buffer) throws UnsupportedEncodingException {			
-		if(buffer.get() != PwpConnectionIO.PROTOCOL_NAME_LENGTH) {
+		if(buffer.get() != ClientSession.PROTOCOL_NAME_LENGTH) {
 			return false;
 		}
 		
-		final int availableBytesForPstr = buffer.remaining() >= PwpConnectionIO.PROTOCOL_NAME.length()?
-				PwpConnectionIO.PROTOCOL_NAME.length() : buffer.remaining();
+		final int availableBytesForPstr = buffer.remaining() >= ClientSession.PROTOCOL_NAME.length()?
+				ClientSession.PROTOCOL_NAME.length() : buffer.remaining();
 		final byte[] pstrBytes = new byte[availableBytesForPstr];
 		buffer.get(pstrBytes);
 		
-		final String pstr = new String(pstrBytes, PwpConnectionIO.STRING_ENCODING);
-		final int availableProtocolNameLength = availableBytesForPstr > PwpConnectionIO.PROTOCOL_NAME_LENGTH?
-				PwpConnectionIO.PROTOCOL_NAME_LENGTH : availableBytesForPstr;
+		final String pstr = new String(pstrBytes, ClientSession.STRING_ENCODING);
+		final int availableProtocolNameLength = availableBytesForPstr > ClientSession.PROTOCOL_NAME_LENGTH?
+				ClientSession.PROTOCOL_NAME_LENGTH : availableBytesForPstr;
 		
-		return pstr.equals(PwpConnectionIO.PROTOCOL_NAME.substring(0, availableProtocolNameLength));
+		return pstr.equals(ClientSession.PROTOCOL_NAME.substring(0, availableProtocolNameLength));
 	}
 }

@@ -244,7 +244,7 @@ public final class UdpTracker extends Tracker {
 			dos.writeInt(requestEvent != EVENT_STOPPED? NUM_WANTED_PEERS : 0);
 			
 			//port
-			dos.writeShort(UdpConnectionManager.UDP_TRACKER_PORT);			
+            dos.writeShort((short)ClientProperties.TCP_PORT);
 			dos.flush();
 		}
 		catch(final IOException ioe) {

@@ -227,7 +227,7 @@ public final class QueueControllerTest {
         Assert.assertEquals(1, unitUnderTest.getQueueSize(QueueStatus.ACTIVE));
         Assert.assertEquals(0, unitUnderTest.getQueueSize(QueueStatus.QUEUED));
 
-        Assert.assertEquals(QueuedTorrent.UKNOWN_PRIORITY, activeTorrent.getPriority());
+        Assert.assertEquals(QueuedTorrent.UNKNOWN_PRIORITY, activeTorrent.getPriority());
         Assert.assertEquals(QueueStatus.NOT_ON_QUEUE, activeTorrent.getQueueStatus());
         Assert.assertEquals(TorrentStatus.STOPPED, activeTorrent.getStatus());
         Assert.assertFalse(activeTorrent.isForced());
@@ -283,7 +283,7 @@ public final class QueueControllerTest {
 
         torrents.remove(forcedTorrent);
 
-        Assert.assertEquals(QueuedTorrent.UKNOWN_PRIORITY, forcedTorrent.getPriority());
+        Assert.assertEquals(QueuedTorrent.UNKNOWN_PRIORITY, forcedTorrent.getPriority());
         Assert.assertEquals(QueueStatus.NOT_ON_QUEUE, forcedTorrent.getQueueStatus());
         Assert.assertEquals(TorrentStatus.STOPPED, forcedTorrent.getStatus());
         Assert.assertFalse(forcedTorrent.isForced());
@@ -292,7 +292,7 @@ public final class QueueControllerTest {
 
         torrents.remove(inactiveTorrent);
 
-        Assert.assertEquals(QueuedTorrent.UKNOWN_PRIORITY, inactiveTorrent.getPriority());
+        Assert.assertEquals(QueuedTorrent.UNKNOWN_PRIORITY, inactiveTorrent.getPriority());
         Assert.assertEquals(QueueStatus.NOT_ON_QUEUE, inactiveTorrent.getQueueStatus());
         Assert.assertEquals(TorrentStatus.STOPPED, inactiveTorrent.getStatus());
         Assert.assertFalse(inactiveTorrent.isForced());
@@ -301,7 +301,7 @@ public final class QueueControllerTest {
 
         torrents.remove(queuedTorrent);
 
-        Assert.assertEquals(QueuedTorrent.UKNOWN_PRIORITY, queuedTorrent.getPriority());
+        Assert.assertEquals(QueuedTorrent.UNKNOWN_PRIORITY, queuedTorrent.getPriority());
         Assert.assertEquals(QueueStatus.NOT_ON_QUEUE, queuedTorrent.getQueueStatus());
         Assert.assertEquals(TorrentStatus.STOPPED, queuedTorrent.getStatus());
         Assert.assertFalse(queuedTorrent.isForced());
@@ -310,7 +310,7 @@ public final class QueueControllerTest {
 
         torrents.remove(activeTorrent);
 
-        Assert.assertEquals(QueuedTorrent.UKNOWN_PRIORITY, activeTorrent.getPriority());
+        Assert.assertEquals(QueuedTorrent.UNKNOWN_PRIORITY, activeTorrent.getPriority());
         Assert.assertEquals(QueueStatus.NOT_ON_QUEUE, activeTorrent.getQueueStatus());
         Assert.assertEquals(TorrentStatus.STOPPED, activeTorrent.getStatus());
         Assert.assertFalse(activeTorrent.isForced());
@@ -593,7 +593,7 @@ public final class QueueControllerTest {
         Assert.assertEquals(QueueStatus.ACTIVE, queuedTorrent.getQueueStatus());
         Assert.assertEquals(TorrentStatus.ACTIVE, queuedTorrent.getStatus());
 
-        Assert.assertEquals(QueuedTorrent.UKNOWN_PRIORITY, activeTorrent.getPriority());
+        Assert.assertEquals(QueuedTorrent.UNKNOWN_PRIORITY, activeTorrent.getPriority());
         Assert.assertEquals(QueueStatus.NOT_ON_QUEUE, activeTorrent.getQueueStatus());
         Assert.assertEquals(TorrentStatus.STOPPED, activeTorrent.getStatus());
 
@@ -606,7 +606,7 @@ public final class QueueControllerTest {
         Assert.assertEquals(QueueStatus.INACTIVE, inactiveTorrent.getQueueStatus());
         Assert.assertEquals(TorrentStatus.STOPPED, inactiveTorrent.getStatus());
 
-        Assert.assertEquals(QueuedTorrent.UKNOWN_PRIORITY, queuedTorrent.getPriority());
+        Assert.assertEquals(QueuedTorrent.UNKNOWN_PRIORITY, queuedTorrent.getPriority());
         Assert.assertEquals(QueueStatus.NOT_ON_QUEUE, queuedTorrent.getQueueStatus());
         Assert.assertEquals(TorrentStatus.STOPPED, queuedTorrent.getStatus());
 
@@ -614,7 +614,7 @@ public final class QueueControllerTest {
 
         Assert.assertEquals(0, unitUnderTest.getQueueSize(QueueStatus.INACTIVE));
 
-        Assert.assertEquals(QueuedTorrent.UKNOWN_PRIORITY, inactiveTorrent.getPriority());
+        Assert.assertEquals(QueuedTorrent.UNKNOWN_PRIORITY, inactiveTorrent.getPriority());
         Assert.assertEquals(QueueStatus.NOT_ON_QUEUE, inactiveTorrent.getQueueStatus());
         Assert.assertEquals(TorrentStatus.STOPPED, inactiveTorrent.getStatus());
     }

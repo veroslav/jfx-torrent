@@ -23,6 +23,7 @@ import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.LongProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleLongProperty;
+import javafx.beans.value.ChangeListener;
 import org.matic.torrent.codec.BinaryEncodedInteger;
 import org.matic.torrent.codec.BinaryEncodedString;
 import org.matic.torrent.hash.InfoHash;
@@ -31,6 +32,7 @@ import org.matic.torrent.queue.QueuedTorrentMetaData;
 import org.matic.torrent.queue.enums.QueueStatus;
 import org.matic.torrent.queue.enums.TorrentStatus;
 
+import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -69,7 +71,8 @@ public final class TorrentView {
     private long completionTime;
     private long havePieces;
 
-    private final Set<TrackableView> trackableViews = new LinkedHashSet<>();
+    private final Set<TrackableView> trackerViews = new LinkedHashSet<>();
+    private final Set<PeerView> peerViews = new LinkedHashSet<>();
 
 	public TorrentView(final QueuedTorrent queuedTorrent) {
 		this.priority = new SimpleIntegerProperty(0);
@@ -78,16 +81,25 @@ public final class TorrentView {
 
         availabilityView = new AvailabilityView(this.queuedTorrent.getMetaData().getTotalPieces());
 	}
-    public void addTrackableViews(final Set<? extends TrackableView> trackableViews) {
-        this.trackableViews.addAll(trackableViews);
+
+    public boolean addPeerViews(final Collection<PeerView> peerViews) {
+        return this.peerViews.addAll(peerViews);
+    }
+
+    public Collection<PeerView> getPeerViews() {
+        return peerViews;
+    }
+
+    public void addTrackerViews(final Set<? extends TrackableView> trackerViews) {
+        this.trackerViews.addAll(trackerViews);
     }
 
     public FileTree getFileTree() {
         return new FileTree(queuedTorrent.getMetaData(), queuedTorrent.getProgress());
     }
 
-    public Set<TrackableView> getTrackableViews() {
-        return trackableViews;
+    public Set<TrackableView> getTrackerViews() {
+        return trackerViews;
     }
     
     public String getTrackerUrl() {
@@ -105,7 +117,11 @@ public final class TorrentView {
     public LongProperty selectedLengthProperty() {
     	return selectedLength;
     }
-    
+
+    public void addQueueStatusChangeListener(final ChangeListener<QueueStatus> listener) {
+        queuedTorrent.queueStatusProperty().addListener(listener);
+    }
+
     public long getSelectedLength() {
     	return selectedLength.get();
     }

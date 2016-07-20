@@ -1,6 +1,6 @@
 /*
-* This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015 Vedran Matic
+* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
+* Copyright (C) 2015-2016 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -17,10 +17,11 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-
 package org.matic.torrent.gui.custom;
 
 import javafx.geometry.Pos;
+import javafx.scene.control.CheckMenuItem;
+import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Label;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
@@ -47,6 +48,7 @@ public class StatusBar extends HBox {
 	public StatusBar() {			
 		this.setAlignment(Pos.CENTER_LEFT);
 		this.initComponents();
+        this.setupContextMenus();
 	}
 	
 	private void initComponents() {		
@@ -92,4 +94,11 @@ public class StatusBar extends HBox {
 	    this.getChildren().add(gridPane);	  	    
 	    HBox.setHgrow(gridPane, Priority.ALWAYS);
 	}
+
+    private void setupContextMenus() {
+        final CheckMenuItem enableSchedulerMenuItem = new CheckMenuItem("Enable Scheduler");
+        final CheckMenuItem enableDhtMenuItem = new CheckMenuItem("Enable DHT");
+        final ContextMenu dhtContextMenu = new ContextMenu(enableSchedulerMenuItem, enableDhtMenuItem);
+        dhtLabel.setContextMenu(dhtContextMenu);
+    }
 }

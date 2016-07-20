@@ -23,18 +23,24 @@ import javafx.application.Application;
 import javafx.stage.Stage;
 import org.matic.torrent.gui.window.ApplicationWindow;
 import org.matic.torrent.io.DataPersistenceSupport;
+import org.matic.torrent.net.pwp.ClientConnectionManager;
 import org.matic.torrent.net.udp.UdpConnectionManager;
+import org.matic.torrent.peer.ClientProperties;
 import org.matic.torrent.preferences.ApplicationPreferences;
 import org.matic.torrent.preferences.PathProperties;
 import org.matic.torrent.queue.QueuedTorrentManager;
 import org.matic.torrent.tracking.TrackerManager;
 
 import java.io.File;
+import java.io.IOException;
 
 public final class TorrentMain extends Application {
 
     //The UDP server/client for communication with trackers that support UDP protocol
     private static final UdpConnectionManager UDP_TRACKER_CONNECTION_MANAGER = new UdpConnectionManager();
+
+    //The manager of the connections to the remote peers using the peer-wire-protocol
+    private static ClientConnectionManager CONNECTION_MANAGER;
 
     //The manager for trackers supporting HTTP(S) and UDP protocols
     private static final TrackerManager TRACKER_MANAGER =
@@ -47,7 +53,7 @@ public final class TorrentMain extends Application {
             WORK_PATH.endsWith(File.separator)? WORK_PATH : WORK_PATH + File.separator);
 
     //The manager for handling queued torrents' states
-    private static final QueuedTorrentManager TORRENT_MANAGER = new QueuedTorrentManager(PERSISTENCE_SUPPORT, TRACKER_MANAGER);
+    private static QueuedTorrentManager TORRENT_MANAGER;
 
     //The UDP server/client for communication through DHT
     private static final UdpConnectionManager DHT_CONNECTION_MANAGER = UdpConnectionManager.UDP_TRACKER_PORT ==
@@ -77,7 +83,13 @@ public final class TorrentMain extends Application {
         new ApplicationWindow(stage, TRACKER_MANAGER, TORRENT_MANAGER);
 	}
 	
-	private static void startup() {
+	private static void startup() throws IOException {
+        CONNECTION_MANAGER = new ClientConnectionManager(ClientProperties.TCP_PORT);
+        TORRENT_MANAGER = new QueuedTorrentManager(
+                PERSISTENCE_SUPPORT, TRACKER_MANAGER, CONNECTION_MANAGER);
+
+        TRACKER_MANAGER.addPeerListener(TORRENT_MANAGER);
+        CONNECTION_MANAGER.launch();
         UDP_TRACKER_CONNECTION_MANAGER.addTrackerListener(TRACKER_MANAGER);
         UDP_TRACKER_CONNECTION_MANAGER.manage("", UdpConnectionManager.UDP_TRACKER_PORT);
         ApplicationPreferences.addPreferenceChangeListener(TORRENT_MANAGER);
@@ -85,6 +97,7 @@ public final class TorrentMain extends Application {
 	
 	private static void cleanup() {
 		ApplicationPreferences.removePreferenceChangeListener(TORRENT_MANAGER);
+        TRACKER_MANAGER.removePeerListener(TORRENT_MANAGER);
         UDP_TRACKER_CONNECTION_MANAGER.removeTrackerListener(TRACKER_MANAGER);
 
         if(DHT_CONNECTION_MANAGER != UDP_TRACKER_CONNECTION_MANAGER) {
@@ -95,6 +108,7 @@ public final class TorrentMain extends Application {
         TRACKER_MANAGER.stop();
 
         UDP_TRACKER_CONNECTION_MANAGER.unmanage();
+        CONNECTION_MANAGER.shutdown();
         TORRENT_MANAGER.storeState();
 	}
 }

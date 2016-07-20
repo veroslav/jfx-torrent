@@ -45,6 +45,10 @@
     -fx-background-color: #76b83e;       
 }
 
+.filter-text-field {
+  -fx-background-image: url("../../icons/toolbar_filter.png");
+}
+
 .info-pane {
 	-fx-border-color: #C7C7C7;
   	-fx-border-width: 2;

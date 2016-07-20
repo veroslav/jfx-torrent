@@ -57,7 +57,7 @@ public final class QueuedTorrentManagerTest {
 
     @Test
     public void testAddSingleTorrent() {
-        final QueuedTorrentManager unitUnderTest = new QueuedTorrentManager(dataPersistenceSupportMock, trackerManagerMock);
+        final QueuedTorrentManager unitUnderTest = new QueuedTorrentManager(dataPersistenceSupportMock, trackerManagerMock, null);
 
         final InfoHash infoHash = new InfoHash("1".getBytes());
         final TorrentTemplate template = buildTorrentTemplate(infoHash, QueueStatus.ACTIVE);
@@ -78,7 +78,7 @@ public final class QueuedTorrentManagerTest {
 
     @Test
     public void testAddMultipleTorrents() {
-        final QueuedTorrentManager unitUnderTest = new QueuedTorrentManager(dataPersistenceSupportMock, trackerManagerMock);
+        final QueuedTorrentManager unitUnderTest = new QueuedTorrentManager(dataPersistenceSupportMock, trackerManagerMock, null);
 
         final InfoHash infoHash1 = new InfoHash("1".getBytes());
         final TorrentTemplate template1 = buildTorrentTemplate(infoHash1, QueueStatus.ACTIVE);
@@ -106,7 +106,7 @@ public final class QueuedTorrentManagerTest {
 
     @Test
     public void testAddExistingTorrent() {
-        final QueuedTorrentManager unitUnderTest = new QueuedTorrentManager(dataPersistenceSupportMock, trackerManagerMock);
+        final QueuedTorrentManager unitUnderTest = new QueuedTorrentManager(dataPersistenceSupportMock, trackerManagerMock, null);
 
         final InfoHash infoHash = new InfoHash("1".getBytes());
         final TorrentTemplate template1 = buildTorrentTemplate(infoHash, QueueStatus.INACTIVE);
@@ -128,7 +128,7 @@ public final class QueuedTorrentManagerTest {
 
     @Test
     public void testRemoveNonexistingTorrent() throws IOException {
-        final QueuedTorrentManager unitUnderTest = new QueuedTorrentManager(dataPersistenceSupportMock, trackerManagerMock);
+        final QueuedTorrentManager unitUnderTest = new QueuedTorrentManager(dataPersistenceSupportMock, trackerManagerMock, null);
 
         final InfoHash infoHash = new InfoHash("1".getBytes());
         final TorrentTemplate template = buildTorrentTemplate(infoHash, QueueStatus.ACTIVE);
@@ -140,7 +140,7 @@ public final class QueuedTorrentManagerTest {
 
     @Test
     public void testRemoveOnlyTorrent() throws IOException {
-        final QueuedTorrentManager unitUnderTest = new QueuedTorrentManager(dataPersistenceSupportMock, trackerManagerMock);
+        final QueuedTorrentManager unitUnderTest = new QueuedTorrentManager(dataPersistenceSupportMock, trackerManagerMock, null);
 
         final InfoHash infoHash = new InfoHash("1".getBytes());
         final TorrentTemplate template = buildTorrentTemplate(infoHash, QueueStatus.ACTIVE);
@@ -171,7 +171,7 @@ public final class QueuedTorrentManagerTest {
 
     @Test
     public void testAddTrackers() {
-        final QueuedTorrentManager unitUnderTest = new QueuedTorrentManager(dataPersistenceSupportMock, trackerManagerMock);
+        final QueuedTorrentManager unitUnderTest = new QueuedTorrentManager(dataPersistenceSupportMock, trackerManagerMock, null);
 
         final InfoHash infoHash = new InfoHash("1".getBytes());
         final TorrentTemplate template = buildTorrentTemplate(infoHash, QueueStatus.ACTIVE);
@@ -211,7 +211,7 @@ public final class QueuedTorrentManagerTest {
 
     @Test
     public void testRemoveTrackers() {
-        final QueuedTorrentManager unitUnderTest = new QueuedTorrentManager(dataPersistenceSupportMock, trackerManagerMock);
+        final QueuedTorrentManager unitUnderTest = new QueuedTorrentManager(dataPersistenceSupportMock, trackerManagerMock, null);
 
         final InfoHash infoHash = new InfoHash("1".getBytes());
         final TorrentTemplate template = buildTorrentTemplate(infoHash, QueueStatus.ACTIVE);
@@ -243,7 +243,7 @@ public final class QueuedTorrentManagerTest {
         Assert.assertEquals(infoHash, view.getInfoHash());
         Assert.assertEquals(TorrentStatus.ACTIVE, view.getStatus());
 
-        final List<TrackableView> trackerViews = new ArrayList<>(view.getTrackableViews());
+        final List<TrackableView> trackerViews = new ArrayList<>(view.getTrackerViews());
         Assert.assertEquals(5, trackerViews.size());
 
         EasyMock.verify(dataPersistenceSupportMock, trackerManagerMock);

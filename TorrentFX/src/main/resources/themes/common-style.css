@@ -11,6 +11,10 @@
 	-fx-padding: 0;
 }
 
+.combo-box .arrow-button {
+	-fx-alignment: center-left;
+}
+
 .empty-placeholder {
 	-fx-background-color: -primary-color;
 }
@@ -60,6 +64,15 @@
 .filter-list-view .tree-cell:expanded .tree-disclosure-node .arrow {
     -fx-background-image: url("../../icons/section_collapse_dark.png");
   	-fx-rotate: 0;
+}
+
+.filter-text-field {
+  -fx-background-repeat: no-repeat;
+  -fx-background-position: right center;
+  -fx-background-size: 28.0 28.0;
+  -fx-min-height: 12;
+  -fx-min-width: 12;
+  /*-fx-font-size: 10;*/
 }
 
 .info-pane {

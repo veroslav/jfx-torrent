@@ -21,15 +21,27 @@ package org.matic.torrent.gui.table;
 
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
+import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.value.ObservableValue;
+import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
 import javafx.geometry.Insets;
+import javafx.scene.control.ContextMenu;
+import javafx.scene.control.Menu;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.RadioMenuItem;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.SelectionMode;
+import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableColumn.CellDataFeatures;
+import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.text.Text;
 import javafx.util.Callback;
@@ -38,6 +50,10 @@ import org.matic.torrent.gui.model.TorrentView;
 import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.preferences.CssProperties;
 import org.matic.torrent.preferences.GuiProperties;
+import org.matic.torrent.queue.QueuedTorrentManager;
+import org.matic.torrent.queue.enums.PriorityChange;
+import org.matic.torrent.queue.enums.QueueStatus;
+import org.matic.torrent.queue.enums.TorrentStatus;
 import org.matic.torrent.utils.UnitConverter;
 
 import java.util.ArrayList;
@@ -55,6 +71,16 @@ import java.util.function.Consumer;
  */
 public final class TorrentViewTable {
 
+    public static final String DOWNLOADING_FILTER = "Downloading";
+    public static final String COMPLETED_FILTER = "Completed";
+    public static final String INACTIVE_FILTER = "Inactive";
+    public static final String TORRENTS_FILTER = "Torrents";
+    public static final String NO_LABEL_FILTER = "No Label";
+    public static final String SEEDING_FILTER = "Seeding";
+    public static final String LABELS_FILTER = "Labels";
+    public static final String ACTIVE_FILTER = "Active";
+    public static final String FEEDS_FILTER = "Feeds";
+
 	private static final String PRIORITY_COLUMN_LABEL = "#";
 	private static final String NAME_COLUMN_LABEL = "Name";
 	private static final String SIZE_COLUMN_LABEL = "Size";
@@ -62,32 +88,99 @@ public final class TorrentViewTable {
 	private static final String ADDED_COLUMN_LABEL = "Added";
 	private static final String TRACKER_COLUMN_LABEL = "Tracker";
 
-	private final TableView<TorrentView> torrentJobTable = new TableView<>();
+    //Context menu items
+    private final MenuItem openContainingFolderMenuItem = new MenuItem("Open _Containing Folder");
+    private final MenuItem openUrlInBrowserMenuItem = new MenuItem("Open URL in Browser");
+    private final MenuItem moveDownQueueMenuItem = new MenuItem("Move _Down Queue");
+    private final MenuItem updateTrackerMenuItem = new MenuItem("Update Trac_ker");
+    private final MenuItem copyMagnetUriMenuItem = new MenuItem("Copy Magnet URI");
+    private final MenuItem forceRecheckMenuItem = new MenuItem("Force Re-Check");
+    private final MenuItem moveUpQueueMenuItem = new MenuItem("Move _Up Queue");
+    private final MenuItem forceStartMenuItem = new MenuItem("_Force Start");
+    private final MenuItem propertiesMenuItem = new MenuItem("Prop_erties");
+    private final MenuItem newLabelMenuItem = new MenuItem("New Label...");
+    private final MenuItem removeMenuItem = new MenuItem("_Remove");
+    private final MenuItem startMenuItem = new MenuItem("_Start");
+    private final MenuItem pauseMenuItem = new MenuItem("_Pause");
+    private final MenuItem stopMenuItem = new MenuItem("S_top");
+    private final MenuItem openMenuItem = new MenuItem("_Open");
+
+    private final MenuItem setDownloadLocationMenuItem = new MenuItem("Set Download Location...");
+    private final MenuItem setDestinationNameMenuItem = new MenuItem("Set Destination Name...");
+    private final MenuItem updateTorrentMenuItem = new MenuItem("Update Torrent...");
+    private final MenuItem clearPeerListMenuItem = new MenuItem("Clear Peer List");
+    private final MenuItem resetBansMenuItem = new MenuItem("Reset Bans");
+
+    private final MenuItem deleteTorrentAndDataMenuItem = new MenuItem("Delete .torrent + Data");
+    private final MenuItem deleteTorrentMenuItem = new MenuItem("Delete .torrent");
+    private final MenuItem deleteDataMenuItem = new MenuItem("Delete Data");
+
+    private final RadioMenuItem normalMenuItem = new RadioMenuItem("Normal");
+    private final RadioMenuItem highMenuItem = new RadioMenuItem("High");
+    private final RadioMenuItem lowMenuItem = new RadioMenuItem("Low");
+
+	private final TableView<TorrentView> torrentTable = new TableView<>();
+    private final ObservableList<TorrentView> torrentViews = FXCollections.observableArrayList();
+    private final FilteredList<TorrentView> filteredTorrents =
+            new FilteredList<>(torrentViews, p -> true);
+
+    private final QueuedTorrentManager torrentManager;
+
+    private final IntegerProperty inactiveTorrents = new SimpleIntegerProperty(0);
+    private final IntegerProperty activeTorrents = new SimpleIntegerProperty(0);
 	
-	public TorrentViewTable() {
+	public TorrentViewTable(final QueuedTorrentManager torrentManager) {
+        this.torrentManager = torrentManager;
+
 		initComponents();
+        createContextMenu();
 	}
+
+    public IntegerProperty totalTorrentsProperty() {
+        return null;
+    }
+
+    public IntegerProperty activeTorrentsProperty() {
+        return activeTorrents;
+    }
+
+    public IntegerProperty inactiveTorrentsProperty() {
+        return inactiveTorrents;
+    }
+
+    public void filter(final String filterName) {
+        filteredTorrents.setPredicate(tv -> {
+            switch(filterName) {
+                case ACTIVE_FILTER:
+                    return tv.getQueueStatus() == QueueStatus.ACTIVE;
+                case INACTIVE_FILTER:
+                    return tv.getQueueStatus() == QueueStatus.INACTIVE;
+                default:
+                    return true;
+            }
+        });
+    }
 	
 	public void addSelectionListener(final Consumer<TorrentView> handler) {
-		torrentJobTable.getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) ->
+		torrentTable.getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) ->
 			handler.accept(newV));
 	}
 	
 	public boolean contains(final InfoHash torrentInfoHash) {
-		return torrentJobTable.getItems().contains(torrentInfoHash);
+		return torrentTable.getItems().contains(torrentInfoHash);
 	}
 
     public void refresh() {
-        TableUtils.refresh(torrentJobTable);
+        TableUtils.refresh(torrentTable);
     }
 
     /**
      * Sort the table based on the current sort order and latest table entry values
      */
     public void sort() {
-        final List<TableColumn<TorrentView, ?>> sortOrder = new ArrayList<>(torrentJobTable.getSortOrder());
-        torrentJobTable.getSortOrder().clear();
-        torrentJobTable.getSortOrder().addAll(sortOrder);
+        final List<TableColumn<TorrentView, ?>> sortOrder = new ArrayList<>(torrentTable.getSortOrder());
+        torrentTable.getSortOrder().clear();
+        torrentTable.getSortOrder().addAll(sortOrder);
     }
 	
 	/**
@@ -96,73 +189,189 @@ public final class TorrentViewTable {
 	 * @return Generated boolean binding
 	 */
 	public BooleanBinding bindOnEmpty() {
-		return Bindings.size(torrentJobTable.getItems()).isEqualTo(0);
+		return Bindings.size(torrentTable.getItems()).isEqualTo(0);
 	}
 	
 	public void addJob(final TorrentView torrentJob) {
-		torrentJobTable.getItems().add(torrentJob);
-		torrentJobTable.getSelectionModel().clearSelection();
-		torrentJobTable.getSelectionModel().select(torrentJob);
+        torrentViews.add(torrentJob);
+		torrentTable.getSelectionModel().clearSelection();
+		torrentTable.getSelectionModel().select(torrentJob);
+
+        updateTorrentStatusStatistics(QueueStatus.NOT_ON_QUEUE, torrentJob.getQueueStatus());
+        torrentJob.addQueueStatusChangeListener((obs, oldV, newV) ->
+            updateTorrentStatusStatistics(oldV, newV));
 	}
+
+    private void updateTorrentStatusStatistics(final QueueStatus oldQueueStatus, final QueueStatus newQueueStatus) {
+        switch(newQueueStatus) {
+            case ACTIVE:
+                activeTorrents.set(activeTorrents.intValue() + 1);
+                break;
+            case INACTIVE:
+                inactiveTorrents.set(inactiveTorrents.intValue() + 1);
+                break;
+        }
+        switch(oldQueueStatus) {
+            case ACTIVE:
+                if(oldQueueStatus != QueueStatus.NOT_ON_QUEUE) {
+                    activeTorrents.set(activeTorrents.intValue() - 1);
+                }
+                break;
+            case INACTIVE:
+                if(oldQueueStatus != QueueStatus.NOT_ON_QUEUE) {
+                    inactiveTorrents.set(inactiveTorrents.intValue() - 1);
+                }
+                break;
+        }
+    }
 	
 	public void deleteJobs(final ObservableList<TorrentView> torrentJobs) {
-		torrentJobTable.getItems().removeAll(torrentJobs);		
+        //A workaround for bug JDK-8087508
+        torrentTable.sort();
+
+        torrentViews.removeAll(torrentJobs);
 	}
 	
 	public ObservableList<TorrentView> getSelectedJobs() {
-		return torrentJobTable.getSelectionModel().getSelectedItems();
+		return torrentTable.getSelectionModel().getSelectedItems();
 	}
 	
 	public void selectJob(final TorrentView torrentJob) {
-        torrentJobTable.getSelectionModel().clearSelection();
-		torrentJobTable.getSelectionModel().select(torrentJob);
+        torrentTable.getSelectionModel().clearSelection();
+		torrentTable.getSelectionModel().select(torrentJob);
 	}
 	
 	public void wrapWith(final ScrollPane wrapper) {
-		wrapper.setContent(torrentJobTable);
+		wrapper.setContent(torrentTable);
 	}
 	
 	/**
 	 * Store any changes to column order, visibility, and/or size
 	 */
 	public void storeColumnStates() {		
-		TableUtils.storeColumnStates(torrentJobTable.getColumns(), GuiProperties.TORRENT_JOBS_TAB_COLUMN_VISIBILITY,
+		TableUtils.storeColumnStates(torrentTable.getColumns(), GuiProperties.TORRENT_JOBS_TAB_COLUMN_VISIBILITY,
 			GuiProperties.DEFAULT_TORRENT_JOBS_TAB_COLUMN_VISIBILITIES, GuiProperties.TORRENT_JOBS_TAB_COLUMN_SIZE,
 			GuiProperties.DEFAULT_TORRENT_JOBS_COLUMN_SIZES, GuiProperties.TORRENT_JOBS_TAB_COLUMN_ORDER,
 			GuiProperties.DEFAULT_TORRENT_JOBS_TAB_COLUMN_ORDER);		
 	}
-	
+
 	private void initComponents() {
-		torrentJobTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
-		torrentJobTable.setTableMenuButtonVisible(false);
-		torrentJobTable.setRowFactory(t -> new TorrentViewTableRow<>());
+        final SortedList<TorrentView> sortedTorrents = new SortedList<>(filteredTorrents);
+        sortedTorrents.comparatorProperty().bind(torrentTable.comparatorProperty());
+
+        torrentTable.setItems(sortedTorrents);
+		torrentTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+		torrentTable.setTableMenuButtonVisible(false);
+		torrentTable.setRowFactory(t -> new TorrentViewTableRow<>());
 		
 		final Text emptyTorrentListPlaceholder = new Text("Go to 'File->Add Torrent...' to add torrents.");
 		emptyTorrentListPlaceholder.getStyleClass().add(CssProperties.TORRENT_LIST_EMPTY_TEXT);
-		emptyTorrentListPlaceholder.visibleProperty().bind(Bindings.isEmpty(torrentJobTable.getItems()));
+		emptyTorrentListPlaceholder.visibleProperty().bind(Bindings.isEmpty(torrentTable.getItems()));
 		
 		final BorderPane placeholderPane = new BorderPane();
 		placeholderPane.getStyleClass().add(CssProperties.PLACEHOLDER_EMPTY);
 		placeholderPane.setPadding(new Insets(15, 0, 0, 40));
 		placeholderPane.setLeft(emptyTorrentListPlaceholder);
 		
-		torrentJobTable.setPlaceholder(placeholderPane);		
+		torrentTable.setPlaceholder(placeholderPane);
 		createColumns();		
 	}
+
+    private void createContextMenu() {
+        final Menu labelsMenu = new Menu("_Labels");
+        labelsMenu.getItems().addAll(newLabelMenuItem);
+
+        final Menu setDownloadLimitMenu = new Menu("Set Download Limit");
+        final Menu setUploadLimitMenu = new Menu("Set Upload Limit");
+
+        final ToggleGroup bandwidthAllocationGroup = new ToggleGroup();
+        highMenuItem.setToggleGroup(bandwidthAllocationGroup);
+        normalMenuItem.setToggleGroup(bandwidthAllocationGroup);
+        lowMenuItem.setToggleGroup(bandwidthAllocationGroup);
+        bandwidthAllocationGroup.selectToggle(normalMenuItem);
+
+        final Menu bandwidthAllocationMenu = new Menu("Band_width Allocation");
+        bandwidthAllocationMenu.getItems().addAll(highMenuItem, normalMenuItem, lowMenuItem,
+                new SeparatorMenuItem(), setDownloadLimitMenu, setUploadLimitMenu);
+
+        final Menu removeAndMenu = new Menu("Remove A_nd");
+        removeAndMenu.getItems().addAll(deleteTorrentMenuItem, deleteTorrentAndDataMenuItem, deleteDataMenuItem);
+
+        final Menu advancedMenu = new Menu("_Advanced");
+        advancedMenu.getItems().addAll(resetBansMenuItem, clearPeerListMenuItem, setDownloadLocationMenuItem,
+                setDestinationNameMenuItem, updateTorrentMenuItem);
+
+        final ContextMenu contextMenu = new ContextMenu();
+        contextMenu.getItems().addAll(openMenuItem, openContainingFolderMenuItem, new SeparatorMenuItem(),
+                copyMagnetUriMenuItem, openUrlInBrowserMenuItem, new SeparatorMenuItem(),
+                forceStartMenuItem, startMenuItem, pauseMenuItem, stopMenuItem, new SeparatorMenuItem(),
+                moveUpQueueMenuItem, moveDownQueueMenuItem, labelsMenu, new SeparatorMenuItem(),
+                bandwidthAllocationMenu, new SeparatorMenuItem(), removeMenuItem, removeAndMenu,
+                new SeparatorMenuItem(), forceRecheckMenuItem, advancedMenu, new SeparatorMenuItem(),
+                updateTrackerMenuItem, new SeparatorMenuItem(), propertiesMenuItem);
+        contextMenu.showingProperty().addListener(obs -> {});
+        torrentTable.setRowFactory(table -> {
+            final TableRow<TorrentView> tableRow = new TrackerTableRow<>();
+            tableRow.setContextMenu(contextMenu);
+            tableRow.setOnContextMenuRequested(cme -> {
+                final TorrentView torrentView = tableRow.getItem();
+                if(torrentView == null) {
+                    contextMenu.hide();
+                    return;
+                }
+                setupMenuStates(torrentView);
+                setupMenuActions(torrentView);
+            });
+
+            return tableRow;
+        });
+    }
+
+    private void setupMenuStates(final TorrentView torrentView) {
+        final QueueStatus queueStatus = torrentView.getQueueStatus();
+        final TorrentStatus torrentStatus = torrentView.getStatus();
+
+        startMenuItem.setDisable(torrentStatus == TorrentStatus.ACTIVE ||
+                queueStatus == QueueStatus.QUEUED || queueStatus == QueueStatus.FORCED);
+        stopMenuItem.setDisable(torrentStatus == TorrentStatus.STOPPED);
+        pauseMenuItem.setDisable(torrentStatus == TorrentStatus.STOPPED);
+        forceStartMenuItem.setDisable(queueStatus == QueueStatus.FORCED);
+
+        final int priority = torrentView.getPriority();
+
+        moveUpQueueMenuItem.setDisable(priority == 1);
+        moveDownQueueMenuItem.setDisable(priority == torrentTable.getItems().size());
+    }
+
+    private void setupMenuActions(final TorrentView torrentView) {
+        forceStartMenuItem.setOnAction(e ->
+                torrentManager.requestTorrentPriorityChange(torrentView, PriorityChange.FORCED));
+        startMenuItem.setOnAction(e ->
+                torrentManager.requestTorrentStatusChange(torrentView, TorrentStatus.ACTIVE));
+        pauseMenuItem.setOnAction(e ->
+                torrentManager.requestTorrentStatusChange(torrentView, TorrentStatus.PAUSED));
+        stopMenuItem.setOnAction(e ->
+                torrentManager.requestTorrentStatusChange(torrentView, TorrentStatus.STOPPED));
+
+        moveUpQueueMenuItem.setOnAction(e ->
+                torrentManager.requestTorrentPriorityChange(torrentView, PriorityChange.HIGHER));
+        moveDownQueueMenuItem.setOnAction(e ->
+                torrentManager.requestTorrentPriorityChange(torrentView, PriorityChange.LOWER));
+    }
 	
 	private void createColumns() {
 		final LinkedHashMap<String, TableColumn<TorrentView, ?>> columnMappings = buildColumnMappings();
 		final BiConsumer<String, Double> columnResizer = (columnId, targetWidth) -> {
 			final TableColumn<TorrentView,?> tableColumn = columnMappings.get(columnId);
-			torrentJobTable.getColumns().add(tableColumn);
-			torrentJobTable.resizeColumn(tableColumn, targetWidth - tableColumn.getWidth());
+			torrentTable.getColumns().add(tableColumn);
+			torrentTable.resizeColumn(tableColumn, targetWidth - tableColumn.getWidth());
 		};
 		final TableState<TorrentView> columnState = TableUtils.loadColumnStates(columnMappings, columnResizer,
 				GuiProperties.TORRENT_JOBS_TAB_COLUMN_VISIBILITY, GuiProperties.DEFAULT_TORRENT_JOBS_TAB_COLUMN_VISIBILITIES,
 				GuiProperties.TORRENT_JOBS_TAB_COLUMN_SIZE, GuiProperties.DEFAULT_TORRENT_JOBS_COLUMN_SIZES,
 				GuiProperties.TORRENT_JOBS_TAB_COLUMN_ORDER, GuiProperties.DEFAULT_TORRENT_JOBS_TAB_COLUMN_ORDER);
 		
-		TableUtils.addTableHeaderContextMenus(torrentJobTable.getColumns(), columnState, columnResizer);
+		TableUtils.addTableHeaderContextMenus(torrentTable.getColumns(), columnState, columnResizer);
 	}
 		
 	private LinkedHashMap<String, TableColumn<TorrentView, ?>> buildColumnMappings() {
@@ -181,7 +390,7 @@ public final class TorrentViewTable {
 
         final TableColumn<TorrentView, ?> priorityColumn = TableUtils.buildColumn(priorityValueFactory,
                 val -> String.valueOf(val.getPriority()), GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, PRIORITY_COLUMN_LABEL);
-        torrentJobTable.getSortOrder().add(priorityColumn);
+        torrentTable.getSortOrder().add(priorityColumn);
 
 		final LinkedHashMap<String, TableColumn<TorrentView, ?>> columnMappings = new LinkedHashMap<>();
 		columnMappings.put(PRIORITY_COLUMN_LABEL, priorityColumn);
@@ -189,7 +398,7 @@ public final class TorrentViewTable {
 				GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, NAME_COLUMN_LABEL));
 		columnMappings.put(SIZE_COLUMN_LABEL, TableUtils.buildColumn(sizeValueFactory, tj -> 
 			UnitConverter.formatByteCount(tj.getTotalLength()),
-				GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, SIZE_COLUMN_LABEL));
+				GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, SIZE_COLUMN_LABEL));
 		columnMappings.put(SELECTED_SIZE_COLUMN_LABEL, TableUtils.buildColumn(selectedSizeValueFactory, tj -> 
 			UnitConverter.formatByteCount(tj.getSelectedLength()),
 				GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, SELECTED_SIZE_COLUMN_LABEL));
