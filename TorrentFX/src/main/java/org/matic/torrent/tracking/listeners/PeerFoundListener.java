@@ -19,16 +19,15 @@
 */
 package org.matic.torrent.tracking.listeners;
 
-import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.net.pwp.PwpPeer;
 
-import java.util.Set;
+import java.util.Collection;
 
 /**
  * An interface for notifying implementing classes when a new peer is
- * obtained by peer discovery strategies 
- * 
- * @author vedran
+ * obtained by peer discovery strategies
+ *
+ * @author Vedran Matic
  *
  */
 public interface PeerFoundListener {
@@ -37,8 +36,7 @@ public interface PeerFoundListener {
      * Notify implementing classes when new peers are found
      *
      * @param peers Newly obtained set of peers
-     * @param infoHash Target torrent's info hash
      * @param source Name of the source that found the peers
      */
-    void onPeersFound(Set<PwpPeer> peers, InfoHash infoHash, String source);
+    void onPeersFound(Collection<PwpPeer> peers, String source);
 }

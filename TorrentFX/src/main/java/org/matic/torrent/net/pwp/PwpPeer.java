@@ -22,9 +22,9 @@ package org.matic.torrent.net.pwp;
 import org.matic.torrent.hash.InfoHash;
 
 /**
- * A remote peer
+ * A remote Peer-Wire-Protocol peer
  *
- * @author vedran
+ * @author Vedran Matic
  *
  */
 public final class PwpPeer {
@@ -33,35 +33,25 @@ public final class PwpPeer {
     private final String peerIp;
     private final int peerPort;
 
-    private String clientName;
-
     public PwpPeer(final String peerIp, final int peerPort, final InfoHash infoHash) {
         this.peerIp = peerIp;
         this.peerPort = peerPort;
         this.infoHash = infoHash;
     }
 
-    public void setClientName(final String clientName) {
-        this.clientName = clientName;
-    }
-
-    public String getClientName() {
-        return clientName;
-    }
-
-    public final InfoHash getInfoHash() {
+    public InfoHash getInfoHash() {
         return infoHash;
     }
 
-    public final void setInfoHash(final InfoHash infoHash) {
+    public void setInfoHash(final InfoHash infoHash) {
         this.infoHash = infoHash;
     }
 
-    public final String getPeerIp() {
+    public String getIp() {
         return peerIp;
     }
 
-    public final int getPeerPort() {
+    public int getPort() {
         return peerPort;
     }
 

@@ -19,10 +19,14 @@
 */
 package org.matic.torrent.net.pwp;
 
+import org.matic.torrent.gui.model.BitsView;
+import org.matic.torrent.gui.model.PeerView;
+import org.matic.torrent.gui.model.TorrentView;
+import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.net.NetworkUtilities;
-import org.matic.torrent.peer.ClientProperties;
+import org.matic.torrent.net.pwp.PwpMessage.MessageType;
+import org.matic.torrent.tracking.listeners.PeerFoundListener;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
@@ -31,7 +35,10 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.nio.channels.spi.AbstractSelectableChannel;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -45,82 +52,87 @@ import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 /**
- * 
+ *
  * A connection manager for PWP-connections. It listens for incoming connections and also
  * allows for adding new connections to remote peers.
- * 
+ *
  * @author vedran
  *
  */
-public final class ClientConnectionManager {
+public class ClientConnectionManager implements PeerFoundListener {
 
-	private static final int SO_RCVBUF_VALUE = 4 * 1024;	
-	private static final boolean SO_REUSEADDR = true;
+    private static final long STALE_CONNECTION_THRESHOLD_TIME = 120000; //2m
+    private static final long KEEP_ALIVE_INTERVAL = 10000;	//10 seconds
+
+    private static final int SO_RCVBUF_VALUE = 4 * 1024;
+    //private static final boolean SO_REUSEADDR = true;
 
     private static final int MAX_CONNECTIONS = 50;
     private static int CONNECTION_COUNT = 0;
 
-	private final Set<PwpConnectionListener> connectionListeners = new CopyOnWriteArraySet<>();
-	private final Set<PwpMessageListener> messageListeners = new CopyOnWriteArraySet<>();
+    //Listeners for connection state changes and incoming peer messages
+    private final Set<PwpConnectionListener> connectionListeners = new CopyOnWriteArraySet<>();
+    private final Set<PwpMessageListener> messageListeners = new CopyOnWriteArraySet<>();
 
-    private final Map<PwpPeer, SelectionKey> handshakenConnections = new HashMap<>();
-    private final Map<SelectionKey, PwpPeer> indeterminateConnections = new HashMap<>();
+    //Different state connections: handshaken,initiated but not handshaken and not yet connected
+    private final Map<PeerView, SelectionKey> handshakenConnections = new HashMap<>();
+    private final Map<SelectionKey, PeerView> indeterminateConnections = new HashMap<>();
+    private final List<PwpPeer> offlinePeers = new ArrayList<>();
 
+    //Incoming message and connection request queues
     private final List<PwpMessageRequest> messageRequests = new ArrayList<>();
     private final List<PwpPeer> peerQueue = new ArrayList<>();
+
+    //Torrents for which we accept incoming remote connections
+    private final Map<InfoHash, TorrentView> servedTorrents = new HashMap<>();
+
+    //Create a single HANDSHAKE message for each served torrent, more efficient
+    private final Map<InfoHash, byte[]> cachedHandshakeMessageBytes = new HashMap<>();
 
     private final ExecutorService connectionExecutor = Executors.newSingleThreadExecutor();
     private final Selector selector;
 
     private final int listenPort;
 
-	/**
-	 * 
-	 * Configure a new connection manager listening on a specified port and serving maxConnections connections
-	 *
-	 * @param listenPort Port to listen on for incoming connections
-	 * @throws IOException If a connection selector can't be opened
-	 */
-	public ClientConnectionManager(final int listenPort) throws IOException {
+    //Last time we sent out a HANDSHAKE message on all handshaken connections
+    private long lastKeepAliveSent = System.currentTimeMillis();
+
+    /**
+     *
+     * Configure a new connection manager listening on a specified port
+     *
+     * @param listenPort Port to listen on for incoming connections
+     * @throws IOException If a connection selector can't be opened
+     */
+    public ClientConnectionManager(final int listenPort) throws IOException {
         selector = Selector.open();
         this.listenPort = listenPort;
-	}
-	
-	/**
-	 * Add a listener to be notified when a peer is connected/disconnected
-	 * 
-	 * @param listener Listener to add
-	 */
-	public final void addConnectionListener(final PwpConnectionListener listener) {		
-		connectionListeners.add(listener);
-	}
-	
-	/**
-	 * Remove a listener previously interested in connection state notifications
-	 * 
-	 * @param listener Listener to remove
-	 */
-	public final void removeConnectionListener(final PwpConnectionListener listener) {
-		connectionListeners.remove(listener);
-	}
-	
-	/**
-	 * Add a listener to be notified when a message is received from a peer
-	 * 
-	 * @param listener Listener to add
-	 */
-	public final void addMessageListener(final PwpMessageListener listener) {		
-		messageListeners.add(listener);
-	}
-	
-	/**
-	 * Remove a listener previously interested in message arrival notifications
-	 * 
-	 * @param listener Listener to remove
-	 */
-	public final void removeMessageListener(final PwpMessageListener listener) {
-		messageListeners.remove(listener);
-	}
+    }
+
+    /**
+     * Add a torrent for which to accept incoming remote peer connections.
+     *
+     * @param torrentView View to the target torrent
+     */
+    public void accept(final TorrentView torrentView) {
+        synchronized(servedTorrents) {
+            final InfoHash infoHash = torrentView.getInfoHash();
+            servedTorrents.put(infoHash, torrentView);
+            cachedHandshakeMessageBytes.put(infoHash, PwpMessageRequestFactory.buildHandshakeMessage(infoHash));
+        }
+    }
+
+    /**
+     * Remove a torrent for which we no longer accept incoming peer connections.
+     *
+     * @param torrentView View of the target torrent
+     */
+    public void reject(final TorrentView torrentView) {
+        synchronized(servedTorrents) {
+            cachedHandshakeMessageBytes.remove(torrentView.getInfoHash());
+            servedTorrents.remove(torrentView);
+        }
+    }
 
     /**
      *
@@ -128,12 +140,49 @@ public final class ClientConnectionManager {
      *
      * @param peers Remote peers to queue for connection attempts.
      */
-    public void connectTo(final Collection<PwpPeer> peers) {
+    @Override
+    public void onPeersFound(final Collection<PwpPeer> peers, final String source) {
         synchronized(peerQueue) {
             peerQueue.addAll(peers.stream().filter(p -> !handshakenConnections.containsKey(p)
-                    && !peerQueue.contains(p)).collect(Collectors.toList()));
+                    && !peerQueue.contains(p) && !offlinePeers.contains(p)).collect(Collectors.toList()));
         }
         selector.wakeup();
+    }
+
+    /**
+     * Add a listener to be notified when a peer is connected/disconnected
+     *
+     * @param listener Listener to add
+     */
+    public final void addConnectionListener(final PwpConnectionListener listener) {
+        connectionListeners.add(listener);
+    }
+
+    /**
+     * Remove a listener previously interested in connection state notifications
+     *
+     * @param listener Listener to remove
+     */
+    public final void removeConnectionListener(final PwpConnectionListener listener) {
+        connectionListeners.remove(listener);
+    }
+
+    /**
+     * Add a listener to be notified when a message is received from a peer
+     *
+     * @param listener Listener to add
+     */
+    public final void addMessageListener(final PwpMessageListener listener) {
+        messageListeners.add(listener);
+    }
+
+    /**
+     * Remove a listener previously interested in message arrival notifications
+     *
+     * @param listener Listener to remove
+     */
+    public final void removeMessageListener(final PwpMessageListener listener) {
+        messageListeners.remove(listener);
     }
 
     /**
@@ -169,25 +218,31 @@ public final class ClientConnectionManager {
         try(final ServerSocketChannel serverChannel = ServerSocketChannel.open()) {
             initServerChannel(serverChannel);
 
-            System.out.println("CCM: Up and running");
-
             while(true) {
                 if(Thread.currentThread().isInterrupted()) {
+                    Thread.interrupted();
                     indeterminateConnections.keySet().forEach(s -> closeChannel((SocketChannel)s.channel()));
                     indeterminateConnections.clear();
                     handshakenConnections.values().forEach(s -> closeChannel((SocketChannel)s.channel()));
                     handshakenConnections.clear();
+                    offlinePeers.clear();
 
                     System.out.println("CCM: Shutdown completed");
-
                     break;
                 }
+                //Wait for the incoming events that we are interested in
                 processPendingSelections();
+                //Send any queued messages to the remote peers
                 processPendingMessages();
+                //Attempt to connect to queued peers, if any
                 processPendingPeers();
             }
-        } catch(final IOException ioe) {
-            System.err.println("Server was shutdown due to an error: " + ioe);
+        }
+        catch(final IOException ioe) {
+            System.err.println("Server was shutdown due to an error: " + ioe.toString());
+            if(!connectionExecutor.isShutdown()) {
+                connectionExecutor.shutdownNow();
+            }
         }
     }
 
@@ -202,8 +257,12 @@ public final class ClientConnectionManager {
             if(newPeer == null) {
                 return;
             }
-            if(CONNECTION_COUNT++ < MAX_CONNECTIONS) {
-                 initConnection(newPeer);
+
+            if(CONNECTION_COUNT < MAX_CONNECTIONS) {
+                initConnection(newPeer);
+            }
+            else {
+                offlinePeers.add(newPeer);
             }
         }
     }
@@ -219,27 +278,44 @@ public final class ClientConnectionManager {
             if(messageRequest == null) {
                 return;
             }
-            final SelectionKey selectionKey = handshakenConnections.get(messageRequest.getPeer());
-            if(selectionKey != null) {
-                try {
-                    final ClientSession clientSession = (ClientSession)selectionKey.attachment();
-                    clientSession.putOnWriteQueue(messageRequest);
-                    writeToChannel(selectionKey);
-                } catch(final IOException ioe) {
-                    //System.err.println("An error occurred while writing the peer message: " + ioe.toString());
-                    handshakenConnections.remove(messageRequest.getPeer());
-                    closeChannel((SocketChannel)selectionKey.channel());
+
+            final PwpMessageRequest finalRequest = messageRequest;
+
+            final Collection<PeerView> messageRequestPeers = messageRequest.getPeers();
+            final Collection<PeerView> targetPeers = messageRequestPeers == null || messageRequestPeers.isEmpty()?
+                    handshakenConnections.keySet() : messageRequestPeers;
+
+            targetPeers.forEach(p -> {
+                final SelectionKey selectionKey = handshakenConnections.get(p);
+                if(selectionKey != null) {
+                    try {
+                        final ClientSession clientSession = (ClientSession)selectionKey.attachment();
+                        clientSession.putOnWriteQueue(finalRequest);
+                        writeToChannel(selectionKey);
+                    } catch(final IOException ioe) {
+                        System.err.println("An error occurred while writing the peer message: " + ioe.toString());
+                        disconnectPeer(selectionKey, p);
+                    }
                 }
+            });
+
+            if(finalRequest.getMessageType() == MessageType.KEEP_ALIVE) {
+                lastKeepAliveSent = System.currentTimeMillis();
             }
         }
     }
 
+    private void connectToOfflinePeer() {
+        if(!offlinePeers.isEmpty() && (--CONNECTION_COUNT < MAX_CONNECTIONS)) {
+            initConnection(offlinePeers.remove(0));
+        }
+    }
+
     private void processPendingSelections() throws IOException {
-        final int keysSelected = selector.select();
+        final long timeLeftToWaitForKeepAlive = KEEP_ALIVE_INTERVAL - (System.currentTimeMillis() - lastKeepAliveSent);
+        final int keysSelected = selector.select(timeLeftToWaitForKeepAlive > 0? timeLeftToWaitForKeepAlive : 0);
+
         if(keysSelected > 0) {
-
-            //System.out.println("CCM: pending key selections = " + keysSelected);
-
             final Set<SelectionKey> selectedKeys = selector.selectedKeys();
             final Iterator<SelectionKey> selectedKeysIterator = selectedKeys.iterator();
 
@@ -252,34 +328,40 @@ public final class ClientConnectionManager {
                 }
             }
         }
+
+        //Check whether it is time to send KEEP_ALIVE to the connected peers
+        if(!handshakenConnections.isEmpty() && (System.currentTimeMillis() - lastKeepAliveSent > KEEP_ALIVE_INTERVAL)) {
+            synchronized(messageRequests) {
+                messageRequests.add(new PwpMessageRequest(MessageType.KEEP_ALIVE,
+                        PwpMessageRequestFactory.buildKeepAliveMessage(), null));
+            }
+        }
+
+        //Disconnect all peers that haven't responded for a while
+        /*final Set<Map.Entry<PeerView, SelectionKey>> staleHandshakenConnections = handshakenConnections.entrySet().stream().filter(e -> {
+            final ClientSession session = (ClientSession)e.getValue().attachment();
+            return (System.currentTimeMillis() - session.getLastMessageTime()) > STALE_CONNECTION_THRESHOLD_TIME;
+        }).collect(Collectors.toSet());
+
+        System.out.println("Disconnecting " + staleHandshakenConnections.size() + " connected peers due to inactivity");
+
+        staleHandshakenConnections.forEach(e -> disconnectPeer(e.getValue(), e.getKey()));*/
     }
 
     private void handleKeySelection(final SelectionKey selectedKey) {
         if(selectedKey.isAcceptable()) {
-
-            System.out.println("CCM: OP_ACCEPTABLE");
-
             //Handle a new connection request
             acceptConnection(selectedKey);
         }
         else if(selectedKey.isWritable()) {
-
-            System.out.println("CCM: OP_WRITABLE");
-
             //Handle a write attempt to the channel
             writeToChannel(selectedKey);
         }
         else if(selectedKey.isReadable()) {
-
-            //System.out.println("CCM: OP_READABLE");
-
             //Handle a read attempt to the channel
             readFromChannel(selectedKey);
         }
         else if(selectedKey.isConnectable()) {
-
-            //System.out.println("CCM: OP_CONNECTABLE");
-
             //Handle remote peer accepting our connection attempt
             finalizeConnection(selectedKey);
         }
@@ -300,88 +382,126 @@ public final class ClientConnectionManager {
             }
             selectionKey.interestOps(selectionKey.interestOps() & ~SelectionKey.OP_WRITE);
         } catch (final IOException ioe) {
-            indeterminateConnections.remove(selectionKey);
-            handshakenConnections.remove(session.getPeer());
-            closeChannel((SocketChannel)selectionKey.channel());
+            disconnectPeer(selectionKey, session.getPeerView());
         }
     }
 
     private void readFromChannel(final SelectionKey selectionKey) {
-        final SocketChannel channel = (SocketChannel)selectionKey.channel();
         final ClientSession session = (ClientSession)selectionKey.attachment();
 
         try {
             final Collection<PwpMessage> messages = session.read();
-
-            //System.out.println("CCM: Received " + messages.size() + " messages");
-
             if(!messages.isEmpty()) {
-                final Optional<PwpMessage> potentialHandshake = messages.stream().filter(
-                        m -> m.getMessageType() == PwpMessage.MessageType.HANDSHAKE).findAny();
+                final PeerView peerView = session.getPeerView();
+                checkForHandshake(selectionKey, session, messages, peerView);
 
-                final PwpPeer peer = session.getPeer();
-                if(potentialHandshake.isPresent()) {
-
-                    //System.out.println("CCM: Got HANDSHAKE from " + session.getPeer());
-
-                    //final HandshakeMessage handshake = MessageParser.parseHandhake(potentialHandshake.get());
-
-                    //peer.setInfoHash(handshake.getInfoHash());
-                    indeterminateConnections.remove(selectionKey);
-                    handshakenConnections.put(peer, selectionKey);
-                    synchronized(peerQueue) {
-                        peerQueue.remove(peer);
-                    }
+                if(!handshakenConnections.containsKey(peerView)) {
+                    //Disconnect this peer, connection is not handshaken
+                    disconnectPeer(selectionKey, peerView);
+                    return;
                 }
 
-                notifyMessagesReceived(messages, peer);
+                checkForBitfield(selectionKey, messages, peerView);
+                notifyMessagesReceived(messages, peerView);
             }
         }
         catch(final IOException ioe) {
-
-            //System.err.println("Got exception while reading from peer: " + ioe.toString());
-
-            indeterminateConnections.remove(selectionKey);
-            handshakenConnections.remove(session.getPeer());
-            closeChannel(channel);
+            disconnectPeer(selectionKey, session.getPeerView());
         }
     }
 
-    private void notifyMessagesReceived(final Collection<PwpMessage> messages, final PwpPeer peer) {
+    private void checkForHandshake(final SelectionKey selectionKey, final ClientSession session,
+                                   final Collection<PwpMessage> messages, final PeerView peerView) {
+        final Optional<PwpMessage> potentialHandshake = messages.stream().filter(
+                m -> m.getMessageType() == PwpMessage.MessageType.HANDSHAKE).findAny();
+        if(potentialHandshake.isPresent()) {
+            final PwpHandshakeMessage handshake = (PwpHandshakeMessage)potentialHandshake.get();
 
-        messages.forEach(m -> System.out.println("CCM: Received " + m.getMessageType() + " from " + peer));
+            //Disconnect peer if do we not serve this torrent
+            if(!servedTorrents.containsKey(handshake.getInfoHash())) {
+                disconnectPeer(selectionKey, peerView);
+                return;
+            }
 
+            final PwpPeer peer = session.getPeer();
+            peer.setInfoHash(handshake.getInfoHash());
+            peerView.setClientId(handshake.getPeerId());
+
+            indeterminateConnections.remove(selectionKey);
+            handshakenConnections.put(peerView, selectionKey);
+
+            //Remove any pending connections to this peer
+            synchronized(peerQueue) {
+                peerQueue.remove(peer);
+            }
+        }
+    }
+
+    private void checkForBitfield(final SelectionKey selectionKey, final Collection<PwpMessage> messages,
+                                  final PeerView peerView) {
+        final Optional<PwpMessage> potentialBitfield = messages.stream().filter(
+                m -> m.getMessageType() == PwpMessage.MessageType.BITFIELD).findAny();
+        if(potentialBitfield.isPresent()) {
+            final PwpRegularMessage bitfield = (PwpRegularMessage)potentialBitfield.get();
+
+            final BitsView torrentPieces = servedTorrents.get(peerView.getInfoHash()).getAvailabilityView();
+            final int expectedPieceCount = torrentPieces.getTotalPieces();
+            final byte[] payload = bitfield.getPayload();
+            final BitSet bitSet = BitSet.valueOf(payload);
+
+            if(bitSet.length() > expectedPieceCount || (payload.length * Byte.SIZE < expectedPieceCount)) {
+                //Disconnect this peer, invalid bitfield
+
+                System.out.println("Invalid BITFIELD");
+
+                disconnectPeer(selectionKey, peerView);
+                return;
+            }
+            peerView.setHave(bitSet);
+        }
+    }
+
+    private void disconnectPeer(final SelectionKey selectionKey, final PeerView peerView) {
+        final SocketChannel channel = (SocketChannel)selectionKey.channel();
+        indeterminateConnections.remove(selectionKey);
+        handshakenConnections.remove(peerView);
+        closeChannel(channel);
+        notifyConnectionClosed(peerView);
+        connectToOfflinePeer();
+    }
+
+    private void notifyMessagesReceived(final Collection<PwpMessage> messages, final PeerView peer) {
         messageListeners.forEach(l -> l.onMessagesReceived(messages, peer));
+    }
+
+    private void notifyPeerAdded(final PeerView peerView) {
+        connectionListeners.forEach(l -> l.peerAdded(peerView));
+    }
+
+    private void notifyConnectionClosed(final PeerView peerView) {
+        connectionListeners.forEach(l -> l.peerDisconnected(peerView));
     }
 
     private void finalizeConnection(final SelectionKey selectionKey) {
         final SocketChannel channel = ((SocketChannel)selectionKey.channel());
         final ClientSession clientSession = (ClientSession)selectionKey.attachment();
-        final PwpPeer peer = clientSession.getPeer();
+        final PeerView peerView = clientSession.getPeerView();
         try {
             if(channel.finishConnect()) {
                 selectionKey.interestOps(SelectionKey.OP_READ);
 
                 //Send a handshake to the remote peer
-                final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                baos.write(new byte[]{ClientSession.PROTOCOL_NAME_LENGTH});
-                baos.write(ClientSession.PROTOCOL_NAME.getBytes());
-                baos.write(new byte[]{0, 0, 0, 0, 0, 0, 0, 0});
-                baos.write(peer.getInfoHash().getBytes());
-                baos.write(ClientProperties.PEER_ID.getBytes());
-
-                clientSession.putOnWriteQueue(new PwpMessageRequest(baos.toByteArray(), peer));
+                final byte[] messageBytes = cachedHandshakeMessageBytes.get(peerView.getInfoHash());
+                clientSession.putOnWriteQueue(new PwpMessageRequest(MessageType.HANDSHAKE,
+                        messageBytes, Arrays.asList(peerView)));
                 writeToChannel(selectionKey);
             }
         } catch (final IOException ioe) {
             // Broken connection, disconnect the peer
-            //System.err.println("Broken connection attempt, disconnecting: " + ioe.toString());
-
             synchronized(peerQueue) {
-                peerQueue.remove(peer);
+                peerQueue.remove(peerView);
             }
-            indeterminateConnections.remove(selectionKey);
-            closeChannel(channel);
+            disconnectPeer(selectionKey, peerView);
         }
     }
 
@@ -398,12 +518,15 @@ public final class ClientConnectionManager {
 
             final PwpPeer peer = new PwpPeer(remotePeerIp, remotePeerPort, null);
             final ClientSession clientSession = new ClientSession(channel, peer);
-            selectionKey.attach(clientSession);
 
-            indeterminateConnections.put(selectionKey, peer);
-            channel.register(selectionKey.selector(), SelectionKey.OP_READ);
+            final SelectionKey channelKey = channel.register(selector, SelectionKey.OP_READ);
+            channelKey.attach(clientSession);
+
+            indeterminateConnections.put(channelKey, clientSession.getPeerView());
+            ++CONNECTION_COUNT;
 
             System.out.println("Accepted remote connection: ip: " + remotePeerIp + ", port " + remotePeerPort);
+
         } catch (final IOException ioe) {
             System.err.println("Failed to accept incoming connection: " + ioe.getMessage());
             if(channel != null) {
@@ -412,15 +535,11 @@ public final class ClientConnectionManager {
         }
     }
 
-    private void closeChannel(final SocketChannel channel) {
-
-        //System.out.println("CCM: Closing channel = " + channel);
-
+    private void closeChannel(final AbstractSelectableChannel channel) {
         if(channel == null) {
             return;
         }
         try {
-            --CONNECTION_COUNT;
             channel.close();
         }
         catch(final IOException ioe) {
@@ -435,10 +554,11 @@ public final class ClientConnectionManager {
         }
 
         setChannelOptions(serverChannel);
-
-        serverChannel.bind(NetworkUtilities.getSocketAddressFromNetworkInterface("", listenPort), 200);
         serverChannel.configureBlocking(false);
+        serverChannel.bind(NetworkUtilities.getSocketAddressFromNetworkInterface("tun0", listenPort));
         serverChannel.register(selector, SelectionKey.OP_ACCEPT);
+
+        System.out.println("Listening for incoming connection: " + serverChannel.toString());
     }
 
     private void initConnection(final PwpPeer peer) {
@@ -453,16 +573,20 @@ public final class ClientConnectionManager {
                     selector, SelectionKey.OP_CONNECT, peer);
             final ClientSession session = new ClientSession(peerChannel, peer);
             selectionKey.attach(session);
-            indeterminateConnections.put(selectionKey, peer);
+
+            final PeerView peerView = session.getPeerView();
+            indeterminateConnections.put(selectionKey, peerView);
+
+            peerChannel.bind(NetworkUtilities.getSocketAddressFromNetworkInterface("tun0", 0));
 
             final boolean isConnected = peerChannel.connect(
-                    new InetSocketAddress(peer.getPeerIp(), peer.getPeerPort()));
+                    new InetSocketAddress(peer.getIp(), peer.getPort()));
             if(isConnected) {
                 selectionKey.interestOps(SelectionKey.OP_READ);
             }
 
-            //System.out.println("CCM: Connection to a remote peer initiated");
-
+            ++CONNECTION_COUNT;
+            notifyPeerAdded(peerView);
         } catch(final IOException ioe) {
             if(peerChannel != null) {
                 try {
@@ -472,8 +596,8 @@ public final class ClientConnectionManager {
         }
     }
 
-	private void setChannelOptions(final NetworkChannel channel) throws IOException {
-		channel.setOption(StandardSocketOptions.SO_RCVBUF, ClientConnectionManager.SO_RCVBUF_VALUE);
-		channel.setOption(StandardSocketOptions.SO_REUSEADDR, ClientConnectionManager.SO_REUSEADDR);
-	}
+    private void setChannelOptions(final NetworkChannel channel) throws IOException {
+        channel.setOption(StandardSocketOptions.SO_RCVBUF, ClientConnectionManager.SO_RCVBUF_VALUE);
+        //channel.setOption(StandardSocketOptions.SO_REUSEADDR, ClientConnectionManager.SO_REUSEADDR);
+    }
 }

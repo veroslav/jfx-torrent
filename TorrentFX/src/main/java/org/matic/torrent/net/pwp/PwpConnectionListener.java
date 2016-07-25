@@ -1,6 +1,6 @@
 /*
-* This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015 Vedran Matic
+* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
+* Copyright (C) 2015-2016 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -17,31 +17,30 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-
 package org.matic.torrent.net.pwp;
 
-import java.nio.channels.SocketChannel;
+import org.matic.torrent.gui.model.PeerView;
 
 /**
  * An interface for notifying implementing classes when a remote peer is
  * connected/disconnected.
- * 
+ *
  * @author vedran
  *
  */
 public interface PwpConnectionListener {
 
-	/**
-	 * Notify implementing class when a connection to a remote peer has been established
-	 * 
-	 * @param connection Established connection
-	 */
-	void peerConnected(final SocketChannel connection);
-	
-	/**
-	 * Notify implementing class when a connection to a remote peer has been lost
-	 * 
-	 * @param connection Lost connection
-	 */
-	void peerDisconnected(final SocketChannel connection);
+    /**
+     * Notify implementing class when a connection to a remote peer has been established
+     *
+     * @param peerView View to the connected peer
+     */
+    void peerAdded(PeerView peerView);
+
+    /**
+     * Notify implementing class when a connection to a remote peer has been lost
+     *
+     * @param peerView View to the disconnected peer
+     */
+    void peerDisconnected(PeerView peerView);
 }

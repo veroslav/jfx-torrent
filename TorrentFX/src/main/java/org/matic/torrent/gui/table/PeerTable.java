@@ -129,7 +129,7 @@ public final class PeerTable {
                 p -> p.getValue().ipProperty();
                 
         final Callback<CellDataFeatures<PeerView, String>, ObservableValue<String>> clientValueFactory =
-                p -> new ReadOnlyObjectWrapper<>(p.getValue().getClientName());
+                p -> p.getValue().clientIdProperty();
                 
         final Callback<CellDataFeatures<PeerView, String>, ObservableValue<String>> flagsValueFactory =
                 p -> p.getValue().flagsProperty();

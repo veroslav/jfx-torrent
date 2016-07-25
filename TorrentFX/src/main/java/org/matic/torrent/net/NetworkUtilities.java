@@ -29,6 +29,7 @@ import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.security.cert.X509Certificate;
 
 public final class NetworkUtilities {
@@ -99,6 +100,15 @@ public final class NetworkUtilities {
 			return new InetSocketAddress(port);
 		}		
 	}
+
+	public static String resolveIp(final String ip) {
+        try {
+            final InetAddress inetAddress = InetAddress.getByName(ip);
+            return inetAddress.getHostName();
+        } catch (final UnknownHostException uhe) {
+            return ip;
+        }
+    }
 	
 	private static HttpURLConnection initSecureConnection(final URL url) throws IOException, 
 		CertificateManagerInitializationException {

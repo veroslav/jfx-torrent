@@ -19,6 +19,8 @@
 */
 package org.matic.torrent.net.pwp;
 
+import org.matic.torrent.gui.model.PeerView;
+
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
@@ -29,7 +31,7 @@ import java.util.List;
 /**
  * A class that keeps track of remote peer connection's writes and reads.
  * 
- * @author vedran
+ * @author Vedran Matic
  *
  */
 public final class ClientSession {
@@ -58,15 +60,27 @@ public final class ClientSession {
     private final List<PwpMessageRequest> messageWriteQueue = new ArrayList<>();
 
     private final SocketChannel channel;
+    private final PeerView peerView;
     private final PwpPeer peer;
+
+    private long lastMessageTime = System.currentTimeMillis();
 	
 	public ClientSession(final SocketChannel channel, final PwpPeer peer) {
         this.channel = channel;
         this.peer = peer;
+        this.peerView = new PeerView(peer);
 	}
+
+    protected PeerView getPeerView() {
+        return peerView;
+    }
 
     protected PwpPeer getPeer() {
         return peer;
+    }
+
+    protected long getLastMessageTime() {
+        return lastMessageTime;
     }
 
     /**
@@ -239,7 +253,11 @@ public final class ClientSession {
 			return null;
 		}
 		
-		//Parse message completely contained in the buffer		
+		//Parse message completely contained in the buffer
+        if(messageLength < 1) {
+            System.out.println("messageId: " + messageId + ", messageLength = " + messageLength + ", CAUSE: " + peer.toString());
+        }
+
 		final byte[] messagePayload = new byte[messageLength - 1];
 		buffer.get(messagePayload);
 		return new PwpRegularMessage(PwpMessage.fromMessageId(messageId), messagePayload);

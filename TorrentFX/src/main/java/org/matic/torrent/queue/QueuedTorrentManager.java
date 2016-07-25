@@ -33,14 +33,13 @@ import org.matic.torrent.gui.model.TrackerView;
 import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.io.DataPersistenceSupport;
 import org.matic.torrent.net.pwp.ClientConnectionManager;
-import org.matic.torrent.net.pwp.PwpPeer;
+import org.matic.torrent.net.pwp.PwpConnectionListener;
 import org.matic.torrent.preferences.ApplicationPreferences;
 import org.matic.torrent.preferences.TransferProperties;
 import org.matic.torrent.queue.enums.PriorityChange;
 import org.matic.torrent.queue.enums.TorrentStatus;
 import org.matic.torrent.tracking.Tracker;
 import org.matic.torrent.tracking.TrackerManager;
-import org.matic.torrent.tracking.listeners.PeerFoundListener;
 import org.matic.torrent.tracking.methods.dht.DhtSession;
 import org.matic.torrent.tracking.methods.peerdiscovery.LocalPeerDiscoverySession;
 import org.matic.torrent.tracking.methods.pex.PeerExchangeSession;
@@ -59,7 +58,7 @@ import java.util.prefs.PreferenceChangeEvent;
 import java.util.prefs.PreferenceChangeListener;
 import java.util.stream.Collectors;
 
-public final class QueuedTorrentManager implements PreferenceChangeListener, PeerFoundListener {
+public final class QueuedTorrentManager implements PreferenceChangeListener, PwpConnectionListener {
 
     private final ObservableList<QueuedTorrent> queuedTorrents = FXCollections.observableArrayList();
     private final Map<InfoHash, TorrentView> torrentViews = new HashMap<>();
@@ -74,8 +73,8 @@ public final class QueuedTorrentManager implements PreferenceChangeListener, Pee
     private final QueueController queueController = new QueueController(queuedTorrents, maxActiveTorrents,
             maxDownloadingTorrentsLimit, maxUploadingTorrents);
     private final TrackerManager trackerManager;
-    private final ClientConnectionManager connectionManager;
     private final DataPersistenceSupport persistenceSupport;
+    private final ClientConnectionManager connectionManager;
 
     public QueuedTorrentManager(final DataPersistenceSupport persistenceSupport,
                                 final TrackerManager trackerManager,
@@ -86,15 +85,21 @@ public final class QueuedTorrentManager implements PreferenceChangeListener, Pee
     }
 
     @Override
-    public void onPeersFound(final Set<PwpPeer> peers, final InfoHash infoHash, final String source) {
+    public void peerAdded(final PeerView peerView) {
         synchronized(queuedTorrents) {
-            final TorrentView torrentView = torrentViews.get(infoHash);
-
+            final TorrentView torrentView = torrentViews.get(peerView.getInfoHash());
             if(torrentView != null) {
-                connectionManager.connectTo(peers);
+                torrentView.addPeerViews(Arrays.asList(peerView));
+            }
+        }
+    }
 
-                //TODO: Remove below, only for testing (CCM will return a PeerView in onNotifyPeerConnected())
-                torrentView.addPeerViews(peers.stream().map(PeerView::new).collect(Collectors.toSet()));
+    @Override
+    public void peerDisconnected(final PeerView peerView) {
+        synchronized(queuedTorrents) {
+            final TorrentView torrentView = torrentViews.get(peerView.getInfoHash());
+            if(torrentView != null) {
+                torrentView.getPeerViews().remove(peerView);
             }
         }
     }
@@ -188,7 +193,9 @@ public final class QueuedTorrentManager implements PreferenceChangeListener, Pee
 
                 final TorrentView torrentView = new TorrentView(newTorrent);
                 torrentViews.put(torrentView.getInfoHash(), torrentView);
+
                 queuedTorrents.add(newTorrent);
+                connectionManager.accept(torrentView);
 
                 final Set<String> trackerUrls = progress.getTrackerUrls();
                 final Set<TrackableView> trackableViews = new LinkedHashSet<>();
@@ -271,6 +278,7 @@ public final class QueuedTorrentManager implements PreferenceChangeListener, Pee
                 //TODO: Remove statusProperty listener (this) from this torrent
                 queuedTorrents.remove(targetTorrent);
                 trackerManager.removeTorrent(torrentView);
+                connectionManager.reject(torrentView);
                 torrentViews.remove(torrentView.getInfoHash());
                 persistenceSupport.delete(targetTorrent.getInfoHash());
                 return true;

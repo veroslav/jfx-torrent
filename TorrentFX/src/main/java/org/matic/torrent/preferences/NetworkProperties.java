@@ -29,6 +29,4 @@ public final class NetworkProperties {
     public static final String INCOMING_CONNECTION_PORT = "network.incoming.port";
 	public static final String UDP_TRACKER_PORT = "network.udp.tracker.port";
 	public static final String UDP_DHT_PORT = "network.udp.dht.port";
-
-    public static final int DEFAULT_INCOMING_CONNECTION_PORT = 44893;
 }

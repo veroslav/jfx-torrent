@@ -19,33 +19,44 @@
 */
 package org.matic.torrent.net.pwp;
 
+import java.util.Collection;
+
+import org.matic.torrent.gui.model.PeerView;
+import org.matic.torrent.net.pwp.PwpMessage.MessageType;
+
 /**
  * A request for a message to be sent on one of the peers' channels
- * 
- * @author vedran
- * 
+ *
+ * @author Vedran Matic
+ *
  */
 public final class PwpMessageRequest {
-	
-	private final PwpPeer peer;
-	private final byte[] data;
 
-	/**
-	 * Create a new request with data to be sent on the specified connection
-	 * 
-	 * @param data The message data to be sent
-	 * @param peer Peer to which to send the message
-	 */
-	public PwpMessageRequest(final byte[] data, final PwpPeer peer) {
-		this.data = data;
-		this.peer = peer;
-	}
+    private final MessageType messageType;
+    private final Collection<PeerView> peers;
+    private final byte[] data;
 
-	public final PwpPeer getPeer() {
-        return peer;
+    /**
+     * Create a new request with data to be sent on the specified connection
+     *
+     * @param data The message data to be sent
+     * @param peers Peers to which to send the message, or null if the message should be sent to all handshaken peers
+     */
+    public PwpMessageRequest(final MessageType messageType, final byte[] data, final Collection<PeerView> peers) {
+        this.messageType = messageType;
+        this.data = data;
+        this.peers = peers;
     }
 
-	public final byte[] getMessageData() {
-		return data;
-	}	
+    public MessageType getMessageType() {
+        return messageType;
+    }
+
+    public Collection<PeerView> getPeers() {
+        return peers;
+    }
+
+    public byte[] getMessageData() {
+        return data;
+    }
 }

@@ -21,18 +21,18 @@ package org.matic.torrent.gui.model;
 
 import java.util.BitSet;
 
-public final class AvailabilityView {
+public final class BitsView {
 	
-	private final BitSet downloadedPieces;
+	private final BitSet pieces;
 	private final int totalPieces;	
 
-	public AvailabilityView(final int totalPieces) {
+	public BitsView(final int totalPieces) {
 		this.totalPieces = totalPieces;
-		downloadedPieces = new BitSet(this.totalPieces);
+		pieces = new BitSet(this.totalPieces);
 	}
 
 	public int getLastHaveIndex() {
-		return downloadedPieces.length();
+		return pieces.length();
 	}
 
 	public int getTotalPieces() {
@@ -40,14 +40,18 @@ public final class AvailabilityView {
 	}
 
 	public void setHave(final int pieceIndex, final boolean have) {
-		downloadedPieces.set(pieceIndex, have);
+		pieces.set(pieceIndex, have);
 	}
+
+    public void setHave(final BitSet bits) {
+        pieces.or(bits);
+    }
 	
 	public boolean getHave(final int pieceIndex) {
-		return downloadedPieces.get(pieceIndex);
+		return pieces.get(pieceIndex);
 	}
 
 	public int getHavePiecesCount() {
-		return downloadedPieces.cardinality();
+		return pieces.cardinality();
 	}		
 }

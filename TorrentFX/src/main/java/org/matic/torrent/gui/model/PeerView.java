@@ -19,150 +19,168 @@
 */
 package org.matic.torrent.gui.model;
 
-import org.matic.torrent.net.pwp.PwpPeer;
-
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import org.matic.torrent.hash.InfoHash;
+import org.matic.torrent.net.pwp.PwpPeer;
+
+import java.util.BitSet;
 
 public final class PeerView {
-	
-	private final PwpPeer peer;
 
-	private final StringProperty requests = new SimpleStringProperty();
-	private final StringProperty flags = new SimpleStringProperty();
-	private final StringProperty ip = new SimpleStringProperty();
-	
-	private final DoubleProperty percentDone = new SimpleDoubleProperty();
-	private final DoubleProperty downSpeed = new SimpleDoubleProperty();
-	private final DoubleProperty upSpeed = new SimpleDoubleProperty();
-	
-	private final DoubleProperty uploaded = new SimpleDoubleProperty();
-	private final DoubleProperty downloaded = new SimpleDoubleProperty();
-	private final DoubleProperty peerDownload = new SimpleDoubleProperty();
-	
-	private final int port;
-	
-	private final String clientName;
-	
-	public PeerView(final PwpPeer peer) {
-		this.peer = peer;
-		
-		clientName = this.peer.getClientName();
-        this.ip.setValue(peer.getPeerIp());
-		this.port = peer.getPeerPort();
-	}
-	
-	public int getPort() {
-		return port;
-	}
-	
-	public void setRequests(final String requests) {
-		this.requests.set(requests);
-	}
-	
-	public String getRequests() {
-		return requests.get();
-	}
+    private final PwpPeer peer;
 
-	public StringProperty requestsProperty() {
-		return requests;
-	}
-	
-	public void setFlags(final String flags) {
-		this.flags.set(flags);
-	}
-	
-	public String getFlags() {
-		return flags.get();
-	}
+    private final StringProperty clientId = new SimpleStringProperty();
+    private final StringProperty requests = new SimpleStringProperty();
+    private final StringProperty flags = new SimpleStringProperty();
+    private final StringProperty ip = new SimpleStringProperty();
 
-	public StringProperty flagsProperty() {
-		return flags;
-	}
-	
-	public String getIp() {
-		return ip.get();
-	}
+    private final DoubleProperty percentDone = new SimpleDoubleProperty();
+    private final DoubleProperty downSpeed = new SimpleDoubleProperty();
+    private final DoubleProperty upSpeed = new SimpleDoubleProperty();
 
-	public StringProperty ipProperty() {
-		return ip;
-	}
-	
-	public void setPercentDone(final double percentDone) {
-		this.percentDone.set(percentDone);
-	}
-	
-	public double getPercentDone() {
-		return percentDone.get();
-	}
+    private final DoubleProperty uploaded = new SimpleDoubleProperty();
+    private final DoubleProperty downloaded = new SimpleDoubleProperty();
+    private final DoubleProperty peerDownload = new SimpleDoubleProperty();
 
-	public DoubleProperty percentDoneProperty() {
-		return percentDone;
-	}
-	
-	public void setDownSpeed(final double downSpeed) {
-		this.downSpeed.set(downSpeed);
-	}
-	
-	public double getDownSpeed() {
-		return downSpeed.get();
-	}
+    private final BitsView pieces = new BitsView(0);
 
-	public DoubleProperty downSpeedProperty() {
-		return downSpeed;
-	}
-	
-	public void setUpSpeed(final double upSpeed) {
-		this.upSpeed.set(upSpeed);
-	}
-	
-	public double getUpSpeed() {
-		return upSpeed.get();
-	}
+    public PeerView(final PwpPeer peer) {
+        this.peer = peer;
+        ip.setValue(peer.getIp());
+    }
 
-	public DoubleProperty upSpeedProperty() {
-		return upSpeed;
-	}
-	
-	public void setUploaded(final double uploaded) {
-		this.uploaded.set(uploaded);
-	}
+    public void setHave(final int pieceIndex, final boolean have) {
+        pieces.setHave(pieceIndex, have);
+    }
 
-	public double getUploaded() {
-		return uploaded.get();
-	}
-	
-	public DoubleProperty uploadedProperty() {
-		return uploaded;
-	}
-	
-	public void setDownloaded(final double downloaded) {
-		this.downloaded.set(downloaded);
-	}
+    public void setHave(final BitSet bits) {
+        pieces.setHave(bits);
+    }
 
-	public double getDownloaded() {
-		return downloaded.get();
-	}
+    public int getPort() {
+        return peer.getPort();
+    }
 
-	public DoubleProperty downloadedProperty() {
-		return downloaded;
-	}
-	
-	public void setPeerDownload(final double peerDownload) {
-		this.peerDownload.set(peerDownload);
-	}
-	
-	public double getPeerDownload() {
-		return peerDownload.get();
-	}
+    public InfoHash getInfoHash() {
+        return peer.getInfoHash();
+    }
 
-	public DoubleProperty peerDownloadProperty() {
-		return peerDownload;
-	}
+    public void setRequests(final String requests) {
+        this.requests.set(requests);
+    }
 
-	public String getClientName() {
-		return clientName;
-	}
+    public String getRequests() {
+        return requests.get();
+    }
+
+    public StringProperty requestsProperty() {
+        return requests;
+    }
+
+    public void setFlags(final String flags) {
+        this.flags.set(flags);
+    }
+
+    public String getFlags() {
+        return flags.get();
+    }
+
+    public StringProperty flagsProperty() {
+        return flags;
+    }
+
+    public String getIp() {
+        return ip.get();
+    }
+
+    public StringProperty ipProperty() {
+        return ip;
+    }
+
+    public void setPercentDone(final double percentDone) {
+        this.percentDone.set(percentDone);
+    }
+
+    public double getPercentDone() {
+        return percentDone.get();
+    }
+
+    public DoubleProperty percentDoneProperty() {
+        return percentDone;
+    }
+
+    public void setDownSpeed(final double downSpeed) {
+        this.downSpeed.set(downSpeed);
+    }
+
+    public double getDownSpeed() {
+        return downSpeed.get();
+    }
+
+    public DoubleProperty downSpeedProperty() {
+        return downSpeed;
+    }
+
+    public void setUpSpeed(final double upSpeed) {
+        this.upSpeed.set(upSpeed);
+    }
+
+    public double getUpSpeed() {
+        return upSpeed.get();
+    }
+
+    public DoubleProperty upSpeedProperty() {
+        return upSpeed;
+    }
+
+    public void setUploaded(final double uploaded) {
+        this.uploaded.set(uploaded);
+    }
+
+    public double getUploaded() {
+        return uploaded.get();
+    }
+
+    public DoubleProperty uploadedProperty() {
+        return uploaded;
+    }
+
+    public void setDownloaded(final double downloaded) {
+        this.downloaded.set(downloaded);
+    }
+
+    public double getDownloaded() {
+        return downloaded.get();
+    }
+
+    public DoubleProperty downloadedProperty() {
+        return downloaded;
+    }
+
+    public void setPeerDownload(final double peerDownload) {
+        this.peerDownload.set(peerDownload);
+    }
+
+    public double getPeerDownload() {
+        return peerDownload.get();
+    }
+
+    public DoubleProperty peerDownloadProperty() {
+        return peerDownload;
+    }
+
+    public StringProperty clientIdProperty() {
+        return clientId;
+    }
+
+    public void setClientId(final String clientId) {
+        this.clientId.set(clientId);
+    }
+
+    public String getClientName() {
+        return clientId.get();
+    }
 }

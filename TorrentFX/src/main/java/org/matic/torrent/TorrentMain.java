@@ -59,45 +59,47 @@ public final class TorrentMain extends Application {
     private static final UdpConnectionManager DHT_CONNECTION_MANAGER = UdpConnectionManager.UDP_TRACKER_PORT ==
             UdpConnectionManager.DHT_PORT? UDP_TRACKER_CONNECTION_MANAGER : new UdpConnectionManager();
 
-	/**
-	 * Main application execution entry point. Used when the application packaging
-	 * is performed by other means than by JavaFX
-	 * 
-	 * @param args Application parameters
-	 */
-	public static void main(final String[] args) throws Exception {				
-		//Improve font rendering on Linux
-		System.setProperty("prism.lcdtext", "true");
+    /**
+     * Main application execution entry point. Used when the application packaging
+     * is performed by other means than by JavaFX
+     *
+     * @param args Application parameters
+     */
+    public static void main(final String[] args) throws Exception {
+        //Improve font rendering on Linux
+        System.setProperty("prism.lcdtext", "true");
 
-		//Initialize threaded resources
-		TorrentMain.startup();
-		
-		launch(args);
-		
-		//Perform resource cleanup before shutdown
-		TorrentMain.cleanup();
-	}
+        //Initialize threaded resources
+        TorrentMain.startup();
 
-	@Override
-	public void start(final Stage stage) {
+        launch(args);
+
+        //Perform resource cleanup before shutdown
+        TorrentMain.cleanup();
+    }
+
+    @Override
+    public void start(final Stage stage) {
         new ApplicationWindow(stage, TRACKER_MANAGER, TORRENT_MANAGER);
-	}
-	
-	private static void startup() throws IOException {
+    }
+
+    private static void startup() throws IOException {
         CONNECTION_MANAGER = new ClientConnectionManager(ClientProperties.TCP_PORT);
         TORRENT_MANAGER = new QueuedTorrentManager(
                 PERSISTENCE_SUPPORT, TRACKER_MANAGER, CONNECTION_MANAGER);
+        CONNECTION_MANAGER.addConnectionListener(TORRENT_MANAGER);
 
-        TRACKER_MANAGER.addPeerListener(TORRENT_MANAGER);
+        TRACKER_MANAGER.addPeerListener(CONNECTION_MANAGER);
         CONNECTION_MANAGER.launch();
         UDP_TRACKER_CONNECTION_MANAGER.addTrackerListener(TRACKER_MANAGER);
-        UDP_TRACKER_CONNECTION_MANAGER.manage("", UdpConnectionManager.UDP_TRACKER_PORT);
+        UDP_TRACKER_CONNECTION_MANAGER.manage("tun0", UdpConnectionManager.UDP_TRACKER_PORT);
         ApplicationPreferences.addPreferenceChangeListener(TORRENT_MANAGER);
-	}
-	
-	private static void cleanup() {
-		ApplicationPreferences.removePreferenceChangeListener(TORRENT_MANAGER);
-        TRACKER_MANAGER.removePeerListener(TORRENT_MANAGER);
+    }
+
+    private static void cleanup() {
+        ApplicationPreferences.removePreferenceChangeListener(TORRENT_MANAGER);
+        CONNECTION_MANAGER.removeConnectionListener(TORRENT_MANAGER);
+        TRACKER_MANAGER.removePeerListener(CONNECTION_MANAGER);
         UDP_TRACKER_CONNECTION_MANAGER.removeTrackerListener(TRACKER_MANAGER);
 
         if(DHT_CONNECTION_MANAGER != UDP_TRACKER_CONNECTION_MANAGER) {
@@ -110,5 +112,5 @@ public final class TorrentMain extends Application {
         UDP_TRACKER_CONNECTION_MANAGER.unmanage();
         CONNECTION_MANAGER.shutdown();
         TORRENT_MANAGER.storeState();
-	}
+    }
 }

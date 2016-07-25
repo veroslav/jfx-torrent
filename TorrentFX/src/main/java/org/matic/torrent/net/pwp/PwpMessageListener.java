@@ -19,22 +19,24 @@
 */
 package org.matic.torrent.net.pwp;
 
+import org.matic.torrent.gui.model.PeerView;
+
 import java.util.Collection;
 
 /**
  * An interface for notifying implementing classes when a peer-wire-protocol message
  * is available for processing.
- * 
+ *
  * @author vedran
  *
  */
 public interface PwpMessageListener {
 
-	/**
-	 * Notify implementing classes when new messages are available
-	 * 
-	 * @param messages Received messages
-	 * @param peer Remote peer that sent the messages
-	 */
-	void onMessagesReceived(Collection<PwpMessage> messages, PwpPeer peer);
+    /**
+     * Notify implementing classes when new messages are available
+     *
+     * @param messages Received messages
+     * @param peer Remote peer that sent the messages
+     */
+    void onMessagesReceived(Collection<PwpMessage> messages, PeerView peer);
 }

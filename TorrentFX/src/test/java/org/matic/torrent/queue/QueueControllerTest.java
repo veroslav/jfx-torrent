@@ -23,7 +23,6 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import org.junit.After;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.matic.torrent.codec.BinaryEncodedDictionary;
 import org.matic.torrent.codec.BinaryEncodedString;
@@ -962,8 +961,7 @@ public final class QueueControllerTest {
         Assert.assertEquals(QueueStatus.FORCED, forcedTorrent.getQueueStatus());
         Assert.assertEquals(TorrentStatus.ACTIVE, forcedTorrent.getStatus());
     }
-
-    @Ignore
+    
     @Test
     public void testStopForcedTorrentAndRestartNormallyWithinQueueLimits() {
         final QueuedTorrent forcedTorrent = buildTorrent("1", QueueStatus.ACTIVE);

@@ -225,10 +225,10 @@ public final class HttpTrackerTest {
         final ByteArrayOutputStream baos = new ByteArrayOutputStream(6 * peers.size());
         peers.stream().forEach(p -> {
             try {
-                final byte[] ipBytes = InetAddress.getByName(p.getPeerIp()).getAddress();
+                final byte[] ipBytes = InetAddress.getByName(p.getIp()).getAddress();
                 baos.write(ipBytes);
 
-                final byte[] peerPort = UnitConverter.getBytes((short)p.getPeerPort());
+                final byte[] peerPort = UnitConverter.getBytes((short)p.getPort());
                 baos.write(peerPort);
             }
             catch(final Exception e) {
@@ -245,8 +245,8 @@ public final class HttpTrackerTest {
         peers.stream().forEach(p -> {
             final BinaryEncodedDictionary peerMap = new BinaryEncodedDictionary();
             peerMap.put(BinaryEncodingKeys.KEY_IP, new BinaryEncodedString(
-                    p.getPeerIp().getBytes(ClientProperties.STRING_ENCODING_CHARSET)));
-            peerMap.put(BinaryEncodingKeys.KEY_PORT, new BinaryEncodedInteger(p.getPeerPort()));
+                    p.getIp().getBytes(ClientProperties.STRING_ENCODING_CHARSET)));
+            peerMap.put(BinaryEncodingKeys.KEY_PORT, new BinaryEncodedInteger(p.getPort()));
             peerList.add(peerMap);
         });
         return peerList;

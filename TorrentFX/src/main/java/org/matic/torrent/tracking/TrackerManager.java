@@ -115,8 +115,7 @@ public class TrackerManager implements TrackerResponseListener, UdpTrackerRespon
 		final Set<PwpPeer> peers = announceResponse.getPeers();
 
         if(!peers.isEmpty()) {
-            peerListeners.stream().forEach(l -> l.onPeersFound(peers,
-                    trackerSession.getTorrentView().getInfoHash(), trackerSession.getTracker().getUrl()));
+            peerListeners.stream().forEach(l -> l.onPeersFound(peers, trackerSession.getTracker().getUrl()));
 		}
 		final long responseTime = System.currentTimeMillis();
 		trackerSession.getTracker().setLastResponse(responseTime);

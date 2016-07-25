@@ -42,7 +42,7 @@ public final class ClientProperties {
 	public static final String PEER_ID = ClientProperties.generatePeerId();
 	
 	//Port used for incoming peer-2-peer connections
-	public static final int TCP_PORT = 44893;
+	public static final int TCP_PORT = 61668;
 	
 	//UTF-8 encoding is used for all string encoding used in the client
 	public static final Charset STRING_ENCODING_CHARSET = StandardCharsets.UTF_8;
@@ -103,7 +103,7 @@ public final class ClientProperties {
 	
 	private static String generatePeerId() {
 		final StringBuilder peerId = new StringBuilder(CLIENT_IDENTIFIER);
-		peerId.append(generateRandomHexId(12, true));		
+		peerId.append(generateRandomHexId(12, true));
 		return peerId.toString();
 	}	
 }

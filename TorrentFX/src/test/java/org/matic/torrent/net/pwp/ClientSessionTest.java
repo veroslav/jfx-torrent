@@ -21,20 +21,24 @@ package org.matic.torrent.net.pwp;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.net.pwp.PwpMessage.MessageType;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 
 public final class ClientSessionTest {
 
 	private final String protocolName = "BitTorrent protocol";
+    private final PwpPeer peer = new PwpPeer("127.0.0.1", 44444, new InfoHash("1".getBytes(StandardCharsets.UTF_8)));
+    private final byte[] peerId = {'-', 'D', 'E', '5', '4', '3', '2', '-', 2, 1, 0, 9, 8, 7, 6, 5, 4, 3, 2, 1};
 	
 	//Parse empty buffer
 	@Test
 	public void testEmptyBuffer() throws Exception {
-		final ClientSession unitUnderTest = new ClientSession(null, null);
+		final ClientSession unitUnderTest = new ClientSession(null, peer);
 		final ByteBuffer buffer = ByteBuffer.allocateDirect(0);
 		
 		final List<PwpMessage> messages = unitUnderTest.read(buffer);
@@ -47,7 +51,7 @@ public final class ClientSessionTest {
 	//Parse empty buffer with non-zero capacity
 	@Test
 	public void testEmptyBufferWithNonZeroCapacity() throws Exception {
-		final ClientSession unitUnderTest = new ClientSession(null, null);
+		final ClientSession unitUnderTest = new ClientSession(null, peer);
 		final ByteBuffer buffer = ByteBuffer.allocateDirect(10);
 		
 		final List<PwpMessage> messages = unitUnderTest.read(buffer);
@@ -60,7 +64,7 @@ public final class ClientSessionTest {
 	//Parse invalid regular message of correct length
 	@Test
 	public void testInvalidRegularMessage() throws Exception {
-		final ClientSession unitUnderTest = new ClientSession(null, null);
+		final ClientSession unitUnderTest = new ClientSession(null, peer);
 		final ByteBuffer buffer = ByteBuffer.allocateDirect(5);
 		
 		final byte[] message = {0, 0, 0, 1, 12};		
@@ -76,7 +80,7 @@ public final class ClientSessionTest {
 	//Parse fully contained keep_alive message, buffer empty afterwards
 	@Test
 	public void testKeepAliveFullyContainedEmptyBuffer() throws Exception {
-		final ClientSession unitUnderTest = new ClientSession(null, null);
+		final ClientSession unitUnderTest = new ClientSession(null, peer);
 		final ByteBuffer buffer = ByteBuffer.allocateDirect(4);
 		
 		final byte[] message = {0, 0, 0, 0};		
@@ -92,7 +96,7 @@ public final class ClientSessionTest {
 	//Parse fully contained keep_alive message, buffer contains more data afterwards
 	@Test
 	public void testKeepAliveFullyContainedNonEmptyBuffer() throws Exception {
-		final ClientSession unitUnderTest = new ClientSession(null, null);
+		final ClientSession unitUnderTest = new ClientSession(null, peer);
 		final ByteBuffer buffer = ByteBuffer.allocateDirect(10);
 		
 		final byte[] message = {0, 0, 0, 0, 0, 0};		
@@ -108,7 +112,7 @@ public final class ClientSessionTest {
 	//Parse partially contained keep_alive message, spread over two buffer reads
 	@Test
 	public void testKeepAlivePartiallyContainedTwoBufferReads() throws Exception {
-		final ClientSession unitUnderTest = new ClientSession(null, null);
+		final ClientSession unitUnderTest = new ClientSession(null, peer);
 		final ByteBuffer buffer = ByteBuffer.allocateDirect(10);
 		
 		buffer.put(new byte[] {0});		
@@ -130,7 +134,7 @@ public final class ClientSessionTest {
 	//Parse partially contained keep_alive message, spread over three buffer reads
 	@Test
 	public void testKeepAlivePartiallyContainedThreeBufferReads() throws Exception {
-		final ClientSession unitUnderTest = new ClientSession(null, null);
+		final ClientSession unitUnderTest = new ClientSession(null, peer);
 		final ByteBuffer buffer = ByteBuffer.allocateDirect(10);
 		
 		buffer.put(new byte[] {0, 0});		
@@ -159,7 +163,7 @@ public final class ClientSessionTest {
 	//Parse fully contained regular message, buffer empty afterwards
 	@Test
 	public void testRegularMessageFullyContainedEmptyBuffer() throws Exception {
-		final ClientSession unitUnderTest = new ClientSession(null, null);
+		final ClientSession unitUnderTest = new ClientSession(null, peer);
 		final ByteBuffer buffer = ByteBuffer.allocateDirect(9);
 		
 		//HAVE_MESSAGE
@@ -180,7 +184,7 @@ public final class ClientSessionTest {
 	//Parse fully contained regular message, buffer contains more data afterwards
 	@Test
 	public void testRegularMessageFullyContainedNonEmptyBuffer() throws Exception {
-		final ClientSession unitUnderTest = new ClientSession(null, null);
+		final ClientSession unitUnderTest = new ClientSession(null, peer);
 		final ByteBuffer buffer = ByteBuffer.allocateDirect(13);
 		
 		//HAVE_MESSAGE
@@ -201,7 +205,7 @@ public final class ClientSessionTest {
 	//Parse partially contained regular message, spread over two buffer reads, backupBuffer used
 	@Test
 	public void testRegularMessagePartiallyContainedTwoReadsWithBackupBuffer() throws Exception {
-		final ClientSession unitUnderTest = new ClientSession(null, null);
+		final ClientSession unitUnderTest = new ClientSession(null, peer);
 		final ByteBuffer buffer = ByteBuffer.allocateDirect(9);
 		final byte[] bytesToBackup = new byte[] {0, 0, 0, 5, 4};
 		
@@ -238,7 +242,7 @@ public final class ClientSessionTest {
 	//Parse partially contained regular message, spread over three buffer reads, backupBuffer used
 	@Test
 	public void testRegularMessagePartiallyContainedThreeReadsWithBackupBuffer() throws Exception {
-		final ClientSession unitUnderTest = new ClientSession(null, null);
+		final ClientSession unitUnderTest = new ClientSession(null, peer);
 		final ByteBuffer buffer = ByteBuffer.allocateDirect(20);
 		
 		//REQUEST message length and id
@@ -284,14 +288,12 @@ public final class ClientSessionTest {
 	//Parse fully contained handshake message, empty buffer afterwards
 	@Test
 	public void testHandshakeFullyContainedEmptyBuffer() throws Exception {
-		final ClientSession unitUnderTest = new ClientSession(null, null);
+		final ClientSession unitUnderTest = new ClientSession(null, peer);
 		final ByteBuffer buffer = ByteBuffer.allocateDirect(100);		
 		
 		final byte[] reservedBytes = new byte[]{0, 1, 0, 1, 0, 1, 0, 1};						
 		final byte[] infoHash = {1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6,
 				7, 8, 9, 0};
-		final byte[] peerId = {0, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 9, 8, 7, 6, 5,
-				4, 3, 2, 1};
 		
 		buffer.put((byte)protocolName.length());
 		buffer.put(protocolName.getBytes("UTF-8"));
@@ -307,7 +309,8 @@ public final class ClientSessionTest {
 		final PwpHandshakeMessage actualMessage = (PwpHandshakeMessage)messages.get(0);
 		
 		//Validate message contents
-		Assert.assertTrue(Arrays.equals(reservedBytes, actualMessage.getReservedBytes()));
+		Assert.assertArrayEquals(infoHash, actualMessage.getInfoHash().getBytes());
+        Assert.assertEquals("Deluge 5.4.3.2", actualMessage.getPeerId());
 		
 		Assert.assertNull(unitUnderTest.backupReaderBuffer);
 		Assert.assertTrue(verifyBufferState(buffer, 0, 100, 100));
@@ -316,14 +319,12 @@ public final class ClientSessionTest {
 	//Parse fully contained handshake message, buffer contains more data afterwards
 	@Test
 	public void testHandshakeFullyContainedNonEmptyBuffer() throws Exception {
-		final ClientSession unitUnderTest = new ClientSession(null, null);
+		final ClientSession unitUnderTest = new ClientSession(null, peer);
 		final ByteBuffer buffer = ByteBuffer.allocateDirect(100);		
 		
 		final byte[] reservedBytes = new byte[]{0, 1, 0, 1, 0, 1, 0, 1};						
 		final byte[] infoHash = {1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6,
 				7, 8, 9, 0};
-		final byte[] peerId = {0, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 9, 8, 7, 6, 5,
-				4, 3, 2, 1};
 		final byte[] leftBytes = {1, 1, 1};
 		
 		buffer.put((byte)protocolName.length());
@@ -341,9 +342,8 @@ public final class ClientSessionTest {
 		final PwpHandshakeMessage actualMessage = (PwpHandshakeMessage)messages.get(0);
 		
 		//Validate message contents
-		Assert.assertTrue(Arrays.equals(reservedBytes, actualMessage.getReservedBytes()));
-		Assert.assertTrue(Arrays.equals(infoHash, actualMessage.getInfoHash()));
-		Assert.assertTrue(Arrays.equals(peerId, actualMessage.getPeerId()));
+		Assert.assertTrue(Arrays.equals(infoHash, actualMessage.getInfoHash().getBytes()));
+		Assert.assertEquals("Deluge 5.4.3.2", actualMessage.getPeerId());
 		
 		Assert.assertNull(unitUnderTest.backupReaderBuffer);
 		Assert.assertTrue(verifyBufferState(buffer, 3, 100, 97));
@@ -352,15 +352,13 @@ public final class ClientSessionTest {
 	//Parse partially contained handshake message, spread over two buffer reads, no payload
 	@Test
 	public void testHandshakePartiallyContainedTwoReadsNoPayload() throws Exception {
-		final ClientSession unitUnderTest = new ClientSession(null, null);
+		final ClientSession unitUnderTest = new ClientSession(null, peer);
 		final ByteBuffer buffer = ByteBuffer.allocateDirect(100);
 		
 		final byte[] reservedBytes = new byte[]{0, 1, 0, 1, 0, 1, 0, 1};						
 		final byte[] infoHash = {1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6,
 				7, 8, 9, 0};
-		final byte[] peerId = {0, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 9, 8, 7, 6, 5,
-				4, 3, 2, 1};
-		
+
 		buffer.put((byte)protocolName.length());
 		buffer.put(protocolName.getBytes("UTF-8"));
 		
@@ -393,9 +391,8 @@ public final class ClientSessionTest {
 		final PwpHandshakeMessage actualMessage = (PwpHandshakeMessage)messages.get(0);
 		
 		//Validate message contents
-		Assert.assertTrue(Arrays.equals(reservedBytes, actualMessage.getReservedBytes()));
-		Assert.assertTrue(Arrays.equals(infoHash, actualMessage.getInfoHash()));
-		Assert.assertTrue(Arrays.equals(peerId, actualMessage.getPeerId()));
+		Assert.assertTrue(Arrays.equals(infoHash, actualMessage.getInfoHash().getBytes()));
+		Assert.assertEquals("Deluge 5.4.3.2", actualMessage.getPeerId());
 		
 		Assert.assertNull(unitUnderTest.backupReaderBuffer);
 		Assert.assertTrue(verifyBufferState(buffer, 0, 100, 100));
@@ -404,15 +401,13 @@ public final class ClientSessionTest {
 	//Parse partially contained handshake message, spread over two buffer reads, partial payload
 	@Test
 	public void testHandshakePartiallyContainedTwoReadsPartialPayload() throws Exception {
-		final ClientSession unitUnderTest = new ClientSession(null, null);
+		final ClientSession unitUnderTest = new ClientSession(null, peer);
 		final ByteBuffer buffer = ByteBuffer.allocateDirect(100);
 		
 		final byte[] reservedBytes = new byte[]{0, 1, 0, 1, 0, 1, 0, 1};						
 		final byte[] infoHash = {1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6,
 				7, 8, 9, 0};
-		final byte[] peerId = {0, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 9, 8, 7, 6, 5,
-				4, 3, 2, 1};
-		
+
 		buffer.put((byte)protocolName.length());
 		buffer.put(protocolName.getBytes("UTF-8"));
 		buffer.put(reservedBytes);
@@ -452,9 +447,8 @@ public final class ClientSessionTest {
 		final PwpHandshakeMessage actualMessage = (PwpHandshakeMessage)messages.get(0);
 
 		//Validate message contents
-		Assert.assertTrue(Arrays.equals(reservedBytes, actualMessage.getReservedBytes()));
-		Assert.assertTrue(Arrays.equals(infoHash, actualMessage.getInfoHash()));
-		Assert.assertTrue(Arrays.equals(peerId, actualMessage.getPeerId()));
+		Assert.assertTrue(Arrays.equals(infoHash, actualMessage.getInfoHash().getBytes()));
+		Assert.assertEquals("Deluge 5.4.3.2", actualMessage.getPeerId());
 		
 		Assert.assertNull(unitUnderTest.backupReaderBuffer);
 		Assert.assertTrue(verifyBufferState(buffer, 0, 100, 100));
@@ -463,15 +457,13 @@ public final class ClientSessionTest {
 	//Parse fully contained handshake + bitfield + have, buffer empty afterwards
 	@Test
 	public void testHandshakeBitfieldHaveFullyContainedEmptyBuffer() throws Exception {
-		final ClientSession unitUnderTest = new ClientSession(null, null);
+		final ClientSession unitUnderTest = new ClientSession(null, peer);
 		final ByteBuffer buffer = ByteBuffer.allocateDirect(120);
 		
 		final byte[] reservedBytes = new byte[]{0, 1, 0, 1, 0, 1, 0, 1};						
 		final byte[] infoHash = {1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6,
 				7, 8, 9, 0};
-		final byte[] peerId = {0, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 9, 8, 7, 6, 5,
-				4, 3, 2, 1};
-		
+
 		//Put HANDSHAKE message
 		buffer.put((byte)protocolName.length());
 		buffer.put(protocolName.getBytes("UTF-8"));
@@ -502,9 +494,8 @@ public final class ClientSessionTest {
 		final PwpHandshakeMessage actualHandshakeMessage = (PwpHandshakeMessage)messages.get(0);
 		
 		//Validate HANDSHAKE message contents
-		Assert.assertTrue(Arrays.equals(reservedBytes, actualHandshakeMessage.getReservedBytes()));
-		Assert.assertTrue(Arrays.equals(infoHash, actualHandshakeMessage.getInfoHash()));
-		Assert.assertTrue(Arrays.equals(peerId, actualHandshakeMessage.getPeerId()));
+		Assert.assertTrue(Arrays.equals(infoHash, actualHandshakeMessage.getInfoHash().getBytes()));
+		Assert.assertEquals("Deluge 5.4.3.2", actualHandshakeMessage.getPeerId());
 		
 		final PwpRegularMessage actualBitfieldMessage = (PwpRegularMessage)messages.get(1);
 		
@@ -520,15 +511,13 @@ public final class ClientSessionTest {
 	//Parse fully contained handshake + bitfield + have, as three separate reads
 	@Test
 	public void testHandshakeBitfieldHavePartiallyContainedThreeReads() throws Exception {
-		final ClientSession unitUnderTest = new ClientSession(null, null);
+		final ClientSession unitUnderTest = new ClientSession(null, peer);
 		final ByteBuffer buffer = ByteBuffer.allocateDirect(120);
 		
 		final byte[] reservedBytes = new byte[]{0, 1, 0, 1, 0, 1, 0, 1};						
 		final byte[] infoHash = {1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6,
 				7, 8, 9, 0};
-		final byte[] peerId = {0, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 9, 8, 7, 6, 5,
-				4, 3, 2, 1};
-		
+
 		//Put HANDSHAKE message
 		buffer.put((byte)protocolName.length());
 		buffer.put(protocolName.getBytes("UTF-8"));
@@ -547,9 +536,8 @@ public final class ClientSessionTest {
 		final PwpHandshakeMessage actualHandshakeMessage = (PwpHandshakeMessage)messages.get(0);
 		
 		//Validate HANDSHAKE message contents
-		Assert.assertTrue(Arrays.equals(reservedBytes, actualHandshakeMessage.getReservedBytes()));
-		Assert.assertTrue(Arrays.equals(infoHash, actualHandshakeMessage.getInfoHash()));
-		Assert.assertTrue(Arrays.equals(peerId, actualHandshakeMessage.getPeerId()));
+		Assert.assertTrue(Arrays.equals(infoHash, actualHandshakeMessage.getInfoHash().getBytes()));
+		Assert.assertEquals("Deluge 5.4.3.2", actualHandshakeMessage.getPeerId());
 		
 		//Put BITFIELD message (length(bitfield) == 32) 
 		buffer.putInt(9);
@@ -593,7 +581,7 @@ public final class ClientSessionTest {
 	//Parse valid message(s), mixed with invalid message(s)
 	@Test
 	public void testMixedValidAndInvalidMessages() throws Exception {
-		final ClientSession unitUnderTest = new ClientSession(null, null);
+		final ClientSession unitUnderTest = new ClientSession(null, peer);
 		final ByteBuffer buffer = ByteBuffer.allocateDirect(50);
 		
 		//Put PIECE message (length(block)) == 4 bytes
@@ -643,7 +631,7 @@ public final class ClientSessionTest {
 	//Parse fully contained regular messages, last 4 bytes consist of keep_alive message, buffer empty afterwards
 	@Test
 	public void testRegularMessagesFullyContainedLastKeepAliveEmptyBuffer() throws Exception {
-		final ClientSession unitUnderTest = new ClientSession(null, null);
+		final ClientSession unitUnderTest = new ClientSession(null, peer);
 		final ByteBuffer buffer = ByteBuffer.allocateDirect(9);
 		
 		//Put CHOKE message
@@ -666,7 +654,7 @@ public final class ClientSessionTest {
 	//Parse partially contained bitfield message spread over two buffer reads
 	@Test
 	public void testBitfieldPartiallyContainedTwoReads() throws Exception {
-		final ClientSession unitUnderTest = new ClientSession(null, null);
+		final ClientSession unitUnderTest = new ClientSession(null, peer);
 		final ByteBuffer buffer = ByteBuffer.allocateDirect(20);
 		
 		//Put BITFIELD message (length(bitfield) == 32) 
@@ -708,7 +696,7 @@ public final class ClientSessionTest {
 	//Parse partially contained bitfield message spread over three buffer reads
 	@Test
 	public void testBitfieldPartiallyContainedThreeReads() throws Exception {
-		final ClientSession unitUnderTest = new ClientSession(null, null);
+		final ClientSession unitUnderTest = new ClientSession(null, peer);
 		final ByteBuffer buffer = ByteBuffer.allocateDirect(20);
 		
 		//Put partial BITFIELD message (length(bitfield) == 32) 

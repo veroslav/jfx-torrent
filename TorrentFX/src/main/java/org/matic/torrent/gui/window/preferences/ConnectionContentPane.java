@@ -90,7 +90,7 @@ public final class ConnectionContentPane extends CategoryContentPane {
 	
 	private void applyValues() {
 		inConnectionPortField.setText(String.valueOf(ApplicationPreferences.getProperty(
-				NetworkProperties.INCOMING_CONNECTION_PORT, NetworkProperties.DEFAULT_INCOMING_CONNECTION_PORT)));
+				NetworkProperties.INCOMING_CONNECTION_PORT, ClientProperties.TCP_PORT)));
 		final boolean randomizePortOnStart = ApplicationPreferences.getProperty(
 				NetworkProperties.RANDOMIZE_CONNECTION_PORT, false);
 		randomPortEachStartCheck.setSelected(randomizePortOnStart);

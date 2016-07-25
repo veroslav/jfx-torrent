@@ -23,7 +23,7 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
-import org.matic.torrent.gui.model.AvailabilityView;
+import org.matic.torrent.gui.model.BitsView;
 
 /**
  * A bar that graphically displays a torrent's availability
@@ -36,7 +36,7 @@ public final class AvailabilityBar extends Canvas {
 	private static final Paint NOT_AVAILABLE_COLOR = Color.rgb(141, 28, 16);
 	private static final Paint AVAILABLE_COLOR = Color.rgb(171, 214, 121);
 	
-	private AvailabilityView availability = null;
+	private BitsView availability = null;
 	
 	public AvailabilityBar() {
 		this.widthProperty().addListener(obs -> update(availability));
@@ -58,7 +58,7 @@ public final class AvailabilityBar extends Canvas {
 		return true;
 	}
 
-	public void update(final AvailabilityView availability) {	
+	public void update(final BitsView availability) {
 		this.availability = availability;
 		final GraphicsContext context = this.getGraphicsContext2D();
 		

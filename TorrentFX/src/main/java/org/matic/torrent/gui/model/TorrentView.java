@@ -38,7 +38,7 @@ import java.util.Set;
 
 public final class TorrentView {
 
-    private final AvailabilityView availabilityView;
+    private final BitsView availabilityView;
     private final QueuedTorrent queuedTorrent;
 
     private final LongProperty selectedLength;
@@ -79,7 +79,7 @@ public final class TorrentView {
 		this.selectedLength = new SimpleLongProperty(0);
         this.queuedTorrent = queuedTorrent;
 
-        availabilityView = new AvailabilityView(this.queuedTorrent.getMetaData().getTotalPieces());
+        availabilityView = new BitsView(this.queuedTorrent.getMetaData().getTotalPieces());
 	}
 
     public boolean addPeerViews(final Collection<PeerView> peerViews) {
@@ -138,7 +138,7 @@ public final class TorrentView {
         return queuedTorrent.getProgress().getName();
     }
 
-    public AvailabilityView getAvailabilityView() {
+    public BitsView getAvailabilityView() {
         return availabilityView;
     }
 

@@ -23,14 +23,14 @@ package org.matic.torrent.gui.custom;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
-import org.matic.torrent.gui.model.AvailabilityView;
+import org.matic.torrent.gui.model.BitsView;
 
 public final class DownloadProgressBar extends Canvas {
 	
 	private static final Color DOWNLOADED_PIECE_COLOR = Color.rgb(171, 214, 121);
 	private static final Color PROGRESSBAR_COLOR = Color.rgb(80, 80, 255);
 	
-	private AvailabilityView availabilityView = null;
+	private BitsView availabilityView = null;
 
 	public DownloadProgressBar() {
 		this.widthProperty().addListener(obs -> update(availabilityView));
@@ -52,7 +52,7 @@ public final class DownloadProgressBar extends Canvas {
 		return true;
 	}
 	
-	public void update(final AvailabilityView availabilityView) {		
+	public void update(final BitsView availabilityView) {
 		this.availabilityView = availabilityView;
 		final GraphicsContext context = this.getGraphicsContext2D();		
 		
