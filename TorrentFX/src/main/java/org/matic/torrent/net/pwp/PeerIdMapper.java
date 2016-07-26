@@ -35,14 +35,18 @@ public final class PeerIdMapper {
     private static final Map<String, String> AZUREUS_STYLE_MAPPINGS = new HashMap<>();
 
     static {
+        AZUREUS_STYLE_MAPPINGS.put("-7T", "aTorrent for Android");
+        AZUREUS_STYLE_MAPPINGS.put("-AB", "AnyEvent::BitTorrent");
         AZUREUS_STYLE_MAPPINGS.put("-AG", "Ares");
         AZUREUS_STYLE_MAPPINGS.put("-A~", "Ares");
         AZUREUS_STYLE_MAPPINGS.put("-AR", "Arctic");
         AZUREUS_STYLE_MAPPINGS.put("-AT", "Artemis");
+        AZUREUS_STYLE_MAPPINGS.put("-AV", "Avicora");
         AZUREUS_STYLE_MAPPINGS.put("-AX", "BitPump");
         AZUREUS_STYLE_MAPPINGS.put("-AZ", "Azureus");
         AZUREUS_STYLE_MAPPINGS.put("-BB", "BitBuddy");
         AZUREUS_STYLE_MAPPINGS.put("-BC", "BitComet");
+        AZUREUS_STYLE_MAPPINGS.put("-BE", "Baretorrent");
         AZUREUS_STYLE_MAPPINGS.put("-BF", "Bitflu");
         AZUREUS_STYLE_MAPPINGS.put("-BG", "BTG");
         AZUREUS_STYLE_MAPPINGS.put("-BL", "BitBlinder");
@@ -59,12 +63,17 @@ public final class PeerIdMapper {
         AZUREUS_STYLE_MAPPINGS.put("-EB", "EBit");
         AZUREUS_STYLE_MAPPINGS.put("-ES", "electric sheep");
         AZUREUS_STYLE_MAPPINGS.put("-FC", "FileCroc");
+        AZUREUS_STYLE_MAPPINGS.put("-FD", "Free Download Manager");
         AZUREUS_STYLE_MAPPINGS.put("-FT", "FoxTorrent");
+        AZUREUS_STYLE_MAPPINGS.put("-FX", "Freebox BitTorrent");
         AZUREUS_STYLE_MAPPINGS.put("-GS", "GSTorrent");
         AZUREUS_STYLE_MAPPINGS.put("-HK", "Hekate");
         AZUREUS_STYLE_MAPPINGS.put("-HL", "Halite");
         AZUREUS_STYLE_MAPPINGS.put("-HM", "hMule");
         AZUREUS_STYLE_MAPPINGS.put("-HN", "Hydranode");
+        AZUREUS_STYLE_MAPPINGS.put("-IL", "iLivid");
+        AZUREUS_STYLE_MAPPINGS.put("-JS", "Justseed.it client");
+        AZUREUS_STYLE_MAPPINGS.put("-JT", "JavaTorrent");
         AZUREUS_STYLE_MAPPINGS.put("-JX", "Trabos");
         AZUREUS_STYLE_MAPPINGS.put("-KG", "KGet");
         AZUREUS_STYLE_MAPPINGS.put("-KT", "KTorrent");
@@ -79,11 +88,13 @@ public final class PeerIdMapper {
         AZUREUS_STYLE_MAPPINGS.put("-MP", "MooPolice");
         AZUREUS_STYLE_MAPPINGS.put("-MR", "Miro");
         AZUREUS_STYLE_MAPPINGS.put("-MT", "MoonlightTorrent");
+        AZUREUS_STYLE_MAPPINGS.put("-NB", "Net::BitTorrent");
         AZUREUS_STYLE_MAPPINGS.put("-NX", "Net Transport");
         AZUREUS_STYLE_MAPPINGS.put("-OS", "OneSwarm");
         AZUREUS_STYLE_MAPPINGS.put("-OT", "OmegaTorrent");
         AZUREUS_STYLE_MAPPINGS.put("-PB", "Protocol::BitTorrent");
         AZUREUS_STYLE_MAPPINGS.put("-PD", "Pando");
+        AZUREUS_STYLE_MAPPINGS.put("-PI", "PicoTorrent");
         AZUREUS_STYLE_MAPPINGS.put("-PT", "PHPTracker");
         AZUREUS_STYLE_MAPPINGS.put("-qB", "qBittorrent");
         AZUREUS_STYLE_MAPPINGS.put("-QD", "QQDownload");
@@ -94,11 +105,14 @@ public final class PeerIdMapper {
         AZUREUS_STYLE_MAPPINGS.put("-SB", "~Swiftbit");
         AZUREUS_STYLE_MAPPINGS.put("-SD", "Thunder");
         AZUREUS_STYLE_MAPPINGS.put("-SM", "SoMud");
+        AZUREUS_STYLE_MAPPINGS.put("-SP", "BitSpirit");
         AZUREUS_STYLE_MAPPINGS.put("-SS", "SwarmScope");
         AZUREUS_STYLE_MAPPINGS.put("-ST", "SymTorrent");
         AZUREUS_STYLE_MAPPINGS.put("-st", "sharktorrent");
         AZUREUS_STYLE_MAPPINGS.put("-SZ", "Shareaza");
+        AZUREUS_STYLE_MAPPINGS.put("-TB", "Torch");
         AZUREUS_STYLE_MAPPINGS.put("-TE", "terasaur Seed Bank");
+        AZUREUS_STYLE_MAPPINGS.put("-TL", "Tribler");
         AZUREUS_STYLE_MAPPINGS.put("-TN", "TorrentDotNet");
         AZUREUS_STYLE_MAPPINGS.put("-TR", "Transmission");
         AZUREUS_STYLE_MAPPINGS.put("-TS", "Torrentstorm");
@@ -107,8 +121,11 @@ public final class PeerIdMapper {
         AZUREUS_STYLE_MAPPINGS.put("-UT", "\u03BCTorrent");
         AZUREUS_STYLE_MAPPINGS.put("-UM", "\u03BCTorrent for Mac");
         AZUREUS_STYLE_MAPPINGS.put("-VG", "Vagaa");
+        AZUREUS_STYLE_MAPPINGS.put("-WD", "WebTorrent Desktop");
         AZUREUS_STYLE_MAPPINGS.put("-WT", "BitLet");
+        AZUREUS_STYLE_MAPPINGS.put("-WW", "WebTorrent");
         AZUREUS_STYLE_MAPPINGS.put("-WY", "FireTorrent");
+        AZUREUS_STYLE_MAPPINGS.put("-XF", "Xfplay");
         AZUREUS_STYLE_MAPPINGS.put("-XL", "Xunlei");
         AZUREUS_STYLE_MAPPINGS.put("-XS", "XSwifter");
         AZUREUS_STYLE_MAPPINGS.put("-XT", "XanTorrent");
@@ -154,6 +171,7 @@ public final class PeerIdMapper {
         return null;
     }
 
+    //Mainline M7-4-3--XXXXX...
     private static String findShadowMappingKey() {
 
         return null;

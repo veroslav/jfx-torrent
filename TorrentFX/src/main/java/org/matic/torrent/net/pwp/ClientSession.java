@@ -24,8 +24,10 @@ import org.matic.torrent.gui.model.PeerView;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -47,7 +49,6 @@ public final class ClientSession {
 	private static final int INFO_HASH_LENGTH = 20;
 	private static final int PEER_ID_LENGTH = 20;
 
-    //TODO: Initialize buffer immediately and use its position instead of null check
 	//Leftover data, if any, left from a previous read on this session's connection
 	protected ByteBuffer backupReaderBuffer = null;
 
@@ -64,7 +65,7 @@ public final class ClientSession {
     private final PwpPeer peer;
 
     private long lastMessageTime = System.currentTimeMillis();
-	
+
 	public ClientSession(final SocketChannel channel, final PwpPeer peer) {
         this.channel = channel;
         this.peer = peer;
@@ -120,11 +121,12 @@ public final class ClientSession {
 	 *
 	 * @return A list of parsed peer-wire-protocol messages
 	 * @throws IOException If a string contained by a message can't be properly decoded or the connection is closed
+     * @throws InvalidPeerMessageException if the message is of unknown format
 	 */
-	protected List<PwpMessage> read() throws IOException {
+	protected List<PwpMessage> read() throws IOException, InvalidPeerMessageException {
 		final List<PwpMessage> messages = new ArrayList<>();
 		
-		int bytesRead = -1;
+		int bytesRead;
 		while((bytesRead = channel.read(inputBuffer)) > 0) {
 			messages.addAll(read(inputBuffer));
 		}
@@ -144,7 +146,7 @@ public final class ClientSession {
 	 * @return A list of parsed peer-wire-protocol messages
 	 * @throws UnsupportedEncodingException If a string contained by a message can't be properly decoded
 	 */
-	protected List<PwpMessage> read(final ByteBuffer buffer) throws UnsupportedEncodingException {
+	protected List<PwpMessage> read(final ByteBuffer buffer) throws IOException, InvalidPeerMessageException {
 		final List<PwpMessage> messages = new ArrayList<>();
 		
 		buffer.flip();
@@ -161,20 +163,18 @@ public final class ClientSession {
 			}
 			
 			backupReaderBuffer.flip();
-
 			messages.addAll(parse(backupReaderBuffer));
-			backupReaderBuffer = null;
+            backupReaderBuffer = null;
 			
 			buffer.compact();
 			buffer.flip();
 		}
 				
 		messages.addAll(parse(buffer));
-		
 		return messages;
 	}
 	
-	private List<PwpMessage> parse(final ByteBuffer buffer) throws UnsupportedEncodingException {
+	private List<PwpMessage> parse(final ByteBuffer buffer) throws IOException, InvalidPeerMessageException {
 		final List<PwpMessage> messages = new ArrayList<>();							
 		
 		while(buffer.remaining() >= ClientSession.NO_PAYLOAD_MESSAGE_LENGTH) {
@@ -189,18 +189,13 @@ public final class ClientSession {
 				messages.add(handshakeMessage);
 				continue;
 			}
-			
-			try {
-				final PwpMessage regularMessage = parseRegularMessage(buffer);				
-				if(regularMessage == null) {
-					buffer.clear();
-					break;					
-				}			
-				messages.add(regularMessage);
-			} catch (final InvalidPeerMessageException ipme) {
-				//TODO: Log IP:PORT of the peer sending the invalid message + notify listeners
-				System.err.println("Invalid message received from peer: " + ipme.getMessage());
-			}						
+
+            final PwpMessage regularMessage = parseRegularMessage(buffer);
+            if(regularMessage == null) {
+                buffer.clear();
+                break;
+            }
+            messages.add(regularMessage);
 		}
 		
 		if(backupReaderBuffer != null) {
@@ -230,12 +225,23 @@ public final class ClientSession {
 			return new PwpRegularMessage(PwpMessage.MessageType.KEEP_ALIVE, null);
 		}
 		
-		final byte messageId = buffer.get();		
+		final byte messageId = buffer.get();
+
+        //If the message is not BITFIELD, nor PIECE and is too long, it might be obfuscated
+        if(messageId != 5 && messageId != 7 && messageLength > 13) {
+            throw new InvalidPeerMessageException("Possibly obfuscated message data from: " + peer);
+        }
+
 		return parseMessageWithId(buffer, messageLength, messageId);
 	}
 	
 	private PwpMessage parseMessageWithId(final ByteBuffer buffer, final int messageLength, final byte messageId) 
 			throws InvalidPeerMessageException {
+        if(messageLength < 1) {
+            throw new InvalidPeerMessageException("Invalid message: messageId: " + messageId +
+                    ", messageLength = " + messageLength + ", CAUSE: " + peer.toString());
+        }
+
 		//Check whether it is a message without payload
 		if(messageId >= 0 && messageId < 4) {			
 			return new PwpRegularMessage(PwpMessage.fromMessageId(messageId), null);
@@ -245,7 +251,7 @@ public final class ClientSession {
 		if(buffer.remaining() < messageLength - 1) {
 			//Backup remaining buffer data for the partial message
 			final int backupBufferCapacity = messageLength + ClientSession.MESSAGE_LENGTH_PREFIX_LENGTH;
-			backupReaderBuffer = fromExistingBuffer(buffer, backupBufferCapacity);
+			backupReaderBuffer = fromExistingBuffer(backupBufferCapacity);
 			
 			backupReaderBuffer.putInt(messageLength);
 			backupReaderBuffer.put(messageId);
@@ -254,10 +260,6 @@ public final class ClientSession {
 		}
 		
 		//Parse message completely contained in the buffer
-        if(messageLength < 1) {
-            System.out.println("messageId: " + messageId + ", messageLength = " + messageLength + ", CAUSE: " + peer.toString());
-        }
-
 		final byte[] messagePayload = new byte[messageLength - 1];
 		buffer.get(messagePayload);
 		return new PwpRegularMessage(PwpMessage.fromMessageId(messageId), messagePayload);
@@ -266,7 +268,7 @@ public final class ClientSession {
 	private PwpMessage parseHandshake(final ByteBuffer buffer) {		
 		if(buffer.remaining() < ClientSession.HANDSHAKE_MESSAGE_LENGTH) {
 			//Backup remaining buffer data for the partial HANDSHAKE message						
-			backupReaderBuffer = fromExistingBuffer(buffer, ClientSession.HANDSHAKE_MESSAGE_LENGTH);
+			backupReaderBuffer = fromExistingBuffer(ClientSession.HANDSHAKE_MESSAGE_LENGTH);
 			backupReaderBuffer.put(buffer);
 			return null;
 		}
@@ -284,9 +286,8 @@ public final class ClientSession {
 		return new PwpHandshakeMessage(reservedBytes, infoHash, peerId);
 	}
 	
-	private ByteBuffer fromExistingBuffer(final ByteBuffer existing, final int capacity) {
-		return existing.isDirect()? ByteBuffer.allocateDirect(capacity) :
-			ByteBuffer.allocate(capacity);
+	private ByteBuffer fromExistingBuffer(final int capacity) {
+		return ByteBuffer.allocate(capacity);
 	}
 	
 	private boolean checkForHandshake(final ByteBuffer buffer) throws UnsupportedEncodingException {			

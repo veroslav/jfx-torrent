@@ -26,8 +26,6 @@ import javafx.beans.property.StringProperty;
 import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.net.pwp.PwpPeer;
 
-import java.util.BitSet;
-
 public final class PeerView {
 
     private final PwpPeer peer;
@@ -45,7 +43,7 @@ public final class PeerView {
     private final DoubleProperty downloaded = new SimpleDoubleProperty();
     private final DoubleProperty peerDownload = new SimpleDoubleProperty();
 
-    private final BitsView pieces = new BitsView(0);
+    private BitsView pieces = new BitsView(0);
 
     public PeerView(final PwpPeer peer) {
         this.peer = peer;
@@ -54,10 +52,12 @@ public final class PeerView {
 
     public void setHave(final int pieceIndex, final boolean have) {
         pieces.setHave(pieceIndex, have);
+        percentDone.set((double)pieces.getHavePiecesCount() / pieces.getTotalPieces() * 100);
     }
 
-    public void setHave(final BitSet bits) {
-        pieces.setHave(bits);
+    public void setPieces(final BitsView pieces) {
+        this.pieces = pieces;
+        percentDone.set((double)pieces.getHavePiecesCount() / pieces.getTotalPieces() * 100);
     }
 
     public int getPort() {
@@ -182,5 +182,12 @@ public final class PeerView {
 
     public String getClientName() {
         return clientId.get();
+    }
+
+    @Override
+    public String toString() {
+        return "PeerView{" +
+                "peer=" + peer +
+                '}';
     }
 }

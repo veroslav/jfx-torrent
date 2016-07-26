@@ -27,9 +27,13 @@ public final class BitsView {
 	private final int totalPieces;	
 
 	public BitsView(final int totalPieces) {
-		this.totalPieces = totalPieces;
-		pieces = new BitSet(this.totalPieces);
+	    this(totalPieces, new BitSet(totalPieces));
 	}
+
+    public BitsView(final int totalPieces, final BitSet pieces) {
+        this.totalPieces = totalPieces;
+        this.pieces = pieces;
+    }
 
 	public int getLastHaveIndex() {
 		return pieces.length();
@@ -43,10 +47,6 @@ public final class BitsView {
 		pieces.set(pieceIndex, have);
 	}
 
-    public void setHave(final BitSet bits) {
-        pieces.or(bits);
-    }
-	
 	public boolean getHave(final int pieceIndex) {
 		return pieces.get(pieceIndex);
 	}

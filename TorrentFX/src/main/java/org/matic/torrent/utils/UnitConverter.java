@@ -1,6 +1,6 @@
 /*
-* This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015 Vedran Matic
+* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
+* Copyright (C) 2015-2016 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -17,10 +17,11 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-
 package org.matic.torrent.utils;
 
 import java.text.DateFormat;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
@@ -29,7 +30,42 @@ import java.util.concurrent.TimeUnit;
 public final class UnitConverter {
 	
 	private static final DateFormat DATE_FORMATTER = new SimpleDateFormat("yyyy-MM-dd kk:mm:ss");
+    private static final NumberFormat DOUBLE_FORMATTER = new DecimalFormat("#0.0");
 	public static final String UTC_TIMEZONE = "UTC";
+
+    /**
+     * Reverse all bits in a byte array. This is useful when calling BitSet.valueOf(byte[]) to
+     * initialize a remote peer's bitfield. The bitfield itself is Big-endian, while BitSet
+     * uses Little-endian. Thus, bytes are reversed with this method before calling BitSet.valueOf(byte[])
+     *
+     * @param array Array that will have its bits reversed for each byte
+     * @return Reversed byte array
+     */
+    public static byte[] reverseBits(final byte[] array) {
+        final byte[] reversed = new byte[array.length];
+        for(int i = 0; i < array.length; ++i) {
+            byte in = array[i];
+            byte out = 0;
+            for (int ii = 0; ii < 8; ii++) {
+                final byte bit = (byte) (in & 1);
+                out = (byte)((out << 1) | bit);
+                in = (byte)(in >> 1);
+            }
+            reversed[i] = out;
+        }
+        return reversed;
+    }
+
+    /**
+     * Simple formatter for floating point numbers. Mostly used to have a uniform number
+     * presentation across the application.
+     *
+     * @param number Floating point number to be formatted
+     * @return Formatted number
+     */
+    public static String formatDouble(final double number) {
+        return DOUBLE_FORMATTER.format(number);
+    }
 
 	/**
 	 * Return a humanly readable presentation of input byte count

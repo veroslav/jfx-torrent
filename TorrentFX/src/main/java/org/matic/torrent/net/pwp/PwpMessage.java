@@ -52,5 +52,12 @@ public abstract class PwpMessage {
 
 	public MessageType getMessageType() {
 		return messageType;
-	}	
+	}
+
+    @Override
+    public String toString() {
+        return "PwpMessage{" +
+                "messageType=" + messageType +
+                '}';
+    }
 }

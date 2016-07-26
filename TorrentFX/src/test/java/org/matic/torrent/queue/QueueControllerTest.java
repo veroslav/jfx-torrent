@@ -961,7 +961,7 @@ public final class QueueControllerTest {
         Assert.assertEquals(QueueStatus.FORCED, forcedTorrent.getQueueStatus());
         Assert.assertEquals(TorrentStatus.ACTIVE, forcedTorrent.getStatus());
     }
-    
+
     @Test
     public void testStopForcedTorrentAndRestartNormallyWithinQueueLimits() {
         final QueuedTorrent forcedTorrent = buildTorrent("1", QueueStatus.ACTIVE);

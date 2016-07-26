@@ -40,6 +40,7 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableColumn.CellDataFeatures;
 import javafx.scene.control.TableView;
 import javafx.util.Callback;
+import org.matic.torrent.utils.UnitConverter;
 
 public final class PeerTable {
 	
@@ -159,7 +160,7 @@ public final class PeerTable {
                 p -> new ReadOnlyObjectWrapper<>(p.getValue().getPort());
                 
         final Function<PeerView, String> percentDoneValueConverter = p -> {
-        	return String.valueOf(p.getPercentDone());            
+        	return UnitConverter.formatDouble(p.getPercentDone());
         };
         
         final Function<PeerView, String> downSpeedValueConverter = p -> {

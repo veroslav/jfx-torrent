@@ -26,6 +26,7 @@ import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.net.NetworkUtilities;
 import org.matic.torrent.net.pwp.PwpMessage.MessageType;
 import org.matic.torrent.tracking.listeners.PeerFoundListener;
+import org.matic.torrent.utils.UnitConverter;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -56,7 +57,7 @@ import java.util.stream.Collectors;
  * A connection manager for PWP-connections. It listens for incoming connections and also
  * allows for adding new connections to remote peers.
  *
- * @author vedran
+ * @author Vedran Matic
  *
  */
 public class ClientConnectionManager implements PeerFoundListener {
@@ -338,14 +339,14 @@ public class ClientConnectionManager implements PeerFoundListener {
         }
 
         //Disconnect all peers that haven't responded for a while
-        /*final Set<Map.Entry<PeerView, SelectionKey>> staleHandshakenConnections = handshakenConnections.entrySet().stream().filter(e -> {
+        final Set<Map.Entry<PeerView, SelectionKey>> staleHandshakenConnections = handshakenConnections.entrySet().stream().filter(e -> {
             final ClientSession session = (ClientSession)e.getValue().attachment();
             return (System.currentTimeMillis() - session.getLastMessageTime()) > STALE_CONNECTION_THRESHOLD_TIME;
         }).collect(Collectors.toSet());
 
-        System.out.println("Disconnecting " + staleHandshakenConnections.size() + " connected peers due to inactivity");
+        //System.out.println("Disconnecting " + staleHandshakenConnections.size() + " connected peers due to inactivity");
 
-        staleHandshakenConnections.forEach(e -> disconnectPeer(e.getValue(), e.getKey()));*/
+        staleHandshakenConnections.forEach(e -> disconnectPeer(e.getValue(), e.getKey()));
     }
 
     private void handleKeySelection(final SelectionKey selectedKey) {
@@ -405,7 +406,7 @@ public class ClientConnectionManager implements PeerFoundListener {
                 notifyMessagesReceived(messages, peerView);
             }
         }
-        catch(final IOException ioe) {
+        catch(final IOException | InvalidPeerMessageException e) {
             disconnectPeer(selectionKey, session.getPeerView());
         }
     }
@@ -430,10 +431,14 @@ public class ClientConnectionManager implements PeerFoundListener {
             indeterminateConnections.remove(selectionKey);
             handshakenConnections.put(peerView, selectionKey);
 
+            System.out.println("Active connection count : " + handshakenConnections.size());
+
             //Remove any pending connections to this peer
             synchronized(peerQueue) {
                 peerQueue.remove(peer);
             }
+
+            notifyPeerAdded(peerView);
         }
     }
 
@@ -447,17 +452,17 @@ public class ClientConnectionManager implements PeerFoundListener {
             final BitsView torrentPieces = servedTorrents.get(peerView.getInfoHash()).getAvailabilityView();
             final int expectedPieceCount = torrentPieces.getTotalPieces();
             final byte[] payload = bitfield.getPayload();
-            final BitSet bitSet = BitSet.valueOf(payload);
+
+            final BitSet bitSet = BitSet.valueOf(UnitConverter.reverseBits(payload));
+            final BitsView bitsView = new BitsView(expectedPieceCount, bitSet);
 
             if(bitSet.length() > expectedPieceCount || (payload.length * Byte.SIZE < expectedPieceCount)) {
                 //Disconnect this peer, invalid bitfield
-
-                System.out.println("Invalid BITFIELD");
-
                 disconnectPeer(selectionKey, peerView);
+                System.out.println("Invalid BITFIELD received from: " + peerView);
                 return;
             }
-            peerView.setHave(bitSet);
+            peerView.setPieces(bitsView);
         }
     }
 
@@ -525,7 +530,7 @@ public class ClientConnectionManager implements PeerFoundListener {
             indeterminateConnections.put(channelKey, clientSession.getPeerView());
             ++CONNECTION_COUNT;
 
-            System.out.println("Accepted remote connection: ip: " + remotePeerIp + ", port " + remotePeerPort);
+            //System.out.println("Accepted remote connection: ip: " + remotePeerIp + ", port " + remotePeerPort);
 
         } catch (final IOException ioe) {
             System.err.println("Failed to accept incoming connection: " + ioe.getMessage());
