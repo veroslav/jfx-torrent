@@ -141,7 +141,7 @@ public final class PeerIdMapper {
             return azureusClientMapping;
         }
 
-        return "unknown client";
+        return "unknown client " + new String(peerId, StandardCharsets.UTF_8);
     }
 
     private static String findAzureusMappingKey(final byte[] peerId) {

@@ -62,7 +62,7 @@ public final class ClientSessionTest {
 	}
 	
 	//Parse invalid regular message of correct length
-	@Test
+	@Test(expected = InvalidPeerMessageException.class)
 	public void testInvalidRegularMessage() throws Exception {
 		final ClientSession unitUnderTest = new ClientSession(null, peer);
 		final ByteBuffer buffer = ByteBuffer.allocateDirect(5);
@@ -70,11 +70,7 @@ public final class ClientSessionTest {
 		final byte[] message = {0, 0, 0, 1, 12};		
 		buffer.put(message);
 		
-		final List<PwpMessage> messages = unitUnderTest.read(buffer);
-		
-		Assert.assertTrue(messages.isEmpty());
-		Assert.assertNull(unitUnderTest.backupReaderBuffer);
-		Assert.assertTrue(verifyBufferState(buffer, 0, 5, 5));
+		unitUnderTest.read(buffer);
 	}
 	
 	//Parse fully contained keep_alive message, buffer empty afterwards
@@ -579,7 +575,7 @@ public final class ClientSessionTest {
 	}
 	
 	//Parse valid message(s), mixed with invalid message(s)
-	@Test
+	@Test(expected = InvalidPeerMessageException.class)
 	public void testMixedValidAndInvalidMessages() throws Exception {
 		final ClientSession unitUnderTest = new ClientSession(null, peer);
 		final ByteBuffer buffer = ByteBuffer.allocateDirect(50);
@@ -602,30 +598,7 @@ public final class ClientSessionTest {
 		buffer.putInt(0);
 		buffer.putInt(999);
 		
-		final List<PwpMessage> messages = unitUnderTest.read(buffer);
-		
-		Assert.assertEquals(2, messages.size());
-		Assert.assertTrue(messages.get(0).getMessageType() == MessageType.PIECE);
-		Assert.assertTrue(messages.get(1).getMessageType() == MessageType.CANCEL);
-		
-		Assert.assertNull(unitUnderTest.backupReaderBuffer);
-		Assert.assertTrue(verifyBufferState(buffer, 0, 50, 50));
-		
-		final PwpRegularMessage actualPieceMessage = (PwpRegularMessage)messages.get(0);
-		final ByteBuffer piecePayload = ByteBuffer.wrap(actualPieceMessage.getPayload());		
-		
-		//Validate PIECE message contents
-		Assert.assertEquals(3981, piecePayload.getInt());
-		Assert.assertEquals(0, piecePayload.getInt());
-		Assert.assertEquals(999, piecePayload.getInt());
-		
-		final PwpRegularMessage actualCancelMessage = (PwpRegularMessage)messages.get(1);
-		final ByteBuffer cancelPayload = ByteBuffer.wrap(actualCancelMessage.getPayload());		
-		
-		//Validate CANCEL message contents
-		Assert.assertEquals(3981, cancelPayload.getInt());
-		Assert.assertEquals(0, cancelPayload.getInt());
-		Assert.assertEquals(999, cancelPayload.getInt());
+		unitUnderTest.read(buffer);
 	}
 	
 	//Parse fully contained regular messages, last 4 bytes consist of keep_alive message, buffer empty afterwards

@@ -40,14 +40,14 @@ public final class PeerIdMapperTest {
 	public void testParseUnknownAzureusPeerId() throws Exception {
 		final byte[] peerId = {'-', 'X', 'Y','3', '1', '0', '6', '-'};
 		final String mappedPeerId = PeerIdMapper.mapId(buildCompletePeerId(peerId));
-		Assert.assertEquals("unknown client", mappedPeerId);
+		Assert.assertTrue(mappedPeerId.startsWith("unknown client"));
 	}
 	
 	@Test
 	public void testParseInvalidAzureusPeerId() throws Exception {
 		final byte[] peerId = {'+', 'U', 'T','3', '1', '0', '6', '.'};
 		final String mappedPeerId = PeerIdMapper.mapId(buildCompletePeerId(peerId));
-		Assert.assertEquals("unknown client", mappedPeerId);
+		Assert.assertTrue(mappedPeerId.startsWith("unknown client"));
 	}
 	
 	@Test
