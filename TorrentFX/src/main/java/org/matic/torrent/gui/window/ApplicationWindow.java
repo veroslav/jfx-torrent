@@ -616,7 +616,11 @@ public final class ApplicationWindow implements PreferenceChangeListener {
                 event -> windowActionHandler.onOptionsWindowShown(stage, fileActionHandler));
 
         final Button deleteButton = toolbarButtonsMap.get(ImageUtils.DELETE_ICON_LOCATION);
-        deleteButton.setOnMouseClicked(event -> onDeleteTorrent(event, deleteButton));
+        final ContextMenu deleteButtonContextMenu = buildRemoveButtonContextMenu();
+        deleteButton.setOnMouseClicked(event -> {
+            deleteButtonContextMenu.hide();
+            onDeleteTorrent(event, deleteButton, deleteButtonContextMenu);
+        });
         deleteButton.disableProperty().addListener((obs, oldV, newV) ->
                 onDeleteButtonStateChanged(deleteButton, newV));
 
@@ -893,6 +897,25 @@ public final class ApplicationWindow implements PreferenceChangeListener {
         return helpMenu;
     }
 
+    private ContextMenu buildRemoveButtonContextMenu() {
+        final ContextMenu removeOptionsMenu = new ContextMenu();
+
+        final List<RadioMenuItem> removeOptionMenuItems = Arrays.asList(new RadioMenuItem[]{
+                new RadioMenuItem("Remove"), new RadioMenuItem("Remove and delete .torrent"),
+                new RadioMenuItem("Remove and delete .torrent + Data"),
+                new RadioMenuItem("Remove and delete Data")});
+
+        final ToggleGroup removeOptionsToggle = new ToggleGroup();
+        removeOptionMenuItems.forEach(i -> i.setToggleGroup(removeOptionsToggle));
+        removeOptionMenuItems.get(0).setSelected(true);
+
+        removeOptionsMenu.getItems().addAll(removeOptionMenuItems);
+        removeOptionsMenu.getItems().addAll(new SeparatorMenuItem(),
+                new CheckMenuItem("Move to trash if possible"));
+
+        return removeOptionsMenu;
+    }
+
     private void onAddTorrent(final AddedTorrentOptions torrentOptions) {
         if(torrentOptions == null) {
             return;
@@ -962,23 +985,9 @@ public final class ApplicationWindow implements PreferenceChangeListener {
         }
     }
 
-    private void onDeleteTorrent(final MouseEvent event, final Button deleteButton) {
+    private void onDeleteTorrent(final MouseEvent event, final Button deleteButton, final ContextMenu removeOptionsMenu) {
         if(event.getButton().equals(MouseButton.SECONDARY)) {
-            final ContextMenu removeOptionsMenu = new ContextMenu();
-
-            final List<RadioMenuItem> removeOptionMenuItems = Arrays.asList(new RadioMenuItem[]{
-                    new RadioMenuItem("Remove"), new RadioMenuItem("Remove and delete .torrent"),
-                    new RadioMenuItem("Remove and delete .torrent + Data"),
-                    new RadioMenuItem("Remove and delete Data")});
-
-            final ToggleGroup removeOptionsToggle = new ToggleGroup();
-            removeOptionMenuItems.forEach(i -> i.setToggleGroup(removeOptionsToggle));
-            removeOptionMenuItems.get(0).setSelected(true);
-
-            removeOptionsMenu.getItems().addAll(removeOptionMenuItems);
-            removeOptionsMenu.getItems().addAll(new SeparatorMenuItem(),
-                    new CheckMenuItem("Move to trash if possible"));
-            removeOptionsMenu.show(deleteButton, event.getX(), event.getY());
+            removeOptionsMenu.show(deleteButton, event.getScreenX(), event.getScreenY());
             return;
         }
 

@@ -29,13 +29,22 @@ import org.matic.torrent.codec.BinaryEncodedString;
 import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.queue.QueuedTorrent;
 import org.matic.torrent.queue.QueuedTorrentMetaData;
+import org.matic.torrent.queue.TorrentStatusChangeEvent;
+import org.matic.torrent.queue.TorrentStatusChangeListener;
 import org.matic.torrent.queue.enums.QueueStatus;
 import org.matic.torrent.queue.enums.TorrentStatus;
 
 import java.util.Collection;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 
+/**
+ * A snapshot of a torrent state to be shown in the GUI.
+ *
+ * @author Vedran Matic
+ */
 public final class TorrentView {
 
     private final BitsView availabilityView;
@@ -74,12 +83,17 @@ public final class TorrentView {
     private final Set<TrackableView> trackerViews = new LinkedHashSet<>();
     private final Set<PeerView> peerViews = new LinkedHashSet<>();
 
+    private final List<TorrentStatusChangeListener> statusChangeListeners = new CopyOnWriteArrayList<>();
+
 	public TorrentView(final QueuedTorrent queuedTorrent) {
 		this.priority = new SimpleIntegerProperty(0);
 		this.selectedLength = new SimpleLongProperty(0);
         this.queuedTorrent = queuedTorrent;
 
         availabilityView = new BitsView(this.queuedTorrent.getMetaData().getTotalPieces());
+        queuedTorrent.statusProperty().addListener((obs, oldV, newV) -> {
+            final TorrentStatusChangeEvent statusChangeEvent = new TorrentStatusChangeEvent(this, oldV, newV);
+            statusChangeListeners.forEach(l -> l.onTorrentStatusChanged(statusChangeEvent));});
 	}
 
     public boolean addPeerViews(final Collection<PeerView> peerViews) {
@@ -120,6 +134,18 @@ public final class TorrentView {
 
     public void addQueueStatusChangeListener(final ChangeListener<QueueStatus> listener) {
         queuedTorrent.queueStatusProperty().addListener(listener);
+    }
+
+    public void removeQueueStatusChangeListener(final ChangeListener<QueueStatus> listener) {
+        queuedTorrent.queueStatusProperty().removeListener(listener);
+    }
+
+    public void addTorrentStatusChangeListener(final TorrentStatusChangeListener listener) {
+        statusChangeListeners.add(listener);
+    }
+
+    public void removeTorrentStatusChangeListener(final TorrentStatusChangeListener listener) {
+        statusChangeListeners.remove(listener);
     }
 
     public long getSelectedLength() {

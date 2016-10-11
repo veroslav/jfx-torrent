@@ -38,7 +38,7 @@ public final class ClientSessionTest {
 	//Parse empty buffer
 	@Test
 	public void testEmptyBuffer() throws Exception {
-		final ClientSession unitUnderTest = new ClientSession(null, peer);
+		final ClientSession unitUnderTest = new ClientSession(null, peer, false);
 		final ByteBuffer buffer = ByteBuffer.allocateDirect(0);
 		
 		final List<PwpMessage> messages = unitUnderTest.read(buffer);
@@ -51,7 +51,7 @@ public final class ClientSessionTest {
 	//Parse empty buffer with non-zero capacity
 	@Test
 	public void testEmptyBufferWithNonZeroCapacity() throws Exception {
-		final ClientSession unitUnderTest = new ClientSession(null, peer);
+		final ClientSession unitUnderTest = new ClientSession(null, peer, false);
 		final ByteBuffer buffer = ByteBuffer.allocateDirect(10);
 		
 		final List<PwpMessage> messages = unitUnderTest.read(buffer);
@@ -64,7 +64,7 @@ public final class ClientSessionTest {
 	//Parse invalid regular message of correct length
 	@Test(expected = InvalidPeerMessageException.class)
 	public void testInvalidRegularMessage() throws Exception {
-		final ClientSession unitUnderTest = new ClientSession(null, peer);
+		final ClientSession unitUnderTest = new ClientSession(null, peer, false);
 		final ByteBuffer buffer = ByteBuffer.allocateDirect(5);
 		
 		final byte[] message = {0, 0, 0, 1, 12};		
@@ -76,7 +76,7 @@ public final class ClientSessionTest {
 	//Parse fully contained keep_alive message, buffer empty afterwards
 	@Test
 	public void testKeepAliveFullyContainedEmptyBuffer() throws Exception {
-		final ClientSession unitUnderTest = new ClientSession(null, peer);
+		final ClientSession unitUnderTest = new ClientSession(null, peer, false);
 		final ByteBuffer buffer = ByteBuffer.allocateDirect(4);
 		
 		final byte[] message = {0, 0, 0, 0};		
@@ -92,7 +92,7 @@ public final class ClientSessionTest {
 	//Parse fully contained keep_alive message, buffer contains more data afterwards
 	@Test
 	public void testKeepAliveFullyContainedNonEmptyBuffer() throws Exception {
-		final ClientSession unitUnderTest = new ClientSession(null, peer);
+		final ClientSession unitUnderTest = new ClientSession(null, peer, false);
 		final ByteBuffer buffer = ByteBuffer.allocateDirect(10);
 		
 		final byte[] message = {0, 0, 0, 0, 0, 0};		
@@ -108,7 +108,7 @@ public final class ClientSessionTest {
 	//Parse partially contained keep_alive message, spread over two buffer reads
 	@Test
 	public void testKeepAlivePartiallyContainedTwoBufferReads() throws Exception {
-		final ClientSession unitUnderTest = new ClientSession(null, peer);
+		final ClientSession unitUnderTest = new ClientSession(null, peer, false);
 		final ByteBuffer buffer = ByteBuffer.allocateDirect(10);
 		
 		buffer.put(new byte[] {0});		
@@ -130,7 +130,7 @@ public final class ClientSessionTest {
 	//Parse partially contained keep_alive message, spread over three buffer reads
 	@Test
 	public void testKeepAlivePartiallyContainedThreeBufferReads() throws Exception {
-		final ClientSession unitUnderTest = new ClientSession(null, peer);
+		final ClientSession unitUnderTest = new ClientSession(null, peer, false);
 		final ByteBuffer buffer = ByteBuffer.allocateDirect(10);
 		
 		buffer.put(new byte[] {0, 0});		
@@ -159,7 +159,7 @@ public final class ClientSessionTest {
 	//Parse fully contained regular message, buffer empty afterwards
 	@Test
 	public void testRegularMessageFullyContainedEmptyBuffer() throws Exception {
-		final ClientSession unitUnderTest = new ClientSession(null, peer);
+		final ClientSession unitUnderTest = new ClientSession(null, peer, false);
 		final ByteBuffer buffer = ByteBuffer.allocateDirect(9);
 		
 		//HAVE_MESSAGE
@@ -180,7 +180,7 @@ public final class ClientSessionTest {
 	//Parse fully contained regular message, buffer contains more data afterwards
 	@Test
 	public void testRegularMessageFullyContainedNonEmptyBuffer() throws Exception {
-		final ClientSession unitUnderTest = new ClientSession(null, peer);
+		final ClientSession unitUnderTest = new ClientSession(null, peer, false);
 		final ByteBuffer buffer = ByteBuffer.allocateDirect(13);
 		
 		//HAVE_MESSAGE
@@ -201,7 +201,7 @@ public final class ClientSessionTest {
 	//Parse partially contained regular message, spread over two buffer reads, backupBuffer used
 	@Test
 	public void testRegularMessagePartiallyContainedTwoReadsWithBackupBuffer() throws Exception {
-		final ClientSession unitUnderTest = new ClientSession(null, peer);
+		final ClientSession unitUnderTest = new ClientSession(null, peer, false);
 		final ByteBuffer buffer = ByteBuffer.allocateDirect(9);
 		final byte[] bytesToBackup = new byte[] {0, 0, 0, 5, 4};
 		
@@ -238,7 +238,7 @@ public final class ClientSessionTest {
 	//Parse partially contained regular message, spread over three buffer reads, backupBuffer used
 	@Test
 	public void testRegularMessagePartiallyContainedThreeReadsWithBackupBuffer() throws Exception {
-		final ClientSession unitUnderTest = new ClientSession(null, peer);
+		final ClientSession unitUnderTest = new ClientSession(null, peer, false);
 		final ByteBuffer buffer = ByteBuffer.allocateDirect(20);
 		
 		//REQUEST message length and id
@@ -284,7 +284,7 @@ public final class ClientSessionTest {
 	//Parse fully contained handshake message, empty buffer afterwards
 	@Test
 	public void testHandshakeFullyContainedEmptyBuffer() throws Exception {
-		final ClientSession unitUnderTest = new ClientSession(null, peer);
+		final ClientSession unitUnderTest = new ClientSession(null, peer, false);
 		final ByteBuffer buffer = ByteBuffer.allocateDirect(100);		
 		
 		final byte[] reservedBytes = new byte[]{0, 1, 0, 1, 0, 1, 0, 1};						
@@ -315,7 +315,7 @@ public final class ClientSessionTest {
 	//Parse fully contained handshake message, buffer contains more data afterwards
 	@Test
 	public void testHandshakeFullyContainedNonEmptyBuffer() throws Exception {
-		final ClientSession unitUnderTest = new ClientSession(null, peer);
+		final ClientSession unitUnderTest = new ClientSession(null, peer, false);
 		final ByteBuffer buffer = ByteBuffer.allocateDirect(100);		
 		
 		final byte[] reservedBytes = new byte[]{0, 1, 0, 1, 0, 1, 0, 1};						
@@ -348,7 +348,7 @@ public final class ClientSessionTest {
 	//Parse partially contained handshake message, spread over two buffer reads, no payload
 	@Test
 	public void testHandshakePartiallyContainedTwoReadsNoPayload() throws Exception {
-		final ClientSession unitUnderTest = new ClientSession(null, peer);
+		final ClientSession unitUnderTest = new ClientSession(null, peer, false);
 		final ByteBuffer buffer = ByteBuffer.allocateDirect(100);
 		
 		final byte[] reservedBytes = new byte[]{0, 1, 0, 1, 0, 1, 0, 1};						
@@ -397,7 +397,7 @@ public final class ClientSessionTest {
 	//Parse partially contained handshake message, spread over two buffer reads, partial payload
 	@Test
 	public void testHandshakePartiallyContainedTwoReadsPartialPayload() throws Exception {
-		final ClientSession unitUnderTest = new ClientSession(null, peer);
+		final ClientSession unitUnderTest = new ClientSession(null, peer, false);
 		final ByteBuffer buffer = ByteBuffer.allocateDirect(100);
 		
 		final byte[] reservedBytes = new byte[]{0, 1, 0, 1, 0, 1, 0, 1};						
@@ -453,7 +453,7 @@ public final class ClientSessionTest {
 	//Parse fully contained handshake + bitfield + have, buffer empty afterwards
 	@Test
 	public void testHandshakeBitfieldHaveFullyContainedEmptyBuffer() throws Exception {
-		final ClientSession unitUnderTest = new ClientSession(null, peer);
+		final ClientSession unitUnderTest = new ClientSession(null, peer, false);
 		final ByteBuffer buffer = ByteBuffer.allocateDirect(120);
 		
 		final byte[] reservedBytes = new byte[]{0, 1, 0, 1, 0, 1, 0, 1};						
@@ -507,7 +507,7 @@ public final class ClientSessionTest {
 	//Parse fully contained handshake + bitfield + have, as three separate reads
 	@Test
 	public void testHandshakeBitfieldHavePartiallyContainedThreeReads() throws Exception {
-		final ClientSession unitUnderTest = new ClientSession(null, peer);
+		final ClientSession unitUnderTest = new ClientSession(null, peer, false);
 		final ByteBuffer buffer = ByteBuffer.allocateDirect(120);
 		
 		final byte[] reservedBytes = new byte[]{0, 1, 0, 1, 0, 1, 0, 1};						
@@ -577,7 +577,7 @@ public final class ClientSessionTest {
 	//Parse valid message(s), mixed with invalid message(s)
 	@Test(expected = InvalidPeerMessageException.class)
 	public void testMixedValidAndInvalidMessages() throws Exception {
-		final ClientSession unitUnderTest = new ClientSession(null, peer);
+		final ClientSession unitUnderTest = new ClientSession(null, peer, false);
 		final ByteBuffer buffer = ByteBuffer.allocateDirect(50);
 		
 		//Put PIECE message (length(block)) == 4 bytes
@@ -604,7 +604,7 @@ public final class ClientSessionTest {
 	//Parse fully contained regular messages, last 4 bytes consist of keep_alive message, buffer empty afterwards
 	@Test
 	public void testRegularMessagesFullyContainedLastKeepAliveEmptyBuffer() throws Exception {
-		final ClientSession unitUnderTest = new ClientSession(null, peer);
+		final ClientSession unitUnderTest = new ClientSession(null, peer, false);
 		final ByteBuffer buffer = ByteBuffer.allocateDirect(9);
 		
 		//Put CHOKE message
@@ -627,7 +627,7 @@ public final class ClientSessionTest {
 	//Parse partially contained bitfield message spread over two buffer reads
 	@Test
 	public void testBitfieldPartiallyContainedTwoReads() throws Exception {
-		final ClientSession unitUnderTest = new ClientSession(null, peer);
+		final ClientSession unitUnderTest = new ClientSession(null, peer, false);
 		final ByteBuffer buffer = ByteBuffer.allocateDirect(20);
 		
 		//Put BITFIELD message (length(bitfield) == 32) 
@@ -669,7 +669,7 @@ public final class ClientSessionTest {
 	//Parse partially contained bitfield message spread over three buffer reads
 	@Test
 	public void testBitfieldPartiallyContainedThreeReads() throws Exception {
-		final ClientSession unitUnderTest = new ClientSession(null, peer);
+		final ClientSession unitUnderTest = new ClientSession(null, peer, false);
 		final ByteBuffer buffer = ByteBuffer.allocateDirect(20);
 		
 		//Put partial BITFIELD message (length(bitfield) == 32) 

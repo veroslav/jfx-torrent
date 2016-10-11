@@ -77,7 +77,7 @@ public class QueuedTorrent {
         return queueStatus;
     }
 
-    protected ObjectProperty<TorrentStatus> statusProperty() {
+    public ObjectProperty<TorrentStatus> statusProperty() {
         return status;
     }
 

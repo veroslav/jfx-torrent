@@ -24,10 +24,8 @@ import org.matic.torrent.gui.model.PeerView;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -63,14 +61,20 @@ public final class ClientSession {
     private final SocketChannel channel;
     private final PeerView peerView;
     private final PwpPeer peer;
+    private final boolean incoming;
 
-    private long lastMessageTime = System.currentTimeMillis();
+    private long lastActivityTime = System.currentTimeMillis();
 
-	public ClientSession(final SocketChannel channel, final PwpPeer peer) {
+	public ClientSession(final SocketChannel channel, final PwpPeer peer, final boolean incoming) {
         this.channel = channel;
         this.peer = peer;
         this.peerView = new PeerView(peer);
+        this.incoming = incoming;
 	}
+
+	protected boolean isIncoming() {
+	    return incoming;
+    }
 
     protected PeerView getPeerView() {
         return peerView;
@@ -80,8 +84,8 @@ public final class ClientSession {
         return peer;
     }
 
-    protected long getLastMessageTime() {
-        return lastMessageTime;
+    protected long getLastActivityTime() {
+        return lastActivityTime;
     }
 
     /**
@@ -125,6 +129,7 @@ public final class ClientSession {
 	 */
 	protected List<PwpMessage> read() throws IOException, InvalidPeerMessageException {
 		final List<PwpMessage> messages = new ArrayList<>();
+        lastActivityTime = System.currentTimeMillis();
 		
 		int bytesRead;
 		while((bytesRead = channel.read(inputBuffer)) > 0) {
