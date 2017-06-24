@@ -10,7 +10,7 @@
 	-primary-color: #2A2B2C;	
 	-list-control-background: #222122;
 	-primary-text-color: #EAEAEA;
-	-selection-color: #036192;	
+	-selection-color: #2C6FF0;
 }
 
 .button:default {
@@ -83,7 +83,7 @@
 
 .menu-bar .menu-item:focused,
 .context-menu .menu-item:focused {
-	-fx-background-color: #046293;
+	-fx-background-color: -selection-color;
 }
 
 .menu-bar .menu-item,
@@ -105,7 +105,7 @@
 }
 
 .option-category-label {	
-	-fx-background-color: #046293;
+	-fx-background-color: -selection-color;
 	-fx-border-color: #333333 #666666 #777777 black;
 	-fx-text-fill: -primary-text-color;	
 }
@@ -121,7 +121,7 @@
 }
 
 .option-category-selection-list .tree-cell:selected {
-    -fx-background-color: #046293;       
+    -fx-background-color: -selection-color;
 }
 
 .option-category-selection-list .tree-cell .tree-disclosure-node .arrow {

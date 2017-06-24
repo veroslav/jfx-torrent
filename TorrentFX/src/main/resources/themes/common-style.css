@@ -235,10 +235,6 @@
     -fx-size: 22;
 }
 
-.table-view:focused .table-cell .table-row-cell:selected .text {
-    -fx-fill: black;
-}
-
 .text {
     -fx-font-smoothing-type: lcd;      
 }

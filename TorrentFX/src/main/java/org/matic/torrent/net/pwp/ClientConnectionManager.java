@@ -290,13 +290,7 @@ public class ClientConnectionManager implements PeerFoundListener, TorrentStatus
                         //Can't do much here, we are shutting down
                     }
                 }
-                indeterminateConnections.values().stream().flatMap(m -> m.keySet().stream()).forEach(
-                        s -> closeChannel((SocketChannel)s.channel()));
-                indeterminateConnections.clear();
-                handshakenConnections.values().stream().flatMap(m -> m.values().stream()).forEach(
-                        s -> closeChannel((SocketChannel)s.channel()));
-                handshakenConnections.clear();
-                offlinePeers.clear();
+                cleanupConnections();
 
                 System.out.println("CCM: Shutdown completed");
                 break;
@@ -321,6 +315,16 @@ public class ClientConnectionManager implements PeerFoundListener, TorrentStatus
         }
     }
 
+    private void cleanupConnections() {
+        indeterminateConnections.values().stream().flatMap(m -> m.keySet().stream()).forEach(
+                s -> closeChannel((SocketChannel)s.channel()));
+        indeterminateConnections.clear();
+        handshakenConnections.values().stream().flatMap(m -> m.values().stream()).forEach(
+                s -> closeChannel((SocketChannel)s.channel()));
+        handshakenConnections.clear();
+        offlinePeers.clear();
+    }
+
     private void processTorrentStatusChanges() {
         while(true) {
             TorrentStatusChangeEvent statusChange = null;
@@ -332,8 +336,14 @@ public class ClientConnectionManager implements PeerFoundListener, TorrentStatus
             if(statusChange == null) {
                 return;
             }
-            final Map<PeerView, SelectionKey> torrentPeers = new HashMap<>(handshakenConnections.get(
-                    statusChange.getTorrentView().getInfoHash()));
+
+            final InfoHash infoHash = statusChange.getTorrentView().getInfoHash();
+            if(!handshakenConnections.containsKey(infoHash)) {
+                return;
+            }
+
+            final Map<PeerView, SelectionKey> torrentPeers = handshakenConnections.remove(infoHash);
+
             if(torrentPeers != null) {
                 if(statusChange.getNewStatus() == TorrentStatus.STOPPED) {
                     torrentPeers.entrySet().forEach(p -> {

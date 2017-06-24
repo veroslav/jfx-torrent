@@ -13,7 +13,7 @@
 .combo-box-popup .list-view .list-cell:selected,
 .combo-box-popup .list-view .list-cell:hover {
 	-fx-text-fill: white;
-	-fx-background-color: #3399FF;
+	-fx-background-color: #5FBBFF;
 }
 
 .empty-placeholder {
@@ -94,7 +94,7 @@
 }
 
 .option-category-selection-list .tree-cell:selected {
-    -fx-background-color: #3399FF;       
+    -fx-background-color: #5FBBFF;
 }
 
 .option-category-selection-list .tree-cell .tree-disclosure-node .arrow {
@@ -106,7 +106,7 @@
 }
 
 .root {
-	-fx-accent: #3399FF;
+	-fx-accent: #5FBBFF;
 	-fx-background-color: -fx-base;	
 }
 
@@ -137,7 +137,8 @@
 }
 
 .table-row-cell:selected {
-    -fx-background-color: #CEE0F5; /*#E2EDF9;*/
+    -fx-background-color: #5FBBFF; /*#E2EDF9;*/
+    -fx-text-fill: white;
 }
 
 .table-row-odd {
@@ -180,10 +181,13 @@
 
 .tree-table-row-cell:selected .text,
 .tree-table-view:focused .tree-cell .text,
-.tree-table-view:focused .tree-cell:selected .text {
-    -fx-fill: black;
+.tree-table-view:focused .tree-cell:selected .text,
+.table-row-cell:selected .text,
+.table-view:focused .tree-cell .text,
+.table-view:focused .tree-cell:selected .text {
+    -fx-fill: white;
 }
 
 .tree-table-row-cell:selected {
-    -fx-background-color: #CEE0F5; /*#E2EDF9;*/
+    -fx-background-color: #5FBBFF; /*#E2EDF9;*/
 }
