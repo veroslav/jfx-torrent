@@ -91,7 +91,7 @@ public final class NetworkUtilities {
 
 			if(listenInterface == null) {
 				//Invalid/non-existing network interface specified, use default
-				return new InetSocketAddress(port);
+                return new InetSocketAddress(port);
 			}
 			final InetAddress inetAddress = listenInterface.getInetAddresses().nextElement();
 			return new InetSocketAddress(inetAddress, port);

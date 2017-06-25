@@ -770,7 +770,7 @@ public class TrackerManager implements TrackerResponseListener, UdpTrackerRespon
 				final int connectionAttempt = tracker.connect(transactionId);				
 				if(connectionAttempt > UdpTracker.MAX_CONNECTION_ATTEMPTS) {
 					tracker.setLastResponse(System.currentTimeMillis());
-					Arrays.stream(sessions).forEach(ts -> {							
+					Arrays.stream(sessions).forEach(ts -> {
 						ts.setTrackerStatus(Tracker.Status.CONNECTION_TIMEOUT);
 						ts.setInterval(REQUEST_DELAY_ON_TRACKER_ERROR);												
 						scheduleOnTrackerError(ts);

@@ -238,7 +238,7 @@ public class UdpConnectionManager {
 		
 		try {			
 			channel.send(outputBuffer, remoteAddress);
-		} catch (final IOException ioe) {	
+		} catch (final IOException ioe) {
 			notifyListenersOnRequestError(udpRequest, Tracker.getStatusMessage(Tracker.Status.CONNECTION_TIMEOUT));
 		}
 	}

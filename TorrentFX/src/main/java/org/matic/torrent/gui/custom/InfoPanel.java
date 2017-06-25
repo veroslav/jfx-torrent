@@ -101,8 +101,8 @@ public final class InfoPanel extends VBox {
 		totalSizeValueLabel.setText(clear? "" : UnitConverter.formatByteCount(torrentView.getTotalLength())
 				+ " (" + UnitConverter.formatByteCount(torrentView.getDownloadedBytes()) + " done)");
 
-        final Long creationTime = clear? 0 : torrentView.getCreationTime();
-		createdOnValueLabel.setText(clear || creationTime == null? "" : UnitConverter.formatMillisToDate(
+        final Long creationTime = clear || torrentView.getCreationTime() == null? 0 : torrentView.getCreationTime();
+		createdOnValueLabel.setText(clear || creationTime == 0? "" : UnitConverter.formatMillisToDate(
                 creationTime, TimeZone.getDefault()));
 		addedOnValueLabel.setText(clear? "" : UnitConverter.formatMillisToDate(
                 torrentView.getAddedOnTime(), TimeZone.getDefault()));
