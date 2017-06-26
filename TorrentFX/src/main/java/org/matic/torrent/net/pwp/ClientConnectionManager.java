@@ -810,7 +810,7 @@ public class ClientConnectionManager implements PeerFoundListener, TorrentStatus
         serverChannel.bind(NetworkUtilities.getSocketAddressFromNetworkInterface("tun", listenPort));
         serverChannel.register(selector, SelectionKey.OP_ACCEPT);
 
-        System.out.println("Listening for incoming connection: " + serverChannel.toString());
+        //System.out.println("Listening for incoming connection: " + serverChannel.toString());
     }
 
     private void initConnection(final PwpPeer peer) {

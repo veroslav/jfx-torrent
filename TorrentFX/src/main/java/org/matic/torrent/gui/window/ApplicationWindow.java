@@ -1,6 +1,6 @@
 /*
 * This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015-2016 Vedran Matic
+* Copyright (C) 2015-2017 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -608,6 +608,26 @@ public final class ApplicationWindow implements PreferenceChangeListener {
             toolbarButtons[i] = buildToolbarButton(buttonUrls[i], buttonNames[i], buttonStates[i]);
         }
 
+        setupToolbarButtonActions();
+
+        final String themeName = ApplicationPreferences.getProperty(GuiProperties.APPLICATION_THEME, "light");
+        refreshToolbarIcons(toolbarButtonsMap, themeName);
+
+        final HBox separatorBox = new HBox();
+        HBox.setHgrow(separatorBox, Priority.ALWAYS);
+
+        final Node[] toolbarContents = {toolbarButtons[0], toolbarButtons[1], toolbarButtons[2],
+                buildToolbarSeparator(), toolbarButtons[3], buildToolbarSeparator(),
+                toolbarButtons[4], buildToolbarSeparator(), toolbarButtons[5], toolbarButtons[6],
+                toolbarButtons[7], buildToolbarSeparator(), toolbarButtons[8], toolbarButtons[9],
+                buildToolbarSeparator(), toolbarButtons[10], buildToolbarSeparator(), separatorBox,
+                buildSearchFilterComboBox(), buildToolbarSeparator(), toolbarButtons[11], toolbarButtons[12]};
+
+        final ToolBar toolBar = new ToolBar(toolbarContents);
+        return toolBar;
+    }
+
+    private void setupToolbarButtonActions() {
         toolbarButtonsMap.get(ImageUtils.ADD_ICON_LOCATION).setOnAction(
                 event -> onAddTorrent(fileActionHandler.onFileOpen(stage, fileTreeViewer)));
         toolbarButtonsMap.get(ImageUtils.LINK_ICON_LOCATION).setOnAction(
@@ -634,32 +654,32 @@ public final class ApplicationWindow implements PreferenceChangeListener {
                         torrentViewTable.getSelectedJobs(), TorrentStatus.STOPPED,
                         toolbarButtonsMap.get(ImageUtils.DOWNLOAD_ICON_LOCATION),
                         toolbarButtonsMap.get(ImageUtils.STOP_ICON_LOCATION)));
-        toolbarButtonsMap.get(ImageUtils.UP_ICON_LOCATION).setOnAction(event -> {
+
+        final Button prioUpButton = toolbarButtonsMap.get(ImageUtils.UP_ICON_LOCATION);
+        final Button prioDownButton = toolbarButtonsMap.get(ImageUtils.DOWN_ICON_LOCATION);
+
+        prioUpButton.setOnAction(event -> {
+            final ObservableList<TorrentView> selectedTorrents = torrentViewTable.getSelectedJobs();
             torrentJobActionHandler.onRequestTorrentPriorityChange(queuedTorrentManager,
-                    torrentViewTable.getSelectedJobs(), PriorityChange.HIGHER);
+                   selectedTorrents, PriorityChange.HIGHER);
             torrentViewTable.sort();
+            if(selectedTorrents.size() == 1) {
+                prioUpButton.setDisable(selectedTorrents.get(0).getPriority() == 1);
+                prioDownButton.setDisable(false);
+            }
         });
-        toolbarButtonsMap.get(ImageUtils.DOWN_ICON_LOCATION).setOnAction(event -> {
+        prioDownButton.setOnAction(event -> {
+            final ObservableList<TorrentView> selectedTorrents = torrentViewTable.getSelectedJobs();
             torrentJobActionHandler.onRequestTorrentPriorityChange(queuedTorrentManager,
-                    torrentViewTable.getSelectedJobs(), PriorityChange.LOWER);
+                    selectedTorrents, PriorityChange.LOWER);
             torrentViewTable.sort();
+
+            if(selectedTorrents.size() == 1) {
+                prioDownButton.setDisable(
+                        selectedTorrents.get(0).getPriority() == queuedTorrentManager.getTorrentsOnQueue());
+                prioUpButton.setDisable(false);
+            }
         });
-
-        final String themeName = ApplicationPreferences.getProperty(GuiProperties.APPLICATION_THEME, "light");
-        refreshToolbarIcons(toolbarButtonsMap, themeName);
-
-        final HBox separatorBox = new HBox();
-        HBox.setHgrow(separatorBox, Priority.ALWAYS);
-
-        final Node[] toolbarContents = {toolbarButtons[0], toolbarButtons[1], toolbarButtons[2],
-                buildToolbarSeparator(), toolbarButtons[3], buildToolbarSeparator(),
-                toolbarButtons[4], buildToolbarSeparator(), toolbarButtons[5], toolbarButtons[6],
-                toolbarButtons[7], buildToolbarSeparator(), toolbarButtons[8], toolbarButtons[9],
-                buildToolbarSeparator(), toolbarButtons[10], buildToolbarSeparator(), separatorBox,
-                buildSearchFilterComboBox(), buildToolbarSeparator(), toolbarButtons[11], toolbarButtons[12]};
-
-        final ToolBar toolBar = new ToolBar(toolbarContents);
-        return toolBar;
     }
 
     private ComboBox<String> buildSearchFilterComboBox() {
@@ -1057,10 +1077,10 @@ public final class ApplicationWindow implements PreferenceChangeListener {
                 selectedTorrentView.getStatus() == TorrentStatus.STOPPED
                         && selectedTorrentView.getQueueStatus() != QueueStatus.QUEUED);
 
-        toolbarButtonsMap.get(ImageUtils.UP_ICON_LOCATION).setDisable(!torrentSelected);
-                //|| selectedTorrentView.getPriority() == 1);
-        toolbarButtonsMap.get(ImageUtils.DOWN_ICON_LOCATION).setDisable(!torrentSelected);
-                //|| selectedTorrentView.getPriority() == trackableViewMappings.size());
+        toolbarButtonsMap.get(ImageUtils.UP_ICON_LOCATION).setDisable(!torrentSelected
+                || selectedTorrentView.getPriority() == 1);
+        toolbarButtonsMap.get(ImageUtils.DOWN_ICON_LOCATION).setDisable(!torrentSelected
+                || selectedTorrentView.getPriority() == queuedTorrentManager.getTorrentsOnQueue());
 
         toolbarButtonsMap.get(ImageUtils.DELETE_ICON_LOCATION).setDisable(!torrentSelected);
     }

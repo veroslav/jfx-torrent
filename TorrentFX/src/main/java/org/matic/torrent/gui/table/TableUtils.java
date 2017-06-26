@@ -1,6 +1,6 @@
 /*
 * This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015-2016 Vedran Matic
+* Copyright (C) 2015-2017 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -292,9 +292,9 @@ public final class TableUtils {
 					setGraphic(null);
 				}
 				else {
-					/*if(this.getTableRow().getItem() == null) {
+					if(this.getTableRow() == null) {
 						return;
-					}*/
+					}
 					final T item = this.getTableView().getItems().get(this.getTableRow().getIndex());					
 					
 					valueLabel.setText(valueConverter.apply(item));					

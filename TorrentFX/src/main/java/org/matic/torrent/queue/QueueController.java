@@ -1,6 +1,6 @@
 /*
 * This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015-2016 Vedran Matic
+* Copyright (C) 2015-2017 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 public final class QueueController {
 
@@ -274,9 +275,15 @@ public final class QueueController {
         return false;
     }
 
-    protected int getQueueSize(final QueueStatus queue) {
+    /**
+     * Get the size of one or more torrent queues.
+     *
+     * @param queues A set of queues to calculate sizes for
+     * @return The sum of all queues' sizes
+     */
+    protected int getQueueSize(final Set<QueueStatus> queues) {
         synchronized(torrents) {
-            return queueStatus.get(queue).size();
+            return queues.stream().mapToInt(q -> queueStatus.get(q).size()).sum();
         }
     }
 

@@ -1,6 +1,6 @@
 /*
 * This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015-2016 Vedran Matic
+* Copyright (C) 2015-2017 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -37,6 +37,7 @@ import org.matic.torrent.net.pwp.PwpConnectionListener;
 import org.matic.torrent.preferences.ApplicationPreferences;
 import org.matic.torrent.preferences.TransferProperties;
 import org.matic.torrent.queue.enums.PriorityChange;
+import org.matic.torrent.queue.enums.QueueStatus;
 import org.matic.torrent.queue.enums.TorrentStatus;
 import org.matic.torrent.tracking.Tracker;
 import org.matic.torrent.tracking.TrackerManager;
@@ -48,6 +49,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -82,6 +84,12 @@ public final class QueuedTorrentManager implements PreferenceChangeListener, Pwp
         this.persistenceSupport = persistenceSupport;
         this.trackerManager = trackerManager;
         this.connectionManager = connectionManager;
+    }
+
+    public int getTorrentsOnQueue() {
+        synchronized(queuedTorrents) {
+            return queueController.getQueueSize(EnumSet.of(QueueStatus.ACTIVE, QueueStatus.INACTIVE, QueueStatus.QUEUED));
+        }
     }
 
     @Override
