@@ -1,6 +1,6 @@
 /*
 * This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015-2016 Vedran Matic
+* Copyright (C) 2015-2017 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -32,7 +32,7 @@ import org.matic.torrent.gui.model.TrackableView;
 import org.matic.torrent.gui.model.TrackerView;
 import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.io.DataPersistenceSupport;
-import org.matic.torrent.net.pwp.ClientConnectionManager;
+import org.matic.torrent.net.pwp.PeerConnectionManager;
 import org.matic.torrent.queue.enums.QueueStatus;
 import org.matic.torrent.queue.enums.TorrentStatus;
 import org.matic.torrent.tracking.Tracker;
@@ -50,7 +50,7 @@ public final class QueuedTorrentManagerTest {
 
     private final DataPersistenceSupport dataPersistenceSupportMock = EasyMock.createMock(DataPersistenceSupport.class);
     private final TrackerManager trackerManagerMock = EasyMock.createMock(TrackerManager.class);
-    private final ClientConnectionManager connectionManagerMock = EasyMock.createMock(ClientConnectionManager.class);
+    private final PeerConnectionManager connectionManagerMock = EasyMock.createMock(PeerConnectionManager.class);
 
     @After
     public void cleanup() {

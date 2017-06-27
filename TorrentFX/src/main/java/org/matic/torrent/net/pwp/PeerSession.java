@@ -1,6 +1,6 @@
 /*
 * This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015-2016 Vedran Matic
+* Copyright (C) 2015-2017 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -34,12 +34,12 @@ import java.util.List;
  * @author Vedran Matic
  *
  */
-public final class ClientSession {
+public final class PeerSession {
 	
 	protected static final String PROTOCOL_NAME = "BitTorrent protocol";
 	private static final String STRING_ENCODING = "UTF-8";
 	
-	protected static final byte PROTOCOL_NAME_LENGTH = (byte) ClientSession.PROTOCOL_NAME.length();
+	protected static final byte PROTOCOL_NAME_LENGTH = (byte) PeerSession.PROTOCOL_NAME.length();
 	private static final int MESSAGE_LENGTH_PREFIX_LENGTH = 4;
 	private static final int HANDSHAKE_MESSAGE_LENGTH = 68;
 	private static final int NO_PAYLOAD_MESSAGE_LENGTH = 5;
@@ -60,28 +60,27 @@ public final class ClientSession {
 
     private final SocketChannel channel;
     private final PeerView peerView;
-    private final PwpPeer peer;
     private final boolean incoming;
 
     private long lastActivityTime = System.currentTimeMillis();
 
-	public ClientSession(final SocketChannel channel, final PwpPeer peer, final boolean incoming) {
+	public PeerSession(final SocketChannel channel, final PeerView peerView, final boolean incoming) {
         this.channel = channel;
-        this.peer = peer;
-        this.peerView = new PeerView(peer);
+        this.peerView = peerView;
         this.incoming = incoming;
 	}
 
+    /**
+     * Whether this session was initiated by a remote peer (incoming) or the client (outgoing).
+     *
+     * @return true if remote peer initiated this session, false otherwise
+     */
 	protected boolean isIncoming() {
 	    return incoming;
     }
 
     protected PeerView getPeerView() {
         return peerView;
-    }
-
-    protected PwpPeer getPeer() {
-        return peer;
     }
 
     protected long getLastActivityTime() {
@@ -182,7 +181,7 @@ public final class ClientSession {
 	private List<PwpMessage> parse(final ByteBuffer buffer) throws IOException, InvalidPeerMessageException {
 		final List<PwpMessage> messages = new ArrayList<>();							
 		
-		while(buffer.remaining() >= ClientSession.NO_PAYLOAD_MESSAGE_LENGTH) {
+		while(buffer.remaining() >= PeerSession.NO_PAYLOAD_MESSAGE_LENGTH) {
 			final boolean isHandshake = checkForHandshake(buffer.duplicate());
 			
 			if(isHandshake) {
@@ -208,7 +207,7 @@ public final class ClientSession {
 		}				
 		
 		//Handle the case when exactly 4 bytes remain and they happen to belong to KEEP_ALIVE message
-		if(buffer.remaining() == ClientSession.MESSAGE_LENGTH_PREFIX_LENGTH) {
+		if(buffer.remaining() == PeerSession.MESSAGE_LENGTH_PREFIX_LENGTH) {
 			final int messageLength = buffer.duplicate().getInt();
 			if(messageLength == 0) {
 				messages.add(new PwpRegularMessage(PwpMessage.MessageType.KEEP_ALIVE, null));
@@ -234,7 +233,7 @@ public final class ClientSession {
 
         //If the message is not BITFIELD, nor PIECE and is too long, it might be obfuscated
         if(messageId != 5 && messageId != 7 && messageLength > 13) {
-            throw new InvalidPeerMessageException("Possibly obfuscated message data from: " + peer);
+            throw new InvalidPeerMessageException("Possibly obfuscated message data from: " + peerView);
         }
 
 		return parseMessageWithId(buffer, messageLength, messageId);
@@ -244,7 +243,7 @@ public final class ClientSession {
 			throws InvalidPeerMessageException {
         if(messageLength < 1) {
             throw new InvalidPeerMessageException("Invalid message: messageId: " + messageId +
-                    ", messageLength = " + messageLength + ", CAUSE: " + peer.toString());
+                    ", messageLength = " + messageLength + ", CAUSE: " + peerView.toString());
         }
 
 		//Check whether it is a message without payload
@@ -255,7 +254,7 @@ public final class ClientSession {
 		//Check whether there is enough data in buffer to completely parse the message
 		if(buffer.remaining() < messageLength - 1) {
 			//Backup remaining buffer data for the partial message
-			final int backupBufferCapacity = messageLength + ClientSession.MESSAGE_LENGTH_PREFIX_LENGTH;
+			final int backupBufferCapacity = messageLength + PeerSession.MESSAGE_LENGTH_PREFIX_LENGTH;
 			backupReaderBuffer = fromExistingBuffer(backupBufferCapacity);
 			
 			backupReaderBuffer.putInt(messageLength);
@@ -271,18 +270,18 @@ public final class ClientSession {
 	}
 	
 	private PwpMessage parseHandshake(final ByteBuffer buffer) {		
-		if(buffer.remaining() < ClientSession.HANDSHAKE_MESSAGE_LENGTH) {
+		if(buffer.remaining() < PeerSession.HANDSHAKE_MESSAGE_LENGTH) {
 			//Backup remaining buffer data for the partial HANDSHAKE message						
-			backupReaderBuffer = fromExistingBuffer(ClientSession.HANDSHAKE_MESSAGE_LENGTH);
+			backupReaderBuffer = fromExistingBuffer(PeerSession.HANDSHAKE_MESSAGE_LENGTH);
 			backupReaderBuffer.put(buffer);
 			return null;
 		}
 		//Parse HANDSHAKE completely, skip 20 bytes [protocol_length + protocol_name] 
-		buffer.position(buffer.position() + ClientSession.PROTOCOL_NAME_LENGTH + 1);
+		buffer.position(buffer.position() + PeerSession.PROTOCOL_NAME_LENGTH + 1);
 		
-		final byte[] reservedBytes = new byte[ClientSession.RESERVED_BYTES_LENGTH];
-		final byte[] infoHash = new byte[ClientSession.INFO_HASH_LENGTH];
-		final byte[] peerId = new byte[ClientSession.PEER_ID_LENGTH];
+		final byte[] reservedBytes = new byte[PeerSession.RESERVED_BYTES_LENGTH];
+		final byte[] infoHash = new byte[PeerSession.INFO_HASH_LENGTH];
+		final byte[] peerId = new byte[PeerSession.PEER_ID_LENGTH];
 		
 		buffer.get(reservedBytes);
 		buffer.get(infoHash);
@@ -296,19 +295,19 @@ public final class ClientSession {
 	}
 	
 	private boolean checkForHandshake(final ByteBuffer buffer) throws UnsupportedEncodingException {			
-		if(buffer.get() != ClientSession.PROTOCOL_NAME_LENGTH) {
+		if(buffer.get() != PeerSession.PROTOCOL_NAME_LENGTH) {
 			return false;
 		}
 		
-		final int availableBytesForPstr = buffer.remaining() >= ClientSession.PROTOCOL_NAME.length()?
-				ClientSession.PROTOCOL_NAME.length() : buffer.remaining();
+		final int availableBytesForPstr = buffer.remaining() >= PeerSession.PROTOCOL_NAME.length()?
+				PeerSession.PROTOCOL_NAME.length() : buffer.remaining();
 		final byte[] pstrBytes = new byte[availableBytesForPstr];
 		buffer.get(pstrBytes);
 		
-		final String pstr = new String(pstrBytes, ClientSession.STRING_ENCODING);
-		final int availableProtocolNameLength = availableBytesForPstr > ClientSession.PROTOCOL_NAME_LENGTH?
-				ClientSession.PROTOCOL_NAME_LENGTH : availableBytesForPstr;
+		final String pstr = new String(pstrBytes, PeerSession.STRING_ENCODING);
+		final int availableProtocolNameLength = availableBytesForPstr > PeerSession.PROTOCOL_NAME_LENGTH?
+				PeerSession.PROTOCOL_NAME_LENGTH : availableBytesForPstr;
 		
-		return pstr.equals(ClientSession.PROTOCOL_NAME.substring(0, availableProtocolNameLength));
+		return pstr.equals(PeerSession.PROTOCOL_NAME.substring(0, availableProtocolNameLength));
 	}
 }

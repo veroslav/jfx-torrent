@@ -561,6 +561,7 @@ public class TrackerManager implements TrackerResponseListener, UdpTrackerRespon
 		} 
 		catch (final IOException ioe) {
 			System.err.println("onUdpTrackerScrape(): " + ioe.getMessage());
+			ioe.printStackTrace();
 			return;
 		}
 	}

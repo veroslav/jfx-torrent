@@ -1,6 +1,6 @@
 /*
 * This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015-2016 Vedran Matic
+* Copyright (C) 2015-2017 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@ public final class BinaryEncodingKeys {
     public static final BinaryEncodedString STATE_KEY_QUEUE_NAME = new BinaryEncodedString("queue");
     public static final BinaryEncodedString STATE_KEY_TORRENT = new BinaryEncodedString("torrent");
     public static final BinaryEncodedString STATE_KEY_LABEL = new BinaryEncodedString("label");
+    public static final BinaryEncodedString STATE_KEY_PEERS = new BinaryEncodedString("peers");
 
     //TRACKER SCRAPE RESPONSE KEYS
     public static final BinaryEncodedString KEY_DOWNLOADED =  new BinaryEncodedString("downloaded");

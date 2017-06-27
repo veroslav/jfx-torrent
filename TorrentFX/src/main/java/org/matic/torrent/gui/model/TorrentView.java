@@ -1,6 +1,6 @@
 /*
 * This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015-2016 Vedran Matic
+* Copyright (C) 2015-2017 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@ import org.matic.torrent.codec.BinaryEncodedString;
 import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.queue.QueuedTorrent;
 import org.matic.torrent.queue.QueuedTorrentMetaData;
+import org.matic.torrent.queue.QueuedTorrentProgress;
 import org.matic.torrent.queue.TorrentStatusChangeEvent;
 import org.matic.torrent.queue.TorrentStatusChangeListener;
 import org.matic.torrent.queue.enums.QueueStatus;
@@ -127,6 +128,8 @@ public final class TorrentView {
     public QueuedTorrentMetaData getMetaData() {
         return queuedTorrent.getMetaData();
     }
+
+    public QueuedTorrentProgress getProgress() { return queuedTorrent.getProgress(); }
     
     public LongProperty selectedLengthProperty() {
     	return selectedLength;

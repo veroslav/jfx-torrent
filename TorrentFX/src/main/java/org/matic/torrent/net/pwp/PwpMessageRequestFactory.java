@@ -1,6 +1,6 @@
 /*
 * This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015-2016 Vedran Matic
+* Copyright (C) 2015-2017 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -23,7 +23,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-import org.matic.torrent.hash.HashUtilities;
 import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.peer.ClientProperties;
 
@@ -55,8 +54,8 @@ public final class PwpMessageRequestFactory {
     public static byte[] buildHandshakeMessage(final InfoHash infoHash) {
         final ByteArrayOutputStream baos = new ByteArrayOutputStream(70);
         try {
-            baos.write(ClientSession.PROTOCOL_NAME_LENGTH);
-            baos.write(ClientSession.PROTOCOL_NAME.getBytes(StandardCharsets.UTF_8));
+            baos.write(PeerSession.PROTOCOL_NAME_LENGTH);
+            baos.write(PeerSession.PROTOCOL_NAME.getBytes(StandardCharsets.UTF_8));
             baos.write(new byte[]{0, 0, 0, 0, 0, 0, 0, 0});
             baos.write(infoHash.getBytes());
             baos.write(ClientProperties.PEER_ID.getBytes(StandardCharsets.UTF_8));

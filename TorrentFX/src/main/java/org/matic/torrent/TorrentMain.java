@@ -1,6 +1,6 @@
 /*
 * This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015-2016 Vedran Matic
+* Copyright (C) 2015-2017 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@ import javafx.application.Application;
 import javafx.stage.Stage;
 import org.matic.torrent.gui.window.ApplicationWindow;
 import org.matic.torrent.io.DataPersistenceSupport;
-import org.matic.torrent.net.pwp.ClientConnectionManager;
+import org.matic.torrent.net.pwp.PeerConnectionManager;
 import org.matic.torrent.net.udp.UdpConnectionManager;
 import org.matic.torrent.peer.ClientProperties;
 import org.matic.torrent.preferences.ApplicationPreferences;
@@ -40,7 +40,7 @@ public final class TorrentMain extends Application {
     private static final UdpConnectionManager UDP_TRACKER_CONNECTION_MANAGER = new UdpConnectionManager();
 
     //The manager of the connections to the remote peers using the peer-wire-protocol
-    private static ClientConnectionManager CONNECTION_MANAGER;
+    private static PeerConnectionManager CONNECTION_MANAGER;
 
     //The manager for trackers supporting HTTP(S) and UDP protocols
     private static final TrackerManager TRACKER_MANAGER =
@@ -84,7 +84,7 @@ public final class TorrentMain extends Application {
     }
 
     private static void startup() throws IOException {
-        CONNECTION_MANAGER = new ClientConnectionManager(ClientProperties.TCP_PORT);
+        CONNECTION_MANAGER = new PeerConnectionManager(ClientProperties.TCP_PORT);
         TORRENT_MANAGER = new QueuedTorrentManager(
                 PERSISTENCE_SUPPORT, TRACKER_MANAGER, CONNECTION_MANAGER);
         CONNECTION_MANAGER.addConnectionListener(TORRENT_MANAGER);

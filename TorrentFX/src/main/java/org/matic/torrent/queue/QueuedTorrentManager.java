@@ -32,8 +32,9 @@ import org.matic.torrent.gui.model.TrackableView;
 import org.matic.torrent.gui.model.TrackerView;
 import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.io.DataPersistenceSupport;
-import org.matic.torrent.net.pwp.ClientConnectionManager;
+import org.matic.torrent.net.pwp.PeerConnectionManager;
 import org.matic.torrent.net.pwp.PwpConnectionListener;
+import org.matic.torrent.net.pwp.PwpPeer;
 import org.matic.torrent.preferences.ApplicationPreferences;
 import org.matic.torrent.preferences.TransferProperties;
 import org.matic.torrent.queue.enums.PriorityChange;
@@ -76,11 +77,11 @@ public final class QueuedTorrentManager implements PreferenceChangeListener, Pwp
             maxDownloadingTorrentsLimit, maxUploadingTorrents);
     private final TrackerManager trackerManager;
     private final DataPersistenceSupport persistenceSupport;
-    private final ClientConnectionManager connectionManager;
+    private final PeerConnectionManager connectionManager;
 
     public QueuedTorrentManager(final DataPersistenceSupport persistenceSupport,
                                 final TrackerManager trackerManager,
-                                final ClientConnectionManager connectionManager) {
+                                final PeerConnectionManager connectionManager) {
         this.persistenceSupport = persistenceSupport;
         this.trackerManager = trackerManager;
         this.connectionManager = connectionManager;
@@ -204,6 +205,14 @@ public final class QueuedTorrentManager implements PreferenceChangeListener, Pwp
 
                 queuedTorrents.add(newTorrent);
                 connectionManager.accept(torrentView);
+
+                final List<PwpPeer> storedPeers = progress.getPeers(true).stream().map(p -> {
+                    p.setInfoHash(metaData.getInfoHash());
+                    return p;
+                }).collect(Collectors.toList());
+                if(!storedPeers.isEmpty()) {
+                    connectionManager.onPeersFound(storedPeers, "queued_torrent_progress_data");
+                }
 
                 final Set<String> trackerUrls = progress.getTrackerUrls();
                 final Set<TrackableView> trackableViews = new LinkedHashSet<>();

@@ -1,6 +1,6 @@
 /*
 * This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015-2016 Vedran Matic
+* Copyright (C) 2015-2017 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -25,11 +25,14 @@ import org.matic.torrent.codec.BinaryEncodedInteger;
 import org.matic.torrent.codec.BinaryEncodedList;
 import org.matic.torrent.codec.BinaryEncodedString;
 import org.matic.torrent.codec.BinaryEncodingKeys;
+import org.matic.torrent.net.pwp.PwpPeer;
 import org.matic.torrent.queue.enums.FilePriority;
 import org.matic.torrent.queue.enums.QueueStatus;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
@@ -157,5 +160,47 @@ public final class QueuedTorrentProgress {
 
     public byte[] toExportableValue() throws IOException {
         return torrentState.toExportableValue();
+    }
+
+    /**
+     * Store a (handshaken) peer so that we can connect to it again at a later stage.
+     *
+     * @param peer Handshaken peer to be stored
+     */
+    public void addPeer(final PwpPeer peer) {
+        final BinaryEncodedDictionary peerDictionary = encodePeer(peer);
+        final BinaryEncodedList peerList = (BinaryEncodedList)torrentState.get(BinaryEncodingKeys.STATE_KEY_PEERS);
+        if(peerList != null && !peerList.contains(peerDictionary)) {
+            peerList.add(peerDictionary);
+        }
+        else if(peerList == null) {
+            final BinaryEncodedList newPeerList = new BinaryEncodedList(Arrays.asList(peerDictionary));
+            torrentState.put(BinaryEncodingKeys.STATE_KEY_PEERS, newPeerList);
+        }
+    }
+
+    /**
+     * Retrieve and clear a list of previously stored (handshaken) peers.
+     *
+     * @param resetList Whether to remove all entries afterwards.
+     * @return The list of (handshaken) peers
+     */
+    public Set<PwpPeer> getPeers(final boolean resetList) {
+        final BinaryEncodedList peers = (BinaryEncodedList)torrentState.get(BinaryEncodingKeys.STATE_KEY_PEERS);
+        if(peers == null) {
+            return Collections.emptySet();
+        }
+        final Set<PwpPeer> extractedPeers = PwpPeer.extractPeers(peers, null);
+        if(resetList) {
+            torrentState.put(BinaryEncodingKeys.STATE_KEY_PEERS, new BinaryEncodedList());
+        }
+        return extractedPeers;
+    }
+
+    private BinaryEncodedDictionary encodePeer(final PwpPeer peer) {
+        final BinaryEncodedDictionary peerDictionary = new BinaryEncodedDictionary();
+        peerDictionary.put(BinaryEncodingKeys.KEY_IP, new BinaryEncodedString(peer.getIp()));
+        peerDictionary.put(BinaryEncodingKeys.KEY_PORT, new BinaryEncodedInteger(peer.getPort()));
+        return peerDictionary;
     }
 }
