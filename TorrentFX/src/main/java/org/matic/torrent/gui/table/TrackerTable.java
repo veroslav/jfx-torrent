@@ -1,6 +1,6 @@
 /*
 * This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015-2016 Vedran Matic
+* Copyright (C) 2015-2017 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 */
 package org.matic.torrent.gui.table;
 
+import javafx.application.Platform;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.value.ObservableValue;
@@ -92,8 +93,10 @@ public final class TrackerTable {
     }
 
     public void setContent(final Set<TrackableView> trackableViews) {
-        trackerTable.getItems().clear();
-        trackerTable.getItems().addAll(trackableViews);
+        Platform.runLater(() -> {
+            trackerTable.getItems().clear();
+            trackerTable.getItems().addAll(trackableViews);
+        });
     }
 
     public void refresh() {

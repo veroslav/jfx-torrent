@@ -1,6 +1,6 @@
 /*
 * This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015-2016 Vedran Matic
+* Copyright (C) 2015-2017 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
+import javafx.application.Platform;
 import javafx.scene.control.ScrollPane;
 import org.matic.torrent.gui.GuiUtils;
 import org.matic.torrent.gui.model.PeerView;
@@ -76,9 +77,11 @@ public final class PeerTable {
 		createContextMenu();
 	}
 	
-	public void setContent(final Collection<PeerView> peers) {		
-		peerTable.getItems().clear();
-		peerTable.getItems().addAll(peers);
+	public void setContent(final Collection<PeerView> peers) {
+        Platform.runLater(() -> {
+            peerTable.getItems().clear();
+            peerTable.getItems().addAll(peers);
+        });
 	}
 
 	public void storeColumnStates() {
@@ -159,33 +162,19 @@ public final class PeerTable {
         final Callback<CellDataFeatures<PeerView, Number>, ObservableValue<Number>> portValueFactory =
                 p -> new ReadOnlyObjectWrapper<>(p.getValue().getPort());
                 
-        final Function<PeerView, String> percentDoneValueConverter = p -> {
-        	return UnitConverter.formatDouble(p.getPercentDone());
-        };
+        final Function<PeerView, String> percentDoneValueConverter = p -> UnitConverter.formatDouble(p.getPercentDone());
         
-        final Function<PeerView, String> downSpeedValueConverter = p -> {
-        	return String.valueOf(p.getDownSpeed());            
-        };
+        final Function<PeerView, String> downSpeedValueConverter = p -> String.valueOf(p.getDownSpeed());
         
-        final Function<PeerView, String> upSpeedValueConverter = p -> {
-        	return String.valueOf(p.getUpSpeed());            
-        };
+        final Function<PeerView, String> upSpeedValueConverter = p -> String.valueOf(p.getUpSpeed());
         
-        final Function<PeerView, String> uploadedValueConverter = p -> {
-        	return String.valueOf(p.getUploaded());            
-        };
+        final Function<PeerView, String> uploadedValueConverter = p -> String.valueOf(p.getUploaded());
         
-        final Function<PeerView, String> downloadedValueConverter = p -> {
-        	return String.valueOf(p.getDownloaded());            
-        };
+        final Function<PeerView, String> downloadedValueConverter = p -> String.valueOf(p.getDownloaded());
         
-        final Function<PeerView, String> peerDownloadValueConverter = p -> {
-        	return String.valueOf(p.getPeerDownload());            
-        };
+        final Function<PeerView, String> peerDownloadValueConverter = p -> String.valueOf(p.getPeerDownload());
         
-        final Function<PeerView, String> portValueConverter = p -> {
-        	return String.valueOf(p.getPort());            
-        };
+        final Function<PeerView, String> portValueConverter = p -> String.valueOf(p.getPort());
 		
 		columnMappings.put(IP_COLUMN_NAME, TableUtils.buildColumn(ipValueFactory,
                 PeerView::getIp, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, IP_COLUMN_NAME));

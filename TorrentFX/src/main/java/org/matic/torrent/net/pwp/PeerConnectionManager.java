@@ -67,7 +67,7 @@ import java.util.stream.Collectors;
 public class PeerConnectionManager implements PeerFoundListener, TorrentStatusChangeListener {
 
     private static final long STALE_CONNECTION_THRESHOLD_TIME = 300000; //5m
-    private static final long KEEP_ALIVE_INTERVAL = 10000;	//10 seconds
+    private static final long KEEP_ALIVE_INTERVAL = 90000;	//90 seconds
 
     private static final int SO_RCVBUF_VALUE = 4 * 1024;
     //private static final boolean SO_REUSEADDR = true;
@@ -414,6 +414,10 @@ public class PeerConnectionManager implements PeerFoundListener, TorrentStatusCh
                     handshakenConnections.values().stream().flatMap(
                             m -> m.keySet().stream()).collect(Collectors.toSet()) : messageRequestPeers;
 
+            if(messageRequest.getMessageType() == MessageType.KEEP_ALIVE) {
+                System.out.println("Sending KEEP_ALIVE to connected peers");
+            }
+
             targetPeers.forEach(p -> {
                 final SelectionKey selectionKey = handshakenConnections.get(p.getInfoHash()).get(p);
                 if(selectionKey != null) {
@@ -436,9 +440,9 @@ public class PeerConnectionManager implements PeerFoundListener, TorrentStatusCh
 
     private void processPendingSelections() throws IOException {
         //TODO: Use KEEP_ALIVE_INTERVAL for selector timeout
-        /*final long timeLeftToWaitForKeepAlive = KEEP_ALIVE_INTERVAL - (System.currentTimeMillis() - lastKeepAliveSent);
-        final int keysSelected = selector.select(timeLeftToWaitForKeepAlive > 0? timeLeftToWaitForKeepAlive : 0);*/
-        final int keysSelected = selector.select(5000); //5 seconds
+        final long timeLeftToWaitForKeepAlive = KEEP_ALIVE_INTERVAL - (System.currentTimeMillis() - lastKeepAliveSent);
+        final int keysSelected = selector.select(timeLeftToWaitForKeepAlive > 0? timeLeftToWaitForKeepAlive : 0);
+        //final int keysSelected = selector.select(5000); //5 seconds
 
         if(keysSelected > 0) {
             final Set<SelectionKey> selectedKeys = selector.selectedKeys();
@@ -454,7 +458,7 @@ public class PeerConnectionManager implements PeerFoundListener, TorrentStatusCh
             }
         }
 
-        //Check whether it is time to send KEEP_ALIVE to the connected peers
+        //Check whether it is time to send KEEP_ALIVE to the handshaken peers
         if(!handshakenConnections.isEmpty() && (System.currentTimeMillis() - lastKeepAliveSent > KEEP_ALIVE_INTERVAL)) {
             synchronized(messageRequests) {
 
