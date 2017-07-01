@@ -1,6 +1,6 @@
 /*
 * This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015-2016 Vedran Matic
+* Copyright (C) 2015-2017 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -52,7 +52,7 @@ import org.matic.torrent.preferences.CssProperties;
 import org.matic.torrent.preferences.GuiProperties;
 import org.matic.torrent.queue.QueuedTorrentManager;
 import org.matic.torrent.queue.enums.PriorityChange;
-import org.matic.torrent.queue.enums.QueueStatus;
+import org.matic.torrent.queue.enums.QueueType;
 import org.matic.torrent.queue.enums.TorrentStatus;
 import org.matic.torrent.utils.UnitConverter;
 
@@ -128,6 +128,7 @@ public final class TorrentViewTable {
 
     private final IntegerProperty inactiveTorrents = new SimpleIntegerProperty(0);
     private final IntegerProperty activeTorrents = new SimpleIntegerProperty(0);
+    private final IntegerProperty totalTorrents = new SimpleIntegerProperty(0);
 	
 	public TorrentViewTable(final QueuedTorrentManager torrentManager) {
         this.torrentManager = torrentManager;
@@ -137,7 +138,7 @@ public final class TorrentViewTable {
 	}
 
     public IntegerProperty totalTorrentsProperty() {
-        return null;
+        return totalTorrents;
     }
 
     public IntegerProperty activeTorrentsProperty() {
@@ -150,11 +151,15 @@ public final class TorrentViewTable {
 
     public void filter(final String filterName) {
         filteredTorrents.setPredicate(tv -> {
+            final QueueType queueType = tv.getQueueType();
+            final TorrentStatus torrentStatus = tv.getStatus();
+
             switch(filterName) {
                 case ACTIVE_FILTER:
-                    return tv.getQueueStatus() == QueueStatus.ACTIVE;
+                    return torrentStatus == TorrentStatus.ACTIVE &&
+                            (queueType == QueueType.ACTIVE || queueType == QueueType.FORCED);
                 case INACTIVE_FILTER:
-                    return tv.getQueueStatus() == QueueStatus.INACTIVE;
+                    return queueType == QueueType.INACTIVE;
                 default:
                     return true;
             }
@@ -197,13 +202,14 @@ public final class TorrentViewTable {
 		torrentTable.getSelectionModel().clearSelection();
 		torrentTable.getSelectionModel().select(torrentJob);
 
-        updateTorrentStatusStatistics(QueueStatus.NOT_ON_QUEUE, torrentJob.getQueueStatus());
+        updateTorrentStatusStatistics(QueueType.NOT_ON_QUEUE, torrentJob.getQueueType());
         torrentJob.addQueueStatusChangeListener((obs, oldV, newV) ->
             updateTorrentStatusStatistics(oldV, newV));
+        refresh();
 	}
 
-    private void updateTorrentStatusStatistics(final QueueStatus oldQueueStatus, final QueueStatus newQueueStatus) {
-        switch(newQueueStatus) {
+    private void updateTorrentStatusStatistics(final QueueType oldQueueType, final QueueType newQueueType) {
+        switch(newQueueType) {
             case ACTIVE:
                 activeTorrents.set(activeTorrents.intValue() + 1);
                 break;
@@ -211,18 +217,19 @@ public final class TorrentViewTable {
                 inactiveTorrents.set(inactiveTorrents.intValue() + 1);
                 break;
         }
-        switch(oldQueueStatus) {
+        switch(oldQueueType) {
             case ACTIVE:
-                if(oldQueueStatus != QueueStatus.NOT_ON_QUEUE) {
+                if(oldQueueType != QueueType.NOT_ON_QUEUE) {
                     activeTorrents.set(activeTorrents.intValue() - 1);
                 }
                 break;
             case INACTIVE:
-                if(oldQueueStatus != QueueStatus.NOT_ON_QUEUE) {
+                if(oldQueueType != QueueType.NOT_ON_QUEUE) {
                     inactiveTorrents.set(inactiveTorrents.intValue() - 1);
                 }
                 break;
         }
+        totalTorrents.set(torrentViews.size());
     }
 	
 	public void deleteJobs(final ObservableList<TorrentView> torrentJobs) {
@@ -328,14 +335,14 @@ public final class TorrentViewTable {
     }
 
     private void setupMenuStates(final TorrentView torrentView) {
-        final QueueStatus queueStatus = torrentView.getQueueStatus();
+        final QueueType queueType = torrentView.getQueueType();
         final TorrentStatus torrentStatus = torrentView.getStatus();
 
         startMenuItem.setDisable(torrentStatus == TorrentStatus.ACTIVE ||
-                queueStatus == QueueStatus.QUEUED || queueStatus == QueueStatus.FORCED);
+                queueType == QueueType.QUEUED || queueType == QueueType.FORCED);
         stopMenuItem.setDisable(torrentStatus == TorrentStatus.STOPPED);
         pauseMenuItem.setDisable(torrentStatus == TorrentStatus.STOPPED);
-        forceStartMenuItem.setDisable(queueStatus == QueueStatus.FORCED);
+        forceStartMenuItem.setDisable(queueType == QueueType.FORCED);
 
         final int priority = torrentView.getPriority();
 
@@ -375,8 +382,8 @@ public final class TorrentViewTable {
 	}
 		
 	private LinkedHashMap<String, TableColumn<TorrentView, ?>> buildColumnMappings() {
-		final Callback<CellDataFeatures<TorrentView, Number>, ObservableValue<Number>> priorityValueFactory =
-				tj -> tj.getValue().priorityProperty();
+		final Callback<CellDataFeatures<TorrentView, String>, ObservableValue<String>> priorityValueFactory =
+				tj -> tj.getValue().lifeCycleChangeProperty();
 		final Callback<CellDataFeatures<TorrentView, String>, ObservableValue<String>> nameValueFactory =
 				tj -> new ReadOnlyObjectWrapper<>(tj.getValue().getFileName());
 		final Callback<CellDataFeatures<TorrentView, Number>, ObservableValue<Number>> sizeValueFactory =
@@ -389,7 +396,8 @@ public final class TorrentViewTable {
 				tj -> new ReadOnlyObjectWrapper<>(tj.getValue().getTrackerUrl());
 
         final TableColumn<TorrentView, ?> priorityColumn = TableUtils.buildColumn(priorityValueFactory,
-                val -> String.valueOf(val.getPriority()), GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, PRIORITY_COLUMN_LABEL);
+                val -> val.getLifeCycleChange(),
+                GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, PRIORITY_COLUMN_LABEL);
         torrentTable.getSortOrder().add(priorityColumn);
 
 		final LinkedHashMap<String, TableColumn<TorrentView, ?>> columnMappings = new LinkedHashMap<>();

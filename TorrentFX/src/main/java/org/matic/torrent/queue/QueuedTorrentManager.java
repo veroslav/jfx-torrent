@@ -38,7 +38,7 @@ import org.matic.torrent.net.pwp.PwpPeer;
 import org.matic.torrent.preferences.ApplicationPreferences;
 import org.matic.torrent.preferences.TransferProperties;
 import org.matic.torrent.queue.enums.PriorityChange;
-import org.matic.torrent.queue.enums.QueueStatus;
+import org.matic.torrent.queue.enums.QueueType;
 import org.matic.torrent.queue.enums.TorrentStatus;
 import org.matic.torrent.tracking.Tracker;
 import org.matic.torrent.tracking.TrackerManager;
@@ -89,7 +89,7 @@ public final class QueuedTorrentManager implements PreferenceChangeListener, Pwp
 
     public int getTorrentsOnQueue() {
         synchronized(queuedTorrents) {
-            return queueController.getQueueSize(EnumSet.of(QueueStatus.ACTIVE, QueueStatus.INACTIVE, QueueStatus.QUEUED));
+            return queueController.getQueueSize(EnumSet.of(QueueType.ACTIVE, QueueType.INACTIVE, QueueType.QUEUED));
         }
     }
 
@@ -171,7 +171,7 @@ public final class QueuedTorrentManager implements PreferenceChangeListener, Pwp
         synchronized(queuedTorrents) {
             queuedTorrents.forEach(t -> {
                 final QueuedTorrentProgress progress = t.getProgress();
-                progress.setQueueStatus(t.getQueueStatus());
+                progress.setQueueStatus(t.getQueueType());
 
                 persistenceSupport.store(t.getMetaData(), progress);
             });

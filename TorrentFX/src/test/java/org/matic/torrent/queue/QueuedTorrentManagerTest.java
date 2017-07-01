@@ -33,7 +33,7 @@ import org.matic.torrent.gui.model.TrackerView;
 import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.io.DataPersistenceSupport;
 import org.matic.torrent.net.pwp.PeerConnectionManager;
-import org.matic.torrent.queue.enums.QueueStatus;
+import org.matic.torrent.queue.enums.QueueType;
 import org.matic.torrent.queue.enums.TorrentStatus;
 import org.matic.torrent.tracking.Tracker;
 import org.matic.torrent.tracking.TrackerManager;
@@ -63,7 +63,7 @@ public final class QueuedTorrentManagerTest {
                 dataPersistenceSupportMock, trackerManagerMock, connectionManagerMock);
 
         final InfoHash infoHash = new InfoHash("1".getBytes());
-        final TorrentTemplate template = buildTorrentTemplate(infoHash, QueueStatus.ACTIVE);
+        final TorrentTemplate template = buildTorrentTemplate(infoHash, QueueType.ACTIVE);
 
         EasyMock.expect(dataPersistenceSupportMock.isPersisted(infoHash)).andReturn(true);
         connectionManagerMock.accept(EasyMock.anyObject(TorrentView.class));
@@ -87,10 +87,10 @@ public final class QueuedTorrentManagerTest {
                 dataPersistenceSupportMock, trackerManagerMock, connectionManagerMock);
 
         final InfoHash infoHash1 = new InfoHash("1".getBytes());
-        final TorrentTemplate template1 = buildTorrentTemplate(infoHash1, QueueStatus.ACTIVE);
+        final TorrentTemplate template1 = buildTorrentTemplate(infoHash1, QueueType.ACTIVE);
 
         final InfoHash infoHash2 = new InfoHash("2".getBytes());
-        final TorrentTemplate template2 = buildTorrentTemplate(infoHash2, QueueStatus.INACTIVE);
+        final TorrentTemplate template2 = buildTorrentTemplate(infoHash2, QueueType.INACTIVE);
 
         EasyMock.expect(dataPersistenceSupportMock.isPersisted(EasyMock.anyObject(InfoHash.class))).andReturn(true).times(2);
         connectionManagerMock.accept(EasyMock.anyObject(TorrentView.class));
@@ -118,8 +118,8 @@ public final class QueuedTorrentManagerTest {
                 dataPersistenceSupportMock, trackerManagerMock, connectionManagerMock);
 
         final InfoHash infoHash = new InfoHash("1".getBytes());
-        final TorrentTemplate template1 = buildTorrentTemplate(infoHash, QueueStatus.INACTIVE);
-        final TorrentTemplate template2 = buildTorrentTemplate(infoHash, QueueStatus.ACTIVE);
+        final TorrentTemplate template1 = buildTorrentTemplate(infoHash, QueueType.INACTIVE);
+        final TorrentTemplate template2 = buildTorrentTemplate(infoHash, QueueType.ACTIVE);
 
         EasyMock.expect(dataPersistenceSupportMock.isPersisted(infoHash)).andReturn(true);
         connectionManagerMock.accept(EasyMock.anyObject(TorrentView.class));
@@ -143,7 +143,7 @@ public final class QueuedTorrentManagerTest {
                 dataPersistenceSupportMock, trackerManagerMock, connectionManagerMock);
 
         final InfoHash infoHash = new InfoHash("1".getBytes());
-        final TorrentTemplate template = buildTorrentTemplate(infoHash, QueueStatus.ACTIVE);
+        final TorrentTemplate template = buildTorrentTemplate(infoHash, QueueType.ACTIVE);
         final QueuedTorrent torrent = new QueuedTorrent(template.getMetaData(), template.getProgress());
         final TorrentView view = new TorrentView(torrent);
 
@@ -156,7 +156,7 @@ public final class QueuedTorrentManagerTest {
                 dataPersistenceSupportMock, trackerManagerMock, connectionManagerMock);
 
         final InfoHash infoHash = new InfoHash("1".getBytes());
-        final TorrentTemplate template = buildTorrentTemplate(infoHash, QueueStatus.ACTIVE);
+        final TorrentTemplate template = buildTorrentTemplate(infoHash, QueueType.ACTIVE);
 
         EasyMock.expect(dataPersistenceSupportMock.isPersisted(infoHash)).andReturn(true);
         dataPersistenceSupportMock.delete(infoHash);
@@ -194,7 +194,7 @@ public final class QueuedTorrentManagerTest {
                 dataPersistenceSupportMock, trackerManagerMock, connectionManagerMock);
 
         final InfoHash infoHash = new InfoHash("1".getBytes());
-        final TorrentTemplate template = buildTorrentTemplate(infoHash, QueueStatus.ACTIVE);
+        final TorrentTemplate template = buildTorrentTemplate(infoHash, QueueType.ACTIVE);
 
         EasyMock.expect(dataPersistenceSupportMock.isPersisted(infoHash)).andReturn(true);
         connectionManagerMock.accept(EasyMock.anyObject(TorrentView.class));
@@ -240,7 +240,7 @@ public final class QueuedTorrentManagerTest {
                 dataPersistenceSupportMock, trackerManagerMock, connectionManagerMock);
 
         final InfoHash infoHash = new InfoHash("1".getBytes());
-        final TorrentTemplate template = buildTorrentTemplate(infoHash, QueueStatus.ACTIVE);
+        final TorrentTemplate template = buildTorrentTemplate(infoHash, QueueType.ACTIVE);
 
         final String tracker1 = "mytracker1";
         final String tracker2 = "mytracker2";
@@ -278,7 +278,7 @@ public final class QueuedTorrentManagerTest {
         EasyMock.verify(dataPersistenceSupportMock, trackerManagerMock, connectionManagerMock);
     }
 
-    private TorrentTemplate buildTorrentTemplate(final InfoHash infoHash, final QueueStatus targetQueue) {
+    private TorrentTemplate buildTorrentTemplate(final InfoHash infoHash, final QueueType targetQueue) {
         final BinaryEncodedDictionary metaDataDict = new BinaryEncodedDictionary();
         metaDataDict.put(BinaryEncodingKeys.KEY_INFO_HASH, new BinaryEncodedString(infoHash.getBytes()));
 

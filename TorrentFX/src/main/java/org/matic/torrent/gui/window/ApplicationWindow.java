@@ -97,7 +97,7 @@ import org.matic.torrent.queue.QueuedTorrentManager;
 import org.matic.torrent.queue.QueuedTorrentMetaData;
 import org.matic.torrent.queue.TorrentTemplate;
 import org.matic.torrent.queue.enums.PriorityChange;
-import org.matic.torrent.queue.enums.QueueStatus;
+import org.matic.torrent.queue.enums.QueueType;
 import org.matic.torrent.queue.enums.TorrentStatus;
 import org.matic.torrent.tracking.TrackerManager;
 import org.matic.torrent.utils.PeriodicTask;
@@ -438,13 +438,14 @@ public final class ApplicationWindow implements PreferenceChangeListener {
         final TreeItem<Label> rssFeedsRootNode = new TreeItem<>(rssFeedsRootLabel);
         rssFeedsRootNode.setExpanded(true);
 
-        torrentViewTable.activeTorrentsProperty().addListener((obs, oldV, newV) -> {
-            torrentLabels[3].setText(torrentLabelNames[3] + " (" + newV + ")");
-        });
+        torrentViewTable.totalTorrentsProperty().addListener((obs, oldV, newV) ->
+            torrentsRootLabel.setText(torrentsRootLabelId + " (" + newV + ")"));
 
-        torrentViewTable.inactiveTorrentsProperty().addListener((obs, oldV, newV) -> {
-            torrentLabels[4].setText(torrentLabelNames[4] + " (" + newV + ")");
-        });
+        torrentViewTable.activeTorrentsProperty().addListener((obs, oldV, newV) ->
+                torrentLabels[3].setText(torrentLabelNames[3] + " (" + newV + ")"));
+
+        torrentViewTable.inactiveTorrentsProperty().addListener((obs, oldV, newV) ->
+            torrentLabels[4].setText(torrentLabelNames[4] + " (" + newV + ")"));
 
         final List<TreeItem<Label>> allNodes = Arrays.asList(torrentsRootNode, labelsRootNode, rssFeedsRootNode);
 
@@ -1072,10 +1073,10 @@ public final class ApplicationWindow implements PreferenceChangeListener {
         }
         toolbarButtonsMap.get(ImageUtils.DOWNLOAD_ICON_LOCATION).setDisable(!torrentSelected ||
                 selectedTorrentView.getStatus() == TorrentStatus.ACTIVE ||
-                selectedTorrentView.getQueueStatus() == QueueStatus.QUEUED);
+                selectedTorrentView.getQueueType() == QueueType.QUEUED);
         toolbarButtonsMap.get(ImageUtils.STOP_ICON_LOCATION).setDisable(!torrentSelected ||
                 selectedTorrentView.getStatus() == TorrentStatus.STOPPED
-                        && selectedTorrentView.getQueueStatus() != QueueStatus.QUEUED);
+                        && selectedTorrentView.getQueueType() != QueueType.QUEUED);
 
         toolbarButtonsMap.get(ImageUtils.UP_ICON_LOCATION).setDisable(!torrentSelected
                 || selectedTorrentView.getPriority() == 1);

@@ -1,6 +1,6 @@
 /*
 * This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015-2016 Vedran Matic
+* Copyright (C) 2015-2017 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import org.matic.torrent.hash.InfoHash;
-import org.matic.torrent.queue.enums.QueueStatus;
+import org.matic.torrent.queue.enums.QueueType;
 import org.matic.torrent.queue.enums.TorrentStatus;
 
 import java.util.Objects;
@@ -32,24 +32,26 @@ import java.util.Objects;
 public class QueuedTorrent {
 
     public static final int UNKNOWN_PRIORITY = 0;
+    public static final int TOP_PRIORITY = -1;
 
     private final QueuedTorrentMetaData metaData;
     private final QueuedTorrentProgress progress;
     private final InfoHash infoHash;
 
     private final ObjectProperty<TorrentStatus> status = new SimpleObjectProperty<>();
+    private final ObjectProperty<QueueType> queueType = new SimpleObjectProperty<>();
     private final IntegerProperty priority;
 
-    private final ObjectProperty<QueueStatus> queueStatus = new SimpleObjectProperty<>();
+    private boolean isForced = false;
 
     public QueuedTorrent(final QueuedTorrentMetaData metaData, final QueuedTorrentProgress progress) {
         this.metaData = metaData;
         this.progress = progress;
         this.infoHash = metaData.getInfoHash();
 
-        this.status.set(progress.getQueueStatus() != QueueStatus.INACTIVE?
+        this.status.set(progress.getQueueStatus() != QueueType.INACTIVE?
                 TorrentStatus.ACTIVE : TorrentStatus.STOPPED);
-        this.queueStatus.set(progress.getQueueStatus());
+        this.queueType.set(progress.getQueueStatus());
         priority = new SimpleIntegerProperty(progress.getTorrentPriority());
     }
 
@@ -65,16 +67,16 @@ public class QueuedTorrent {
         return progress;
     }
 
-    protected final void setQueueStatus(final QueueStatus queueStatus) {
-        this.queueStatus.set(queueStatus);
+    protected final void setQueueType(final QueueType queueType) {
+        this.queueType.set(queueType);
     }
 
-    public final QueueStatus getQueueStatus() {
-        return queueStatus.get();
+    public final QueueType getQueueType() {
+        return queueType.get();
     }
 
-    public final ObjectProperty<QueueStatus> queueStatusProperty() {
-        return queueStatus;
+    public final ObjectProperty<QueueType> queueTypeProperty() {
+        return queueType;
     }
 
     public ObjectProperty<TorrentStatus> statusProperty() {
@@ -102,11 +104,11 @@ public class QueuedTorrent {
     }
 
     protected final boolean isForced() {
-        return progress.isForced();
+        return isForced;
     }
 
     protected final void setForced(final boolean forced) {
-        progress.setForced(forced);
+        isForced = forced;
     }
 
     @Override
@@ -126,7 +128,7 @@ public class QueuedTorrent {
     public String toString() {
         return "QueuedTorrent{" +
                 "infoHash=" + infoHash +
-                ", queueStatus=" + queueStatus +
+                ", queueType=" + queueType +
                 ", priority=" + priority +
                 '}';
     }

@@ -142,7 +142,7 @@
 }
 
 .table-row-odd {
-	-fx-background-color: #F0F0F0;
+	-fx-background-color: #E0E0E0; /*#F0F0F0;*/
 }
 
 .titled-border-compact {

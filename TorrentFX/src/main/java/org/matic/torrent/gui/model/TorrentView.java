@@ -23,6 +23,8 @@ import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.LongProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleLongProperty;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
 import javafx.beans.value.ChangeListener;
 import org.matic.torrent.codec.BinaryEncodedInteger;
 import org.matic.torrent.codec.BinaryEncodedString;
@@ -32,7 +34,7 @@ import org.matic.torrent.queue.QueuedTorrentMetaData;
 import org.matic.torrent.queue.QueuedTorrentProgress;
 import org.matic.torrent.queue.TorrentStatusChangeEvent;
 import org.matic.torrent.queue.TorrentStatusChangeListener;
-import org.matic.torrent.queue.enums.QueueStatus;
+import org.matic.torrent.queue.enums.QueueType;
 import org.matic.torrent.queue.enums.TorrentStatus;
 
 import java.util.Collection;
@@ -48,11 +50,15 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public final class TorrentView {
 
+    private static final String FORCED_PRIORITY_INDICATOR = "*";
+
     private final BitsView availabilityView;
     private final QueuedTorrent queuedTorrent;
 
     private final LongProperty selectedLength;
-    private final IntegerProperty priority;    
+    private final IntegerProperty priority;
+
+    private final StringProperty lifeCycleChange = new SimpleStringProperty();
 
     private long elapsedTime;
     private long downloadedBytes;
@@ -92,9 +98,17 @@ public final class TorrentView {
         this.queuedTorrent = queuedTorrent;
 
         availabilityView = new BitsView(this.queuedTorrent.getMetaData().getTotalPieces());
+
+        this.priority.addListener((obs, oldV, newV) ->
+            lifeCycleChange.setValue(String.valueOf(newV.intValue())));
+
+        queuedTorrent.queueTypeProperty().addListener((obs, oldV, newV) ->
+            lifeCycleChange.setValue(newV == QueueType.FORCED? FORCED_PRIORITY_INDICATOR : String.valueOf(priority.get())));
+
         queuedTorrent.statusProperty().addListener((obs, oldV, newV) -> {
             final TorrentStatusChangeEvent statusChangeEvent = new TorrentStatusChangeEvent(this, oldV, newV);
-            statusChangeListeners.forEach(l -> l.onTorrentStatusChanged(statusChangeEvent));});
+            statusChangeListeners.forEach(l -> l.onTorrentStatusChanged(statusChangeEvent));
+        });
 	}
 
     public boolean addPeerViews(final Collection<PeerView> peerViews) {
@@ -131,16 +145,24 @@ public final class TorrentView {
 
     public QueuedTorrentProgress getProgress() { return queuedTorrent.getProgress(); }
     
-    public LongProperty selectedLengthProperty() {
+    public final LongProperty selectedLengthProperty() {
     	return selectedLength;
     }
 
-    public void addQueueStatusChangeListener(final ChangeListener<QueueStatus> listener) {
-        queuedTorrent.queueStatusProperty().addListener(listener);
+    public final StringProperty lifeCycleChangeProperty() {
+        return lifeCycleChange;
     }
 
-    public void removeQueueStatusChangeListener(final ChangeListener<QueueStatus> listener) {
-        queuedTorrent.queueStatusProperty().removeListener(listener);
+    public String getLifeCycleChange() {
+	    return lifeCycleChange.getValue();
+    }
+
+    public void addQueueStatusChangeListener(final ChangeListener<QueueType> listener) {
+        queuedTorrent.queueTypeProperty().addListener(listener);
+    }
+
+    public void removeQueueStatusChangeListener(final ChangeListener<QueueType> listener) {
+        queuedTorrent.queueTypeProperty().removeListener(listener);
     }
 
     public void addTorrentStatusChangeListener(final TorrentStatusChangeListener listener) {
@@ -155,7 +177,7 @@ public final class TorrentView {
     	return selectedLength.get();
     }
 
-    public IntegerProperty priorityProperty() {
+    public final IntegerProperty priorityProperty() {
         return priority;
     }
 
@@ -243,8 +265,8 @@ public final class TorrentView {
         return queuedTorrent.getStatus();
     }
 
-    public QueueStatus getQueueStatus() {
-        return queuedTorrent.getQueueStatus();
+    public QueueType getQueueType() {
+        return queuedTorrent.getQueueType();
     }
 
     public String getSaveDirectory() {

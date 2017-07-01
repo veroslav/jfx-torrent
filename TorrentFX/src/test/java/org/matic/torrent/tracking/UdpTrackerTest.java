@@ -1,6 +1,6 @@
 /*
 * This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015-2016 Vedran Matic
+* Copyright (C) 2015-2017 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@ import org.matic.torrent.peer.ClientProperties;
 import org.matic.torrent.queue.QueuedTorrent;
 import org.matic.torrent.queue.QueuedTorrentMetaData;
 import org.matic.torrent.queue.QueuedTorrentProgress;
-import org.matic.torrent.queue.enums.QueueStatus;
+import org.matic.torrent.queue.enums.QueueType;
 
 import javax.xml.bind.DatatypeConverter;
 import java.io.ByteArrayInputStream;
@@ -50,7 +50,7 @@ import java.util.Arrays;
 public final class UdpTrackerTest {
 
     private final InfoHash infoHash = new InfoHash(DatatypeConverter.parseHexBinary("ABCDEF0123"));
-    private final QueuedTorrent torrent = buildTorrent(infoHash.getBytes(), QueueStatus.ACTIVE);
+    private final QueuedTorrent torrent = buildTorrent(infoHash.getBytes(), QueueType.ACTIVE);
     private final TorrentView torrentView = new TorrentView(torrent);
 
     private final Tracker.Event trackerEvent = Tracker.Event.STARTED;
@@ -137,7 +137,7 @@ public final class UdpTrackerTest {
         Assert.assertEquals(ClientProperties.TCP_PORT, inputStream.readShort() & 0xffff);
     }
 
-    private QueuedTorrent buildTorrent(final byte[] infoHash, final QueueStatus targetQueue) {
+    private QueuedTorrent buildTorrent(final byte[] infoHash, final QueueType targetQueue) {
         final BinaryEncodedDictionary infoDict = new BinaryEncodedDictionary();
         infoDict.put(BinaryEncodingKeys.KEY_LENGTH, new BinaryEncodedInteger(42));
         infoDict.put(BinaryEncodingKeys.KEY_PIECE_LENGTH, new BinaryEncodedInteger(19));

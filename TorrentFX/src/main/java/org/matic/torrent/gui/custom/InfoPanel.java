@@ -32,7 +32,7 @@ import org.matic.torrent.gui.GuiUtils;
 import org.matic.torrent.gui.model.BitsView;
 import org.matic.torrent.gui.model.TorrentView;
 import org.matic.torrent.preferences.CssProperties;
-import org.matic.torrent.queue.enums.QueueStatus;
+import org.matic.torrent.queue.enums.QueueType;
 import org.matic.torrent.utils.UnitConverter;
 
 import java.util.TimeZone;
@@ -129,7 +129,7 @@ public final class InfoPanel extends VBox {
 		downLimitValueLabel.setText(clear? "" : downLimit == 0? "\u221E" :
 			UnitConverter.formatByteCount(downLimit) + "/s");
 
-		statusValueLabel.setText(clear? "" : buildStatusMessage(torrentView.getQueueStatus()));
+		statusValueLabel.setText(clear? "" : buildStatusMessage(torrentView.getQueueType()));
 		remainingValueLabel.setText(clear? "" : UnitConverter.formatByteCount(torrentView.getRemainingBytes()));
 		uploadedValueLabel.setText(clear? "" : UnitConverter.formatByteCount(torrentView.getUploadedBytes()));
 
@@ -151,8 +151,8 @@ public final class InfoPanel extends VBox {
 		shareRatioValueLabel.setText(clear? "" : torrentView.getShareRatio());
 	}
 
-    private String buildStatusMessage(final QueueStatus queueStatus) {
-        switch(queueStatus) {
+    private String buildStatusMessage(final QueueType queueType) {
+        switch(queueType) {
             case ACTIVE:
                 return "Active";
             case QUEUED:

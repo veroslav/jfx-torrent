@@ -1,6 +1,6 @@
 /*
 * This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015-2016 Vedran Matic
+* Copyright (C) 2015-2017 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -43,7 +43,7 @@ import org.matic.torrent.preferences.CssProperties;
 import org.matic.torrent.preferences.GuiProperties;
 import org.matic.torrent.queue.QueuedTorrentMetaData;
 import org.matic.torrent.queue.QueuedTorrentProgress;
-import org.matic.torrent.queue.enums.QueueStatus;
+import org.matic.torrent.queue.enums.QueueType;
 import org.matic.torrent.utils.UnitConverter;
 
 import javafx.geometry.HPos;
@@ -168,8 +168,8 @@ public final class AddTorrentWindow {
         fileTreeViewer.restoreDefault();
 
         if(result.isPresent() && result.get() == ButtonType.OK) {
-            final QueueStatus targetStatus = startTorrentCheckbox.isSelected()?
-                    QueueStatus.ACTIVE : QueueStatus.INACTIVE;
+            final QueueType targetStatus = startTorrentCheckbox.isSelected()?
+                    QueueType.ACTIVE : QueueType.INACTIVE;
             progress.setQueueStatus(targetStatus);
             //state.put(BinaryEncodingKeys.STATE_KEY_TORRENT_STATUS, new BinaryEncodedString(targetStatus.name()));
 
@@ -187,7 +187,7 @@ public final class AddTorrentWindow {
         //state.put(BinaryEncodingKeys.KEY_PATH, new BinaryEncodedString(savePathCombo.getSelectionModel().getSelectedItem()));
         //state.put(BinaryEncodingKeys.STATE_KEY_LABEL, new BinaryEncodedString(labelCombo.getSelectionModel().getSelectedItem()));
 
-        final QueueStatus targetStatus = startTorrentCheckbox.isSelected()? QueueStatus.ACTIVE : QueueStatus.INACTIVE;
+        final QueueType targetStatus = startTorrentCheckbox.isSelected()? QueueType.ACTIVE : QueueType.INACTIVE;
         state.put(BinaryEncodingKeys.STATE_KEY_QUEUE_NAME, new BinaryEncodedString(targetStatus.name()));
 
         final BinaryEncodedList trackerList = new BinaryEncodedList();
