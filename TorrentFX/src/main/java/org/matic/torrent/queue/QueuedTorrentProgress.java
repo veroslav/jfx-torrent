@@ -139,8 +139,9 @@ public final class QueuedTorrentProgress {
         return ((BinaryEncodedInteger)torrentState.get(BinaryEncodingKeys.STATE_KEY_ADDED_ON)).getValue();
     }
 
-    public void setQueueStatus(final QueueType status) {
-        torrentState.put(BinaryEncodingKeys.STATE_KEY_QUEUE_NAME, new BinaryEncodedString(status.name()));
+    public void setQueueType(final QueueType queueType) {
+        final String queueName = queueType == QueueType.FORCED? QueueType.ACTIVE.name() : queueType.name();
+        torrentState.put(BinaryEncodingKeys.STATE_KEY_QUEUE_NAME, new BinaryEncodedString(queueName));
     }
 
     public QueueType getQueueStatus() {

@@ -170,7 +170,7 @@ public final class AddTorrentWindow {
         if(result.isPresent() && result.get() == ButtonType.OK) {
             final QueueType targetStatus = startTorrentCheckbox.isSelected()?
                     QueueType.ACTIVE : QueueType.INACTIVE;
-            progress.setQueueStatus(targetStatus);
+            progress.setQueueType(targetStatus);
             //state.put(BinaryEncodingKeys.STATE_KEY_TORRENT_STATUS, new BinaryEncodedString(targetStatus.name()));
 
             return new AddedTorrentOptions(metaData, progress, fileView.getRoot(),

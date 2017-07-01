@@ -171,7 +171,7 @@ public final class QueuedTorrentManager implements PreferenceChangeListener, Pwp
         synchronized(queuedTorrents) {
             queuedTorrents.forEach(t -> {
                 final QueuedTorrentProgress progress = t.getProgress();
-                progress.setQueueStatus(t.getQueueType());
+                progress.setQueueType(t.getQueueType());
 
                 persistenceSupport.store(t.getMetaData(), progress);
             });

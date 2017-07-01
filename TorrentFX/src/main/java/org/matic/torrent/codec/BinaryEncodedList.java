@@ -46,8 +46,8 @@ public final class BinaryEncodedList implements BinaryEncodable {
 		list = new ArrayList<>();
 	}
 
-    public BinaryEncodedList(final List<BinaryEncodable> elements) {
-        list = elements;
+    public BinaryEncodedList(final Collection<BinaryEncodable> elements) {
+        list = new ArrayList<>(elements);
     }
 	
 	public void add(final BinaryEncodable element) {
