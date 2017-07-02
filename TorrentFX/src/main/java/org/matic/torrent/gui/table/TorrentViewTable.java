@@ -26,6 +26,7 @@ import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
@@ -59,6 +60,7 @@ import org.matic.torrent.utils.UnitConverter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Optional;
 import java.util.TimeZone;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -159,7 +161,7 @@ public final class TorrentViewTable {
                     return torrentStatus == TorrentStatus.ACTIVE &&
                             (queueType == QueueType.ACTIVE || queueType == QueueType.FORCED);
                 case INACTIVE_FILTER:
-                    return queueType == QueueType.INACTIVE;
+                    return queueType == QueueType.INACTIVE || queueType == QueueType.QUEUED;
                 default:
                     return true;
             }
@@ -171,8 +173,9 @@ public final class TorrentViewTable {
 			handler.accept(newV));
 	}
 	
-	public boolean contains(final InfoHash torrentInfoHash) {
-		return torrentTable.getItems().contains(torrentInfoHash);
+	public Optional<TorrentView> find(final InfoHash infoHash) {
+		return torrentTable.getItems().stream().filter(
+                tv -> tv.getInfoHash().equals(infoHash)).findFirst();
 	}
 
     public void refresh() {
@@ -214,22 +217,18 @@ public final class TorrentViewTable {
                 activeTorrents.set(activeTorrents.intValue() + 1);
                 break;
             case INACTIVE:
+            case QUEUED:
                 inactiveTorrents.set(inactiveTorrents.intValue() + 1);
                 break;
         }
         switch(oldQueueType) {
             case ACTIVE:
-                if(oldQueueType != QueueType.NOT_ON_QUEUE) {
-                    activeTorrents.set(activeTorrents.intValue() - 1);
-                }
+                activeTorrents.set(activeTorrents.intValue() - 1);
                 break;
             case INACTIVE:
-                if(oldQueueType != QueueType.NOT_ON_QUEUE) {
-                    inactiveTorrents.set(inactiveTorrents.intValue() - 1);
-                }
+                inactiveTorrents.set(inactiveTorrents.intValue() - 1);
                 break;
         }
-        totalTorrents.set(torrentViews.size());
     }
 	
 	public void deleteJobs(final ObservableList<TorrentView> torrentJobs) {
@@ -263,6 +262,12 @@ public final class TorrentViewTable {
 	}
 
 	private void initComponents() {
+	    torrentViews.addListener((ListChangeListener<TorrentView>) l -> {
+	        if(l.next()) {
+                totalTorrents.set(torrentViews.size());
+            }
+        });
+
         final SortedList<TorrentView> sortedTorrents = new SortedList<>(filteredTorrents);
         sortedTorrents.comparatorProperty().bind(torrentTable.comparatorProperty());
 

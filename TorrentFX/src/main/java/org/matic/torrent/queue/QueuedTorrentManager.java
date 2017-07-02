@@ -93,6 +93,7 @@ public final class QueuedTorrentManager implements PreferenceChangeListener, Pwp
         }
     }
 
+    //TODO: Fix deadlock in this method!
     @Override
     public void peerAdded(final PeerView peerView) {
         synchronized(queuedTorrents) {
@@ -159,6 +160,9 @@ public final class QueuedTorrentManager implements PreferenceChangeListener, Pwp
         final List<TorrentTemplate> loadedTorrentTemplates = persistenceSupport.loadAll();
         Collections.sort(loadedTorrentTemplates);
 
+        //TODO: Fix deadlock issue, don't synchronize on other object + on minimal piece of code
+        //TODO: Deadlock occurs when restoring more than one torrent from files
+        //TODO: The issue occurs when storing handshaken peers (peersAdded() above )while GUI is being built
         synchronized(queuedTorrents) {
             return addTorrents(loadedTorrentTemplates);
         }
@@ -171,7 +175,9 @@ public final class QueuedTorrentManager implements PreferenceChangeListener, Pwp
         synchronized(queuedTorrents) {
             queuedTorrents.forEach(t -> {
                 final QueuedTorrentProgress progress = t.getProgress();
-                progress.setQueueType(t.getQueueType());
+                final QueueType queueType = t.getQueueType();
+                progress.setQueueType(queueType != QueueType.INACTIVE? QueueType.ACTIVE : QueueType.INACTIVE);
+                progress.setTorrentPriority(t.getPriority());
 
                 persistenceSupport.store(t.getMetaData(), progress);
             });
@@ -185,6 +191,7 @@ public final class QueuedTorrentManager implements PreferenceChangeListener, Pwp
      * @return A view collection to the newly created, unique torrents.
      */
     public List<TorrentView> addTorrents(final Collection<TorrentTemplate> torrentTemplates) {
+        //TODO: Same as above (see synchronization and deadlock issues mentioned)
         synchronized(queuedTorrents) {
             return torrentTemplates.stream().filter(template -> {
                 //We are only interested in new torrents, filter out existing ones
@@ -210,7 +217,7 @@ public final class QueuedTorrentManager implements PreferenceChangeListener, Pwp
                     p.setInfoHash(metaData.getInfoHash());
                     return p;
                 }).collect(Collectors.toList());
-                if(!storedPeers.isEmpty()) {
+                if (!storedPeers.isEmpty()) {
                     connectionManager.onPeersFound(storedPeers, "queued_torrent_progress_data");
                 }
 

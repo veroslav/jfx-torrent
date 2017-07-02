@@ -54,7 +54,8 @@ public final class PeerSession {
     private static final int OUTPUT_BUFFER_SIZE = 1024;
 
     private final ByteBuffer inputBuffer = ByteBuffer.allocateDirect(INPUT_BUFFER_SIZE);
-    private final ByteBuffer outputBuffer = ByteBuffer.allocateDirect(OUTPUT_BUFFER_SIZE);
+    private final ThreadLocal<ByteBuffer> outputBuffer =
+            ThreadLocal.withInitial(() -> ByteBuffer.allocateDirect(OUTPUT_BUFFER_SIZE));
 
     private final List<PwpMessageRequest> messageWriteQueue = new ArrayList<>();
 
@@ -96,15 +97,16 @@ public final class PeerSession {
     protected boolean flushWriteQueue() throws IOException {
          while(!messageWriteQueue.isEmpty()) {
             final PwpMessageRequest message = messageWriteQueue.get(0);
+            final ByteBuffer localOutputBuffer = outputBuffer.get();
 
             //If buffer is empty, we process a new message, otherwise we write buffered data
-            if(outputBuffer.position() == 0) {
-                outputBuffer.put(message.getMessageData());
+            if(localOutputBuffer.position() == 0) {
+                localOutputBuffer.put(message.getMessageData());
             }
 
-            outputBuffer.flip();
-            final int bytesWritten = channel.write(outputBuffer);
-            outputBuffer.compact();
+            localOutputBuffer.flip();
+            final int bytesWritten = channel.write(localOutputBuffer);
+            localOutputBuffer.compact();
 
             if(bytesWritten == 0) {
                 return false;

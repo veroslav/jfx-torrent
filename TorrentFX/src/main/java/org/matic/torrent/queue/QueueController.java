@@ -379,9 +379,12 @@ public final class QueueController {
         torrent.priorityProperty().addListener((obs, oldV, newV) ->
                 torrent.getProgress().setTorrentPriority(newV.intValue()));
 
-        final int torrentsInQueue = queueStatus.entrySet().stream().mapToInt(
-                entry -> entry.getValue().size()).sum();
-        torrent.setPriority(torrentsInQueue + 1);
+        //Check whether it is a new torrent or loaded from previous session
+        if(torrent.getPriority() < 1) {
+            final int torrentsInQueue = queueStatus.entrySet().stream().mapToInt(
+                    entry -> entry.getValue().size()).sum();
+            torrent.setPriority(torrentsInQueue + 1);
+        }
 
         final QueueType queue = torrent.getQueueType();
 

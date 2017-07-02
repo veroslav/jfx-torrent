@@ -93,8 +93,10 @@ import org.matic.torrent.peer.ClientProperties;
 import org.matic.torrent.preferences.ApplicationPreferences;
 import org.matic.torrent.preferences.CssProperties;
 import org.matic.torrent.preferences.GuiProperties;
+import org.matic.torrent.queue.QueuedTorrent;
 import org.matic.torrent.queue.QueuedTorrentManager;
 import org.matic.torrent.queue.QueuedTorrentMetaData;
+import org.matic.torrent.queue.QueuedTorrentProgress;
 import org.matic.torrent.queue.TorrentTemplate;
 import org.matic.torrent.queue.enums.PriorityChange;
 import org.matic.torrent.queue.enums.QueueType;
@@ -186,9 +188,6 @@ public final class ApplicationWindow implements PreferenceChangeListener {
 
     //Menu item for showing or hiding the tab icons
     private final CheckMenuItem showTabIconsMenuItem = new CheckMenuItem("_Icons on Tabs");
-
-    //A list of all displayed torrents in the torrent view
-    private final ObservableList<TorrentView> torrents = FXCollections.observableArrayList();
 
     //Mapping between toolbar's buttons and their icon paths
     private final Map<String, Button> toolbarButtonsMap = new HashMap<>();
@@ -945,8 +944,7 @@ public final class ApplicationWindow implements PreferenceChangeListener {
         final QueuedTorrentMetaData metaData = torrentOptions.getMetaData();
         final InfoHash infoHash = metaData.getInfoHash();
 
-        final Optional<TorrentView> torrentMatch = torrents.stream().filter(
-                tv -> tv.getInfoHash().equals(infoHash)).findFirst();
+        final Optional<TorrentView> torrentMatch = torrentViewTable.find(infoHash);
 
         if(torrentMatch.isPresent()) {
             final Alert existingTorrentAlert = new Alert(AlertType.ERROR,
@@ -963,6 +961,10 @@ public final class ApplicationWindow implements PreferenceChangeListener {
             queuedTorrentManager.addTrackers(torrentMatch.get(), torrentOptions.getProgress().getTrackerUrls());
         }
         else {
+            final QueuedTorrentProgress torrentProgress = torrentOptions.getProgress();
+            if(torrentOptions.shouldAddToTopQueue()) {
+                torrentProgress.setTorrentPriority(QueuedTorrent.TOP_PRIORITY);
+            }
             final List<TorrentView> torrentViews = queuedTorrentManager.addTorrents(
                     Arrays.asList(new TorrentTemplate(metaData, torrentOptions.getProgress())));
             torrentViews.forEach(tv -> loadTorrent(tv, torrentOptions.getTorrentContents()));
@@ -987,7 +989,6 @@ public final class ApplicationWindow implements PreferenceChangeListener {
     private void loadTorrent(final TorrentView torrentView, final TreeItem<TorrentFileEntry> contents) {
         torrentView.selectedLengthProperty().bind(contents.getValue().selectionLengthProperty());
 
-        torrents.add(torrentView);
         trackerTable.setContent(torrentView.getTrackerViews());
         torrentViewTable.addJob(torrentView);
         peerTable.setContent(torrentView.getPeerViews());

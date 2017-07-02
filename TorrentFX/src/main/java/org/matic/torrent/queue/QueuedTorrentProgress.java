@@ -87,7 +87,7 @@ public final class QueuedTorrentProgress {
         return trackerUrls;
     }
 
-    protected void setTorrentPriority(final int priority) {
+    public void setTorrentPriority(final int priority) {
         torrentState.put(BinaryEncodingKeys.STATE_KEY_PRIORITY, new BinaryEncodedInteger(priority));
     }
 
