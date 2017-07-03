@@ -195,12 +195,6 @@ public class PeerConnectionManager implements PeerFoundListener, TorrentStatusCh
                 indeterminateConnections.get(infoHash).size() : 0;
         final int handshakenConnectionCount = handshakenConnections.containsKey(infoHash)?
                 handshakenConnections.get(infoHash).size() : 0;
-        /*final int incomingConnectionCount = indeterminateConnections.containsKey(null)?
-                indeterminateConnections.get(null).size() : 0;
-
-        System.out.println("TorrentConCount: " + (indeterminateConnectionCount + handshakenConnectionCount) +
-                " [indeterminate: " + indeterminateConnectionCount + ", handshaken: " + handshakenConnectionCount +
-                "], incoming : " + incomingConnectionCount + ", totalConCount: " + totalConnectionCount);*/
 
         return indeterminateConnectionCount + handshakenConnectionCount;
     }
@@ -347,10 +341,8 @@ public class PeerConnectionManager implements PeerFoundListener, TorrentStatusCh
             if(torrentPeers != null) {
                 if(statusChange.getNewStatus() == TorrentStatus.STOPPED) {
                     handshakenConnections.remove(infoHash);
-                    torrentPeers.entrySet().forEach(p -> {
-                        //System.out.println("processTorrentStatusChanges().disconnect: " + p.getKey());
-                        disconnectPeer(p.getValue(), p.getKey(), "processTorrentStatusChanges()");
-                    });
+                    torrentPeers.entrySet().forEach(p ->
+                        disconnectPeer(p.getValue(), p.getKey()));
                 }
             }
         }
@@ -371,26 +363,27 @@ public class PeerConnectionManager implements PeerFoundListener, TorrentStatusCh
             final PwpPeer newPeer = peer;
             final int torrentConnectionCount = getTorrentConnectionCount(newPeer.getInfoHash());
 
+            final TorrentView targetTorrent;
             synchronized(servedTorrents) {
-                final TorrentView targetTorrent = servedTorrents.get(newPeer.getInfoHash());
-                if(targetTorrent == null) {
+                targetTorrent = servedTorrents.get(newPeer.getInfoHash());
+                if (targetTorrent == null) {
                     continue;
                 }
-                final TorrentStatus torrentStatus = targetTorrent.getStatus();
+            }
+            final TorrentStatus torrentStatus = targetTorrent.getStatus();
 
-                if((torrentStatus != TorrentStatus.STOPPED && torrentStatus != TorrentStatus.ERROR) &&
-                        totalConnectionCount < GLOBAL_CONNECTION_LIMIT &&
-                        torrentConnectionCount < MAX_CONNECTIONS_PER_TORRENT) {
-                    initConnection(newPeer);
-                } else {
-                    offlinePeers.putIfAbsent(newPeer.getInfoHash(), new ArrayList<>());
-                    offlinePeers.compute(newPeer.getInfoHash(), (key, offline) -> {
-                        if(!offline.contains(newPeer)) {
-                            offline.add(newPeer);
-                        }
-                        return offline;
-                    });
-                }
+            if((torrentStatus != TorrentStatus.STOPPED && torrentStatus != TorrentStatus.ERROR) &&
+                    totalConnectionCount < GLOBAL_CONNECTION_LIMIT &&
+                    torrentConnectionCount < MAX_CONNECTIONS_PER_TORRENT) {
+                initConnection(newPeer);
+            } else {
+                offlinePeers.putIfAbsent(newPeer.getInfoHash(), new ArrayList<>());
+                offlinePeers.compute(newPeer.getInfoHash(), (key, offline) -> {
+                    if(!offline.contains(newPeer)) {
+                        offline.add(newPeer);
+                    }
+                    return offline;
+                });
             }
         }
     }
@@ -414,10 +407,6 @@ public class PeerConnectionManager implements PeerFoundListener, TorrentStatusCh
                     handshakenConnections.values().stream().flatMap(
                             m -> m.keySet().stream()).collect(Collectors.toSet()) : messageRequestPeers;
 
-            if(messageRequest.getMessageType() == MessageType.KEEP_ALIVE) {
-                System.out.println("Sending KEEP_ALIVE to connected peers");
-            }
-
             targetPeers.forEach(p -> {
                 final SelectionKey selectionKey = handshakenConnections.get(p.getInfoHash()).get(p);
                 if(selectionKey != null) {
@@ -426,8 +415,7 @@ public class PeerConnectionManager implements PeerFoundListener, TorrentStatusCh
                         peerSession.putOnWriteQueue(finalRequest);
                         writeToChannel(selectionKey);
                     } catch(final IOException ioe) {
-                        //System.err.println("An error occurred while writing the peer message: " + ioe.toString());
-                        disconnectPeer(selectionKey, p, "processPendingMessages(error: " + ioe.getMessage() + ")");
+                        disconnectPeer(selectionKey, p);
                     }
                 }
             });
@@ -439,10 +427,8 @@ public class PeerConnectionManager implements PeerFoundListener, TorrentStatusCh
     }
 
     private void processPendingSelections() throws IOException {
-        //TODO: Use KEEP_ALIVE_INTERVAL for selector timeout
         final long timeLeftToWaitForKeepAlive = KEEP_ALIVE_INTERVAL - (System.currentTimeMillis() - lastKeepAliveSent);
         final int keysSelected = selector.select(timeLeftToWaitForKeepAlive > 0? timeLeftToWaitForKeepAlive : 0);
-        //final int keysSelected = selector.select(5000); //5 seconds
 
         if(keysSelected > 0) {
             final Set<SelectionKey> selectedKeys = selector.selectedKeys();
@@ -475,16 +461,14 @@ public class PeerConnectionManager implements PeerFoundListener, TorrentStatusCh
             }
         }
 
-        /* TODO: Stale connection checks below have a bug that causes invalid connection counting. FIX NEEDED! */
         //Disconnect all peers that haven't responded for a while
         final Set<Map.Entry<PeerView, SelectionKey>> staleHandshakenConnections = handshakenConnections.values().stream()
                 .flatMap(m -> m.entrySet().stream()).filter(e -> {
                     final PeerSession session = (PeerSession) e.getValue().attachment();
                     return (System.currentTimeMillis() - session.getLastActivityTime()) > STALE_CONNECTION_THRESHOLD_TIME;
                 }).collect(Collectors.toSet());
-        staleHandshakenConnections.forEach(e -> {
-            disconnectPeer(e.getValue(), e.getKey(), "processPendingSelections(stale handshaken)");
-        });
+        staleHandshakenConnections.forEach(e ->
+            disconnectPeer(e.getValue(), e.getKey()));
 
         //Cancel pending connection attempts if they are taking too long
         final Set<Map.Entry<SelectionKey, PeerView>> staleIndeterminateConnections =
@@ -493,7 +477,7 @@ public class PeerConnectionManager implements PeerFoundListener, TorrentStatusCh
                     return session.getLastActivityTime() < System.currentTimeMillis() - 10000;
                 }).collect(Collectors.toSet());
         staleIndeterminateConnections.stream().map(e -> {
-            disconnectPeer(e.getKey(), e.getValue(), "processPendingSelections(stale indeterminate)");
+            disconnectPeer(e.getKey(), e.getValue());
             return e.getValue().getInfoHash();
         }).forEach(infoHash -> indeterminateConnections.remove(infoHash));
     }
@@ -532,8 +516,7 @@ public class PeerConnectionManager implements PeerFoundListener, TorrentStatusCh
             }
             selectionKey.interestOps(selectionKey.interestOps() & ~SelectionKey.OP_WRITE);
         } catch (final IOException ioe) {
-            //System.out.println("writeToChannel().disconnect: " + session.getPeerView());
-            disconnectPeer(selectionKey, session.getPeerView(), "writeToChannel(" + ioe.getMessage() + ")");
+            disconnectPeer(selectionKey, session.getPeerView());
         }
     }
 
@@ -549,9 +532,6 @@ public class PeerConnectionManager implements PeerFoundListener, TorrentStatusCh
                 final Map<PeerView, SelectionKey> targetPeers = handshakenConnections.get(peerView.getInfoHash());
 
                 if(targetPeers == null || !targetPeers.containsKey(peerView)) {
-                    //Ignore this peer, connection is not handshaken OR the target torrent is not served
-                    //System.out.println("readFromChannel().disconnect not shaken: " + peerView);
-                    //disconnectPeer(selectionKey, peerView, "readFromChannel(not_handhaken_connection)");
                     return;
                 }
 
@@ -560,8 +540,7 @@ public class PeerConnectionManager implements PeerFoundListener, TorrentStatusCh
             }
         }
         catch(final IOException | InvalidPeerMessageException e) {
-            //System.err.println("readFromChannel().disconnect exception: " + session.getPeerView() + e);
-            disconnectPeer(selectionKey, session.getPeerView(), "readFromChannel(exception: " + e.getMessage() + ")");
+            disconnectPeer(selectionKey, session.getPeerView());
         }
     }
 
@@ -574,21 +553,24 @@ public class PeerConnectionManager implements PeerFoundListener, TorrentStatusCh
             final InfoHash infoHash = handshake.getInfoHash();
             final PeerView peerView = session.getPeerView();
 
-            synchronized(servedTorrents) {
-                //Disconnect the peer if do we not serve this torrent or have reached torrent connections limit
-                final int torrentConnectionCount = getTorrentConnectionCount(infoHash);
-                final TorrentView targetTorrent = servedTorrents.get(infoHash);
-                if(targetTorrent == null || !(targetTorrent.getStatus() == TorrentStatus.ACTIVE ||
-                        targetTorrent.getStatus() == TorrentStatus.PAUSED) ||
-                        torrentConnectionCount >= MAX_CONNECTIONS_PER_TORRENT) {
-                    disconnectPeer(selectionKey, peerView, "checkForHandshake(not_served OR #torrent_connections ("
-                            + torrentConnectionCount + ") >= " + MAX_CONNECTIONS_PER_TORRENT +")");
-                    return;
-                }
+            final TorrentView targetTorrent;
+            final int torrentConnectionCount;
 
-                if(!session.isIncoming()) {
-                    targetTorrent.getProgress().addPeer(peerView.getPeer());
-                }
+            synchronized(servedTorrents) {
+                torrentConnectionCount = getTorrentConnectionCount(infoHash);
+                targetTorrent = servedTorrents.get(infoHash);
+            }
+
+            //Disconnect the peer if do we not serve this torrent or have reached torrent connections limit
+            if(targetTorrent == null || !(targetTorrent.getStatus() == TorrentStatus.ACTIVE ||
+                    targetTorrent.getStatus() == TorrentStatus.PAUSED) ||
+                    torrentConnectionCount >= MAX_CONNECTIONS_PER_TORRENT) {
+                disconnectPeer(selectionKey, peerView);
+                return;
+            }
+
+            if(!session.isIncoming()) {
+                targetTorrent.getProgress().addPeer(peerView.getPeer());
             }
 
             peerView.setInfoHash(infoHash);
@@ -630,8 +612,7 @@ public class PeerConnectionManager implements PeerFoundListener, TorrentStatusCh
 
             if(bitSet.length() > expectedPieceCount || (payload.length * Byte.SIZE < expectedPieceCount)) {
                 //Disconnect this peer, invalid bitfield
-                System.out.println("checkForBitfield().disconnect: " + peerView);
-                disconnectPeer(selectionKey, peerView, "checkForBitfield(invalid_bitfield)");
+                disconnectPeer(selectionKey, peerView);
                 System.out.println("Invalid BITFIELD received from: " + peerView);
                 return;
             }
@@ -639,22 +620,18 @@ public class PeerConnectionManager implements PeerFoundListener, TorrentStatusCh
         }
     }
 
-    private void disconnectPeer(final SelectionKey selectionKey, final PeerView peerView, final String caller) {
+    private void disconnectPeer(final SelectionKey selectionKey, final PeerView peerView) {
         final SocketChannel channel = (SocketChannel)selectionKey.channel();
         final InfoHash peerInfoHash = peerView.getInfoHash();
 
         final Map<SelectionKey, PeerView> indeterminateConnectionsForTorrent = indeterminateConnections.get(peerInfoHash);
-        if(indeterminateConnectionsForTorrent != null && (indeterminateConnectionsForTorrent.remove(selectionKey) != null)) {
-            //--totalConnectionCount;
-            /*System.out.println("DisconnectPeer(" + caller + "): peer = " + peerView.toString() + ", infoHash: "
-                    + peerInfoHash + ", matching indeterminate connection");*/
+        if(indeterminateConnectionsForTorrent != null) {
+            indeterminateConnectionsForTorrent.remove(selectionKey);
         }
 
         final Map<PeerView, SelectionKey> handshakenConnectionsForTorrent = handshakenConnections.get(peerInfoHash);
-        if(handshakenConnectionsForTorrent != null && (handshakenConnectionsForTorrent.remove(peerView) != null)) {
-            //--totalConnectionCount;
-            /*System.out.println("DisconnectPeer(" + caller + "): peer = " + peerView.toString() + ", infoHash: "
-                    + peerInfoHash + ", matching handshaken connection");*/
+        if(handshakenConnectionsForTorrent != null ) {
+            handshakenConnectionsForTorrent.remove(peerView);
         }
 
         --totalConnectionCount;
@@ -677,9 +654,6 @@ public class PeerConnectionManager implements PeerFoundListener, TorrentStatusCh
             int torrentConnectionCount = getTorrentConnectionCount(peerInfoHash);
             while (!targetOfflinePeers.isEmpty() && (totalConnectionCount < GLOBAL_CONNECTION_LIMIT) &&
                     torrentConnectionCount < MAX_CONNECTIONS_PER_TORRENT) {
-
-                //System.out.println("disconnectPeers(): indeterminate connections? " + indeterminateConnectionCount);
-
                 initConnection(targetOfflinePeers.remove(0));
                 torrentConnectionCount = getTorrentConnectionCount(peerInfoHash);
             }
@@ -730,8 +704,7 @@ public class PeerConnectionManager implements PeerFoundListener, TorrentStatusCh
             synchronized(peerQueue) {
                 peerQueue.remove(peerView);
             }
-            //System.out.println("finalizeConnection().disconnect: " + peerView);
-            disconnectPeer(selectionKey, peerView, "finalizeConnection(error: " + ioe.getMessage() + ")");
+            disconnectPeer(selectionKey, peerView);
         }
     }
 
@@ -739,9 +712,6 @@ public class PeerConnectionManager implements PeerFoundListener, TorrentStatusCh
         //Check if we can accept more connections or whether a limit has been reached
         final int incomingConnectionCount = indeterminateConnections.containsKey(null)?
                 indeterminateConnections.get(null).size() : 0;
-
-        /*System.out.println("acceptConnection(1): Incoming = " + incomingConnectionCount + ", total: "
-                + totalConnectionCount + "\n");*/
 
         if(totalConnectionCount >= GLOBAL_CONNECTION_LIMIT ||
                 incomingConnectionCount >= INCOMING_CONNECTION_LIMIT) {
@@ -756,18 +726,12 @@ public class PeerConnectionManager implements PeerFoundListener, TorrentStatusCh
         SocketChannel channel = null;
 
         try {
-
-            /*System.out.println("acceptConnection(2): Incoming = " + incomingConnectionCount + ", total: "
-                    + totalConnectionCount + "\n");*/
-
             channel = serverSocketChannel.accept();
             channel.configureBlocking(false);
 
             final InetSocketAddress connectionAddress = (InetSocketAddress)channel.getRemoteAddress();
             final String remotePeerIp = connectionAddress.getAddress().getHostAddress();
             final int remotePeerPort = connectionAddress.getPort();
-
-            //System.out.println("Remote connection: (" + remotePeerIp + ":" + remotePeerPort + ")");
 
             final PwpPeer peer = new PwpPeer(remotePeerIp, remotePeerPort, null);
             final PeerSession peerSession = new PeerSession(channel, new PeerView(peer), true);
@@ -782,10 +746,6 @@ public class PeerConnectionManager implements PeerFoundListener, TorrentStatusCh
             });
 
             ++totalConnectionCount;
-            /*System.out.println("acceptConnection(3): Incoming con added, total incoming = "
-                    + indeterminateConnections.get(null).size() + ", totalCons = " + totalConnectionCount +
-                    " [Accepted remote connection: ip: " + remotePeerIp + ", port " + remotePeerPort + "]");*/
-
         } catch (final IOException ioe) {
             System.err.println("Failed to accept incoming connection: " + ioe.getMessage());
 
@@ -817,14 +777,10 @@ public class PeerConnectionManager implements PeerFoundListener, TorrentStatusCh
         serverChannel.configureBlocking(false);
         serverChannel.bind(NetworkUtilities.getSocketAddressFromNetworkInterface("tun", listenPort));
         serverChannel.register(selector, SelectionKey.OP_ACCEPT);
-
-        //System.out.println("Listening for incoming connection: " + serverChannel.toString());
     }
 
     private void initConnection(final PwpPeer peer) {
         SocketChannel peerChannel = null;
-
-        //System.out.println("initConnection(): Increasing connection count (" + peer.getIp() + ":" + peer.getPort() + "), total = " + totalConnectionCount);
 
         try {
             peerChannel = SocketChannel.open();
@@ -855,9 +811,6 @@ public class PeerConnectionManager implements PeerFoundListener, TorrentStatusCh
             ++totalConnectionCount;
             notifyPeerAdded(peerView);
         } catch(final IOException ioe) {
-            //--totalConnectionCount;
-            //System.out.println("initConnection(): Decreasing connection count (" + peer.getIp() + ":" + peer.getPort() + ") total = " + totalConnectionCount);
-
             if(peerChannel != null) {
                 try {
                     peerChannel.close();

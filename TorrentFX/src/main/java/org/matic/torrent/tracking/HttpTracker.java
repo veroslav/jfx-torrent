@@ -23,7 +23,6 @@ import org.matic.torrent.codec.BinaryDecoder;
 import org.matic.torrent.codec.BinaryEncodable;
 import org.matic.torrent.codec.BinaryEncodedDictionary;
 import org.matic.torrent.codec.BinaryEncodedInteger;
-import org.matic.torrent.codec.BinaryEncodedList;
 import org.matic.torrent.codec.BinaryEncodedString;
 import org.matic.torrent.codec.BinaryEncodingKeys;
 import org.matic.torrent.exception.BinaryDecoderException;
@@ -40,7 +39,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
-import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
@@ -48,7 +46,6 @@ import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -255,9 +252,10 @@ public final class HttpTracker extends Tracker {
 			connection.setRequestProperty(NetworkUtilities.HTTP_ACCEPT_CHARSET, StandardCharsets.UTF_8.name());
 			connection.setRequestProperty(NetworkUtilities.HTTP_USER_AGENT_NAME, NetworkUtilities.getHttpUserAgent());			
 			connection.setRequestProperty(NetworkUtilities.HTTP_ACCEPT_ENCODING, NetworkUtilities.HTTP_GZIP_ENCODING);
+			connection.setReadTimeout(NetworkUtilities.HTTP_CONNECTION_TIMEOUT);
 			connection.setConnectTimeout(NetworkUtilities.HTTP_CONNECTION_TIMEOUT);
 			connection.setInstanceFollowRedirects(true);
-			
+
 			final int responseCode = connection.getResponseCode();
 			
 			if(responseCode == HttpURLConnection.HTTP_OK) {
