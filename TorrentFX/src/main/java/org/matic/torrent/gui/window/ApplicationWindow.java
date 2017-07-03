@@ -438,13 +438,16 @@ public final class ApplicationWindow implements PreferenceChangeListener {
         rssFeedsRootNode.setExpanded(true);
 
         torrentViewTable.totalTorrentsProperty().addListener((obs, oldV, newV) ->
-            torrentsRootLabel.setText(torrentsRootLabelId + " (" + newV + ")"));
+                Platform.runLater(() ->
+                        torrentsRootLabel.setText(torrentsRootLabelId + " (" + newV + ")")));
 
         torrentViewTable.activeTorrentsProperty().addListener((obs, oldV, newV) ->
-                torrentLabels[3].setText(torrentLabelNames[3] + " (" + newV + ")"));
+                Platform.runLater(() ->
+                        torrentLabels[3].setText(torrentLabelNames[3] + " (" + newV + ")")));
 
         torrentViewTable.inactiveTorrentsProperty().addListener((obs, oldV, newV) ->
-            torrentLabels[4].setText(torrentLabelNames[4] + " (" + newV + ")"));
+                Platform.runLater(() ->
+                        torrentLabels[4].setText(torrentLabelNames[4] + " (" + newV + ")")));
 
         final List<TreeItem<Label>> allNodes = Arrays.asList(torrentsRootNode, labelsRootNode, rssFeedsRootNode);
 

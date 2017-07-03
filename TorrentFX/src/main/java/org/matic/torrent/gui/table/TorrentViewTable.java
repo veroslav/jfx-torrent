@@ -226,6 +226,7 @@ public final class TorrentViewTable {
                 activeTorrents.set(activeTorrents.intValue() - 1);
                 break;
             case INACTIVE:
+            case QUEUED:
                 inactiveTorrents.set(inactiveTorrents.intValue() - 1);
                 break;
         }
