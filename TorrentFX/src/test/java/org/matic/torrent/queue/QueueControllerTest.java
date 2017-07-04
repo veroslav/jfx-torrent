@@ -57,9 +57,7 @@ public final class QueueControllerTest {
 
         Assert.assertEquals(1, unitUnderTest.getQueueSize(EnumSet.of(QueueType.ACTIVE)));
 
-        Assert.assertEquals(1, torrent.getPriority());
-        Assert.assertEquals(QueueType.ACTIVE, torrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.ACTIVE, torrent.getStatus());
+        validateTorrentsPriorityAndQueue(torrent, 1, QueueType.ACTIVE, TorrentStatus.ACTIVE);
         Assert.assertFalse(torrent.isForced());
     }
 
@@ -73,9 +71,7 @@ public final class QueueControllerTest {
 
         Assert.assertEquals(1, unitUnderTest.getQueueSize(EnumSet.of(QueueType.INACTIVE)));
 
-        Assert.assertEquals(1, torrent.getPriority());
-        Assert.assertEquals(QueueType.INACTIVE, torrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.STOPPED, torrent.getStatus());
+        validateTorrentsPriorityAndQueue(torrent, 1, QueueType.INACTIVE, TorrentStatus.STOPPED);
         Assert.assertFalse(torrent.isForced());
     }
 
@@ -94,14 +90,10 @@ public final class QueueControllerTest {
 
         Assert.assertEquals(2, unitUnderTest.getQueueSize(EnumSet.of(QueueType.ACTIVE)));
 
-        Assert.assertEquals(1, otherTorrent.getPriority());
-        Assert.assertEquals(QueueType.ACTIVE, otherTorrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.ACTIVE, otherTorrent.getStatus());
+        validateTorrentsPriorityAndQueue(otherTorrent, 1, QueueType.ACTIVE, TorrentStatus.ACTIVE);
         Assert.assertFalse(otherTorrent.isForced());
 
-        Assert.assertEquals(2, torrentToAdd.getPriority());
-        Assert.assertEquals(QueueType.ACTIVE, torrentToAdd.getQueueType());
-        Assert.assertEquals(TorrentStatus.ACTIVE, torrentToAdd.getStatus());
+        validateTorrentsPriorityAndQueue(torrentToAdd, 2, QueueType.ACTIVE, TorrentStatus.ACTIVE);
         Assert.assertFalse(torrentToAdd.isForced());
     }
 
@@ -121,14 +113,10 @@ public final class QueueControllerTest {
         Assert.assertEquals(1, unitUnderTest.getQueueSize(EnumSet.of(QueueType.ACTIVE)));
         Assert.assertEquals(1, unitUnderTest.getQueueSize(EnumSet.of(QueueType.QUEUED)));
 
-        Assert.assertEquals(1, otherTorrent.getPriority());
-        Assert.assertEquals(QueueType.ACTIVE, otherTorrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.ACTIVE, otherTorrent.getStatus());
+        validateTorrentsPriorityAndQueue(otherTorrent, 1, QueueType.ACTIVE, TorrentStatus.ACTIVE);
         Assert.assertFalse(otherTorrent.isForced());
 
-        Assert.assertEquals(2, torrentToAdd.getPriority());
-        Assert.assertEquals(QueueType.QUEUED, torrentToAdd.getQueueType());
-        Assert.assertEquals(TorrentStatus.STOPPED, torrentToAdd.getStatus());
+        validateTorrentsPriorityAndQueue(torrentToAdd, 2, QueueType.QUEUED, TorrentStatus.STOPPED);
         Assert.assertFalse(torrentToAdd.isForced());
     }
 
@@ -150,14 +138,10 @@ public final class QueueControllerTest {
         Assert.assertEquals(1, unitUnderTest.getQueueSize(EnumSet.of(QueueType.ACTIVE)));
         Assert.assertEquals(1, unitUnderTest.getQueueSize(EnumSet.of(QueueType.FORCED)));
 
-        Assert.assertEquals(1, otherTorrent.getPriority());
-        Assert.assertEquals(QueueType.ACTIVE, otherTorrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.ACTIVE, otherTorrent.getStatus());
+        validateTorrentsPriorityAndQueue(otherTorrent, 1, QueueType.ACTIVE, TorrentStatus.ACTIVE);
         Assert.assertFalse(otherTorrent.isForced());
 
-        Assert.assertEquals(2, torrentToAdd.getPriority());
-        Assert.assertEquals(QueueType.FORCED, torrentToAdd.getQueueType());
-        Assert.assertEquals(TorrentStatus.ACTIVE, torrentToAdd.getStatus());
+        validateTorrentsPriorityAndQueue(torrentToAdd, 2, QueueType.FORCED, TorrentStatus.ACTIVE);
         Assert.assertTrue(torrentToAdd.isForced());
     }
 
@@ -183,19 +167,13 @@ public final class QueueControllerTest {
         Assert.assertEquals(1, unitUnderTest.getQueueSize(EnumSet.of(QueueType.QUEUED)));
         Assert.assertEquals(1, unitUnderTest.getQueueSize(EnumSet.of(QueueType.INACTIVE)));
 
-        Assert.assertEquals(1, activeTorrent.getPriority());
-        Assert.assertEquals(QueueType.ACTIVE, activeTorrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.ACTIVE, activeTorrent.getStatus());
+        validateTorrentsPriorityAndQueue(activeTorrent, 1, QueueType.ACTIVE, TorrentStatus.ACTIVE);
         Assert.assertFalse(activeTorrent.isForced());
 
-        Assert.assertEquals(2, inactiveTorrent.getPriority());
-        Assert.assertEquals(QueueType.INACTIVE, inactiveTorrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.STOPPED, inactiveTorrent.getStatus());
+        validateTorrentsPriorityAndQueue(inactiveTorrent, 2, QueueType.INACTIVE, TorrentStatus.STOPPED);
         Assert.assertFalse(inactiveTorrent.isForced());
 
-        Assert.assertEquals(3, torrentToAdd.getPriority());
-        Assert.assertEquals(QueueType.QUEUED, torrentToAdd.getQueueType());
-        Assert.assertEquals(TorrentStatus.STOPPED, torrentToAdd.getStatus());
+        validateTorrentsPriorityAndQueue(torrentToAdd, 3, QueueType.QUEUED, TorrentStatus.STOPPED);
         Assert.assertFalse(torrentToAdd.isForced());
     }
 
@@ -213,14 +191,10 @@ public final class QueueControllerTest {
         Assert.assertEquals(1, unitUnderTest.getQueueSize(EnumSet.of(QueueType.ACTIVE)));
         Assert.assertEquals(1, unitUnderTest.getQueueSize(EnumSet.of(QueueType.QUEUED)));
 
-        Assert.assertEquals(1, activeTorrent.getPriority());
-        Assert.assertEquals(QueueType.ACTIVE, activeTorrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.ACTIVE, activeTorrent.getStatus());
+        validateTorrentsPriorityAndQueue(activeTorrent, 1, QueueType.ACTIVE, TorrentStatus.ACTIVE);
         Assert.assertFalse(activeTorrent.isForced());
 
-        Assert.assertEquals(2, queuedTorrent.getPriority());
-        Assert.assertEquals(QueueType.QUEUED, queuedTorrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.STOPPED, queuedTorrent.getStatus());
+        validateTorrentsPriorityAndQueue(queuedTorrent, 2, QueueType.QUEUED, TorrentStatus.STOPPED);
         Assert.assertFalse(queuedTorrent.isForced());
 
         torrents.remove(activeTorrent);
@@ -228,14 +202,10 @@ public final class QueueControllerTest {
         Assert.assertEquals(1, unitUnderTest.getQueueSize(EnumSet.of(QueueType.ACTIVE)));
         Assert.assertEquals(0, unitUnderTest.getQueueSize(EnumSet.of(QueueType.QUEUED)));
 
-        Assert.assertEquals(QueuedTorrent.UNKNOWN_PRIORITY, activeTorrent.getPriority());
-        Assert.assertEquals(QueueType.NOT_ON_QUEUE, activeTorrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.STOPPED, activeTorrent.getStatus());
+        validateTorrentsPriorityAndQueue(activeTorrent, QueuedTorrent.UNKNOWN_PRIORITY, QueueType.NOT_ON_QUEUE, TorrentStatus.STOPPED);
         Assert.assertFalse(activeTorrent.isForced());
 
-        Assert.assertEquals(1, queuedTorrent.getPriority());
-        Assert.assertEquals(QueueType.ACTIVE, queuedTorrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.ACTIVE, queuedTorrent.getStatus());
+        validateTorrentsPriorityAndQueue(queuedTorrent, 1, QueueType.ACTIVE, TorrentStatus.ACTIVE);
         Assert.assertFalse(queuedTorrent.isForced());
     }
 
@@ -257,24 +227,16 @@ public final class QueueControllerTest {
         final QueueController unitUnderTest = new QueueController(
                 torrents, 1, maxDownloadingTorrents, maxUploadingTorrents);
 
-        Assert.assertEquals(1, activeTorrent.getPriority());
-        Assert.assertEquals(QueueType.ACTIVE, activeTorrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.ACTIVE, activeTorrent.getStatus());
+        validateTorrentsPriorityAndQueue(activeTorrent, 1, QueueType.ACTIVE, TorrentStatus.ACTIVE);
         Assert.assertFalse(activeTorrent.isForced());
 
-        Assert.assertEquals(2, queuedTorrent.getPriority());
-        Assert.assertEquals(QueueType.QUEUED, queuedTorrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.STOPPED, queuedTorrent.getStatus());
+        validateTorrentsPriorityAndQueue(queuedTorrent, 2, QueueType.QUEUED, TorrentStatus.STOPPED);
         Assert.assertFalse(queuedTorrent.isForced());
 
-        Assert.assertEquals(3, inactiveTorrent.getPriority());
-        Assert.assertEquals(QueueType.INACTIVE, inactiveTorrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.STOPPED, inactiveTorrent.getStatus());
+        validateTorrentsPriorityAndQueue(inactiveTorrent, 3, QueueType.INACTIVE, TorrentStatus.STOPPED);
         Assert.assertFalse(inactiveTorrent.isForced());
 
-        Assert.assertEquals(4, forcedTorrent.getPriority());
-        Assert.assertEquals(QueueType.FORCED, forcedTorrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.ACTIVE, forcedTorrent.getStatus());
+        validateTorrentsPriorityAndQueue(forcedTorrent, 4, QueueType.FORCED, TorrentStatus.ACTIVE);
         Assert.assertTrue(forcedTorrent.isForced());
 
         Assert.assertEquals(1, unitUnderTest.getQueueSize(EnumSet.of(QueueType.ACTIVE)));
@@ -284,36 +246,28 @@ public final class QueueControllerTest {
 
         torrents.remove(forcedTorrent);
 
-        Assert.assertEquals(QueuedTorrent.UNKNOWN_PRIORITY, forcedTorrent.getPriority());
-        Assert.assertEquals(QueueType.NOT_ON_QUEUE, forcedTorrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.STOPPED, forcedTorrent.getStatus());
+        validateTorrentsPriorityAndQueue(forcedTorrent, QueuedTorrent.UNKNOWN_PRIORITY, QueueType.NOT_ON_QUEUE, TorrentStatus.STOPPED);
         Assert.assertFalse(forcedTorrent.isForced());
 
         Assert.assertEquals(0, unitUnderTest.getQueueSize(EnumSet.of(QueueType.FORCED)));
 
         torrents.remove(inactiveTorrent);
 
-        Assert.assertEquals(QueuedTorrent.UNKNOWN_PRIORITY, inactiveTorrent.getPriority());
-        Assert.assertEquals(QueueType.NOT_ON_QUEUE, inactiveTorrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.STOPPED, inactiveTorrent.getStatus());
+        validateTorrentsPriorityAndQueue(inactiveTorrent, QueuedTorrent.UNKNOWN_PRIORITY, QueueType.NOT_ON_QUEUE, TorrentStatus.STOPPED);
         Assert.assertFalse(inactiveTorrent.isForced());
 
         Assert.assertEquals(0, unitUnderTest.getQueueSize(EnumSet.of(QueueType.INACTIVE)));
 
         torrents.remove(queuedTorrent);
 
-        Assert.assertEquals(QueuedTorrent.UNKNOWN_PRIORITY, queuedTorrent.getPriority());
-        Assert.assertEquals(QueueType.NOT_ON_QUEUE, queuedTorrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.STOPPED, queuedTorrent.getStatus());
+        validateTorrentsPriorityAndQueue(queuedTorrent, QueuedTorrent.UNKNOWN_PRIORITY, QueueType.NOT_ON_QUEUE, TorrentStatus.STOPPED);
         Assert.assertFalse(queuedTorrent.isForced());
 
         Assert.assertEquals(0, unitUnderTest.getQueueSize(EnumSet.of(QueueType.QUEUED)));
 
         torrents.remove(activeTorrent);
 
-        Assert.assertEquals(QueuedTorrent.UNKNOWN_PRIORITY, activeTorrent.getPriority());
-        Assert.assertEquals(QueueType.NOT_ON_QUEUE, activeTorrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.STOPPED, activeTorrent.getStatus());
+        validateTorrentsPriorityAndQueue(activeTorrent, QueuedTorrent.UNKNOWN_PRIORITY, QueueType.NOT_ON_QUEUE, TorrentStatus.STOPPED);
         Assert.assertFalse(activeTorrent.isForced());
 
         Assert.assertEquals(0, unitUnderTest.getQueueSize(EnumSet.of(QueueType.ACTIVE)));
@@ -333,14 +287,10 @@ public final class QueueControllerTest {
         Assert.assertEquals(1, unitUnderTest.getQueueSize(EnumSet.of(QueueType.ACTIVE)));
         Assert.assertEquals(1, unitUnderTest.getQueueSize(EnumSet.of(QueueType.QUEUED)));
 
-        Assert.assertEquals(1, activeTorrent.getPriority());
-        Assert.assertEquals(QueueType.ACTIVE, activeTorrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.ACTIVE, activeTorrent.getStatus());
+        validateTorrentsPriorityAndQueue(activeTorrent, 1, QueueType.ACTIVE, TorrentStatus.ACTIVE);
         Assert.assertFalse(activeTorrent.isForced());
 
-        Assert.assertEquals(2, queuedTorrent.getPriority());
-        Assert.assertEquals(QueueType.QUEUED, queuedTorrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.STOPPED, queuedTorrent.getStatus());
+        validateTorrentsPriorityAndQueue(queuedTorrent, 2, QueueType.QUEUED, TorrentStatus.STOPPED);
         Assert.assertFalse(queuedTorrent.isForced());
 
         //Test changing a queued torrent's priority to a higher (active) level
@@ -349,14 +299,10 @@ public final class QueueControllerTest {
         Assert.assertEquals(1, unitUnderTest.getQueueSize(EnumSet.of(QueueType.ACTIVE)));
         Assert.assertEquals(1, unitUnderTest.getQueueSize(EnumSet.of(QueueType.QUEUED)));
 
-        Assert.assertEquals(2, activeTorrent.getPriority());
-        Assert.assertEquals(QueueType.QUEUED, activeTorrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.STOPPED, activeTorrent.getStatus());
+        validateTorrentsPriorityAndQueue(activeTorrent, 2, QueueType.QUEUED, TorrentStatus.STOPPED);
         Assert.assertFalse(activeTorrent.isForced());
 
-        Assert.assertEquals(1, queuedTorrent.getPriority());
-        Assert.assertEquals(QueueType.ACTIVE, queuedTorrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.ACTIVE, queuedTorrent.getStatus());
+        validateTorrentsPriorityAndQueue(queuedTorrent, 1, QueueType.ACTIVE, TorrentStatus.ACTIVE);
         Assert.assertFalse(queuedTorrent.isForced());
 
         //Test changing an active torrent's priority to a lower (queued) level
@@ -365,14 +311,10 @@ public final class QueueControllerTest {
         Assert.assertEquals(1, unitUnderTest.getQueueSize(EnumSet.of(QueueType.ACTIVE)));
         Assert.assertEquals(1, unitUnderTest.getQueueSize(EnumSet.of(QueueType.QUEUED)));
 
-        Assert.assertEquals(1, activeTorrent.getPriority());
-        Assert.assertEquals(QueueType.ACTIVE, activeTorrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.ACTIVE, activeTorrent.getStatus());
+        validateTorrentsPriorityAndQueue(activeTorrent, 1, QueueType.ACTIVE, TorrentStatus.ACTIVE);
         Assert.assertFalse(activeTorrent.isForced());
 
-        Assert.assertEquals(2, queuedTorrent.getPriority());
-        Assert.assertEquals(QueueType.QUEUED, queuedTorrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.STOPPED, queuedTorrent.getStatus());
+        validateTorrentsPriorityAndQueue(queuedTorrent, 2, QueueType.QUEUED, TorrentStatus.STOPPED);
         Assert.assertFalse(queuedTorrent.isForced());
     }
 
@@ -444,17 +386,15 @@ public final class QueueControllerTest {
 
         Assert.assertEquals(1, unitUnderTest.getQueueSize(EnumSet.of(QueueType.QUEUED)));
         Assert.assertEquals(0, unitUnderTest.getQueueSize(EnumSet.of(QueueType.ACTIVE)));
-        Assert.assertEquals(1, queuedTorrent.getPriority());
-        Assert.assertEquals(QueueType.QUEUED, queuedTorrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.STOPPED, queuedTorrent.getStatus());
+
+        validateTorrentsPriorityAndQueue(queuedTorrent, 1, QueueType.QUEUED, TorrentStatus.STOPPED);
 
         unitUnderTest.onQueueLimitsChanged(TransferProperties.ACTIVE_TORRENTS_LIMIT, 1);
 
         Assert.assertEquals(0, unitUnderTest.getQueueSize(EnumSet.of(QueueType.QUEUED)));
         Assert.assertEquals(1, unitUnderTest.getQueueSize(EnumSet.of(QueueType.ACTIVE)));
-        Assert.assertEquals(1, queuedTorrent.getPriority());
-        Assert.assertEquals(QueueType.ACTIVE, queuedTorrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.ACTIVE, queuedTorrent.getStatus());
+
+        validateTorrentsPriorityAndQueue(queuedTorrent, 1, QueueType.ACTIVE, TorrentStatus.ACTIVE);
     }
 
     @Test
@@ -467,17 +407,15 @@ public final class QueueControllerTest {
 
         Assert.assertEquals(0, unitUnderTest.getQueueSize(EnumSet.of(QueueType.QUEUED)));
         Assert.assertEquals(1, unitUnderTest.getQueueSize(EnumSet.of(QueueType.ACTIVE)));
-        Assert.assertEquals(1, activeTorrent.getPriority());
-        Assert.assertEquals(QueueType.ACTIVE, activeTorrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.ACTIVE, activeTorrent.getStatus());
+
+        validateTorrentsPriorityAndQueue(activeTorrent, 1, QueueType.ACTIVE, TorrentStatus.ACTIVE);
 
         unitUnderTest.onQueueLimitsChanged(TransferProperties.ACTIVE_TORRENTS_LIMIT, 0);
 
         Assert.assertEquals(1, unitUnderTest.getQueueSize(EnumSet.of(QueueType.QUEUED)));
         Assert.assertEquals(0, unitUnderTest.getQueueSize(EnumSet.of(QueueType.ACTIVE)));
-        Assert.assertEquals(1, activeTorrent.getPriority());
-        Assert.assertEquals(QueueType.QUEUED, activeTorrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.STOPPED, activeTorrent.getStatus());
+
+        validateTorrentsPriorityAndQueue(activeTorrent, 1, QueueType.QUEUED, TorrentStatus.STOPPED);
     }
 
     @Test
@@ -511,10 +449,7 @@ public final class QueueControllerTest {
         torrents.add(inactiveTorrent);
 
         Assert.assertEquals(1, unitUnderTest.getQueueSize(EnumSet.of(QueueType.INACTIVE)));
-
-        Assert.assertEquals(1, inactiveTorrent.getPriority());
-        Assert.assertEquals(QueueType.INACTIVE, inactiveTorrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.STOPPED, inactiveTorrent.getStatus());
+        validateTorrentsPriorityAndQueue(inactiveTorrent, 1, QueueType.INACTIVE, TorrentStatus.STOPPED);
 
         final QueuedTorrent activeTorrent = buildTorrent("2", QueueType.ACTIVE);
         torrents.add(activeTorrent);
@@ -522,13 +457,8 @@ public final class QueueControllerTest {
         Assert.assertEquals(1, unitUnderTest.getQueueSize(EnumSet.of(QueueType.INACTIVE)));
         Assert.assertEquals(1, unitUnderTest.getQueueSize(EnumSet.of(QueueType.ACTIVE)));
 
-        Assert.assertEquals(1, inactiveTorrent.getPriority());
-        Assert.assertEquals(QueueType.INACTIVE, inactiveTorrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.STOPPED, inactiveTorrent.getStatus());
-
-        Assert.assertEquals(2, activeTorrent.getPriority());
-        Assert.assertEquals(QueueType.ACTIVE, activeTorrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.ACTIVE, activeTorrent.getStatus());
+        validateTorrentsPriorityAndQueue(inactiveTorrent, 1, QueueType.INACTIVE, TorrentStatus.STOPPED);
+        validateTorrentsPriorityAndQueue(activeTorrent, 2, QueueType.ACTIVE, TorrentStatus.ACTIVE);
 
         final QueuedTorrent queuedTorrent = buildTorrent("3", QueueType.ACTIVE);
         torrents.add(queuedTorrent);
@@ -537,17 +467,9 @@ public final class QueueControllerTest {
         Assert.assertEquals(1, unitUnderTest.getQueueSize(EnumSet.of(QueueType.ACTIVE)));
         Assert.assertEquals(1, unitUnderTest.getQueueSize(EnumSet.of(QueueType.QUEUED)));
 
-        Assert.assertEquals(1, inactiveTorrent.getPriority());
-        Assert.assertEquals(QueueType.INACTIVE, inactiveTorrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.STOPPED, inactiveTorrent.getStatus());
-
-        Assert.assertEquals(2, activeTorrent.getPriority());
-        Assert.assertEquals(QueueType.ACTIVE, activeTorrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.ACTIVE, activeTorrent.getStatus());
-
-        Assert.assertEquals(3, queuedTorrent.getPriority());
-        Assert.assertEquals(QueueType.QUEUED, queuedTorrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.STOPPED, queuedTorrent.getStatus());
+        validateTorrentsPriorityAndQueue(inactiveTorrent, 1, QueueType.INACTIVE, TorrentStatus.STOPPED);
+        validateTorrentsPriorityAndQueue(activeTorrent, 2, QueueType.ACTIVE, TorrentStatus.ACTIVE);
+        validateTorrentsPriorityAndQueue(queuedTorrent, 3, QueueType.QUEUED, TorrentStatus.STOPPED);
     }
 
     @Test
@@ -568,17 +490,9 @@ public final class QueueControllerTest {
         Assert.assertEquals(1, unitUnderTest.getQueueSize(EnumSet.of(QueueType.ACTIVE)));
         Assert.assertEquals(1, unitUnderTest.getQueueSize(EnumSet.of(QueueType.QUEUED)));
 
-        Assert.assertEquals(1, inactiveTorrent.getPriority());
-        Assert.assertEquals(QueueType.INACTIVE, inactiveTorrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.STOPPED, inactiveTorrent.getStatus());
-
-        Assert.assertEquals(3, queuedTorrent.getPriority());
-        Assert.assertEquals(QueueType.QUEUED, queuedTorrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.STOPPED, queuedTorrent.getStatus());
-
-        Assert.assertEquals(2, activeTorrent.getPriority());
-        Assert.assertEquals(QueueType.ACTIVE, activeTorrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.ACTIVE, activeTorrent.getStatus());
+        validateTorrentsPriorityAndQueue(inactiveTorrent, 1, QueueType.INACTIVE, TorrentStatus.STOPPED);
+        validateTorrentsPriorityAndQueue(queuedTorrent, 3, QueueType.QUEUED, TorrentStatus.STOPPED);
+        validateTorrentsPriorityAndQueue(activeTorrent, 2, QueueType.ACTIVE, TorrentStatus.ACTIVE);
 
         torrents.remove(activeTorrent);
 
@@ -586,38 +500,23 @@ public final class QueueControllerTest {
         Assert.assertEquals(1, unitUnderTest.getQueueSize(EnumSet.of(QueueType.ACTIVE)));
         Assert.assertEquals(0, unitUnderTest.getQueueSize(EnumSet.of(QueueType.QUEUED)));
 
-        Assert.assertEquals(1, inactiveTorrent.getPriority());
-        Assert.assertEquals(QueueType.INACTIVE, inactiveTorrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.STOPPED, inactiveTorrent.getStatus());
-
-        Assert.assertEquals(2, queuedTorrent.getPriority());
-        Assert.assertEquals(QueueType.ACTIVE, queuedTorrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.ACTIVE, queuedTorrent.getStatus());
-
-        Assert.assertEquals(QueuedTorrent.UNKNOWN_PRIORITY, activeTorrent.getPriority());
-        Assert.assertEquals(QueueType.NOT_ON_QUEUE, activeTorrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.STOPPED, activeTorrent.getStatus());
+        validateTorrentsPriorityAndQueue(inactiveTorrent, 1, QueueType.INACTIVE, TorrentStatus.STOPPED);
+        validateTorrentsPriorityAndQueue(queuedTorrent, 2, QueueType.ACTIVE, TorrentStatus.ACTIVE);
+        validateTorrentsPriorityAndQueue(activeTorrent, QueuedTorrent.UNKNOWN_PRIORITY, QueueType.NOT_ON_QUEUE, TorrentStatus.STOPPED);
 
         torrents.remove(queuedTorrent);
 
         Assert.assertEquals(1, unitUnderTest.getQueueSize(EnumSet.of(QueueType.INACTIVE)));
         Assert.assertEquals(0, unitUnderTest.getQueueSize(EnumSet.of(QueueType.ACTIVE)));
 
-        Assert.assertEquals(1, inactiveTorrent.getPriority());
-        Assert.assertEquals(QueueType.INACTIVE, inactiveTorrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.STOPPED, inactiveTorrent.getStatus());
-
-        Assert.assertEquals(QueuedTorrent.UNKNOWN_PRIORITY, queuedTorrent.getPriority());
-        Assert.assertEquals(QueueType.NOT_ON_QUEUE, queuedTorrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.STOPPED, queuedTorrent.getStatus());
+        validateTorrentsPriorityAndQueue(inactiveTorrent, 1, QueueType.INACTIVE, TorrentStatus.STOPPED);
+        validateTorrentsPriorityAndQueue(queuedTorrent, QueuedTorrent.UNKNOWN_PRIORITY, QueueType.NOT_ON_QUEUE, TorrentStatus.STOPPED);
 
         torrents.remove(inactiveTorrent);
 
         Assert.assertEquals(0, unitUnderTest.getQueueSize(EnumSet.of(QueueType.INACTIVE)));
 
-        Assert.assertEquals(QueuedTorrent.UNKNOWN_PRIORITY, inactiveTorrent.getPriority());
-        Assert.assertEquals(QueueType.NOT_ON_QUEUE, inactiveTorrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.STOPPED, inactiveTorrent.getStatus());
+        validateTorrentsPriorityAndQueue(inactiveTorrent, QueuedTorrent.UNKNOWN_PRIORITY, QueueType.NOT_ON_QUEUE, TorrentStatus.STOPPED);
     }
 
     @Test
@@ -630,28 +529,22 @@ public final class QueueControllerTest {
 
         Assert.assertEquals(1, unitUnderTest.getQueueSize(EnumSet.of(QueueType.INACTIVE)));
         Assert.assertEquals(0, unitUnderTest.getQueueSize(EnumSet.of(QueueType.ACTIVE)));
-        Assert.assertEquals(1, inactiveTorrent.getPriority());
-        Assert.assertEquals(QueueType.INACTIVE, inactiveTorrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.STOPPED, inactiveTorrent.getStatus());
 
+        validateTorrentsPriorityAndQueue(inactiveTorrent, 1, QueueType.INACTIVE, TorrentStatus.STOPPED);
         Assert.assertTrue(unitUnderTest.changeStatus(inactiveTorrent, TorrentStatus.ACTIVE));
 
         Assert.assertEquals(0, unitUnderTest.getQueueSize(EnumSet.of(QueueType.INACTIVE)));
         Assert.assertEquals(1, unitUnderTest.getQueueSize(EnumSet.of(QueueType.ACTIVE)));
-        Assert.assertEquals(1, inactiveTorrent.getPriority());
-        Assert.assertEquals(QueueType.ACTIVE, inactiveTorrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.ACTIVE, inactiveTorrent.getStatus());
 
+        validateTorrentsPriorityAndQueue(inactiveTorrent, 1, QueueType.ACTIVE, TorrentStatus.ACTIVE);
         Assert.assertTrue(unitUnderTest.changeStatus(inactiveTorrent, TorrentStatus.STOPPED));
 
         Assert.assertEquals(1, unitUnderTest.getQueueSize(EnumSet.of(QueueType.INACTIVE)));
         Assert.assertEquals(0, unitUnderTest.getQueueSize(EnumSet.of(QueueType.ACTIVE)));
-        Assert.assertEquals(1, inactiveTorrent.getPriority());
-        Assert.assertEquals(QueueType.INACTIVE, inactiveTorrent.getQueueType());
-        Assert.assertEquals(TorrentStatus.STOPPED, inactiveTorrent.getStatus());
+
+        validateTorrentsPriorityAndQueue(inactiveTorrent, 1, QueueType.INACTIVE, TorrentStatus.STOPPED);
     }
 
-    //TODO: CONTINUE REFACTORING
     @Test
     public void testStopAndRestartActiveTorrentOneQueuedTorrent() {
         final QueuedTorrent activeTorrent = buildTorrent("1", QueueType.ACTIVE);
@@ -915,27 +808,105 @@ public final class QueueControllerTest {
 
     @Test
     public void testAddActiveTorrentToTopOfQueueAndOneOtherActiveTorrent() {
+        final QueuedTorrent activeTorrent = buildTorrent("1", QueueType.ACTIVE);
+        torrents.add(activeTorrent);
 
+        final QueueController unitUnderTest = new QueueController(
+                torrents, 1, maxDownloadingTorrents, maxUploadingTorrents);
+
+        final QueuedTorrent topOfQueueTorrent = buildTorrent("2", QueueType.ACTIVE);
+        topOfQueueTorrent.getProgress().setTorrentPriority(QueuedTorrent.TOP_PRIORITY);
+        torrents.add(topOfQueueTorrent);
+
+        Assert.assertEquals(1, unitUnderTest.getQueueSize(EnumSet.of(QueueType.ACTIVE)));
+        Assert.assertEquals(1, unitUnderTest.getQueueSize(EnumSet.of(QueueType.QUEUED)));
+
+        validateTorrentsPriorityAndQueue(activeTorrent, 2, QueueType.QUEUED, TorrentStatus.STOPPED);
+        validateTorrentsPriorityAndQueue(topOfQueueTorrent, 1, QueueType.ACTIVE, TorrentStatus.ACTIVE);
     }
 
     @Test
     public void testAddInactiveTorrentToTopOfQueueAndOneOtherActiveTorrent() {
+        final QueuedTorrent activeTorrent = buildTorrent("1", QueueType.ACTIVE);
+        torrents.add(activeTorrent);
 
+        final QueueController unitUnderTest = new QueueController(
+                torrents, 1, maxDownloadingTorrents, maxUploadingTorrents);
+
+        final QueuedTorrent topOfQueueTorrent = buildTorrent("2", QueueType.INACTIVE);
+        topOfQueueTorrent.getProgress().setTorrentPriority(QueuedTorrent.TOP_PRIORITY);
+        torrents.add(topOfQueueTorrent);
+
+        Assert.assertEquals(1, unitUnderTest.getQueueSize(EnumSet.of(QueueType.ACTIVE)));
+        Assert.assertEquals(0, unitUnderTest.getQueueSize(EnumSet.of(QueueType.QUEUED)));
+        Assert.assertEquals(1, unitUnderTest.getQueueSize(EnumSet.of(QueueType.INACTIVE)));
+
+        validateTorrentsPriorityAndQueue(activeTorrent, 2, QueueType.ACTIVE, TorrentStatus.ACTIVE);
+        validateTorrentsPriorityAndQueue(topOfQueueTorrent, 1, QueueType.INACTIVE, TorrentStatus.STOPPED);
     }
 
     @Test
     public void testAddActiveTorrentToTopOfQueueAndOneOtherInactiveTorrent() {
+        final QueuedTorrent inactiveTorrent = buildTorrent("1", QueueType.INACTIVE);
+        torrents.add(inactiveTorrent);
 
+        final QueueController unitUnderTest = new QueueController(
+                torrents, 1, maxDownloadingTorrents, maxUploadingTorrents);
+
+        final QueuedTorrent topOfQueueTorrent = buildTorrent("2", QueueType.ACTIVE);
+        topOfQueueTorrent.getProgress().setTorrentPriority(QueuedTorrent.TOP_PRIORITY);
+        torrents.add(topOfQueueTorrent);
+
+        Assert.assertEquals(1, unitUnderTest.getQueueSize(EnumSet.of(QueueType.ACTIVE)));
+        Assert.assertEquals(0, unitUnderTest.getQueueSize(EnumSet.of(QueueType.QUEUED)));
+        Assert.assertEquals(1, unitUnderTest.getQueueSize(EnumSet.of(QueueType.INACTIVE)));
+
+        validateTorrentsPriorityAndQueue(inactiveTorrent, 2, QueueType.INACTIVE, TorrentStatus.STOPPED);
+        validateTorrentsPriorityAndQueue(topOfQueueTorrent, 1, QueueType.ACTIVE, TorrentStatus.ACTIVE);
     }
 
     @Test
     public void testAddInactiveTorrentToTopOfQueueAndOneOtherInactiveTorrent() {
+        final QueuedTorrent inactiveTorrent = buildTorrent("1", QueueType.INACTIVE);
+        torrents.add(inactiveTorrent);
 
+        final QueueController unitUnderTest = new QueueController(
+                torrents, 1, maxDownloadingTorrents, maxUploadingTorrents);
+
+        final QueuedTorrent topOfQueueTorrent = buildTorrent("2", QueueType.INACTIVE);
+        topOfQueueTorrent.getProgress().setTorrentPriority(QueuedTorrent.TOP_PRIORITY);
+        torrents.add(topOfQueueTorrent);
+
+        Assert.assertEquals(0, unitUnderTest.getQueueSize(EnumSet.of(QueueType.ACTIVE)));
+        Assert.assertEquals(0, unitUnderTest.getQueueSize(EnumSet.of(QueueType.QUEUED)));
+        Assert.assertEquals(2, unitUnderTest.getQueueSize(EnumSet.of(QueueType.INACTIVE)));
+
+        validateTorrentsPriorityAndQueue(inactiveTorrent, 2, QueueType.INACTIVE, TorrentStatus.STOPPED);
+        validateTorrentsPriorityAndQueue(topOfQueueTorrent, 1, QueueType.INACTIVE, TorrentStatus.STOPPED);
     }
 
     @Test
     public void testAddActiveTorrentToTopOfQueueAndOneOtherActiveAndQueuedTorrent() {
+        final QueuedTorrent activeTorrent = buildTorrent("1", QueueType.ACTIVE);
+        torrents.add(activeTorrent);
 
+        final QueuedTorrent queuedTorrent = buildTorrent("2", QueueType.ACTIVE);
+        torrents.add(queuedTorrent);
+
+        final QueueController unitUnderTest = new QueueController(
+                torrents, 1, maxDownloadingTorrents, maxUploadingTorrents);
+
+        final QueuedTorrent topOfQueueTorrent = buildTorrent("3", QueueType.ACTIVE);
+        topOfQueueTorrent.getProgress().setTorrentPriority(QueuedTorrent.TOP_PRIORITY);
+        torrents.add(topOfQueueTorrent);
+
+        Assert.assertEquals(1, unitUnderTest.getQueueSize(EnumSet.of(QueueType.ACTIVE)));
+        Assert.assertEquals(2, unitUnderTest.getQueueSize(EnumSet.of(QueueType.QUEUED)));
+        Assert.assertEquals(0, unitUnderTest.getQueueSize(EnumSet.of(QueueType.INACTIVE)));
+
+        validateTorrentsPriorityAndQueue(queuedTorrent, 3, QueueType.QUEUED, TorrentStatus.STOPPED);
+        validateTorrentsPriorityAndQueue(activeTorrent, 2, QueueType.QUEUED, TorrentStatus.STOPPED);
+        validateTorrentsPriorityAndQueue(topOfQueueTorrent, 1, QueueType.ACTIVE, TorrentStatus.ACTIVE);
     }
 
     private void validateTorrentsPriorityAndQueue(final QueuedTorrent torrent, final int expectedPrio,
