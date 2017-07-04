@@ -26,6 +26,7 @@ import java.util.function.Function;
 
 import javafx.application.Platform;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TableRow;
 import org.matic.torrent.gui.GuiUtils;
 import org.matic.torrent.gui.model.PeerView;
 import org.matic.torrent.preferences.GuiProperties;
@@ -122,8 +123,12 @@ public final class PeerTable {
 		contextMenu.getItems().addAll(addPeerMenuItem, new SeparatorMenuItem(), copyPeerListMenuItem,
 				copySelectedHostsMenuItem, logTrafficToLoggerMenuItem, reloadIpFilterMenuItem,
 				new SeparatorMenuItem(), resolveIpsMenuItem, wholePeerListMenuItem);
-		
-		peerTable.setContextMenu(contextMenu);
+
+        peerTable.setContextMenu(contextMenu);
+        peerTable.setRowFactory(table -> {
+            final TableRow<PeerView> tableRow = new PeerTableRow<>();
+            return tableRow;
+        });
 	}
 	
 	private LinkedHashMap<String, TableColumn<PeerView, ?>> buildColumnMappings() {

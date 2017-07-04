@@ -21,14 +21,14 @@ package org.matic.torrent.gui.table;
 
 import javafx.scene.control.TableRow;
 
-public final class TorrentViewTableRow<T> extends TableRow<T> {
+public final class PeerTableRow<T> extends TableRow<T> {
 
-	@Override
-	protected void updateItem(final T item, final boolean empty) {
-		super.updateItem(item, empty);
-		
-		if(!empty) {
+    @Override
+    protected void updateItem(final T item, final boolean empty) {
+        super.updateItem(item, empty);
+
+        if(!empty) {
             TableUtils.applyTableRowColorization(this);
-		}
-	}
+        }
+    }
 }

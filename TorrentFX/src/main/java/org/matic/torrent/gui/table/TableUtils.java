@@ -26,6 +26,7 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.CheckMenuItem;
 import javafx.scene.control.ContextMenu;
+import javafx.scene.control.IndexedCell;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.SeparatorMenuItem;
@@ -40,6 +41,7 @@ import javafx.scene.layout.StackPane;
 import javafx.util.Callback;
 import org.matic.torrent.gui.GuiUtils;
 import org.matic.torrent.preferences.ApplicationPreferences;
+import org.matic.torrent.preferences.CssProperties;
 import org.matic.torrent.preferences.GuiProperties;
 
 import java.util.Arrays;
@@ -56,12 +58,24 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * This class is used for building a table's columns and headers
- * 
- * @author vedran
+ * This class is used for building a table's columns and headers.
+ *
+ * @author Vedran Matic
  *
  */
 public final class TableUtils {
+
+    public static <T> void applyTableRowColorization(final IndexedCell<T> tableRow) {
+        if(tableRow.getIndex() % 2 != 0 && ApplicationPreferences.getProperty(
+                GuiProperties.ALTERNATE_LIST_ROW_COLOR, false)) {
+            tableRow.getStyleClass().removeAll(CssProperties.ALTERNATE_LIST_ROW_EVEN);
+            tableRow.getStyleClass().add(CssProperties.ALTERNATE_LIST_ROW_ODD);
+        }
+        else {
+            tableRow.getStyleClass().removeAll(CssProperties.ALTERNATE_LIST_ROW_ODD);
+            tableRow.getStyleClass().add(CssProperties.ALTERNATE_LIST_ROW_EVEN);
+        }
+    }
 
     public static <T> void refresh(final TableView<T> table) {
         final ObservableList<T> items = table.getItems();
@@ -83,7 +97,7 @@ public final class TableUtils {
 
 	/**
 	 * Build a styled column header
-	 * 
+	 *
 	 * @param column Target column
 	 * @param style Target header style
 	 * @return Built header
@@ -91,18 +105,18 @@ public final class TableUtils {
 	public static Node buildColumnHeader(final TableColumnBase<?, ?> column, final String style) {
 	    final Label columnNameLabel = new Label(column.getText());
 	    columnNameLabel.getStyleClass().add(style);
-	  
+
 	    final StackPane columnHeaderNode = new StackPane();
 	    columnHeaderNode.getChildren().add(columnNameLabel);
 	    columnHeaderNode.prefWidthProperty().bind(column.widthProperty().subtract(20));
 	    columnNameLabel.prefWidthProperty().bind(columnHeaderNode.prefWidthProperty());
-	    
+
 	    return columnHeaderNode;
 	}
-	
+
 	/**
 	 * Store any changes to column order, visibility, and size
-	 * 
+	 *
 	 * @param <T> Type of the view object stored in the table
 	 * @param columns Target columns
 	 * @param columnVisibilityProperty
@@ -115,35 +129,35 @@ public final class TableUtils {
 	public static <T> void storeColumnStates(final List<? extends TableColumnBase<T, ?>> columns,
 			final String columnVisibilityProperty, final String defaultColumnVisibilities,
 			final String columnSizeProperty, final String defaultColumnSizes,
-			final String columnOrderProperty, final String defaultColumnOrder) {		
+			final String columnOrderProperty, final String defaultColumnOrder) {
 		final String visibility = columns.stream().map(c -> String.valueOf(c.isVisible())).collect(
 				Collectors.joining(GuiProperties.COMPOSITE_PROPERTY_VALUE_SEPARATOR));
 		final String sizes = columns.stream().map(c -> String.valueOf(c.getWidth())).collect(
 				Collectors.joining(GuiProperties.COMPOSITE_PROPERTY_VALUE_SEPARATOR));
 		final String order = columns.stream().map(c -> c.getId()).collect(
 				Collectors.joining(GuiProperties.COMPOSITE_PROPERTY_VALUE_SEPARATOR));
-		
+
 		final String oldVisibleColumns = ApplicationPreferences.getProperty(
 				columnVisibilityProperty, defaultColumnVisibilities);
 		final String oldColumnSizes = ApplicationPreferences.getProperty(
 				columnSizeProperty, defaultColumnSizes);
 		final String oldColumnOrder = ApplicationPreferences.getProperty(
 				columnOrderProperty, defaultColumnOrder);
-		
+
 		if(!visibility.equals(oldVisibleColumns)) {
 			ApplicationPreferences.setProperty(columnVisibilityProperty, visibility);
-		}		
+		}
 		if(!sizes.equals(oldColumnSizes)) {
 			ApplicationPreferences.setProperty(columnSizeProperty, sizes);
 		}
 		if(!order.equals(oldColumnOrder)) {
 			ApplicationPreferences.setProperty(columnOrderProperty, order);
-		}		
+		}
 	}
-	
+
 	/**
-	 * Load and apply previously stored column changes, including order, visibility, and size 
-	 * 
+	 * Load and apply previously stored column changes, including order, visibility, and size
+	 *
 	 * @param <T> Type of the view object stored in the table
 	 * @param columnMappings Mapping between columns and their id:s
 	 * @param columnResizer Restorer of column sizes and order
@@ -159,31 +173,31 @@ public final class TableUtils {
 			final String columnVisibilityProperty, final String defaultColumnVisibilityValues,
 			final String columnSizeProperty, final String defaultColumnSizeValues,
 			final String columnOrderProperty, final String defaultColumnOrderValues) {
-		
+
 		//Previously stored column state changes
 		final List<String> columnVisibility = ApplicationPreferences.getCompositePropertyValues(
 				columnVisibilityProperty, defaultColumnVisibilityValues);
-		
+
 		final List<Double> columnSizes = ApplicationPreferences.getCompositePropertyValues(
 				columnSizeProperty, defaultColumnSizeValues)
 				.stream().map(Double::parseDouble).collect(Collectors.toList());
 		final List<String> columnOrder = ApplicationPreferences.getCompositePropertyValues(
 				columnOrderProperty, defaultColumnOrderValues);
-		
+
 		//Default column states
 		final List<String> defaultColumnOrder = Arrays.stream(defaultColumnOrderValues.split(
 				GuiProperties.COMPOSITE_PROPERTY_VALUE_SEPARATOR)).collect(Collectors.toList());
-		
+
 		final List<Boolean> defaultColumnsVisibilities = Arrays.stream(defaultColumnVisibilityValues.split(
 				GuiProperties.COMPOSITE_PROPERTY_VALUE_SEPARATOR)).map(Boolean::parseBoolean).collect(Collectors.toList());
-		
+
 		final List<Double> defaultColumnSizes = Arrays.stream(defaultColumnSizeValues.split(
 				GuiProperties.COMPOSITE_PROPERTY_VALUE_SEPARATOR)).map(Double::parseDouble).collect(Collectors.toList());
-		
+
 		final Map<String, Boolean> columnVisibilityMapping = new HashMap<>();
-		final Map<String, Double> defaultColumnSizeMapping = new HashMap<>();		
+		final Map<String, Double> defaultColumnSizeMapping = new HashMap<>();
 		final Set<String> defaultVisibleColumnNames = new HashSet<>();
-		
+
 		for(int i = 0; i < defaultColumnOrder.size(); ++i) {
 			final String columnId = defaultColumnOrder.get(i);
 			if(defaultColumnsVisibilities.get(i)) {
@@ -192,45 +206,45 @@ public final class TableUtils {
 			defaultColumnSizeMapping.put(columnId, defaultColumnSizes.get(i));
 			columnMappings.get(columnId).setPrefWidth(defaultColumnSizes.get(i));
 		}
-		
+
 		for(int i = 0; i < columnOrder.size(); ++i) {
-			final String columnId = columnOrder.get(i);			
-			columnResizer.accept(columnId, columnSizes.get(i));			
+			final String columnId = columnOrder.get(i);
+			columnResizer.accept(columnId, columnSizes.get(i));
 			columnVisibilityMapping.put(columnId, Boolean.parseBoolean(columnVisibility.get(i)));
 		}
-		
+
 		final TableState<T> columnStates = new TableState<T>(columnMappings, columnVisibilityMapping,
 				defaultVisibleColumnNames, defaultColumnSizeMapping, defaultColumnOrderValues);
-		
+
 		return columnStates;
 	}
-	
+
 	/**
 	 * Add context menu to table columns
-	 * 
+	 *
 	 * @param <T> Type of the view object stored in the table
 	 * @param columns Table columns
 	 * @param tableState Loaded column states
 	 * @param columnResizer Resetter of columns' widths and order
 	 */
 	public static <T> void addTableHeaderContextMenus(final ObservableList<? extends TableColumnBase<T, ?>> columns,
-			final TableState<T> tableState, final BiConsumer<String, Double> columnResizer) {		
-		final ContextMenu headerContextMenu = new ContextMenu();			
+			final TableState<T> tableState, final BiConsumer<String, Double> columnResizer) {
+		final ContextMenu headerContextMenu = new ContextMenu();
 		final Map<String, CheckMenuItem> menuItemMapping = new HashMap<>();
-		
-		columns.forEach(c -> {			
+
+		columns.forEach(c -> {
 			final CheckMenuItem columnVisibleMenuItem = new CheckMenuItem(c.getText());
 			columnVisibleMenuItem.setId(c.getId());
 			columnVisibleMenuItem.setSelected(true);
 			menuItemMapping.put(c.getId(), columnVisibleMenuItem);
 			c.setContextMenu(headerContextMenu);
-			
-			columnVisibleMenuItem.selectedProperty().addListener((obs, oldV, selected) -> {	
+
+			columnVisibleMenuItem.selectedProperty().addListener((obs, oldV, selected) -> {
 				c.setVisible(selected);
-				final List<? extends TableColumnBase<T, ?>> visibleColumnHeaders = 
+				final List<? extends TableColumnBase<T, ?>> visibleColumnHeaders =
 						TableUtils.getVisibleColumnHeaders(columns);
-				
-				if(!selected && visibleColumnHeaders.size() == 1) {					
+
+				if(!selected && visibleColumnHeaders.size() == 1) {
 					final Optional<MenuItem> lastSelectedMenuItem = headerContextMenu.getItems().stream().filter(
 							mi -> ((CheckMenuItem)mi).isSelected()).findFirst();
 					if(lastSelectedMenuItem.isPresent()) {
@@ -242,29 +256,29 @@ public final class TableUtils {
 						((CheckMenuItem)mi).isSelected()).forEach(mi -> mi.setDisable(false));
 				}
 			});
-			
+
 			Platform.runLater(() -> {
 				final Optional<? extends TableColumnBase<T, ?>> columnId = columns.stream().filter(
-						tc -> tc.getId().equals(c.getId())).findFirst();				
+						tc -> tc.getId().equals(c.getId())).findFirst();
 				columnVisibleMenuItem.setSelected(columnId.isPresent()?
 						tableState.getColumnVisibilityMapping().get(columnId.get().getId()) : false);
 			});
 		});
 
-		tableState.getColumnMappings().values().forEach(c -> 
-			headerContextMenu.getItems().add(menuItemMapping.get(c.getId())));		
+		tableState.getColumnMappings().values().forEach(c ->
+			headerContextMenu.getItems().add(menuItemMapping.get(c.getId())));
 
 		final List<CheckMenuItem> checkMenuItems = headerContextMenu.getItems().stream().map(
 				mi -> mi instanceof CheckMenuItem? (CheckMenuItem)mi : null).filter(Objects::nonNull).collect(Collectors.toList());
-		
+
 		final MenuItem resetHeadersMenuItem = new MenuItem("_Reset");
-		resetHeadersMenuItem.setOnAction(e -> TableUtils.resetTableHeader(columns, checkMenuItems, tableState, columnResizer));		
+		resetHeadersMenuItem.setOnAction(e -> TableUtils.resetTableHeader(columns, checkMenuItems, tableState, columnResizer));
 		headerContextMenu.getItems().addAll(new SeparatorMenuItem(), resetHeadersMenuItem);
 	}
-	
+
 	/**
 	 * Build a table column
-	 * 
+	 *
 	 * @param <T> Type of the view object stored in the table
 	 * @param <U> Type of data stored in the table cells
 	 * @param cellValueFactory How to set the cell values
@@ -279,11 +293,11 @@ public final class TableUtils {
 			final String columnName) {
 		final TableColumn<T, U> builtColumn = new TableColumn<>(columnName);
 		builtColumn.setId(columnName);
-		builtColumn.setGraphic(TableUtils.buildColumnHeader(builtColumn, alignmentStyle));		
+		builtColumn.setGraphic(TableUtils.buildColumnHeader(builtColumn, alignmentStyle));
 		builtColumn.setCellValueFactory(cellValueFactory);
 		builtColumn.setCellFactory(column -> new TableCell<T, U>() {
 			final Label valueLabel = new Label();
-			
+
 			@Override
 			protected final void updateItem(final U value, final boolean empty) {
 				super.updateItem(value, empty);
@@ -295,11 +309,11 @@ public final class TableUtils {
 					if(this.getTableRow() == null) {
 						return;
 					}
-					final T item = this.getTableView().getItems().get(this.getTableRow().getIndex());					
-					
-					valueLabel.setText(valueConverter.apply(item));					
+					final T item = this.getTableView().getItems().get(this.getTableRow().getIndex());
+
+					valueLabel.setText(valueConverter.apply(item));
 	                this.setGraphic(valueLabel);
-	                
+
 	                if(GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME.equals(alignmentStyle)) {
 	                	this.setAlignment(Pos.BASELINE_RIGHT);
 		                super.setPadding(GuiUtils.rightPadding());
@@ -313,21 +327,21 @@ public final class TableUtils {
 		});
 		return builtColumn;
 	}
-	
+
 	private static <T> void resetTableHeader(final ObservableList<? extends TableColumnBase<T, ?>> columns,
 			final List<CheckMenuItem> columnCheckItems, final TableState<T> columnState,
 			final BiConsumer<String, Double> columnResizer) {
-		
+
 		final Map<String, Double> defaultColumnSizeMapping = columnState.getDefaultColumnSizeMapping();
-		columns.clear();		
+		columns.clear();
 		columnCheckItems.forEach(ci -> {
 			final String columnId = ci.getId();
-			ci.setDisable(false);			
+			ci.setDisable(false);
 			columnResizer.accept(columnId, defaultColumnSizeMapping.get(columnId));
-		});	
+		});
 		columnCheckItems.forEach(ci -> ci.setSelected(columnState.getDefaultVisibleColumnNames().contains(ci.getId())));
 	}
-	
+
 	private static final <T> List<? extends TableColumnBase<T, ?>> getVisibleColumnHeaders(
 			final ObservableList<? extends TableColumnBase<T, ?>> tableColumns) {
 		return tableColumns.stream().filter(TableColumnBase::isVisible).collect(Collectors.toList());

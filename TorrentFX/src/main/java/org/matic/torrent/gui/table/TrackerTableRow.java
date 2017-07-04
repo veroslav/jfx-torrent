@@ -1,6 +1,6 @@
 /*
 * This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015-2016 Vedran Matic
+* Copyright (C) 2015-2017 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -20,9 +20,6 @@
 package org.matic.torrent.gui.table;
 
 import javafx.scene.control.TableRow;
-import org.matic.torrent.preferences.ApplicationPreferences;
-import org.matic.torrent.preferences.CssProperties;
-import org.matic.torrent.preferences.GuiProperties;
 
 public final class TrackerTableRow<T> extends TableRow<T> {
 
@@ -31,15 +28,7 @@ public final class TrackerTableRow<T> extends TableRow<T> {
 		super.updateItem(item, empty);
 		
 		if(!empty) {
-            if(this.getIndex() % 2 != 0 && ApplicationPreferences.getProperty(
-                    GuiProperties.ALTERNATE_LIST_ROW_COLOR, false)) {
-                getStyleClass().removeAll(CssProperties.ALTERNATE_LIST_ROW_EVEN);
-                getStyleClass().add(CssProperties.ALTERNATE_LIST_ROW_ODD);
-            }
-            else {
-                getStyleClass().removeAll(CssProperties.ALTERNATE_LIST_ROW_ODD);
-                getStyleClass().add(CssProperties.ALTERNATE_LIST_ROW_EVEN);
-            }
+            TableUtils.applyTableRowColorization(this);
 		}
 	}	
 }

@@ -1,5 +1,5 @@
 /* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015-2016 Vedran Matic
+* Copyright (C) 2015-2017 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -28,9 +28,8 @@ import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.TreeTableRow;
 import org.matic.torrent.gui.model.TorrentFileEntry;
-import org.matic.torrent.preferences.ApplicationPreferences;
+import org.matic.torrent.gui.table.TableUtils;
 import org.matic.torrent.preferences.CssProperties;
-import org.matic.torrent.preferences.GuiProperties;
 import org.matic.torrent.queue.enums.FilePriority;
 
 import java.util.Arrays;
@@ -90,16 +89,8 @@ public final class TorrentContentTreeRow extends TreeTableRow<TorrentFileEntry> 
             setContextMenu(null);
             return;
         } 
-		else {				
-			if(this.getIndex() % 2 != 0 && ApplicationPreferences.getProperty(
-					GuiProperties.ALTERNATE_LIST_ROW_COLOR, false)) {
-                getStyleClass().removeAll(CssProperties.ALTERNATE_LIST_ROW_EVEN);
-				getStyleClass().add(CssProperties.ALTERNATE_LIST_ROW_ODD);                
-            }
-            else {
-                getStyleClass().removeAll(CssProperties.ALTERNATE_LIST_ROW_ODD);
-            	getStyleClass().add(CssProperties.ALTERNATE_LIST_ROW_EVEN);
-            }
+		else {
+            TableUtils.applyTableRowColorization(this);
 			
 			final CheckBoxTreeItem<TorrentFileEntry> treeItem = (CheckBoxTreeItem<TorrentFileEntry>)super.getTreeItem();
 			expandFolderTreeMenuItem.setDisable(treeItem.isLeaf() || treeItem.isExpanded());
