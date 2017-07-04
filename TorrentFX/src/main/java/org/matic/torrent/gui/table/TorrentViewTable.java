@@ -151,20 +151,33 @@ public final class TorrentViewTable {
         return inactiveTorrents;
     }
 
-    public void filter(final String filterName) {
+    public void filter(final String torrentQueueFilter, final String torrentNameFilter) {
         filteredTorrents.setPredicate(tv -> {
             final QueueType queueType = tv.getQueueType();
             final TorrentStatus torrentStatus = tv.getStatus();
 
-            switch(filterName) {
+            boolean queueFilterMatch;
+            switch(torrentQueueFilter) {
                 case ACTIVE_FILTER:
-                    return torrentStatus == TorrentStatus.ACTIVE &&
+                    queueFilterMatch = torrentStatus == TorrentStatus.ACTIVE &&
                             (queueType == QueueType.ACTIVE || queueType == QueueType.FORCED);
+                    break;
                 case INACTIVE_FILTER:
-                    return queueType == QueueType.INACTIVE || queueType == QueueType.QUEUED;
+                    queueFilterMatch = queueType == QueueType.INACTIVE || queueType == QueueType.QUEUED;
+                    break;
+                case TORRENTS_FILTER:
+                    queueFilterMatch = true;
+                    break;
                 default:
-                    return true;
+                    queueFilterMatch = false;
+                    break;
             }
+
+            final boolean nameFilterMatch = torrentNameFilter != null && !"".equals(torrentNameFilter.trim());
+            if(nameFilterMatch) {
+                return queueFilterMatch && tv.getFileName().toLowerCase().contains(torrentNameFilter.toLowerCase());
+            }
+            return queueFilterMatch;
         });
     }
 	
@@ -197,7 +210,7 @@ public final class TorrentViewTable {
 	 * @return Generated boolean binding
 	 */
 	public BooleanBinding bindOnEmpty() {
-		return Bindings.size(torrentTable.getItems()).isEqualTo(0);
+		return Bindings.isEmpty(torrentTable.getItems());
 	}
 	
 	public void addJob(final TorrentView torrentJob) {
@@ -232,7 +245,7 @@ public final class TorrentViewTable {
         }
     }
 	
-	public void deleteJobs(final ObservableList<TorrentView> torrentJobs) {
+	public void deleteJobs(final List<TorrentView> torrentJobs) {
         //A workaround for bug JDK-8087508
         torrentTable.sort();
 
@@ -263,8 +276,8 @@ public final class TorrentViewTable {
 	}
 
 	private void initComponents() {
-	    torrentViews.addListener((ListChangeListener<TorrentView>) l -> {
-	        if(l.next()) {
+        torrentViews.addListener((ListChangeListener<TorrentView>) l -> {
+            if(l.next()) {
                 totalTorrents.set(torrentViews.size());
             }
         });
@@ -273,21 +286,27 @@ public final class TorrentViewTable {
         sortedTorrents.comparatorProperty().bind(torrentTable.comparatorProperty());
 
         torrentTable.setItems(sortedTorrents);
-		torrentTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
-		torrentTable.setTableMenuButtonVisible(false);
-		torrentTable.setRowFactory(t -> new TorrentViewTableRow<>());
-		
-		final Text emptyTorrentListPlaceholder = new Text("Go to 'File->Add Torrent...' to add torrents.");
-		emptyTorrentListPlaceholder.getStyleClass().add(CssProperties.TORRENT_LIST_EMPTY_TEXT);
-		emptyTorrentListPlaceholder.visibleProperty().bind(Bindings.isEmpty(torrentTable.getItems()));
-		
-		final BorderPane placeholderPane = new BorderPane();
-		placeholderPane.getStyleClass().add(CssProperties.PLACEHOLDER_EMPTY);
-		placeholderPane.setPadding(new Insets(15, 0, 0, 40));
-		placeholderPane.setLeft(emptyTorrentListPlaceholder);
-		
-		torrentTable.setPlaceholder(placeholderPane);
-		createColumns();		
+        torrentTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+        torrentTable.setTableMenuButtonVisible(false);
+        torrentTable.setRowFactory(t -> new TorrentViewTableRow<>());
+
+        final String emptyTorrentListMessage = "Go to 'File->Add Torrent...' to add torrents.";
+        final Text emptyTorrentListPlaceholder = new Text(emptyTorrentListMessage);
+        emptyTorrentListPlaceholder.getStyleClass().add(CssProperties.TORRENT_LIST_EMPTY_TEXT);
+        emptyTorrentListPlaceholder.visibleProperty().bind(Bindings.isEmpty(torrentTable.getItems()));
+
+        //TODO: Check why wrong text is shown after all torrents are deleted
+        filteredTorrents.predicateProperty().addListener((obs, oldV, newV) ->
+                emptyTorrentListPlaceholder.setText(filteredTorrents.isEmpty()?
+                    "No torrents to display" : emptyTorrentListMessage));
+
+        final BorderPane placeholderPane = new BorderPane();
+        placeholderPane.getStyleClass().add(CssProperties.PLACEHOLDER_EMPTY);
+        placeholderPane.setPadding(new Insets(15, 0, 0, 40));
+        placeholderPane.setLeft(emptyTorrentListPlaceholder);
+
+        torrentTable.setPlaceholder(placeholderPane);
+        createColumns();
 	}
 
     private void createContextMenu() {

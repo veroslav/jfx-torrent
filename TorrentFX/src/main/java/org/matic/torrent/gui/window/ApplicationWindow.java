@@ -335,12 +335,12 @@ public final class ApplicationWindow implements PreferenceChangeListener {
     }
 
     private void updateGui() {
+        //Don't update the GUI if the window itself is minimized/hidden
         if(stage.isIconified()) {
             return;
         }
 
         final List<TorrentView> selectedTorrents = torrentViewTable.getSelectedJobs();
-
         if(!selectedTorrents.isEmpty()) {
             //Render Detailed Info pane contents only if it is visible
             if(showDetailedInfoMenuItem.isSelected()) {
@@ -359,22 +359,24 @@ public final class ApplicationWindow implements PreferenceChangeListener {
                         infoPanel.setContent(selectedTorrents.get(selectedTorrents.size() - 1));
                         break;
                     case GuiProperties.PEERS_TAB_ID:
-
+                        //Update and render peer statistics if Peers tab is selected
+                        //TODO: Update peer table
+                        peerTable.sort();
                         break;
                 }
             }
         }
     }
 
-    private void initFilterTreeView() {
+    private void initFilterTreeView(final ComboBox<String> searchFilterCombo) {
         filterTreeView.getStyleClass().add(CssProperties.FILTER_LIST_VIEW);
-        filterTreeView.setRoot(buildFilterTreeViewItems());
+        filterTreeView.setRoot(buildFilterTreeViewItems(searchFilterCombo));
         filterTreeView.setShowRoot(false);
         filterTreeView.getSelectionModel().select(0);
         filterTreeView.requestFocus();
 
         filterTreeView.getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) ->
-            torrentViewTable.filter(newV.getValue().getId()));
+                torrentViewTable.filter(newV.getValue().getId(), searchFilterCombo.getEditor().getText()));
 
         final MenuItem addTorrentMenuItem = new MenuItem("_Add Torrent...");
         final MenuItem addRssFeedMenuItem = new MenuItem("A_dd RSS Feed...");
@@ -387,7 +389,7 @@ public final class ApplicationWindow implements PreferenceChangeListener {
         filterTreeView.setContextMenu(contextMenu);
     }
 
-    private TreeItem<Label> buildFilterTreeViewItems() {
+    private TreeItem<Label> buildFilterTreeViewItems(final ComboBox<String> searchFilterCombo) {
         final String[] torrentLabelNames = {TorrentViewTable.DOWNLOADING_FILTER,
                 TorrentViewTable.SEEDING_FILTER, TorrentViewTable.COMPLETED_FILTER, TorrentViewTable.ACTIVE_FILTER,
                 TorrentViewTable.INACTIVE_FILTER};
@@ -437,17 +439,30 @@ public final class ApplicationWindow implements PreferenceChangeListener {
         final TreeItem<Label> rssFeedsRootNode = new TreeItem<>(rssFeedsRootLabel);
         rssFeedsRootNode.setExpanded(true);
 
+        //TODO: Extract property listeners' code to a common method
         torrentViewTable.totalTorrentsProperty().addListener((obs, oldV, newV) ->
-                Platform.runLater(() ->
-                        torrentsRootLabel.setText(torrentsRootLabelId + " (" + newV + ")")));
+                Platform.runLater(() -> {
+                        torrentsRootLabel.setText(torrentsRootLabelId + " (" + newV + ")");
+                        torrentViewTable.filter(
+                                filterTreeView.getSelectionModel().getSelectedItem().getValue().getId(),
+                                searchFilterCombo.getEditor().getText());
+                }));
 
         torrentViewTable.activeTorrentsProperty().addListener((obs, oldV, newV) ->
-                Platform.runLater(() ->
-                        torrentLabels[3].setText(torrentLabelNames[3] + " (" + newV + ")")));
+                Platform.runLater(() -> {
+                        torrentLabels[3].setText(torrentLabelNames[3] + " (" + newV + ")");
+                        torrentViewTable.filter(
+                            filterTreeView.getSelectionModel().getSelectedItem().getValue().getId(),
+                            searchFilterCombo.getEditor().getText());
+                }));
 
         torrentViewTable.inactiveTorrentsProperty().addListener((obs, oldV, newV) ->
-                Platform.runLater(() ->
-                        torrentLabels[4].setText(torrentLabelNames[4] + " (" + newV + ")")));
+                Platform.runLater(() -> {
+                        torrentLabels[4].setText(torrentLabelNames[4] + " (" + newV + ")");
+                        torrentViewTable.filter(
+                                filterTreeView.getSelectionModel().getSelectedItem().getValue().getId(),
+                                searchFilterCombo.getEditor().getText());
+        }));
 
         final List<TreeItem<Label>> allNodes = Arrays.asList(torrentsRootNode, labelsRootNode, rssFeedsRootNode);
 
@@ -467,7 +482,9 @@ public final class ApplicationWindow implements PreferenceChangeListener {
 
     private Pane buildContentPane() {
         final BorderPane mainPane = new BorderPane();
-        final ToolBar toolbar = buildToolbar();
+
+        final ComboBox<String> searchFilterCombo = buildSearchFilterComboBox();
+        final ToolBar toolbar = buildToolbar(searchFilterCombo);
 
         verticalSplitPane.getStyleClass().add(CssProperties.SPLIT_PANE);
         verticalSplitPane.setOrientation(Orientation.VERTICAL);
@@ -489,7 +506,7 @@ public final class ApplicationWindow implements PreferenceChangeListener {
         showCompactToolbar(mainPane, centerPane, toolbar, showCompactToolbarMenuItem.isSelected());
         showCompactToolbarMenuItem.selectedProperty().addListener((obs, oldV, showCompact) ->
                 showCompactToolbar(mainPane, centerPane, toolbar, showCompact));
-        initFilterTreeView();
+        initFilterTreeView(searchFilterCombo);
 
         horizontalSplitPane.getStyleClass().add(CssProperties.SPLIT_PANE);
         horizontalSplitPane.setOrientation(Orientation.HORIZONTAL);
@@ -591,7 +608,7 @@ public final class ApplicationWindow implements PreferenceChangeListener {
                 toolbarButtons.contains(toolbarButtonsMap.get(ImageUtils.RSS_ICON_LOCATION));
     }
 
-    private ToolBar buildToolbar() {
+    private ToolBar buildToolbar(final ComboBox<String> searchFilterCombo) {
         final String[] buttonUrls = new String[]{ImageUtils.ADD_ICON_LOCATION,
                 ImageUtils.LINK_ICON_LOCATION, ImageUtils.RSS_ICON_LOCATION,
                 ImageUtils.NEW_ICON_LOCATION, ImageUtils.DELETE_ICON_LOCATION,
@@ -624,7 +641,7 @@ public final class ApplicationWindow implements PreferenceChangeListener {
                 toolbarButtons[4], buildToolbarSeparator(), toolbarButtons[5], toolbarButtons[6],
                 toolbarButtons[7], buildToolbarSeparator(), toolbarButtons[8], toolbarButtons[9],
                 buildToolbarSeparator(), toolbarButtons[10], buildToolbarSeparator(), separatorBox,
-                buildSearchFilterComboBox(), buildToolbarSeparator(), toolbarButtons[11], toolbarButtons[12]};
+                searchFilterCombo, buildToolbarSeparator(), toolbarButtons[11], toolbarButtons[12]};
 
         final ToolBar toolBar = new ToolBar(toolbarContents);
         return toolBar;
@@ -642,7 +659,11 @@ public final class ApplicationWindow implements PreferenceChangeListener {
         final ContextMenu deleteButtonContextMenu = buildRemoveButtonContextMenu();
         deleteButton.setOnMouseClicked(event -> {
             deleteButtonContextMenu.hide();
-            onDeleteTorrent(event, deleteButton, deleteButtonContextMenu);
+            if(event.getButton().equals(MouseButton.SECONDARY)) {
+                deleteButtonContextMenu.show(deleteButton, event.getScreenX(), event.getScreenY());
+                return;
+            }
+            onDeleteTorrents(torrentViewTable.getSelectedJobs());
         });
         deleteButton.disableProperty().addListener((obs, oldV, newV) ->
                 onDeleteButtonStateChanged(deleteButton, newV));
@@ -689,6 +710,7 @@ public final class ApplicationWindow implements PreferenceChangeListener {
         final ComboBox<String> searchFilterCombo = new ComboBox<>();
         searchFilterCombo.setPrefWidth(250);
 
+        //TODO: Extract CellFactory and ListCell to own classes
         searchFilterCombo.setCellFactory(new Callback<ListView<String>, ListCell<String>>() {
             @Override
             public ListCell<String> call(final ListView<String> listView) {
@@ -708,8 +730,16 @@ public final class ApplicationWindow implements PreferenceChangeListener {
             }
         });
 
+        final String searchProvidersFilterName = "Manage Search Providers...";
+        final String filterTorrentsFilterName = "Filter My Torrents";
+        searchFilterCombo.setItems(FXCollections.observableArrayList(
+                searchProvidersFilterName, filterTorrentsFilterName));
         searchFilterCombo.getEditor().textProperty().addListener((obs, oldV, newV) -> {
-            System.out.println("Filter text changed to: <" + newV + ">");
+            final String selectedSearchFilter = searchFilterCombo.getId();
+            if(filterTorrentsFilterName.equals(selectedSearchFilter)) {
+                //Filter shown torrents (possibly already filtered) to match the search term
+                torrentViewTable.filter(filterTreeView.getSelectionModel().getSelectedItem().getValue().getId(), newV);
+            }
         });
 
         final FilterTorrentsComboBoxSkin<String> comboSkin = new FilterTorrentsComboBoxSkin<>(searchFilterCombo);
@@ -718,9 +748,6 @@ public final class ApplicationWindow implements PreferenceChangeListener {
         searchFilterCombo.setSkin(comboSkin);
         searchFilterCombo.setPromptText("<Filter Torrents>");
         searchFilterCombo.setEditable(true);
-
-        searchFilterCombo.setItems(FXCollections.observableArrayList(
-                "Manage Search Providers...", "Filter My Torrents"));
 
         return searchFilterCombo;
     }
@@ -1010,15 +1037,8 @@ public final class ApplicationWindow implements PreferenceChangeListener {
         }
     }
 
-    private void onDeleteTorrent(final MouseEvent event, final Button deleteButton, final ContextMenu removeOptionsMenu) {
-        if(event.getButton().equals(MouseButton.SECONDARY)) {
-            removeOptionsMenu.show(deleteButton, event.getScreenX(), event.getScreenY());
-            return;
-        }
-
-        final ObservableList<TorrentView> selectedTorrentJobs = torrentViewTable.getSelectedJobs();
-
-        if(selectedTorrentJobs.size() > 0) {
+    private void onDeleteTorrents(final List<TorrentView> torrentsToDelete) {
+        if(!torrentsToDelete.isEmpty()) {
             final boolean showConfirmAlert = ApplicationPreferences.getProperty(
                     GuiProperties.DELETE_TORRENT_CONFIRMATION, true);
             boolean torrentDeletionConfirmed = false;
@@ -1033,7 +1053,7 @@ public final class ApplicationWindow implements PreferenceChangeListener {
                 torrentDeletionConfirmed = answer.isPresent() && answer.get() == ButtonType.OK;
             }
             if(!showConfirmAlert || torrentDeletionConfirmed) {
-                selectedTorrentJobs.stream().forEach(t -> {
+                torrentsToDelete.stream().forEach(t -> {
                     try {
                         queuedTorrentManager.remove(t);
                     } catch (final IOException ioe) {
@@ -1045,7 +1065,7 @@ public final class ApplicationWindow implements PreferenceChangeListener {
                         deleteErrorAlert.showAndWait();
                     }
                 });
-                torrentViewTable.deleteJobs(selectedTorrentJobs);
+                torrentViewTable.deleteJobs(torrentsToDelete);
                 final ObservableList<TorrentView> newSelection = torrentViewTable.getSelectedJobs();
                 if(newSelection.isEmpty()) {
                     fileTreeViewer.hide();
@@ -1070,11 +1090,16 @@ public final class ApplicationWindow implements PreferenceChangeListener {
         final boolean torrentSelected = selectedTorrentView != null;
         if(torrentSelected) {
             fileTreeViewer.show(selectedTorrentView.getInfoHash());
-            trackerTable.setContent(selectedTorrentView.getTrackerViews());
-            peerTable.setContent(selectedTorrentView.getPeerViews());
-            infoPanel.setContent(selectedTorrentView);
-            updateGui();
+        } else {
+            fileTreeViewer.hide();
         }
+        trackerTable.setContent(torrentSelected? selectedTorrentView.getTrackerViews() :
+                FXCollections.emptyObservableSet());
+        peerTable.setContent(torrentSelected? selectedTorrentView.getPeerViews() :
+                FXCollections.emptyObservableList());
+        infoPanel.setContent(torrentSelected? selectedTorrentView : null);
+        updateGui();
+
         toolbarButtonsMap.get(ImageUtils.DOWNLOAD_ICON_LOCATION).setDisable(!torrentSelected ||
                 selectedTorrentView.getStatus() == TorrentStatus.ACTIVE ||
                 selectedTorrentView.getQueueType() == QueueType.QUEUED);

@@ -19,8 +19,10 @@
 */
 package org.matic.torrent.gui.table;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -84,6 +86,15 @@ public final class PeerTable {
             peerTable.getItems().addAll(peers);
         });
 	}
+
+    /**
+     * Sort the table based on the current sort order and latest table entry values.
+     */
+    public void sort() {
+        final List<TableColumn<PeerView, ?>> sortOrder = new ArrayList<>(peerTable.getSortOrder());
+        peerTable.getSortOrder().clear();
+        peerTable.getSortOrder().addAll(sortOrder);
+    }
 
 	public void storeColumnStates() {
         TableUtils.storeColumnStates(peerTable.getColumns(), GuiProperties.PEER_TAB_COLUMN_VISIBILITY,

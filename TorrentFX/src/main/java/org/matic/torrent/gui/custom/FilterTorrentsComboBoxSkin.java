@@ -1,6 +1,6 @@
 /*
 * This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015-2016 Vedran Matic
+* Copyright (C) 2015-2017 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -37,12 +37,15 @@ public final class FilterTorrentsComboBoxSkin<T> extends ComboBoxListViewSkin<T>
         super(comboBox);
         super.getChildren().add(filterGraphic);
 
+        //TODO: Extract real name in handle() method below, instead of hardcoding it here
+        comboBox.setId("Filter My Torrents");
+
         final Node listSkin = super.getChildren().stream().filter(
                 c -> c.getStyleClass().contains("list-view")).findAny().get();
         listSkin.addEventFilter(MouseEvent.MOUSE_RELEASED, new EventHandler<Event>() {
             @Override
             public void handle(final Event event) {
-                System.out.println("ListView mouse released, option: " + event.getTarget().toString());
+                //System.out.println("ListView mouse released, option: " + event.getTarget().toString());
             }
         });
     }
