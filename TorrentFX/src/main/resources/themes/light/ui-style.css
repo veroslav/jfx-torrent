@@ -2,7 +2,8 @@
 
 /*Custom color definitions*/
 * {	
-	-primary-text-color: -fx-text-base-color;	
+	-primary-text-color: -fx-text-base-color;
+	-selection-color: #3399FF;
 }
 
 .combo-box-popup .list-view {
@@ -13,7 +14,7 @@
 .combo-box-popup .list-view .list-cell:selected,
 .combo-box-popup .list-view .list-cell:hover {
 	-fx-text-fill: white;
-	-fx-background-color: #5FBBFF;
+	-fx-background-color: -selection-color;
 }
 
 .empty-placeholder {
@@ -76,7 +77,7 @@
 }
 
 .option-category-label {	
-	-fx-background-color: #3399FF;
+	-fx-background-color: -selection-color;
 	-fx-border-color: #888888 white #DDDDDD #999999;	
 	-fx-text-fill: white;	
 }
@@ -94,7 +95,7 @@
 }
 
 .option-category-selection-list .tree-cell:selected {
-    -fx-background-color: #5FBBFF;
+    -fx-background-color: -selection-color;
 }
 
 .option-category-selection-list .tree-cell .tree-disclosure-node .arrow {
@@ -106,7 +107,7 @@
 }
 
 .root {
-	-fx-accent: #5FBBFF;
+	-fx-accent: -selection-color;
 	-fx-background-color: -fx-base;	
 }
 
@@ -137,7 +138,7 @@
 }
 
 .table-row-cell:selected {
-    -fx-background-color: #5FBBFF; /*#E2EDF9;*/
+    -fx-background-color: -selection-color; /*#E2EDF9;*/
     -fx-text-fill: white;
 }
 
@@ -189,5 +190,5 @@
 }
 
 .tree-table-row-cell:selected {
-    -fx-background-color: #5FBBFF; /*#E2EDF9;*/
+    -fx-background-color: -selection-color; /*#E2EDF9;*/
 }

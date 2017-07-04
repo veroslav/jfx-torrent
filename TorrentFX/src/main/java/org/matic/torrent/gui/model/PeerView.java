@@ -26,6 +26,8 @@ import javafx.beans.property.StringProperty;
 import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.net.pwp.PwpPeer;
 
+import java.util.Objects;
+
 public final class PeerView {
 
     private final PwpPeer peer;
@@ -190,6 +192,19 @@ public final class PeerView {
 
     public String getClientName() {
         return clientId.get();
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        PeerView peerView = (PeerView) o;
+        return Objects.equals(peer, peerView.peer);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(peer);
     }
 
     @Override
