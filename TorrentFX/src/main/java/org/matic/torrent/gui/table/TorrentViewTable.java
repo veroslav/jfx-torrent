@@ -293,18 +293,16 @@ public final class TorrentViewTable {
         final String emptyTorrentListMessage = "Go to 'File->Add Torrent...' to add torrents.";
         final Text emptyTorrentListPlaceholder = new Text(emptyTorrentListMessage);
         emptyTorrentListPlaceholder.getStyleClass().add(CssProperties.TORRENT_LIST_EMPTY_TEXT);
-        emptyTorrentListPlaceholder.visibleProperty().bind(Bindings.isEmpty(torrentTable.getItems()));
 
-        //TODO: Check why wrong text is shown after all torrents are deleted
-        filteredTorrents.predicateProperty().addListener((obs, oldV, newV) ->
-                emptyTorrentListPlaceholder.setText(filteredTorrents.isEmpty()?
-                    "No torrents to display" : emptyTorrentListMessage));
+        filteredTorrents.predicateProperty().addListener((obs, oldV, newV) -> {
+            emptyTorrentListPlaceholder.setText(filteredTorrents.isEmpty() && torrentViews.isEmpty()?
+                emptyTorrentListMessage : "No torrents to display.");
+        });
 
         final BorderPane placeholderPane = new BorderPane();
         placeholderPane.getStyleClass().add(CssProperties.PLACEHOLDER_EMPTY);
         placeholderPane.setPadding(new Insets(15, 0, 0, 40));
         placeholderPane.setLeft(emptyTorrentListPlaceholder);
-
         torrentTable.setPlaceholder(placeholderPane);
         createColumns();
 	}

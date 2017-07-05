@@ -997,8 +997,10 @@ public final class ApplicationWindow implements PreferenceChangeListener {
             }
             final List<TorrentView> torrentViews = queuedTorrentManager.addTorrents(
                     Arrays.asList(new TorrentTemplate(metaData, torrentOptions.getProgress())));
+
             torrentViews.forEach(tv -> loadTorrent(tv, torrentOptions.getTorrentContents()));
-            fileTreeViewer.show(infoHash);
+            //fileTreeViewer.show(infoHash);
+
         }
         updateGui();
     }
