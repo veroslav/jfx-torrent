@@ -43,6 +43,7 @@ import javafx.scene.control.TableColumn.CellDataFeatures;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.ToggleGroup;
+import javafx.scene.input.KeyCode;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.text.Text;
 import javafx.util.Callback;
@@ -149,6 +150,22 @@ public final class TorrentViewTable {
 
     public IntegerProperty inactiveTorrentsProperty() {
         return inactiveTorrents;
+    }
+
+    /**
+     * Register a listener to be called after torrents are about to be deleted.
+     *
+     * @param handler Target listener
+     */
+    public void onTorrentDeletionRequested(final Consumer<List<TorrentView>> handler) {
+        final Runnable deleter = () ->
+                handler.accept(torrentTable.getSelectionModel().getSelectedItems());
+        removeMenuItem.setOnAction(e -> deleter.run());
+        torrentTable.setOnKeyReleased(e -> {
+            if(e.getCode().equals(KeyCode.DELETE)) {
+                deleter.run();
+            }
+        });
     }
 
     public void filter(final String torrentQueueFilter, final String torrentNameFilter) {

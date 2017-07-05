@@ -241,6 +241,7 @@ public final class ApplicationWindow implements PreferenceChangeListener {
         initStatusBar(mainPane);
 
         torrentViewTable.addSelectionListener(this::onTorrentJobSelection);
+        torrentViewTable.onTorrentDeletionRequested(this::onDeleteTorrents);
         trackerTable.onTrackerDeletionRequested(views ->
                 trackerTableActionHandler.onTrackerDeletion(views, queuedTorrentManager, trackerTable, stage));
         trackerTable.onTrackableUpdateRequested(views ->
