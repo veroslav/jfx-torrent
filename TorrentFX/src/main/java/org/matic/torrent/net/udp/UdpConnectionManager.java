@@ -1,6 +1,6 @@
 /*
 * This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015-2016 Vedran Matic
+* Copyright (C) 2015-2017 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -52,7 +52,7 @@ import java.util.concurrent.TimeUnit;
  * and notifying interested listeners when a UDP packet
  * has arrived.
  * 
- * @author vedran
+ * @author Vedran Matic
  *
  */
 public class UdpConnectionManager {
@@ -125,12 +125,11 @@ public class UdpConnectionManager {
 	}
 
 	/**
-	 * Start UDP connection manager
-	 * 
-	 * @param networkInterface Network interface on which to listen
+	 * Start UDP connection manager.
+	 *
 	 * @param listenPort Target port for received UDP packets
 	 */
-	public void manage(final String networkInterface, final int listenPort) {		
+	public void manage(final int listenPort) {
 		try {
 			connectionSelector = Selector.open();
 		}
@@ -140,7 +139,7 @@ public class UdpConnectionManager {
 		}		
 		connectionManagerExecutor.execute(() -> {
 			try(final DatagramChannel channel = DatagramChannel.open()) {								
-				setChannelOptions(channel, connectionSelector, networkInterface, listenPort);				
+				setChannelOptions(channel, connectionSelector, listenPort);
 				while(true) {					
 					if(Thread.currentThread().isInterrupted()) {						
 						Thread.interrupted();
@@ -269,9 +268,9 @@ public class UdpConnectionManager {
 	}
 	
 	private void setChannelOptions(final DatagramChannel channel, final Selector connectionSelector,
-			final String networkInterface, final int listenPort) throws IOException {
+                                   final int listenPort) throws IOException {
 		channel.configureBlocking(false);
-		channel.bind(NetworkUtilities.getSocketAddressFromNetworkInterface(networkInterface, listenPort));
+		channel.bind(NetworkUtilities.getSocketAddress(listenPort));
 		channel.register(connectionSelector, SelectionKey.OP_READ);
 	}
 }

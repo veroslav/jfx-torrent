@@ -775,7 +775,7 @@ public class PeerConnectionManager implements PeerFoundListener, TorrentStatusCh
 
         setChannelOptions(serverChannel);
         serverChannel.configureBlocking(false);
-        serverChannel.bind(NetworkUtilities.getSocketAddressFromNetworkInterface("tun", listenPort));
+        serverChannel.bind(NetworkUtilities.getSocketAddress(listenPort));
         serverChannel.register(selector, SelectionKey.OP_ACCEPT);
     }
 
@@ -800,7 +800,7 @@ public class PeerConnectionManager implements PeerFoundListener, TorrentStatusCh
                 return connections;
             });
 
-            peerChannel.bind(NetworkUtilities.getSocketAddressFromNetworkInterface("tun", 0));
+            peerChannel.bind(NetworkUtilities.getSocketAddress(0));
 
             final boolean isConnected = peerChannel.connect(
                     new InetSocketAddress(peer.getIp(), peer.getPort()));

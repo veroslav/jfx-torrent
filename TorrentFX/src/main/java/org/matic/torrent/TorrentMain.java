@@ -92,7 +92,7 @@ public final class TorrentMain extends Application {
         TRACKER_MANAGER.addPeerListener(CONNECTION_MANAGER);
         CONNECTION_MANAGER.launch();
         UDP_TRACKER_CONNECTION_MANAGER.addTrackerListener(TRACKER_MANAGER);
-        UDP_TRACKER_CONNECTION_MANAGER.manage("tun", UdpConnectionManager.UDP_TRACKER_PORT);
+        UDP_TRACKER_CONNECTION_MANAGER.manage(UdpConnectionManager.UDP_TRACKER_PORT);
         ApplicationPreferences.addPreferenceChangeListener(TORRENT_MANAGER);
     }
 
