@@ -27,6 +27,7 @@ import org.matic.torrent.net.pwp.PeerConnectionManager;
 import org.matic.torrent.net.udp.UdpConnectionManager;
 import org.matic.torrent.peer.ClientProperties;
 import org.matic.torrent.preferences.ApplicationPreferences;
+import org.matic.torrent.preferences.NetworkProperties;
 import org.matic.torrent.preferences.PathProperties;
 import org.matic.torrent.queue.QueuedTorrentManager;
 import org.matic.torrent.tracking.TrackerManager;
@@ -84,7 +85,8 @@ public final class TorrentMain extends Application {
     }
 
     private static void startup() throws IOException {
-        CONNECTION_MANAGER = new PeerConnectionManager(ClientProperties.TCP_PORT);
+        CONNECTION_MANAGER = new PeerConnectionManager((int)ApplicationPreferences.getProperty(
+                NetworkProperties.INCOMING_CONNECTION_PORT, ClientProperties.TCP_PORT));
         TORRENT_MANAGER = new QueuedTorrentManager(
                 PERSISTENCE_SUPPORT, TRACKER_MANAGER, CONNECTION_MANAGER);
         CONNECTION_MANAGER.addConnectionListener(TORRENT_MANAGER);
