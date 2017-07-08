@@ -1,6 +1,6 @@
 /*
 * This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015-2016 Vedran Matic
+* Copyright (C) 2015-2017 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -51,6 +51,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -120,6 +121,9 @@ public class TrackerManager implements TrackerResponseListener, UdpTrackerRespon
 		final long responseTime = System.currentTimeMillis();
 		trackerSession.getTracker().setLastResponse(responseTime);
 		trackerSession.setLastAnnounceResponse(responseTime);
+
+		final String trackerMessage = announceResponse.getMessage() != null?
+                new String(announceResponse.getMessage().getBytes(StandardCharsets.UTF_8)) : null;
 		
 		synchronized(trackerSessions) {		
 			if(trackerSessions.containsKey(trackerSession.getTorrentView())) {
@@ -129,16 +133,16 @@ public class TrackerManager implements TrackerResponseListener, UdpTrackerRespon
 					return;
 				}
 				
-				trackerSession.setTrackerMessage(announceResponse.getMessage());
+				trackerSession.setTrackerMessage(trackerMessage);
 				
 				//Check whether it was an error response before scheduling
 				if(announceResponse.getType() != TrackerResponse.Type.OK) {
 					
 					System.err.println("Announce returned an error ( " + announceResponse.getType() + "): "
-							+ trackerSession.getTracker() + ", msg = " + announceResponse.getMessage());
+							+ trackerSession.getTracker() + ", msg = " + trackerMessage);
 					
 					trackerSession.setTrackerStatus(Tracker.Status.TRACKER_ERROR);	
-					trackerSession.setTrackerMessage(announceResponse.getMessage());
+					trackerSession.setTrackerMessage(trackerMessage);
 					trackerSession.setInterval(REQUEST_DELAY_ON_TRACKER_ERROR);
 					
 					final Tracker.Event sentTrackerEvent = scheduledRequests.get(trackerSession).
@@ -510,8 +514,8 @@ public class TrackerManager implements TrackerResponseListener, UdpTrackerRespon
 					t -> t.getTransactionId() == transactionId).findFirst();
 			if(match != null && match.isPresent()) {
 				final int interval = dis.readInt() * 1000;
-				final int leechers = dis.readInt();
-				final int seeders = dis.readInt();
+				final int leechers = dis.available() >= Integer.BYTES? dis.readInt() : 0;
+				final int seeders = dis.available() >= Integer.BYTES? dis.readInt() : 0;
 				
 				final TrackerSession trackerSession = match.get();
 				final AnnounceParameters announceParameters = scheduledRequests.get(trackerSession).getAnnounceParameters();

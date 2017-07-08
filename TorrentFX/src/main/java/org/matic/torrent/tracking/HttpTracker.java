@@ -372,14 +372,14 @@ public final class HttpTracker extends Tracker {
 		final BinaryEncodedInteger incomplete = ((BinaryEncodedInteger)responseMap.get(
 				BinaryEncodingKeys.KEY_INCOMPLETE));
 		
-		if(!validateMandatoryResponseValues(peerList, interval, complete, incomplete)) {			
+		if(!validateMandatoryResponseValues(peerList, interval)) {
 			return new AnnounceResponse(TrackerResponse.Type.INVALID_RESPONSE, 
 					"Missing mandatory response value");
 		}
 		
-		final long incompleteValue = incomplete.getValue();
+		final long incompleteValue = incomplete != null? incomplete.getValue() : 0;
+        final long completeValue = complete != null? complete.getValue() : 0;
 		final long intervalValue = interval.getValue() * 1000;
-		final long completeValue = complete.getValue();
 		
 		final BinaryEncodedString warningMessage = (BinaryEncodedString)responseMap.get(
 				BinaryEncodingKeys.KEY_WARNING_MESSAGE);
