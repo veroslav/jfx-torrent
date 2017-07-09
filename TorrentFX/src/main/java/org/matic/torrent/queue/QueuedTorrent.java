@@ -55,6 +55,11 @@ public class QueuedTorrent {
         priority = new SimpleIntegerProperty(progress.getTorrentPriority());
     }
 
+    public void addPriorityChangeListener(final TorrentPriorityChangeListener handler) {
+        priority.addListener((obs, oldV, newV) -> handler.onTorrentPriorityChanged(
+                new TorrentPriorityChangeEvent(infoHash, oldV.intValue(), newV.intValue())));
+    }
+
     public final InfoHash getInfoHash() {
         return infoHash;
     }

@@ -19,36 +19,13 @@
 */
 package org.matic.torrent.queue;
 
-import org.matic.torrent.gui.model.TorrentView;
-import org.matic.torrent.queue.enums.TorrentStatus;
-
 /**
- * An event that is triggered when a torrent's state change has been requested.
+ * This interface is implemented by classes that would like to be
+ * notified when a torrent's priority has changed.
  *
  * @author Vedran Matic
  */
-public final class TorrentStatusChangeEvent {
+public interface TorrentPriorityChangeListener {
 
-    private final TorrentView torrentView;
-    private final TorrentStatus newStatus;
-    private final TorrentStatus oldStatus;
-
-    public TorrentStatusChangeEvent(final TorrentView torrentView,
-                                    final TorrentStatus oldStatus, final TorrentStatus newStatus) {
-        this.torrentView = torrentView;
-        this.newStatus = newStatus;
-        this.oldStatus = oldStatus;
-    }
-
-    public TorrentView getTorrentView() {
-        return torrentView;
-    }
-
-    public TorrentStatus getNewStatus() {
-        return newStatus;
-    }
-
-    public TorrentStatus getOldStatus() {
-        return oldStatus;
-    }
+    void onTorrentPriorityChanged(TorrentPriorityChangeEvent event);
 }

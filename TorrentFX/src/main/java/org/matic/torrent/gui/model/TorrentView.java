@@ -32,6 +32,7 @@ import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.queue.QueuedTorrent;
 import org.matic.torrent.queue.QueuedTorrentMetaData;
 import org.matic.torrent.queue.QueuedTorrentProgress;
+import org.matic.torrent.queue.TorrentPriorityChangeListener;
 import org.matic.torrent.queue.TorrentStatusChangeEvent;
 import org.matic.torrent.queue.TorrentStatusChangeListener;
 import org.matic.torrent.queue.enums.QueueType;
@@ -90,6 +91,7 @@ public final class TorrentView {
     private final Set<TrackableView> trackerViews = new LinkedHashSet<>();
     private final Set<PeerView> peerViews = new LinkedHashSet<>();
 
+    private final List<TorrentPriorityChangeListener> priorityChangeListeners = new CopyOnWriteArrayList<>();
     private final List<TorrentStatusChangeListener> statusChangeListeners = new CopyOnWriteArrayList<>();
 
 	public TorrentView(final QueuedTorrent queuedTorrent) {
@@ -102,13 +104,13 @@ public final class TorrentView {
         this.priority.addListener((obs, oldV, newV) ->
             lifeCycleChange.setValue(String.valueOf(newV.intValue())));
 
-        queuedTorrent.queueTypeProperty().addListener((obs, oldV, newV) ->
-            lifeCycleChange.setValue(newV == QueueType.FORCED? FORCED_PRIORITY_INDICATOR : String.valueOf(priority.get())));
-
         queuedTorrent.statusProperty().addListener((obs, oldV, newV) -> {
             final TorrentStatusChangeEvent statusChangeEvent = new TorrentStatusChangeEvent(this, oldV, newV);
             statusChangeListeners.forEach(l -> l.onTorrentStatusChanged(statusChangeEvent));
         });
+
+        queuedTorrent.addPriorityChangeListener(event ->
+            priorityChangeListeners.forEach(l -> l.onTorrentPriorityChanged(event)));
 	}
 
     public boolean addPeerViews(final Collection<PeerView> peerViews) {
@@ -171,6 +173,14 @@ public final class TorrentView {
 
     public void removeTorrentStatusChangeListener(final TorrentStatusChangeListener listener) {
         statusChangeListeners.remove(listener);
+    }
+
+    public void addTorrentPriorityChangeListener(final TorrentPriorityChangeListener listener) {
+        priorityChangeListeners.add(listener);
+    }
+
+    public void removeTorrentPriorityChangeListener(final TorrentPriorityChangeListener listener) {
+        priorityChangeListeners.remove(listener);
     }
 
     public long getSelectedLength() {

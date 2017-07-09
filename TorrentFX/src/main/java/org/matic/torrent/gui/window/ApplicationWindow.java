@@ -59,7 +59,6 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.input.MouseButton;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
@@ -687,23 +686,11 @@ public final class ApplicationWindow implements PreferenceChangeListener {
             final ObservableList<TorrentView> selectedTorrents = torrentViewTable.getSelectedJobs();
             torrentJobActionHandler.onRequestTorrentPriorityChange(queuedTorrentManager,
                    selectedTorrents, PriorityChange.HIGHER);
-            torrentViewTable.sort();
-            if(selectedTorrents.size() == 1) {
-                prioUpButton.setDisable(selectedTorrents.get(0).getPriority() == 1);
-                prioDownButton.setDisable(false);
-            }
         });
         prioDownButton.setOnAction(event -> {
             final ObservableList<TorrentView> selectedTorrents = torrentViewTable.getSelectedJobs();
             torrentJobActionHandler.onRequestTorrentPriorityChange(queuedTorrentManager,
                     selectedTorrents, PriorityChange.LOWER);
-            torrentViewTable.sort();
-
-            if(selectedTorrents.size() == 1) {
-                prioDownButton.setDisable(
-                        selectedTorrents.get(0).getPriority() == queuedTorrentManager.getTorrentsOnQueue());
-                prioUpButton.setDisable(false);
-            }
         });
     }
 
@@ -1021,6 +1008,30 @@ public final class ApplicationWindow implements PreferenceChangeListener {
 
     private void loadTorrent(final TorrentView torrentView, final TreeItem<TorrentFileEntry> contents) {
         torrentView.selectedLengthProperty().bind(contents.getValue().selectionLengthProperty());
+
+        final Button prioUpButton = toolbarButtonsMap.get(ImageUtils.UP_ICON_LOCATION);
+        final Button prioDownButton = toolbarButtonsMap.get(ImageUtils.DOWN_ICON_LOCATION);
+
+        torrentView.addTorrentPriorityChangeListener(event -> {
+            final ObservableList<TorrentView> selectedTorrents = torrentViewTable.getSelectedJobs();
+            final boolean isSelected = selectedTorrents.contains(torrentView);
+
+            if(!isSelected) {
+                return;
+            }
+
+            final int newPriority = event.getNewPriority();
+
+            Platform.runLater(() -> {
+                //Disable 'Move up queue' button if the torrent has gained maximum priority
+                prioUpButton.setDisable(newPriority == 1);
+
+                //Disable 'Move down queue' button if the torrent has gained minimum priority
+                prioDownButton.setDisable(newPriority == queuedTorrentManager.getTorrentsOnQueue());
+
+                torrentViewTable.sort();
+            });
+        });
 
         trackerTable.setContent(torrentView.getTrackerViews());
         torrentViewTable.addJob(torrentView);
