@@ -1,6 +1,6 @@
 /*
 * This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015-2016 Vedran Matic
+* Copyright (C) 2015-2017 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -156,4 +156,15 @@ public final class UnitConverter {
 		  (byte)digit};
 		return result;
 	}
+
+    /**
+     * Convert bytes (Big Endian/Network byte-order) into an integer digit.
+     *
+     * @param bytes Byte array to be converted
+     * @return Converted integer value (Big Endian)
+     */
+    public static int getInt(final byte[] bytes) {
+        return bytes[3] & 0xFF | (bytes[2] & 0xFF) << 8
+                | (bytes[1] & 0xFF) << 16 | (bytes[0] & 0xFF) << 24;
+    }
 }

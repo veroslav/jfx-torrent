@@ -109,10 +109,10 @@ public final class TorrentMain extends Application {
         }
 
         //Stop all threaded resources and perform cleanup
-        TRACKER_MANAGER.stop();
-
-        UDP_TRACKER_CONNECTION_MANAGER.unmanage();
         CONNECTION_MANAGER.shutdown();
         TORRENT_MANAGER.storeState();
+
+        TRACKER_MANAGER.stop();
+        UDP_TRACKER_CONNECTION_MANAGER.unmanage();
     }
 }

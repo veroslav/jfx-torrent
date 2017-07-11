@@ -171,7 +171,7 @@ public final class PeerSessionTest {
 		Assert.assertEquals(1, messages.size());				
 		Assert.assertTrue(messages.get(0).getMessageType() == MessageType.HAVE);
 		
-		final PwpRegularMessage result = (PwpRegularMessage)messages.get(0);
+		final PwpMessage result = messages.get(0);
 		final byte[] expectedPayload = {1, 2, 3, 4};
 		
 		Assert.assertTrue(Arrays.equals(expectedPayload, result.getPayload()));
@@ -192,7 +192,7 @@ public final class PeerSessionTest {
 		Assert.assertEquals(1, messages.size());				
 		Assert.assertTrue(messages.get(0).getMessageType() == MessageType.HAVE);
 		
-		final PwpRegularMessage result = (PwpRegularMessage)messages.get(0);
+		final PwpMessage result = messages.get(0);
 		final byte[] expectedPayload = {1, 2, 3, 4};
 		
 		Assert.assertTrue(Arrays.equals(expectedPayload, result.getPayload()));
@@ -229,7 +229,7 @@ public final class PeerSessionTest {
 		Assert.assertEquals(1, messages.size());				
 		Assert.assertTrue(messages.get(0).getMessageType() == MessageType.HAVE);
 		
-		final PwpRegularMessage result = (PwpRegularMessage)messages.get(0);
+		final PwpMessage result = messages.get(0);
 		final byte[] expectedPayload = {1, 2, 3, 4};
 		
 		Assert.assertTrue(Arrays.equals(expectedPayload, result.getPayload()));
@@ -495,12 +495,12 @@ public final class PeerSessionTest {
 		Assert.assertTrue(Arrays.equals(infoHash, actualHandshakeMessage.getInfoHash().getBytes()));
 		Assert.assertEquals("Deluge 5.4.3.2", actualHandshakeMessage.getPeerId());
 		
-		final PwpRegularMessage actualBitfieldMessage = (PwpRegularMessage)messages.get(1);
+		final PwpMessage actualBitfieldMessage = messages.get(1);
 		
 		//Validate BITFIELD message contents
 		Assert.assertEquals(777L, ByteBuffer.wrap(actualBitfieldMessage.getPayload()).getLong());
 		
-		final PwpRegularMessage actualHaveMessage = (PwpRegularMessage)messages.get(2);
+		final PwpMessage actualHaveMessage = messages.get(2);
 		
 		//Validate HAVE message contents
 		Assert.assertEquals(1976, ByteBuffer.wrap(actualHaveMessage.getPayload()).getInt());
@@ -551,7 +551,7 @@ public final class PeerSessionTest {
 		Assert.assertNull(unitUnderTest.backupReaderBuffer);
 		Assert.assertTrue(verifyBufferState(buffer, 0, 120, 120));
 		
-		final PwpRegularMessage actualBitfieldMessage = (PwpRegularMessage)messages.get(0);
+		final PwpMessage actualBitfieldMessage = messages.get(0);
 		
 		//Validate BITFIELD message contents
 		Assert.assertEquals(777L, ByteBuffer.wrap(actualBitfieldMessage.getPayload()).getLong());
@@ -570,7 +570,7 @@ public final class PeerSessionTest {
 		Assert.assertNull(unitUnderTest.backupReaderBuffer);
 		Assert.assertTrue(verifyBufferState(buffer, 0, 120, 120));
 		
-		final PwpRegularMessage actualHaveMessage = (PwpRegularMessage)messages.get(0);
+		final PwpMessage actualHaveMessage = messages.get(0);
 		
 		//Validate HAVE message contents
 		Assert.assertEquals(1976, ByteBuffer.wrap(actualHaveMessage.getPayload()).getInt());
@@ -660,7 +660,7 @@ public final class PeerSessionTest {
 		Assert.assertNull(unitUnderTest.backupReaderBuffer);
 		Assert.assertTrue(verifyBufferState(buffer, 0, 20, 20));
 		
-		final PwpRegularMessage actualMessage = (PwpRegularMessage)messages.get(0);		
+		final PwpMessage actualMessage = messages.get(0);
 		final ByteBuffer payload = ByteBuffer.wrap(actualMessage.getPayload());		
 		
 		//Verify BITFIELD message contents
@@ -708,7 +708,7 @@ public final class PeerSessionTest {
 		Assert.assertNull(unitUnderTest.backupReaderBuffer);
 		Assert.assertTrue(verifyBufferState(buffer, 0, 20, 20));
 		
-		final PwpRegularMessage actualMessage = (PwpRegularMessage)messages.get(0);		
+		final PwpMessage actualMessage = messages.get(0);
 		final ByteBuffer payload = ByteBuffer.wrap(actualMessage.getPayload());		
 		
 		//Verify BITFIELD message contents

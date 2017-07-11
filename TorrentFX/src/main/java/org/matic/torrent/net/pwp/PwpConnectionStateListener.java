@@ -22,25 +22,24 @@ package org.matic.torrent.net.pwp;
 import java.util.function.Predicate;
 
 /**
- * An interface for notifying implementing classes when a peer-wire-protocol message
- * is available for processing.
+ * An interface for notifying implementing classes when a remote peer's state changes.
  *
- * @author vedran
+ * @author Vedran Matic
  *
  */
-public interface PwpMessageListener {
+public interface PwpConnectionStateListener {
 
     /**
-     * Notify implementing classes when new messages are available.
+     * Notify implementing classes when s peer's connection state has changed.
      *
-     * @param event Originating message event
+     * @param event Event containing the information about the connection state change
      */
-    void onMessageReceived(PwpMessageEvent event);
+    void peerConnectionStateChanged(PeerConnectionStateChangeEvent event);
 
     /**
-     * Allow the listener to only be notified when a certain message has been received.
+     * Allow the listener to only be notified when a certain event occurs.
      *
-     * @return A filter that determines which messages to notify the listeners about
+     * @return A filter that determines which events to notify the listeners about
      */
-    Predicate<PwpMessageEvent> getPeerMessageAcceptanceFilter();
+    Predicate<PeerConnectionStateChangeEvent> getPeerStateChangeAcceptanceFilter();
 }

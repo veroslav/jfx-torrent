@@ -122,8 +122,16 @@ public class TrackerManager implements TrackerResponseListener, UdpTrackerRespon
 		trackerSession.getTracker().setLastResponse(responseTime);
 		trackerSession.setLastAnnounceResponse(responseTime);
 
-		final String trackerMessage = announceResponse.getMessage() != null?
-                new String(announceResponse.getMessage().getBytes(StandardCharsets.UTF_8)) : null;
+		final String trackerMessage = announceResponse.getMessage();
+		final boolean canEncode = trackerMessage != null?
+                StandardCharsets.ISO_8859_1.newEncoder().canEncode(trackerMessage) : false;
+
+		if(!canEncode && trackerMessage != null) {
+            System.out.println("Tracker message [" + trackerMessage + "] canEncode [" + canEncode + "]");
+        }
+
+                /*!= null?
+                new String(announceResponse.getMessage().getBytes(StandardCharsets.UTF_8)) : null;*/
 		
 		synchronized(trackerSessions) {		
 			if(trackerSessions.containsKey(trackerSession.getTorrentView())) {

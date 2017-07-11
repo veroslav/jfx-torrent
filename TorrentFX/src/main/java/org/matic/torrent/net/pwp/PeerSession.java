@@ -212,7 +212,7 @@ public final class PeerSession {
 		if(buffer.remaining() == PeerSession.MESSAGE_LENGTH_PREFIX_LENGTH) {
 			final int messageLength = buffer.duplicate().getInt();
 			if(messageLength == 0) {
-				messages.add(new PwpRegularMessage(PwpMessage.MessageType.KEEP_ALIVE, null));
+				messages.add(new PwpMessage(PwpMessage.MessageType.KEEP_ALIVE));
 				buffer.clear();				
 				
 				return messages;
@@ -228,7 +228,7 @@ public final class PeerSession {
 		
 		//First check whether we've got a KEEP_ALIVE message
 		if(messageLength == 0) {
-			return new PwpRegularMessage(PwpMessage.MessageType.KEEP_ALIVE, null);
+			return new PwpMessage(PwpMessage.MessageType.KEEP_ALIVE);
 		}
 		
 		final byte messageId = buffer.get();
@@ -250,7 +250,7 @@ public final class PeerSession {
 
 		//Check whether it is a message without payload
 		if(messageId >= 0 && messageId < 4) {			
-			return new PwpRegularMessage(PwpMessage.fromMessageId(messageId), null);
+			return new PwpMessage(PwpMessage.fromMessageId(messageId));
 		}
 		
 		//Check whether there is enough data in buffer to completely parse the message
@@ -268,7 +268,7 @@ public final class PeerSession {
 		//Parse message completely contained in the buffer
 		final byte[] messagePayload = new byte[messageLength - 1];
 		buffer.get(messagePayload);
-		return new PwpRegularMessage(PwpMessage.fromMessageId(messageId), messagePayload);
+		return new PwpMessage(PwpMessage.fromMessageId(messageId), messagePayload);
 	}
 	
 	private PwpMessage parseHandshake(final ByteBuffer buffer) {		

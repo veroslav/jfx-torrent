@@ -1,6 +1,6 @@
 /*
 * This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015-2016 Vedran Matic
+* Copyright (C) 2015-2017 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -20,12 +20,12 @@
 package org.matic.torrent.net.pwp;
 
 /**
- * A generic common class for all messages sent between peers
+ * A message sent between the client and remote peers.
  * 
- * @author vedran
+ * @author Vedran Matic
  *
  */
-public abstract class PwpMessage {
+public class PwpMessage {
 	
 	public enum MessageType {
 		KEEP_ALIVE, INTERESTED, NOT_INTERESTED, CHOKE, UNCHOKE, REQUEST, HAVE, PIECE,
@@ -36,7 +36,11 @@ public abstract class PwpMessage {
 		MessageType.INTERESTED, MessageType.NOT_INTERESTED, MessageType.HAVE, MessageType.BITFIELD,
 		MessageType.REQUEST, MessageType.PIECE, MessageType.CANCEL, MessageType.PORT};
 
-	protected final MessageType messageType;
+    private static final byte[] EMPTY_PAYLOAD = new byte[0];
+
+    private final byte[] payload;
+
+	private final MessageType messageType;
 	
 	public static MessageType fromMessageId(final int messageId) throws InvalidPeerMessageException {
 		if(messageId < 0 || messageId >= PwpMessage.MESSAGE_TYPE_MAPPINGS.length) {
@@ -45,14 +49,24 @@ public abstract class PwpMessage {
 		}
 		return PwpMessage.MESSAGE_TYPE_MAPPINGS[messageId];
 	}
+
+	public PwpMessage(final MessageType messageType) {
+	    this(messageType, EMPTY_PAYLOAD);
+    }
 	
-	protected PwpMessage(final MessageType messageType) {
-		this.messageType = messageType;
+	public PwpMessage(final MessageType messageType, final byte[] payload) {
+		this.payload = payload;
+	    this.messageType = messageType;
 	}
 
 	public MessageType getMessageType() {
 		return messageType;
 	}
+
+    public byte[] getPayload() {
+        //TODO: System.arrayCopy on payload
+        return payload;
+    }
 
     @Override
     public String toString() {

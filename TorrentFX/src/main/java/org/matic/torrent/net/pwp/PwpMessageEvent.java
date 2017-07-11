@@ -1,6 +1,6 @@
 /*
 * This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015-2016 Vedran Matic
+* Copyright (C) 2015-2017 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -22,25 +22,31 @@ package org.matic.torrent.net.pwp;
 import org.matic.torrent.gui.model.PeerView;
 
 /**
- * An interface for notifying implementing classes when a remote peer is
- * connected/disconnected.
+ * A notification that is sent to listeners when a new message has been received from a remote peer.
  *
- * @author vedran
- *
+ * @author Vedran Matic
  */
-public interface PwpConnectionListener {
+public final class PwpMessageEvent {
+
+    private final PwpMessage message;
+    private final PeerView peerView;
 
     /**
-     * Notify implementing class when a connection to a remote peer has been established
+     * Create a new event instance.
      *
-     * @param peerView View to the connected peer
+     * @param message The received message
+     * @param peerView The remote peer that sent the message
      */
-    void peerAdded(PeerView peerView);
+    public PwpMessageEvent(final PwpMessage message, final PeerView peerView) {
+        this.message = message;
+        this.peerView = peerView;
+    }
 
-    /**
-     * Notify implementing class when a connection to a remote peer has been lost
-     *
-     * @param peerView View to the disconnected peer
-     */
-    void peerDisconnected(PeerView peerView);
+    public PwpMessage getMessage() {
+        return message;
+    }
+
+    public PeerView getPeerView() {
+        return peerView;
+    }
 }

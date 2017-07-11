@@ -67,7 +67,7 @@ import java.util.stream.Collectors;
 public class PeerConnectionManager implements PeerFoundListener, TorrentStatusChangeListener {
 
     private static final long STALE_CONNECTION_THRESHOLD_TIME = 300000; //5m
-    private static final long KEEP_ALIVE_INTERVAL = 90000;	//90 seconds
+    private static final long KEEP_ALIVE_INTERVAL = 30000;	//30 seconds
 
     private static final int SO_RCVBUF_VALUE = 4 * 1024;
     //private static final boolean SO_REUSEADDR = true;
@@ -78,7 +78,7 @@ public class PeerConnectionManager implements PeerFoundListener, TorrentStatusCh
     private int totalConnectionCount = 0;
 
     //Listeners for connection state changes and incoming peer messages
-    private final Set<PwpConnectionListener> connectionListeners = new CopyOnWriteArraySet<>();
+    private final Set<PwpConnectionStateListener> connectionListeners = new CopyOnWriteArraySet<>();
     private final Set<PwpMessageListener> messageListeners = new CopyOnWriteArraySet<>();
 
     //Different state connections: handshaken, initiated but not handshaken and not yet connected
@@ -204,7 +204,7 @@ public class PeerConnectionManager implements PeerFoundListener, TorrentStatusCh
      *
      * @param listener Listener to add
      */
-    public final void addConnectionListener(final PwpConnectionListener listener) {
+    public void addConnectionListener(final PwpConnectionStateListener listener) {
         connectionListeners.add(listener);
     }
 
@@ -213,7 +213,7 @@ public class PeerConnectionManager implements PeerFoundListener, TorrentStatusCh
      *
      * @param listener Listener to remove
      */
-    public final void removeConnectionListener(final PwpConnectionListener listener) {
+    public void removeConnectionListener(final PwpConnectionStateListener listener) {
         connectionListeners.remove(listener);
     }
 
@@ -222,7 +222,7 @@ public class PeerConnectionManager implements PeerFoundListener, TorrentStatusCh
      *
      * @param listener Listener to add
      */
-    public final void addMessageListener(final PwpMessageListener listener) {
+    public void addMessageListener(final PwpMessageListener listener) {
         messageListeners.add(listener);
     }
 
@@ -231,7 +231,7 @@ public class PeerConnectionManager implements PeerFoundListener, TorrentStatusCh
      *
      * @param listener Listener to remove
      */
-    public final void removeMessageListener(final PwpMessageListener listener) {
+    public void removeMessageListener(final PwpMessageListener listener) {
         messageListeners.remove(listener);
     }
 
@@ -536,7 +536,7 @@ public class PeerConnectionManager implements PeerFoundListener, TorrentStatusCh
                 }
 
                 checkForBitfield(selectionKey, messages, peerView);
-                notifyMessagesReceived(messages, peerView);
+                messages.forEach(m -> notifyMessageReceived(new PwpMessageEvent(m, peerView)));
             }
         }
         catch(final IOException | InvalidPeerMessageException e) {
@@ -592,7 +592,7 @@ public class PeerConnectionManager implements PeerFoundListener, TorrentStatusCh
                 peerQueue.remove(peerView.getPeer());
             }
 
-            notifyPeerAdded(peerView);
+            notifyConnectionStateChange(peerView, true);
         }
     }
 
@@ -601,7 +601,7 @@ public class PeerConnectionManager implements PeerFoundListener, TorrentStatusCh
         final Optional<PwpMessage> potentialBitfield = messages.stream().filter(
                 m -> m.getMessageType() == PwpMessage.MessageType.BITFIELD).findAny();
         if(potentialBitfield.isPresent()) {
-            final PwpRegularMessage bitfield = (PwpRegularMessage)potentialBitfield.get();
+            final PwpMessage bitfield = potentialBitfield.get();
 
             final BitsView torrentPieces = servedTorrents.get(peerView.getInfoHash()).getAvailabilityView();
             final int expectedPieceCount = torrentPieces.getTotalPieces();
@@ -636,7 +636,7 @@ public class PeerConnectionManager implements PeerFoundListener, TorrentStatusCh
 
         --totalConnectionCount;
         closeChannel(channel);
-        notifyConnectionClosed(peerView);
+        notifyConnectionStateChange(peerView, false);
 
         synchronized(servedTorrents) {
             final TorrentView targetTorrent = servedTorrents.get(peerInfoHash);
@@ -673,16 +673,17 @@ public class PeerConnectionManager implements PeerFoundListener, TorrentStatusCh
         }*/
     }
 
-    private void notifyMessagesReceived(final Collection<PwpMessage> messages, final PeerView peer) {
-        messageListeners.forEach(l -> l.onMessagesReceived(messages, peer));
+    private void notifyMessageReceived(final PwpMessageEvent messageEvent) {
+        messageListeners.stream().filter(l -> l.getPeerMessageAcceptanceFilter().test(messageEvent)).forEach(
+                l -> l.onMessageReceived(messageEvent));
     }
 
-    private void notifyPeerAdded(final PeerView peerView) {
-        connectionListeners.forEach(l -> l.peerAdded(peerView));
-    }
-
-    private void notifyConnectionClosed(final PeerView peerView) {
-        connectionListeners.forEach(l -> l.peerDisconnected(peerView));
+    private void notifyConnectionStateChange(final PeerView peerView, final boolean connected) {
+        final PeerConnectionStateChangeEvent event = new PeerConnectionStateChangeEvent(
+                peerView, connected? PeerConnectionStateChangeEvent.PeerLifeCycleChangeType.CONNECTED :
+                PeerConnectionStateChangeEvent.PeerLifeCycleChangeType.DISCONNECTED);
+        connectionListeners.stream().filter(
+                l -> l.getPeerStateChangeAcceptanceFilter().test(event)).forEach(l -> l.peerConnectionStateChanged(event));
     }
 
     private void finalizeConnection(final SelectionKey selectionKey) {
@@ -809,7 +810,7 @@ public class PeerConnectionManager implements PeerFoundListener, TorrentStatusCh
                 selectionKey.interestOps(SelectionKey.OP_READ);
             }
             ++totalConnectionCount;
-            notifyPeerAdded(peerView);
+            //notifyPeerConnected(peerView);
         } catch(final IOException ioe) {
             if(peerChannel != null) {
                 try {

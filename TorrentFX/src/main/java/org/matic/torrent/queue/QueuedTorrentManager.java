@@ -33,7 +33,8 @@ import org.matic.torrent.gui.model.TrackerView;
 import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.io.DataPersistenceSupport;
 import org.matic.torrent.net.pwp.PeerConnectionManager;
-import org.matic.torrent.net.pwp.PwpConnectionListener;
+import org.matic.torrent.net.pwp.PeerConnectionStateChangeEvent;
+import org.matic.torrent.net.pwp.PwpConnectionStateListener;
 import org.matic.torrent.net.pwp.PwpPeer;
 import org.matic.torrent.preferences.ApplicationPreferences;
 import org.matic.torrent.preferences.TransferProperties;
@@ -45,6 +46,7 @@ import org.matic.torrent.tracking.TrackerManager;
 import org.matic.torrent.tracking.methods.dht.DhtSession;
 import org.matic.torrent.tracking.methods.peerdiscovery.LocalPeerDiscoverySession;
 import org.matic.torrent.tracking.methods.pex.PeerExchangeSession;
+import org.matic.torrent.transfer.TransferController;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -57,14 +59,27 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 import java.util.prefs.PreferenceChangeEvent;
 import java.util.prefs.PreferenceChangeListener;
 import java.util.stream.Collectors;
 
-public final class QueuedTorrentManager implements PreferenceChangeListener, PwpConnectionListener {
+/**
+ * This class manages the life cycles of all torrents, such as loading, storing, removing and adding.
+ *
+ * @author Vedran Matic
+ */
+public final class QueuedTorrentManager implements PreferenceChangeListener, PwpConnectionStateListener {
+
+    private static final int MAX_TRANSFER_EXECUTOR_POOL_SIZE = 30;
 
     private final ObservableList<QueuedTorrent> queuedTorrents = FXCollections.observableArrayList();
-    private final Map<InfoHash, TorrentView> torrentViews = new HashMap<>();
+    private final Map<InfoHash, QueuedTorrentJob> queuedTorrentJobs = new HashMap<>();
 
     private final int maxActiveTorrents = (int) ApplicationPreferences.getProperty(
             TransferProperties.ACTIVE_TORRENTS_LIMIT, 5);
@@ -72,6 +87,11 @@ public final class QueuedTorrentManager implements PreferenceChangeListener, Pwp
             TransferProperties.DOWNLOADING_TORRENTS_LIMIT, 3);
     private int maxUploadingTorrents = (int)ApplicationPreferences.getProperty(
             TransferProperties.UPLOADING_TORRENTS_LIMIT, 3);
+
+    private final ExecutorService transferExecutor = new ThreadPoolExecutor(maxActiveTorrents,
+            MAX_TRANSFER_EXECUTOR_POOL_SIZE, Long.MAX_VALUE, TimeUnit.NANOSECONDS,
+            new ArrayBlockingQueue<>(MAX_TRANSFER_EXECUTOR_POOL_SIZE));
+    private final Map<InfoHash, Future<?>> transferTasks = new HashMap<>();
 
     private final QueueController queueController = new QueueController(queuedTorrents, maxActiveTorrents,
             maxDownloadingTorrentsLimit, maxUploadingTorrents);
@@ -93,25 +113,38 @@ public final class QueuedTorrentManager implements PreferenceChangeListener, Pwp
         }
     }
 
-    //TODO: Fix deadlock in this method!
+    /**
+     * @see {@link PwpConnectionStateListener#peerConnectionStateChanged(PeerConnectionStateChangeEvent)}
+     */
     @Override
-    public void peerAdded(final PeerView peerView) {
+    public void peerConnectionStateChanged(final PeerConnectionStateChangeEvent event) {
         synchronized(queuedTorrents) {
-            final TorrentView torrentView = torrentViews.get(peerView.getInfoHash());
-            if(torrentView != null) {
+            final PeerView peerView = event.getPeerView();
+            final TorrentView torrentView = queuedTorrentJobs.get(peerView.getInfoHash()).getTorrentView();
+            if(torrentView == null) {
+                return;
+            }
+            final PeerConnectionStateChangeEvent.PeerLifeCycleChangeType eventType = event.getEventType();
+            if(eventType == PeerConnectionStateChangeEvent.PeerLifeCycleChangeType.CONNECTED) {
                 torrentView.addPeerViews(Arrays.asList(peerView));
+            }
+            else if(eventType == PeerConnectionStateChangeEvent.PeerLifeCycleChangeType.DISCONNECTED) {
+                torrentView.getPeerViews().remove(peerView);
             }
         }
     }
 
+    /**
+     * @see {@link PwpConnectionStateListener#getPeerStateChangeAcceptanceFilter()}
+     */
     @Override
-    public void peerDisconnected(final PeerView peerView) {
-        synchronized(queuedTorrents) {
-            final TorrentView torrentView = torrentViews.get(peerView.getInfoHash());
-            if(torrentView != null) {
-                torrentView.getPeerViews().remove(peerView);
-            }
-        }
+    public Predicate<PeerConnectionStateChangeEvent> getPeerStateChangeAcceptanceFilter() {
+        return event -> {
+            final PeerConnectionStateChangeEvent.PeerLifeCycleChangeType eventType = event.getEventType();
+            final InfoHash infoHash = event.getPeerView().getInfoHash();
+            return infoHash != null && (eventType == PeerConnectionStateChangeEvent.PeerLifeCycleChangeType.CONNECTED ||
+                    eventType == PeerConnectionStateChangeEvent.PeerLifeCycleChangeType.DISCONNECTED);
+        };
     }
 
     /**
@@ -160,9 +193,6 @@ public final class QueuedTorrentManager implements PreferenceChangeListener, Pwp
         final List<TorrentTemplate> loadedTorrentTemplates = persistenceSupport.loadAll();
         Collections.sort(loadedTorrentTemplates);
 
-        //TODO: Fix deadlock issue, don't synchronize on other object + on minimal piece of code
-        //TODO: Deadlock occurs when restoring more than one torrent from files
-        //TODO: The issue occurs when storing handshaken peers (peersAdded() above )while GUI is being built
         synchronized(queuedTorrents) {
             return addTorrents(loadedTorrentTemplates);
         }
@@ -172,6 +202,7 @@ public final class QueuedTorrentManager implements PreferenceChangeListener, Pwp
      * Store the torrents' progress and properties when shutting down the client.
      */
     public void storeState() {
+        transferExecutor.shutdownNow();
         synchronized(queuedTorrents) {
             queuedTorrents.forEach(t -> {
                 final QueuedTorrentProgress progress = t.getProgress();
@@ -191,51 +222,80 @@ public final class QueuedTorrentManager implements PreferenceChangeListener, Pwp
      * @return A view collection to the newly created, unique torrents.
      */
     public List<TorrentView> addTorrents(final Collection<TorrentTemplate> torrentTemplates) {
-        //TODO: Same as above (see synchronization and deadlock issues mentioned)
-        synchronized(queuedTorrents) {
-            return torrentTemplates.stream().filter(template -> {
-                //We are only interested in new torrents, filter out existing ones
-                final Optional<QueuedTorrent> torrent = match(template.getMetaData().getInfoHash());
-                return !torrent.isPresent();
-            }).map(template -> {
-                final QueuedTorrentMetaData metaData = template.getMetaData();
-                final QueuedTorrentProgress progress = template.getProgress();
-                final QueuedTorrent newTorrent = new QueuedTorrent(metaData, progress);
+        return torrentTemplates.stream().filter(template -> {
+            //We are only interested in new torrents, filter out existing ones
+            final Optional<QueuedTorrent> torrent = match(template.getMetaData().getInfoHash());
+            return !torrent.isPresent();
+        }).map(template -> {
+            final QueuedTorrent newTorrent = new QueuedTorrent(template.getMetaData(), template.getProgress());
+            persistTorrent(newTorrent);
 
-                if (!persistenceSupport.isPersisted(newTorrent.getInfoHash())) {
-                    progress.setAddedOn(System.currentTimeMillis());
-                    persistenceSupport.store(newTorrent.getMetaData(), newTorrent.getProgress());
-                }
+            synchronized(queuedTorrents) {
+                final TorrentView torrentView = buildTorrentView(newTorrent);
 
-                final TorrentView torrentView = new TorrentView(newTorrent);
-                torrentViews.put(torrentView.getInfoHash(), torrentView);
+                newTorrent.statusProperty().addListener((obs, oldV, newV) ->
+                        onTorrentStatusChanged(torrentView, oldV, newV));
 
                 queuedTorrents.add(newTorrent);
-                connectionManager.accept(torrentView);
 
-                final List<PwpPeer> storedPeers = progress.getPeers(true).stream().map(p -> {
-                    p.setInfoHash(metaData.getInfoHash());
-                    return p;
-                }).collect(Collectors.toList());
-                if (!storedPeers.isEmpty()) {
-                    connectionManager.onPeersFound(storedPeers, "queued_torrent_progress_data");
-                }
+                updateTransferControllerState(torrentView, TorrentStatus.STOPPED, newTorrent.getStatus());
 
-                final Set<String> trackerUrls = progress.getTrackerUrls();
-                final Set<TrackableView> trackableViews = new LinkedHashSet<>();
-
-                final TrackableView[] internalTrackables = {new DhtView(new DhtSession(torrentView)),
-                        new LocalPeerDiscoveryView(new LocalPeerDiscoverySession(torrentView)),
-                        new PeerExchangeView(new PeerExchangeSession(torrentView))};
-                trackableViews.addAll(Arrays.asList(internalTrackables));
-
-                trackableViews.addAll(trackerUrls.stream().map(
-                        t -> trackerManager.addTracker(t, torrentView)).collect(Collectors.toSet()));
-                newTorrent.statusProperty().addListener((obs, oldV, newV) -> onTorrentStatusChanged(torrentView, newV));
-                torrentView.priorityProperty().bind(newTorrent.priorityProperty());
-                torrentView.addTrackerViews(trackableViews);
                 return torrentView;
-            }).collect(Collectors.toList());
+            }
+        }).collect(Collectors.toList());
+    }
+
+    private TorrentView buildTorrentView(final QueuedTorrent torrent) {
+        final QueuedTorrentMetaData metaData = torrent.getMetaData();
+        final QueuedTorrentProgress progress = torrent.getProgress();
+
+        final TorrentView torrentView = new TorrentView(torrent);
+        initTransferController(torrent, torrentView);
+        connectionManager.accept(torrentView);
+
+        final List<PwpPeer> storedPeers = progress.getPeers(true).stream().map(p -> {
+            p.setInfoHash(metaData.getInfoHash());
+            return p;
+        }).collect(Collectors.toList());
+        if (!storedPeers.isEmpty()) {
+            connectionManager.onPeersFound(storedPeers, "queued_torrent_progress_data");
+        }
+
+        final Set<String> trackerUrls = progress.getTrackerUrls();
+        final Set<TrackableView> trackableViews = new LinkedHashSet<>();
+
+        final TrackableView[] internalTrackables = {new DhtView(new DhtSession(torrentView)),
+                new LocalPeerDiscoveryView(new LocalPeerDiscoverySession(torrentView)),
+                new PeerExchangeView(new PeerExchangeSession(torrentView))};
+
+        trackableViews.addAll(Arrays.asList(internalTrackables));
+        trackableViews.addAll(trackerUrls.stream().map(
+                t -> trackerManager.addTracker(t, torrentView)).collect(Collectors.toSet()));
+
+        torrentView.priorityProperty().bind(torrent.priorityProperty());
+        torrentView.addTrackerViews(trackableViews);
+
+        return torrentView;
+    }
+
+    private void initTransferController(QueuedTorrent torrent, TorrentView torrentView) {
+        final TransferController transferController = new TransferController(torrent);
+        /*transferController.addStatusChangeListener(event -> {
+            if(event.getEventType() == TransferStatusChangeEvent.EventType.ERROR) {
+                queueController.changeStatus(newTorrent, TorrentStatus.ERROR);
+            }
+        });*/
+        queuedTorrentJobs.put(torrentView.getInfoHash(),
+                new QueuedTorrentJob(torrent, torrentView, transferController));
+
+        connectionManager.addConnectionListener(transferController);
+        connectionManager.addMessageListener(transferController);
+    }
+
+    private void persistTorrent(final QueuedTorrent torrent) {
+        if (!persistenceSupport.isPersisted(torrent.getInfoHash())) {
+            torrent.getProgress().setAddedOn(System.currentTimeMillis());
+            persistenceSupport.store(torrent.getMetaData(), torrent.getProgress());
         }
     }
 
@@ -300,10 +360,21 @@ public final class QueuedTorrentManager implements PreferenceChangeListener, Pwp
                     t -> t.getInfoHash().equals(torrentView.getInfoHash())).findFirst().orElse(null);
             if(targetTorrent != null) {
                 //TODO: Remove statusProperty listener (this) from this torrent
+                final InfoHash infoHash = targetTorrent.getInfoHash();
+                final QueuedTorrentJob queuedTorrentJob = queuedTorrentJobs.remove(infoHash);
+
+                final TransferController transferController = queuedTorrentJob.getTransferController();
+                connectionManager.removeConnectionListener(transferController);
+                connectionManager.removeMessageListener(transferController);
+
+                final Future<?> transferTask = transferTasks.remove(infoHash);
+                if(transferTask != null) {
+                    transferTask.cancel(true);
+                }
+
                 queuedTorrents.remove(targetTorrent);
                 trackerManager.removeTorrent(torrentView);
                 connectionManager.reject(torrentView);
-                torrentViews.remove(torrentView.getInfoHash());
                 persistenceSupport.delete(targetTorrent.getInfoHash());
                 return true;
             }
@@ -318,8 +389,37 @@ public final class QueuedTorrentManager implements PreferenceChangeListener, Pwp
         }
     }
 
-    private void onTorrentStatusChanged(final TorrentView torrentView, final TorrentStatus newStatus) {
+    private void onTorrentStatusChanged(final TorrentView torrentView,
+                                        final TorrentStatus oldStatus, final TorrentStatus newStatus) {
         trackerManager.issueTorrentEvent(torrentView, newStatus == TorrentStatus.ACTIVE?
                 Tracker.Event.STARTED : Tracker.Event.STOPPED);
+
+        updateTransferControllerState(torrentView, oldStatus, newStatus);
+    }
+
+    private void updateTransferControllerState(final TorrentView torrentView,
+                                               final TorrentStatus oldStatus, final TorrentStatus newStatus) {
+        if(newStatus == TorrentStatus.ACTIVE && oldStatus != TorrentStatus.ACTIVE) {
+            synchronized (queuedTorrents) {
+                final InfoHash infoHash = torrentView.getInfoHash();
+                final QueuedTorrentJob torrentJob = queuedTorrentJobs.get(infoHash);
+                if(torrentJob != null) {
+                    final Future<?> transferTask = transferExecutor.submit(torrentJob.getTransferController());
+                    transferTasks.put(infoHash, transferTask);
+                }
+            }
+        }
+        else if(newStatus != TorrentStatus.ACTIVE && oldStatus == TorrentStatus.ACTIVE) {
+            synchronized (queuedTorrents) {
+                final InfoHash infoHash = torrentView.getInfoHash();
+                final QueuedTorrentJob torrentJob = queuedTorrentJobs.get(infoHash);
+                if(torrentJob != null) {
+                    final Future<?> transferTask = transferTasks.remove(infoHash);
+                    if(transferTask != null) {
+                        transferTask.cancel(true);
+                    }
+                }
+            }
+        }
     }
 }
