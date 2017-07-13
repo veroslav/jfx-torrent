@@ -17,37 +17,27 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-package org.matic.torrent.queue;
+package org.matic.torrent.transfer;
 
-import org.matic.torrent.hash.InfoHash;
+public final class TransferStatusChangeEvent {
 
-/**
- * An event that is triggered when a torrent's priority has changed.
- *
- * @author Vedran Matic
- */
-public final class TorrentPriorityChangeEvent {
-
-    private final InfoHash infoHash;
-    private final int newPriority;
-    private final int oldPriority;
-
-    public TorrentPriorityChangeEvent(final InfoHash infoHash,
-                                    final int oldPriority, final int newPriority) {
-        this.infoHash = infoHash;
-        this.newPriority = newPriority;
-        this.oldPriority = oldPriority;
+    public enum EventType {
+        ERROR, DOWNLOAD_COMPLETED
     }
 
-    public InfoHash getInfoHash() {
-        return infoHash;
+    private final EventType eventType;
+    private final String message;
+
+    public TransferStatusChangeEvent(final EventType eventType, final String message) {
+        this.eventType = eventType;
+        this.message = message;
     }
 
-    public int getNewPriority() {
-        return newPriority;
+    public EventType getEventType() {
+        return eventType;
     }
 
-    public int getOldPriority() {
-        return oldPriority;
+    public String getMessage() {
+        return message;
     }
 }

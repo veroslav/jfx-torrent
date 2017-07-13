@@ -19,36 +19,41 @@
 */
 package org.matic.torrent.queue;
 
-import org.matic.torrent.gui.model.TorrentView;
-import org.matic.torrent.transfer.TransferTask;
+import java.nio.file.Path;
 
 /**
- * This class is a simple bean that groups relevant queued torrent info under the same roof.
+ * This class contains useful info about a file that is part of a torrent.
  *
  * @author Vedran Matic
  */
-public final class QueuedTorrentJob {
+public final class QueuedFileMetaData {
 
-    private final TransferTask transferTask;
-    private final TorrentView torrentView;
-    private final QueuedTorrent torrent;
+    private final Path path;
+    private final long length;
+    private final long offset;
 
-    public QueuedTorrentJob(final QueuedTorrent torrent, final TorrentView torrentView,
-                            final TransferTask transferTask) {
-        this.torrent = torrent;
-        this.transferTask = transferTask;
-        this.torrentView = torrentView;
+    /**
+     * Create a new file meta data instance.
+     *
+     * @param path Path to this file relative to its containing torrent
+     * @param length File length (in bytes)
+     * @param offset Byte offset within its containing torrent
+     */
+    public QueuedFileMetaData(final Path path, final long length, final long offset) {
+        this.path = path;
+        this.length = length;
+        this.offset = offset;
     }
 
-    public TransferTask getTransferTask() {
-        return transferTask;
+    public Path getPath() {
+        return path;
     }
 
-    public TorrentView getTorrentView() {
-        return torrentView;
+    public long getLength() {
+        return length;
     }
 
-    public QueuedTorrent getTorrent() {
-        return torrent;
+    public long getOffset() {
+        return offset;
     }
 }

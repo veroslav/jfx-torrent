@@ -93,7 +93,7 @@ import org.matic.torrent.preferences.ApplicationPreferences;
 import org.matic.torrent.preferences.CssProperties;
 import org.matic.torrent.preferences.GuiProperties;
 import org.matic.torrent.queue.QueuedTorrent;
-import org.matic.torrent.queue.QueuedTorrentManager;
+import org.matic.torrent.queue.QueuedTorrentController;
 import org.matic.torrent.queue.QueuedTorrentMetaData;
 import org.matic.torrent.queue.QueuedTorrentProgress;
 import org.matic.torrent.queue.TorrentTemplate;
@@ -198,7 +198,7 @@ public final class ApplicationWindow implements PreferenceChangeListener {
     private final PeriodicTaskRunner guiUpdateTaskRunner = new PeriodicTaskRunner();
 
     //The manager for handling queued torrents states
-    private final QueuedTorrentManager queuedTorrentManager;
+    private final QueuedTorrentController queuedTorrentManager;
 
     //An object for managing all of the communication with the available trackers
     private final TrackerManager trackerManager;
@@ -206,7 +206,7 @@ public final class ApplicationWindow implements PreferenceChangeListener {
     private final Stage stage;
 
     public ApplicationWindow(final Stage stage, final TrackerManager trackerManager,
-                             final QueuedTorrentManager queuedTorrentManager) {
+                             final QueuedTorrentController queuedTorrentManager) {
         this.stage = stage;
         this.trackerManager = trackerManager;
         this.queuedTorrentManager = queuedTorrentManager;

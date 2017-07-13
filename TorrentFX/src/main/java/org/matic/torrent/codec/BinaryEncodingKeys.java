@@ -24,7 +24,7 @@ public final class BinaryEncodingKeys {
 
     //STORED STATE SPECIFIC PROPERTY KEYS
     public static final BinaryEncodedString STATE_KEY_TORRENT_STATUS = new BinaryEncodedString("status");
-    public static final BinaryEncodedString STATE_FORCED_QUEUE = new BinaryEncodedString("force queue");
+    public static final BinaryEncodedString STATE_KEY_SAVE_PATH = new BinaryEncodedString("store path");
     public static final BinaryEncodedString STATE_KEY_FILE_PRIO = new BinaryEncodedString("file prio");
     public static final BinaryEncodedString STATE_KEY_ADDED_ON = new BinaryEncodedString("added on");
     public static final BinaryEncodedString STATE_KEY_PRIORITY = new BinaryEncodedString("priority");

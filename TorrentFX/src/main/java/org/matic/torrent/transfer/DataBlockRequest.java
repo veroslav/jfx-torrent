@@ -17,15 +17,29 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-package org.matic.torrent.queue;
+package org.matic.torrent.transfer;
 
-/**
- * This interface is implemented by classes that would like to be
- * notified when a torrent's state has changed.
- *
- * @author Vedran Matic
- */
-public interface TorrentStatusChangeListener {
+public final class DataBlockRequest {
 
-    void onTorrentStatusChanged(TorrentStatusChangeEvent event);
+    private final int pieceIndex;
+    private final int pieceOffset;
+    private final int blockLength;
+
+    public DataBlockRequest(final int pieceIndex, final int pieceOffset, final int blockLength) {
+        this.pieceIndex = pieceIndex;
+        this.pieceOffset = pieceOffset;
+        this.blockLength = blockLength;
+    }
+
+    public int getPieceIndex() {
+        return pieceIndex;
+    }
+
+    public int getPieceOffset() {
+        return pieceOffset;
+    }
+
+    public int getBlockLength() {
+        return blockLength;
+    }
 }

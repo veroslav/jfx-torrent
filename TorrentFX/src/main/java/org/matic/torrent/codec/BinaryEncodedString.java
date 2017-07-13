@@ -1,6 +1,6 @@
 /*
 * This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015-2016 Vedran Matic
+* Copyright (C) 2015-2017 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -51,6 +51,12 @@ public final class BinaryEncodedString implements BinaryEncodable, Comparable<Bi
 	public byte[] getBytes() {
 		return Arrays.copyOf(bytes, bytes.length);
 	}
+
+	public byte[] getBytes(final int offset, final int length) {
+	    final byte[] bytesSegment = new byte[length - offset];
+	    System.arraycopy(bytes, offset, bytesSegment, 0, length);
+	    return bytesSegment;
+    }
 	
 	public String getValue() {
 		return value.toString();

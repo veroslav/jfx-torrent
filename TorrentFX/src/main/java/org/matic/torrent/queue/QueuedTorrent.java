@@ -24,6 +24,8 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import org.matic.torrent.hash.InfoHash;
+import org.matic.torrent.queue.action.TorrentPriorityChangeEvent;
+import org.matic.torrent.queue.action.TorrentPriorityChangeListener;
 import org.matic.torrent.queue.enums.QueueType;
 import org.matic.torrent.queue.enums.TorrentStatus;
 

@@ -52,7 +52,7 @@ import org.matic.torrent.gui.model.TorrentView;
 import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.preferences.CssProperties;
 import org.matic.torrent.preferences.GuiProperties;
-import org.matic.torrent.queue.QueuedTorrentManager;
+import org.matic.torrent.queue.QueuedTorrentController;
 import org.matic.torrent.queue.enums.PriorityChange;
 import org.matic.torrent.queue.enums.QueueType;
 import org.matic.torrent.queue.enums.TorrentStatus;
@@ -127,13 +127,13 @@ public final class TorrentViewTable {
     private final FilteredList<TorrentView> filteredTorrents =
             new FilteredList<>(torrentViews, p -> true);
 
-    private final QueuedTorrentManager torrentManager;
+    private final QueuedTorrentController torrentManager;
 
     private final IntegerProperty inactiveTorrents = new SimpleIntegerProperty(0);
     private final IntegerProperty activeTorrents = new SimpleIntegerProperty(0);
     private final IntegerProperty totalTorrents = new SimpleIntegerProperty(0);
 	
-	public TorrentViewTable(final QueuedTorrentManager torrentManager) {
+	public TorrentViewTable(final QueuedTorrentController torrentManager) {
         this.torrentManager = torrentManager;
 
 		initComponents();

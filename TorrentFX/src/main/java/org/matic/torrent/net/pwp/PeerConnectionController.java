@@ -26,8 +26,8 @@ import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.net.NetworkUtilities;
 import org.matic.torrent.net.pwp.PwpMessage.MessageType;
 import org.matic.torrent.peer.ClientProperties;
-import org.matic.torrent.queue.TorrentStatusChangeEvent;
-import org.matic.torrent.queue.TorrentStatusChangeListener;
+import org.matic.torrent.queue.action.TorrentStatusChangeEvent;
+import org.matic.torrent.queue.action.TorrentStatusChangeListener;
 import org.matic.torrent.queue.enums.TorrentStatus;
 import org.matic.torrent.tracking.listeners.PeerFoundListener;
 import org.matic.torrent.utils.UnitConverter;
@@ -42,7 +42,6 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.AbstractSelectableChannel;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.HashMap;
@@ -64,7 +63,7 @@ import java.util.stream.Collectors;
  * @author Vedran Matic
  *
  */
-public class PeerConnectionManager implements PeerFoundListener, TorrentStatusChangeListener {
+public class PeerConnectionController implements PeerFoundListener, TorrentStatusChangeListener {
 
     private static final long STALE_CONNECTION_THRESHOLD_TIME = 300000; //5m
     private static final long KEEP_ALIVE_INTERVAL = 30000;	//30 seconds
@@ -112,7 +111,7 @@ public class PeerConnectionManager implements PeerFoundListener, TorrentStatusCh
      * @param listenPort Port to listen on for incoming connections
      * @throws IOException If a connection selector can't be opened
      */
-    public PeerConnectionManager(final int listenPort) throws IOException {
+    public PeerConnectionController(final int listenPort) throws IOException {
         selector = Selector.open();
         this.listenPort = listenPort;
     }
@@ -403,7 +402,7 @@ public class PeerConnectionManager implements PeerFoundListener, TorrentStatusCh
             final PwpMessageRequest finalRequest = messageRequest;
 
             final Collection<PeerView> messageRequestPeers = messageRequest.getPeers();
-            final Collection<PeerView> targetPeers = messageRequestPeers == null || messageRequestPeers.isEmpty()?
+            final Collection<PeerView> targetPeers = messageRequestPeers.isEmpty()?
                     handshakenConnections.values().stream().flatMap(
                             m -> m.keySet().stream()).collect(Collectors.toSet()) : messageRequestPeers;
 
@@ -420,7 +419,7 @@ public class PeerConnectionManager implements PeerFoundListener, TorrentStatusCh
                 }
             });
 
-            if(finalRequest.getMessageType() == MessageType.KEEP_ALIVE) {
+            if(finalRequest.getMessage().getMessageType() == MessageType.KEEP_ALIVE) {
                 lastKeepAliveSent = System.currentTimeMillis();
             }
         }
@@ -456,8 +455,8 @@ public class PeerConnectionManager implements PeerFoundListener, TorrentStatusCh
                     System.out.println("\nKEEP_ALIVE: Handshaken connections = " + handshakenConnections.get(infoHash).size());
                 }
 
-                messageRequests.add(new PwpMessageRequest(MessageType.KEEP_ALIVE,
-                        PwpMessageRequestFactory.buildKeepAliveMessage(), null));
+                messageRequests.add(new PwpMessageRequest(new PwpMessage(MessageType.KEEP_ALIVE,
+                        PwpMessageRequestFactory.buildKeepAliveMessage())));
             }
         }
 
@@ -696,8 +695,8 @@ public class PeerConnectionManager implements PeerFoundListener, TorrentStatusCh
 
                 //Send a handshake to the remote peer
                 final byte[] messageBytes = cachedHandshakeMessageBytes.get(peerView.getInfoHash());
-                peerSession.putOnWriteQueue(new PwpMessageRequest(MessageType.HANDSHAKE,
-                        messageBytes, Arrays.asList(peerView)));
+                peerSession.putOnWriteQueue(new PwpMessageRequest(new PwpMessage(MessageType.HANDSHAKE,
+                        messageBytes), peerView));
                 writeToChannel(selectionKey);
             }
         } catch (final IOException ioe) {
@@ -821,7 +820,7 @@ public class PeerConnectionManager implements PeerFoundListener, TorrentStatusCh
     }
 
     private void setChannelOptions(final NetworkChannel channel) throws IOException {
-        channel.setOption(StandardSocketOptions.SO_RCVBUF, PeerConnectionManager.SO_RCVBUF_VALUE);
-        //channel.setOption(StandardSocketOptions.SO_REUSEADDR, PeerConnectionManager.SO_REUSEADDR);
+        channel.setOption(StandardSocketOptions.SO_RCVBUF, PeerConnectionController.SO_RCVBUF_VALUE);
+        //channel.setOption(StandardSocketOptions.SO_REUSEADDR, PeerConnectionController.SO_REUSEADDR);
     }
 }

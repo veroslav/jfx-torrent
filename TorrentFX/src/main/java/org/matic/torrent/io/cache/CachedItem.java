@@ -17,38 +17,32 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-package org.matic.torrent.queue;
-
-import org.matic.torrent.gui.model.TorrentView;
-import org.matic.torrent.transfer.TransferTask;
+package org.matic.torrent.io.cache;
 
 /**
- * This class is a simple bean that groups relevant queued torrent info under the same roof.
+ * An object (often a data piece that is part of a torrent) that can be cached.
  *
  * @author Vedran Matic
+ * @param <T> Type of the object that is cached
  */
-public final class QueuedTorrentJob {
+public final class CachedItem<T> implements Comparable<CachedItem<T>> {
 
-    private final TransferTask transferTask;
-    private final TorrentView torrentView;
-    private final QueuedTorrent torrent;
+    private final T item;
 
-    public QueuedTorrentJob(final QueuedTorrent torrent, final TorrentView torrentView,
-                            final TransferTask transferTask) {
-        this.torrent = torrent;
-        this.transferTask = transferTask;
-        this.torrentView = torrentView;
+    private final long cacheEntryTime;
+
+    public CachedItem(final T item) {
+        this.item = item;
+
+        cacheEntryTime = System.currentTimeMillis();
     }
 
-    public TransferTask getTransferTask() {
-        return transferTask;
+    public T getItem() {
+        return item;
     }
 
-    public TorrentView getTorrentView() {
-        return torrentView;
-    }
-
-    public QueuedTorrent getTorrent() {
-        return torrent;
+    @Override
+    public int compareTo(final CachedItem<T> other) {
+        return Long.compare(this.cacheEntryTime, other.cacheEntryTime);
     }
 }

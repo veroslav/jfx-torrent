@@ -30,6 +30,8 @@ import org.matic.torrent.queue.enums.FilePriority;
 import org.matic.torrent.queue.enums.QueueType;
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -44,6 +46,15 @@ public final class QueuedTorrentProgress {
 
     public QueuedTorrentProgress(final BinaryEncodedDictionary torrentState) {
         this.torrentState = torrentState;
+    }
+
+    public Path getSavePath() {
+        final BinaryEncodedString savePath = (BinaryEncodedString)torrentState.get(BinaryEncodingKeys.STATE_KEY_SAVE_PATH);
+        return savePath != null? Paths.get(savePath.getValue()) : Paths.get(System.getProperty("user.home"));
+    }
+
+    public void setSavePath(final Path path) {
+        torrentState.put(BinaryEncodingKeys.STATE_KEY_SAVE_PATH, new BinaryEncodedString(path.toString()));
     }
 
     public String getName() {
@@ -118,13 +129,13 @@ public final class QueuedTorrentProgress {
         filePrioMap.put(new BinaryEncodedString(fileId), new BinaryEncodedInteger(priority.getValue()));
     }
 
-    public FilePriority getFilePriority(final String fileId) {
+    public FilePriority getFilePriority(final String filePath) {
         final BinaryEncodedDictionary filePriorityMap = (BinaryEncodedDictionary)torrentState.get(
                 BinaryEncodingKeys.STATE_KEY_FILE_PRIO);
         if(filePriorityMap == null) {
             return FilePriority.NORMAL;
         }
-        final BinaryEncodedInteger filePriority = (BinaryEncodedInteger)filePriorityMap.get(new BinaryEncodedString(fileId));
+        final BinaryEncodedInteger filePriority = (BinaryEncodedInteger)filePriorityMap.get(new BinaryEncodedString(filePath));
         if(filePriority == null) {
             return FilePriority.NORMAL;
         }

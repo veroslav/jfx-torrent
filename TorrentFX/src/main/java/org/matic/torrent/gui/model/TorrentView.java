@@ -26,15 +26,13 @@ import javafx.beans.property.SimpleLongProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.beans.value.ChangeListener;
-import org.matic.torrent.codec.BinaryEncodedInteger;
-import org.matic.torrent.codec.BinaryEncodedString;
 import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.queue.QueuedTorrent;
 import org.matic.torrent.queue.QueuedTorrentMetaData;
 import org.matic.torrent.queue.QueuedTorrentProgress;
-import org.matic.torrent.queue.TorrentPriorityChangeListener;
-import org.matic.torrent.queue.TorrentStatusChangeEvent;
-import org.matic.torrent.queue.TorrentStatusChangeListener;
+import org.matic.torrent.queue.action.TorrentPriorityChangeListener;
+import org.matic.torrent.queue.action.TorrentStatusChangeEvent;
+import org.matic.torrent.queue.action.TorrentStatusChangeListener;
 import org.matic.torrent.queue.enums.QueueType;
 import org.matic.torrent.queue.enums.TorrentStatus;
 
@@ -94,12 +92,15 @@ public final class TorrentView {
     private final List<TorrentPriorityChangeListener> priorityChangeListeners = new CopyOnWriteArrayList<>();
     private final List<TorrentStatusChangeListener> statusChangeListeners = new CopyOnWriteArrayList<>();
 
+    private final FileTree fileTree;
+
 	public TorrentView(final QueuedTorrent queuedTorrent) {
 		this.priority = new SimpleIntegerProperty(0);
 		this.selectedLength = new SimpleLongProperty(0);
         this.queuedTorrent = queuedTorrent;
 
         availabilityView = new BitsView(this.queuedTorrent.getMetaData().getTotalPieces());
+        fileTree = new FileTree(queuedTorrent.getMetaData(), queuedTorrent.getProgress());
 
         this.priority.addListener((obs, oldV, newV) ->
             lifeCycleChange.setValue(String.valueOf(newV.intValue())));
@@ -126,7 +127,7 @@ public final class TorrentView {
     }
 
     public FileTree getFileTree() {
-        return new FileTree(queuedTorrent.getMetaData(), queuedTorrent.getProgress());
+        return fileTree;
     }
 
     public Set<TrackableView> getTrackerViews() {
@@ -284,13 +285,11 @@ public final class TorrentView {
     }
 
     public String getComment() {
-        final BinaryEncodedString comment = queuedTorrent.getMetaData().getComment();
-        return comment != null? comment.getValue() : "";
+        return queuedTorrent.getMetaData().getComment();
     }
 
     public Long getCreationTime() {
-        final BinaryEncodedInteger creationTime = queuedTorrent.getMetaData().getCreationDate();
-        return creationTime != null? creationTime.getValue() * 1000: null;
+        return queuedTorrent.getMetaData().getCreationDate();
     }
 
     public long getAddedOnTime() {
@@ -298,8 +297,7 @@ public final class TorrentView {
     }
 
     public String getCreatedBy() {
-        final BinaryEncodedString createdBy = queuedTorrent.getMetaData().getCreatedBy();
-        return createdBy != null? createdBy.getValue() : "";
+        return queuedTorrent.getMetaData().getCreatedBy();
     }
 
     public long getCompletionTime() {

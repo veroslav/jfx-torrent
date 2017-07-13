@@ -17,38 +17,35 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-package org.matic.torrent.queue;
-
-import org.matic.torrent.gui.model.TorrentView;
-import org.matic.torrent.transfer.TransferTask;
+package org.matic.torrent.io;
 
 /**
- * This class is a simple bean that groups relevant queued torrent info under the same roof.
+ * A block of data that is part of a larger data piece. It is used both
+ * when sending data to and receiving data from remote peers.
  *
  * @author Vedran Matic
  */
-public final class QueuedTorrentJob {
+public final class DataBlock {
 
-    private final TransferTask transferTask;
-    private final TorrentView torrentView;
-    private final QueuedTorrent torrent;
+    private final int pieceIndex;
+    private final int pieceOffset;
+    private final byte[] blockData;
 
-    public QueuedTorrentJob(final QueuedTorrent torrent, final TorrentView torrentView,
-                            final TransferTask transferTask) {
-        this.torrent = torrent;
-        this.transferTask = transferTask;
-        this.torrentView = torrentView;
+    public DataBlock(final byte[] blockData, final int pieceIndex, final int pieceOffset) {
+        this.blockData = blockData;
+        this.pieceIndex = pieceIndex;
+        this.pieceOffset = pieceOffset;
     }
 
-    public TransferTask getTransferTask() {
-        return transferTask;
+    public int getPieceIndex() {
+        return pieceIndex;
     }
 
-    public TorrentView getTorrentView() {
-        return torrentView;
+    public int getPieceOffset() {
+        return pieceOffset;
     }
 
-    public QueuedTorrent getTorrent() {
-        return torrent;
+    public byte[] getBlockData() {
+        return blockData;
     }
 }

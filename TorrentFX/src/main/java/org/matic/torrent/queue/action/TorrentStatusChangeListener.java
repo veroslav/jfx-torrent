@@ -17,15 +17,15 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-package org.matic.torrent.queue;
+package org.matic.torrent.queue.action;
 
 /**
  * This interface is implemented by classes that would like to be
- * notified when a torrent's priority has changed.
+ * notified when a torrent's state has changed.
  *
  * @author Vedran Matic
  */
-public interface TorrentPriorityChangeListener {
+public interface TorrentStatusChangeListener {
 
-    void onTorrentPriorityChanged(TorrentPriorityChangeEvent event);
+    void onTorrentStatusChanged(TorrentStatusChangeEvent event);
 }

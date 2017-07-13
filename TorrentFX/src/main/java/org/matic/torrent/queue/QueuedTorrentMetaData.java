@@ -1,6 +1,6 @@
 /*
 * This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015-2016 Vedran Matic
+* Copyright (C) 2015-2017 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -27,8 +27,14 @@ import org.matic.torrent.codec.BinaryEncodedString;
 import org.matic.torrent.codec.BinaryEncodingKeys;
 import org.matic.torrent.hash.InfoHash;
 
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * A convenience class that provides easier access to a torrent's meta data.
@@ -37,6 +43,10 @@ import java.util.Iterator;
  *
  */
 public final class QueuedTorrentMetaData {
+
+    private static final int PIECE_HASH_LENGTH = 20;
+
+    private final List<QueuedFileMetaData> fileMetaDatas;
 
     private final BinaryEncodedDictionary infoDictionary;
     private final BinaryEncodedDictionary metaData;
@@ -48,6 +58,8 @@ public final class QueuedTorrentMetaData {
         this.infoDictionary = (BinaryEncodedDictionary)metaData.get(BinaryEncodingKeys.KEY_INFO);
         this.infoHash = new InfoHash(((BinaryEncodedString)metaData.get(
                 BinaryEncodingKeys.KEY_INFO_HASH)).getBytes());
+
+        fileMetaDatas = buildFileMetaDatas();
     }
 
     public BinaryEncodable remove(final BinaryEncodedString keyName) {
@@ -56,6 +68,11 @@ public final class QueuedTorrentMetaData {
 
     public InfoHash getInfoHash() {
         return infoHash;
+    }
+
+    public byte[] getPieceHash(final int pieceIndex) {
+        final BinaryEncodedString pieceHashes = (BinaryEncodedString)infoDictionary.get(BinaryEncodingKeys.KEY_PIECES);
+        return pieceHashes.getBytes(PIECE_HASH_LENGTH * pieceIndex, PIECE_HASH_LENGTH);
     }
 
     public boolean isSingleFile() {
@@ -72,44 +89,39 @@ public final class QueuedTorrentMetaData {
         return announceList == null? new BinaryEncodedList() : announceList;
     }
 
-    public BinaryEncodedString getComment() {
-        return (BinaryEncodedString)metaData.get(BinaryEncodingKeys.KEY_COMMENT);
+    public String getComment() {
+        final BinaryEncodedString comment = (BinaryEncodedString)metaData.get(BinaryEncodingKeys.KEY_COMMENT);
+        return comment != null? comment.getValue() : "";
     }
 
-    public BinaryEncodedInteger getCreationDate() {
-        return (BinaryEncodedInteger)metaData.get(BinaryEncodingKeys.KEY_CREATION_DATE);
+    public Long getCreationDate() {
+        final BinaryEncodedInteger creationTime = (BinaryEncodedInteger)metaData.get(BinaryEncodingKeys.KEY_CREATION_DATE);
+        return creationTime != null? creationTime.getValue() : null;
     }
 
-    public BinaryEncodedString getCreatedBy() {
-        return (BinaryEncodedString)metaData.get(BinaryEncodingKeys.KEY_CREATED_BY);
+    public String getCreatedBy() {
+        final BinaryEncodedString createdBy = (BinaryEncodedString)metaData.get(BinaryEncodingKeys.KEY_CREATED_BY);
+        return createdBy != null? createdBy.getValue() : "";
     }
 
-    public BinaryEncodedList getFiles() {
-        return (BinaryEncodedList)infoDictionary.get(BinaryEncodingKeys.KEY_FILES);
+    public List<QueuedFileMetaData> getFiles() {
+        return fileMetaDatas;
     }
 
     public long getTotalLength() {
         if(isSingleFile()) {
-            return getSingleFileLength().getValue();
+            return getSingleFileLength();
         }
 
-        final Iterator<BinaryEncodable> fileIterator = getFiles().iterator();
-        long length = 0;
-        while(fileIterator.hasNext()) {
-            final BinaryEncodedDictionary fileDictionary = (BinaryEncodedDictionary)fileIterator.next();
-            length += ((BinaryEncodedInteger)fileDictionary.get(
-                    BinaryEncodingKeys.KEY_LENGTH)).getValue();
-        }
-
-        return length;
+        return fileMetaDatas.stream().mapToLong(QueuedFileMetaData::getLength).sum();
     }
 
     public String getName() {
         return infoDictionary.get(BinaryEncodingKeys.KEY_NAME).toString();
     }
 
-    public long getPieceLength() {
-        return ((BinaryEncodedInteger)infoDictionary.get(BinaryEncodingKeys.KEY_PIECE_LENGTH)).getValue();
+    public int getPieceLength() {
+        return (int)((BinaryEncodedInteger)infoDictionary.get(BinaryEncodingKeys.KEY_PIECE_LENGTH)).getValue();
     }
 
     public int getTotalPieces() {
@@ -120,7 +132,45 @@ public final class QueuedTorrentMetaData {
         return metaData.toExportableValue();
     }
 
-    private BinaryEncodedInteger getSingleFileLength() {
-        return (BinaryEncodedInteger)infoDictionary.get(BinaryEncodingKeys.KEY_LENGTH);
+    private Long getSingleFileLength() {
+        final BinaryEncodedInteger fileLength = (BinaryEncodedInteger)infoDictionary.get(BinaryEncodingKeys.KEY_LENGTH);
+        return fileLength != null? fileLength.getValue() : null;
+    }
+
+    private List<QueuedFileMetaData> buildFileMetaDatas() {
+        final List<QueuedFileMetaData> fileMetaDatas = new ArrayList<>();
+
+        //Check whether it is a single file torrent
+        final BinaryEncodedInteger singleFileLength = (BinaryEncodedInteger)infoDictionary.get(BinaryEncodingKeys.KEY_LENGTH);
+        if(singleFileLength != null) {
+            final String filePath = infoDictionary.get(BinaryEncodingKeys.KEY_NAME).toString();
+            final QueuedFileMetaData singleFileMetaData = new QueuedFileMetaData(
+                    Paths.get(filePath), singleFileLength.getValue(), 0);
+            fileMetaDatas.add(singleFileMetaData);
+            return fileMetaDatas;
+        }
+
+        final BinaryEncodedList fileMetaDataList = (BinaryEncodedList)infoDictionary.get(BinaryEncodingKeys.KEY_FILES);
+
+        final Iterator<BinaryEncodable> listIterator = fileMetaDataList.iterator();
+        long currentLength = 0;
+
+        while(listIterator.hasNext()) {
+            final BinaryEncodedDictionary fileDictionary = (BinaryEncodedDictionary)listIterator.next();
+            final long fileLength = ((BinaryEncodedInteger)fileDictionary.get(
+                    BinaryEncodingKeys.KEY_LENGTH)).getValue();
+
+            final BinaryEncodedList filePaths = (BinaryEncodedList)fileDictionary.get(BinaryEncodingKeys.KEY_PATH);
+            final String filePath = filePaths.stream().map(path ->
+                    ((BinaryEncodedString)path).getValue()).collect(Collectors.joining(File.pathSeparator));
+
+            final QueuedFileMetaData fileMetaData = new QueuedFileMetaData(
+                    Paths.get(filePath), fileLength, currentLength);
+            currentLength += fileLength;
+
+            fileMetaDatas.add(fileMetaData);
+        }
+
+        return Collections.unmodifiableList(fileMetaDatas);
     }
 }

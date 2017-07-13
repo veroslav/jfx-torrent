@@ -96,12 +96,12 @@ public final class PeerSession {
      */
     protected boolean flushWriteQueue() throws IOException {
          while(!messageWriteQueue.isEmpty()) {
-            final PwpMessageRequest message = messageWriteQueue.get(0);
+            final PwpMessageRequest messageRequest = messageWriteQueue.get(0);
             final ByteBuffer localOutputBuffer = outputBuffer.get();
 
             //If buffer is empty, we process a new message, otherwise we write buffered data
             if(localOutputBuffer.position() == 0) {
-                localOutputBuffer.put(message.getMessageData());
+                localOutputBuffer.put(messageRequest.getMessage().getPayload());
             }
 
             localOutputBuffer.flip();

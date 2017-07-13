@@ -17,38 +17,37 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-package org.matic.torrent.queue;
+package org.matic.torrent.queue.action;
 
-import org.matic.torrent.gui.model.TorrentView;
-import org.matic.torrent.queue.enums.TorrentStatus;
+import org.matic.torrent.hash.InfoHash;
 
 /**
- * An event that is triggered when a torrent's state change has been requested.
+ * An event that is triggered when a torrent's priority has changed.
  *
  * @author Vedran Matic
  */
-public final class TorrentStatusChangeEvent {
+public final class TorrentPriorityChangeEvent {
 
-    private final TorrentView torrentView;
-    private final TorrentStatus newStatus;
-    private final TorrentStatus oldStatus;
+    private final InfoHash infoHash;
+    private final int newPriority;
+    private final int oldPriority;
 
-    public TorrentStatusChangeEvent(final TorrentView torrentView,
-                                    final TorrentStatus oldStatus, final TorrentStatus newStatus) {
-        this.torrentView = torrentView;
-        this.newStatus = newStatus;
-        this.oldStatus = oldStatus;
+    public TorrentPriorityChangeEvent(final InfoHash infoHash,
+                                    final int oldPriority, final int newPriority) {
+        this.infoHash = infoHash;
+        this.newPriority = newPriority;
+        this.oldPriority = oldPriority;
     }
 
-    public TorrentView getTorrentView() {
-        return torrentView;
+    public InfoHash getInfoHash() {
+        return infoHash;
     }
 
-    public TorrentStatus getNewStatus() {
-        return newStatus;
+    public int getNewPriority() {
+        return newPriority;
     }
 
-    public TorrentStatus getOldStatus() {
-        return oldStatus;
+    public int getOldPriority() {
+        return oldPriority;
     }
 }

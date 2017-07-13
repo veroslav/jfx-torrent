@@ -1,6 +1,6 @@
 /*
 * This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015-2016 Vedran Matic
+* Copyright (C) 2015-2017 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -19,19 +19,35 @@
 */
 package org.matic.torrent.gui.model;
 
-import org.matic.torrent.codec.BinaryEncodedList;
+import org.matic.torrent.queue.QueuedFileMetaData;
 import org.matic.torrent.queue.QueuedTorrentMetaData;
 import org.matic.torrent.queue.QueuedTorrentProgress;
+import org.matic.torrent.queue.action.FilePriorityChangeEvent;
+import org.matic.torrent.queue.action.FilePriorityChangeListener;
 import org.matic.torrent.queue.enums.FilePriority;
+
+import java.nio.file.Path;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public final class FileTree {
 
     private final QueuedTorrentMetaData metaData;
     private final QueuedTorrentProgress progress;
 
+    private final List<FilePriorityChangeListener> filePriorityChangeListeners = new CopyOnWriteArrayList<>();
+
     public FileTree(final QueuedTorrentMetaData metaData, final QueuedTorrentProgress progress) {
         this.metaData = metaData;
         this.progress = progress;
+    }
+
+    public void addFilePriorityChangeListener(final FilePriorityChangeListener listener) {
+        filePriorityChangeListeners.add(listener);
+    }
+
+    public void removeFilePriorityChangeListener(final FilePriorityChangeListener listener) {
+        filePriorityChangeListeners.remove(listener);
     }
 
     public boolean isSingleFile() {
@@ -50,16 +66,21 @@ public final class FileTree {
         return metaData.getName();
     }
 
-    public BinaryEncodedList getFiles() {
+    public List<QueuedFileMetaData> getFiles() {
         return metaData.getFiles();
     }
 
-    public FilePriority getFilePriority(final long fileId) {
-        final FilePriority filePriority = progress.getFilePriority(String.valueOf(fileId));
+    public FilePriority getFilePriority(final Path filePath) {
+        final FilePriority filePriority = progress.getFilePriority(filePath.toString());
         return filePriority != null? filePriority : FilePriority.NORMAL;
     }
 
-    public void setFilePriority(final long fileId, final FilePriority priority) {
-        progress.setFilePriority(String.valueOf(fileId), priority);
+    public void setFilePriority(final Path filePath, final FilePriority priority, final boolean isPriorityChange) {
+        progress.setFilePriority(filePath.toString(), priority);
+
+        if(isPriorityChange) {
+            final FilePriorityChangeEvent changeEvent = new FilePriorityChangeEvent(filePath, priority);
+            filePriorityChangeListeners.forEach(l -> l.filePriorityChanged(changeEvent));
+        }
     }
 }

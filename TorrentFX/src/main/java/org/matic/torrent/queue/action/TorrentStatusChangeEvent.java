@@ -17,38 +17,38 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-package org.matic.torrent.queue;
+package org.matic.torrent.queue.action;
 
 import org.matic.torrent.gui.model.TorrentView;
-import org.matic.torrent.transfer.TransferTask;
+import org.matic.torrent.queue.enums.TorrentStatus;
 
 /**
- * This class is a simple bean that groups relevant queued torrent info under the same roof.
+ * An event that is triggered when a torrent's state change has been requested.
  *
  * @author Vedran Matic
  */
-public final class QueuedTorrentJob {
+public final class TorrentStatusChangeEvent {
 
-    private final TransferTask transferTask;
     private final TorrentView torrentView;
-    private final QueuedTorrent torrent;
+    private final TorrentStatus newStatus;
+    private final TorrentStatus oldStatus;
 
-    public QueuedTorrentJob(final QueuedTorrent torrent, final TorrentView torrentView,
-                            final TransferTask transferTask) {
-        this.torrent = torrent;
-        this.transferTask = transferTask;
+    public TorrentStatusChangeEvent(final TorrentView torrentView,
+                                    final TorrentStatus oldStatus, final TorrentStatus newStatus) {
         this.torrentView = torrentView;
-    }
-
-    public TransferTask getTransferTask() {
-        return transferTask;
+        this.newStatus = newStatus;
+        this.oldStatus = oldStatus;
     }
 
     public TorrentView getTorrentView() {
         return torrentView;
     }
 
-    public QueuedTorrent getTorrent() {
-        return torrent;
+    public TorrentStatus getNewStatus() {
+        return newStatus;
+    }
+
+    public TorrentStatus getOldStatus() {
+        return oldStatus;
     }
 }

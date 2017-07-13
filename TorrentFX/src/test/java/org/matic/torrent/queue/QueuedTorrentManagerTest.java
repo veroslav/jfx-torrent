@@ -32,13 +32,13 @@ import org.matic.torrent.gui.model.TrackableView;
 import org.matic.torrent.gui.model.TrackerView;
 import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.io.DataPersistenceSupport;
-import org.matic.torrent.net.pwp.PeerConnectionManager;
+import org.matic.torrent.net.pwp.PeerConnectionController;
 import org.matic.torrent.queue.enums.QueueType;
 import org.matic.torrent.queue.enums.TorrentStatus;
 import org.matic.torrent.tracking.Tracker;
 import org.matic.torrent.tracking.TrackerManager;
 import org.matic.torrent.tracking.TrackerSession;
-import org.matic.torrent.transfer.TransferController;
+import org.matic.torrent.transfer.TransferTask;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -51,7 +51,7 @@ public final class QueuedTorrentManagerTest {
 
     private final DataPersistenceSupport dataPersistenceSupportMock = EasyMock.createMock(DataPersistenceSupport.class);
     private final TrackerManager trackerManagerMock = EasyMock.createMock(TrackerManager.class);
-    private final PeerConnectionManager connectionManagerMock = EasyMock.createMock(PeerConnectionManager.class);
+    private final PeerConnectionController connectionManagerMock = EasyMock.createMock(PeerConnectionController.class);
 
     @After
     public void cleanup() {
@@ -60,7 +60,7 @@ public final class QueuedTorrentManagerTest {
 
     @Test
     public void testAddSingleTorrent() {
-        final QueuedTorrentManager unitUnderTest = new QueuedTorrentManager(
+        final QueuedTorrentController unitUnderTest = new QueuedTorrentController(
                 dataPersistenceSupportMock, trackerManagerMock, connectionManagerMock);
 
         final InfoHash infoHash = new InfoHash("1".getBytes());
@@ -70,10 +70,10 @@ public final class QueuedTorrentManagerTest {
         connectionManagerMock.accept(EasyMock.anyObject(TorrentView.class));
         EasyMock.expectLastCall();
 
-        connectionManagerMock.addConnectionListener(EasyMock.anyObject(TransferController.class));
+        connectionManagerMock.addConnectionListener(EasyMock.anyObject(TransferTask.class));
         EasyMock.expectLastCall();
 
-        connectionManagerMock.addMessageListener(EasyMock.anyObject(TransferController.class));
+        connectionManagerMock.addMessageListener(EasyMock.anyObject(TransferTask.class));
         EasyMock.expectLastCall();
 
         EasyMock.replay(dataPersistenceSupportMock, trackerManagerMock, connectionManagerMock);
@@ -91,7 +91,7 @@ public final class QueuedTorrentManagerTest {
 
     @Test
     public void testAddMultipleTorrents() {
-        final QueuedTorrentManager unitUnderTest = new QueuedTorrentManager(
+        final QueuedTorrentController unitUnderTest = new QueuedTorrentController(
                 dataPersistenceSupportMock, trackerManagerMock, connectionManagerMock);
 
         final InfoHash infoHash1 = new InfoHash("1".getBytes());
@@ -104,10 +104,10 @@ public final class QueuedTorrentManagerTest {
         connectionManagerMock.accept(EasyMock.anyObject(TorrentView.class));
         EasyMock.expectLastCall().times(2);
 
-        connectionManagerMock.addConnectionListener(EasyMock.anyObject(TransferController.class));
+        connectionManagerMock.addConnectionListener(EasyMock.anyObject(TransferTask.class));
         EasyMock.expectLastCall().times(2);
 
-        connectionManagerMock.addMessageListener(EasyMock.anyObject(TransferController.class));
+        connectionManagerMock.addMessageListener(EasyMock.anyObject(TransferTask.class));
         EasyMock.expectLastCall().times(2);
 
         EasyMock.replay(dataPersistenceSupportMock, trackerManagerMock, connectionManagerMock);
@@ -129,7 +129,7 @@ public final class QueuedTorrentManagerTest {
 
     @Test
     public void testAddExistingTorrent() {
-        final QueuedTorrentManager unitUnderTest = new QueuedTorrentManager(
+        final QueuedTorrentController unitUnderTest = new QueuedTorrentController(
                 dataPersistenceSupportMock, trackerManagerMock, connectionManagerMock);
 
         final InfoHash infoHash = new InfoHash("1".getBytes());
@@ -140,10 +140,10 @@ public final class QueuedTorrentManagerTest {
         connectionManagerMock.accept(EasyMock.anyObject(TorrentView.class));
         EasyMock.expectLastCall();
 
-        connectionManagerMock.addConnectionListener(EasyMock.anyObject(TransferController.class));
+        connectionManagerMock.addConnectionListener(EasyMock.anyObject(TransferTask.class));
         EasyMock.expectLastCall();
 
-        connectionManagerMock.addMessageListener(EasyMock.anyObject(TransferController.class));
+        connectionManagerMock.addMessageListener(EasyMock.anyObject(TransferTask.class));
         EasyMock.expectLastCall();
 
         EasyMock.replay(dataPersistenceSupportMock, trackerManagerMock, connectionManagerMock);
@@ -161,7 +161,7 @@ public final class QueuedTorrentManagerTest {
 
     @Test
     public void testRemoveNonexistingTorrent() throws IOException {
-        final QueuedTorrentManager unitUnderTest = new QueuedTorrentManager(
+        final QueuedTorrentController unitUnderTest = new QueuedTorrentController(
                 dataPersistenceSupportMock, trackerManagerMock, connectionManagerMock);
 
         final InfoHash infoHash = new InfoHash("1".getBytes());
@@ -174,7 +174,7 @@ public final class QueuedTorrentManagerTest {
 
     @Test
     public void testRemoveOnlyTorrent() throws IOException {
-        final QueuedTorrentManager unitUnderTest = new QueuedTorrentManager(
+        final QueuedTorrentController unitUnderTest = new QueuedTorrentController(
                 dataPersistenceSupportMock, trackerManagerMock, connectionManagerMock);
 
         final InfoHash infoHash = new InfoHash("1".getBytes());
@@ -186,10 +186,10 @@ public final class QueuedTorrentManagerTest {
         connectionManagerMock.accept(EasyMock.anyObject(TorrentView.class));
         EasyMock.expectLastCall();
 
-        connectionManagerMock.addConnectionListener(EasyMock.anyObject(TransferController.class));
+        connectionManagerMock.addConnectionListener(EasyMock.anyObject(TransferTask.class));
         EasyMock.expectLastCall();
 
-        connectionManagerMock.addMessageListener(EasyMock.anyObject(TransferController.class));
+        connectionManagerMock.addMessageListener(EasyMock.anyObject(TransferTask.class));
         EasyMock.expectLastCall();
 
         EasyMock.replay(dataPersistenceSupportMock, connectionManagerMock);
@@ -208,10 +208,10 @@ public final class QueuedTorrentManagerTest {
         trackerManagerMock.issueTorrentEvent(view, Tracker.Event.STOPPED);
         EasyMock.expectLastCall();
 
-        connectionManagerMock.removeMessageListener(EasyMock.anyObject(TransferController.class));
+        connectionManagerMock.removeMessageListener(EasyMock.anyObject(TransferTask.class));
         EasyMock.expectLastCall();
 
-        connectionManagerMock.removeConnectionListener(EasyMock.anyObject(TransferController.class));
+        connectionManagerMock.removeConnectionListener(EasyMock.anyObject(TransferTask.class));
         EasyMock.expectLastCall();
 
         connectionManagerMock.reject(view);
@@ -226,7 +226,7 @@ public final class QueuedTorrentManagerTest {
 
     @Test
     public void testAddTrackers() {
-        final QueuedTorrentManager unitUnderTest = new QueuedTorrentManager(
+        final QueuedTorrentController unitUnderTest = new QueuedTorrentController(
                 dataPersistenceSupportMock, trackerManagerMock, connectionManagerMock);
 
         final InfoHash infoHash = new InfoHash("1".getBytes());
@@ -236,10 +236,10 @@ public final class QueuedTorrentManagerTest {
         connectionManagerMock.accept(EasyMock.anyObject(TorrentView.class));
         EasyMock.expectLastCall();
 
-        connectionManagerMock.addConnectionListener(EasyMock.anyObject(TransferController.class));
+        connectionManagerMock.addConnectionListener(EasyMock.anyObject(TransferTask.class));
         EasyMock.expectLastCall();
 
-        connectionManagerMock.addMessageListener(EasyMock.anyObject(TransferController.class));
+        connectionManagerMock.addMessageListener(EasyMock.anyObject(TransferTask.class));
         EasyMock.expectLastCall();
 
         EasyMock.replay(dataPersistenceSupportMock, connectionManagerMock);
@@ -279,7 +279,7 @@ public final class QueuedTorrentManagerTest {
 
     @Test
     public void testRemoveTrackers() {
-        final QueuedTorrentManager unitUnderTest = new QueuedTorrentManager(
+        final QueuedTorrentController unitUnderTest = new QueuedTorrentController(
                 dataPersistenceSupportMock, trackerManagerMock, connectionManagerMock);
 
         final InfoHash infoHash = new InfoHash("1".getBytes());
@@ -305,10 +305,10 @@ public final class QueuedTorrentManagerTest {
         connectionManagerMock.accept(EasyMock.anyObject(TorrentView.class));
         EasyMock.expectLastCall();
 
-        connectionManagerMock.addConnectionListener(EasyMock.anyObject(TransferController.class));
+        connectionManagerMock.addConnectionListener(EasyMock.anyObject(TransferTask.class));
         EasyMock.expectLastCall();
 
-        connectionManagerMock.addMessageListener(EasyMock.anyObject(TransferController.class));
+        connectionManagerMock.addMessageListener(EasyMock.anyObject(TransferTask.class));
         EasyMock.expectLastCall();
 
         EasyMock.replay(dataPersistenceSupportMock, trackerManagerMock, connectionManagerMock);

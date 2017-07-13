@@ -19,33 +19,6 @@
 */
 package org.matic.torrent.gui.window;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Optional;
-import java.util.TimeZone;
-
-import org.matic.torrent.codec.BinaryEncodedDictionary;
-import org.matic.torrent.codec.BinaryEncodedInteger;
-import org.matic.torrent.codec.BinaryEncodedList;
-import org.matic.torrent.codec.BinaryEncodedString;
-import org.matic.torrent.codec.BinaryEncodingKeys;
-import org.matic.torrent.gui.action.enums.BorderStyle;
-import org.matic.torrent.gui.custom.TitledBorderPane;
-import org.matic.torrent.gui.model.FileTree;
-import org.matic.torrent.gui.model.TorrentFileEntry;
-import org.matic.torrent.gui.table.TableUtils;
-import org.matic.torrent.gui.tree.FileTreeViewer;
-import org.matic.torrent.gui.tree.TreeTableUtils;
-import org.matic.torrent.io.DiskUtilities;
-import org.matic.torrent.preferences.CssProperties;
-import org.matic.torrent.preferences.GuiProperties;
-import org.matic.torrent.queue.QueuedTorrentMetaData;
-import org.matic.torrent.queue.QueuedTorrentProgress;
-import org.matic.torrent.queue.enums.QueueType;
-import org.matic.torrent.utils.UnitConverter;
-
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -72,11 +45,36 @@ import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Window;
+import org.matic.torrent.codec.BinaryEncodedDictionary;
+import org.matic.torrent.codec.BinaryEncodedList;
+import org.matic.torrent.codec.BinaryEncodedString;
+import org.matic.torrent.codec.BinaryEncodingKeys;
+import org.matic.torrent.gui.action.enums.BorderStyle;
+import org.matic.torrent.gui.custom.TitledBorderPane;
+import org.matic.torrent.gui.model.FileTree;
+import org.matic.torrent.gui.model.TorrentFileEntry;
+import org.matic.torrent.gui.table.TableUtils;
+import org.matic.torrent.gui.tree.FileTreeViewer;
+import org.matic.torrent.gui.tree.TreeTableUtils;
+import org.matic.torrent.io.DiskUtilities;
+import org.matic.torrent.preferences.CssProperties;
+import org.matic.torrent.preferences.GuiProperties;
+import org.matic.torrent.queue.QueuedTorrentMetaData;
+import org.matic.torrent.queue.QueuedTorrentProgress;
+import org.matic.torrent.queue.enums.QueueType;
+import org.matic.torrent.utils.UnitConverter;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Optional;
+import java.util.TimeZone;
 
 /**
- * A window showing contents of a torrent to be opened and added to a list of torrents
+ * A window showing contents of a torrent to be opened and added to a list of torrents.
  *
- * @author vedran
+ * @author Vedran Matic
  *
  */
 public final class AddTorrentWindow {
@@ -171,7 +169,9 @@ public final class AddTorrentWindow {
             final QueueType targetStatus = startTorrentCheckbox.isSelected()?
                     QueueType.ACTIVE : QueueType.INACTIVE;
             progress.setQueueType(targetStatus);
-            //state.put(BinaryEncodingKeys.STATE_KEY_TORRENT_STATUS, new BinaryEncodedString(targetStatus.name()));
+
+            final String savePath = savePathCombo.getEditor().getText();
+            progress.setSavePath(savePath != null? Paths.get(savePath) : Paths.get(System.getProperty("user.home")));
 
             return new AddedTorrentOptions(metaData, progress, fileView.getRoot(),
                     createSubFolderCheckbox.isSelected(),
@@ -353,18 +353,16 @@ public final class AddTorrentWindow {
         labelPane.add(new Label(metaData.getName()), 1, 0);
 
         labelPane.add(new Label("Comment:"), 0, 1);
-
-        final BinaryEncodedString comment = metaData.getComment();
-        labelPane.add(new Label(comment != null? comment.toString() : ""), 1, 1);
+        labelPane.add(new Label(metaData.getComment()), 1, 1);
 
         labelPane.add(new Label("Size:"), 0, 2);
         labelPane.add(fileSizeLabel, 1, 2);
 
         labelPane.add(new Label("Date:"), 0, 3);
 
-        final BinaryEncodedInteger creationDateInSeconds = metaData.getCreationDate();
+        final Long creationDateInSeconds = metaData.getCreationDate();
         final String creationDate = creationDateInSeconds != null? UnitConverter.formatMillisToDate(
-                creationDateInSeconds.getValue() * 1000, TimeZone.getDefault()) : "";
+                creationDateInSeconds * 1000, TimeZone.getDefault()) : "";
         labelPane.add(new Label(creationDate), 1, 3);
 
         final HBox expandCollapseButtonsPane = new HBox(10);

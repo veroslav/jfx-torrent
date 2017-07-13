@@ -23,13 +23,13 @@ import javafx.application.Application;
 import javafx.stage.Stage;
 import org.matic.torrent.gui.window.ApplicationWindow;
 import org.matic.torrent.io.DataPersistenceSupport;
-import org.matic.torrent.net.pwp.PeerConnectionManager;
+import org.matic.torrent.net.pwp.PeerConnectionController;
 import org.matic.torrent.net.udp.UdpConnectionManager;
 import org.matic.torrent.peer.ClientProperties;
 import org.matic.torrent.preferences.ApplicationPreferences;
 import org.matic.torrent.preferences.NetworkProperties;
 import org.matic.torrent.preferences.PathProperties;
-import org.matic.torrent.queue.QueuedTorrentManager;
+import org.matic.torrent.queue.QueuedTorrentController;
 import org.matic.torrent.tracking.TrackerManager;
 
 import java.io.File;
@@ -41,7 +41,7 @@ public final class TorrentMain extends Application {
     private static final UdpConnectionManager UDP_TRACKER_CONNECTION_MANAGER = new UdpConnectionManager();
 
     //The manager of the connections to the remote peers using the peer-wire-protocol
-    private static PeerConnectionManager CONNECTION_MANAGER;
+    private static PeerConnectionController CONNECTION_MANAGER;
 
     //The manager for trackers supporting HTTP(S) and UDP protocols
     private static final TrackerManager TRACKER_MANAGER =
@@ -54,7 +54,7 @@ public final class TorrentMain extends Application {
             WORK_PATH.endsWith(File.separator)? WORK_PATH : WORK_PATH + File.separator);
 
     //The manager for handling queued torrents' states
-    private static QueuedTorrentManager TORRENT_MANAGER;
+    private static QueuedTorrentController TORRENT_MANAGER;
 
     //The UDP server/client for communication through DHT
     private static final UdpConnectionManager DHT_CONNECTION_MANAGER = UdpConnectionManager.UDP_TRACKER_PORT ==
@@ -85,9 +85,9 @@ public final class TorrentMain extends Application {
     }
 
     private static void startup() throws IOException {
-        CONNECTION_MANAGER = new PeerConnectionManager((int)ApplicationPreferences.getProperty(
+        CONNECTION_MANAGER = new PeerConnectionController((int)ApplicationPreferences.getProperty(
                 NetworkProperties.INCOMING_CONNECTION_PORT, ClientProperties.TCP_PORT));
-        TORRENT_MANAGER = new QueuedTorrentManager(
+        TORRENT_MANAGER = new QueuedTorrentController(
                 PERSISTENCE_SUPPORT, TRACKER_MANAGER, CONNECTION_MANAGER);
         CONNECTION_MANAGER.addConnectionListener(TORRENT_MANAGER);
 

@@ -1,6 +1,6 @@
 /*
 * This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015-2016 Vedran Matic
+* Copyright (C) 2015-2017 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@ import org.matic.torrent.gui.model.TrackableView;
 import org.matic.torrent.gui.table.TrackerTable;
 import org.matic.torrent.preferences.ApplicationPreferences;
 import org.matic.torrent.preferences.GuiProperties;
-import org.matic.torrent.queue.QueuedTorrentManager;
+import org.matic.torrent.queue.QueuedTorrentController;
 import org.matic.torrent.tracking.Tracker;
 import org.matic.torrent.tracking.TrackerManager;
 
@@ -52,7 +52,7 @@ public final class TrackerTableActionHandler {
      * @param torrentView View of the target tracked torrent.
      * @param trackerTable Tracker table to which to add trackers views.
      */
-    public void onTrackersAdded(final Collection<String> urls, final QueuedTorrentManager torrentManager,
+    public void onTrackersAdded(final Collection<String> urls, final QueuedTorrentController torrentManager,
                                 final TorrentView torrentView, final TrackerTable trackerTable) {
         urls.forEach(url -> trackerTable.addTrackerViews(torrentManager.addTrackers(torrentView, urls)));
     }
@@ -79,7 +79,7 @@ public final class TrackerTableActionHandler {
      * @param trackerTable Tracker table from which to delete trackers views
      */
     public void onTrackerDeletion(final List<TrackableView> trackerViews,
-                                  final QueuedTorrentManager torrentManager,
+                                  final QueuedTorrentController torrentManager,
                                   final TrackerTable trackerTable, final Window owner) {
         if(trackerViews.isEmpty()) {
             return;

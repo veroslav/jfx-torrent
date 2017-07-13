@@ -1,6 +1,6 @@
 /*
 * This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015-2016 Vedran Matic
+* Copyright (C) 2015-2017 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -22,13 +22,13 @@ package org.matic.torrent.gui.action;
 import javafx.collections.ObservableList;
 import javafx.scene.control.Button;
 import org.matic.torrent.gui.model.TorrentView;
-import org.matic.torrent.queue.QueuedTorrentManager;
+import org.matic.torrent.queue.QueuedTorrentController;
 import org.matic.torrent.queue.enums.PriorityChange;
 import org.matic.torrent.queue.enums.TorrentStatus;
 
 public final class TorrentJobActionHandler {
 
-    public void onRequestTorrentStateChange(final QueuedTorrentManager torrentManager,
+    public void onRequestTorrentStateChange(final QueuedTorrentController torrentManager,
                                             final ObservableList<TorrentView> selectedTorrents,
                                             final TorrentStatus requestedStatus, final Button startButton,
                                             final Button stopButton) {
@@ -39,7 +39,7 @@ public final class TorrentJobActionHandler {
                 torrentManager.requestTorrentStatusChange(tv, requestedStatus));
     }
 
-    public void onRequestTorrentPriorityChange(final QueuedTorrentManager torrentManager,
+    public void onRequestTorrentPriorityChange(final QueuedTorrentController torrentManager,
                                                final ObservableList<TorrentView> torrentViews, final PriorityChange priorityChange) {
         torrentViews.forEach(tv ->
                 torrentManager.requestTorrentPriorityChange(tv, priorityChange));

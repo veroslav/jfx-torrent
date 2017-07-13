@@ -1,6 +1,6 @@
 /*
 * This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015-2016 Vedran Matic
+* Copyright (C) 2015-2017 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -19,44 +19,58 @@
 */
 package org.matic.torrent.net.pwp;
 
-import java.util.Collection;
-
 import org.matic.torrent.gui.model.PeerView;
-import org.matic.torrent.net.pwp.PwpMessage.MessageType;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 
 /**
- * A request for a message to be sent on one of the peers' channels
+ * A request for a message to be sent on one of a peers' channels.
  *
  * @author Vedran Matic
  *
  */
 public final class PwpMessageRequest {
 
-    private final MessageType messageType;
     private final Collection<PeerView> peers;
-    private final byte[] data;
+    private final PwpMessage message;
 
     /**
-     * Create a new request with data to be sent on the specified connection
+     * Create a new request with data to be sent to specified peers.
      *
-     * @param data The message data to be sent
-     * @param peers Peers to which to send the message, or null if the message should be sent to all handshaken peers
+     * @param message The message to be sent
+     * @param peers Peers to which to send the message
      */
-    public PwpMessageRequest(final MessageType messageType, final byte[] data, final Collection<PeerView> peers) {
-        this.messageType = messageType;
-        this.data = data;
+    public PwpMessageRequest(final PwpMessage message, final Collection<PeerView> peers) {
+        this.message = message;
         this.peers = peers;
     }
 
-    public MessageType getMessageType() {
-        return messageType;
+    /**
+     * Create a new request with data to be sent to a peer.
+     *
+     * @param message The message to be sent
+     * @param peer Peer to which to send the message
+     */
+    public PwpMessageRequest(final PwpMessage message, final PeerView peer) {
+        this(message, Arrays.asList(peer));
+    }
+
+    /**
+     * Create a new request with data to be sent to all handshaken peers.
+     *
+     * @param message The message to be sent
+     */
+    public PwpMessageRequest(final PwpMessage message) {
+        this(message, Collections.emptyList());
     }
 
     public Collection<PeerView> getPeers() {
         return peers;
     }
 
-    public byte[] getMessageData() {
-        return data;
+    public PwpMessage getMessage() {
+        return message;
     }
 }

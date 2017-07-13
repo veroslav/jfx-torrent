@@ -24,10 +24,12 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 import org.matic.torrent.hash.InfoHash;
+import org.matic.torrent.io.DataBlock;
 import org.matic.torrent.peer.ClientProperties;
+import org.matic.torrent.transfer.DataBlockRequest;
 
 /**
- * A factory class for messages sent between peers
+ * A factory class and a parser for messages sent between peers.
  *
  * @author Vedran Matic
  *
@@ -64,5 +66,26 @@ public final class PwpMessageRequestFactory {
             //This can't happen for ByteArrayOutputStream
         }
         return baos.toByteArray();
+    }
+
+    //TODO: Implement parse methods below
+    public static PwpMessage buildSendBlockMessage(final DataBlock dataBlock) {
+        return null;
+    }
+
+    public static PwpMessage buildRequestMessage(final DataBlockRequest dataBlockRequest) {
+        return null;
+    }
+
+    public static PwpMessage buildHavePieceMessage(final int pieceIndex) {
+        return null;
+    }
+
+    public static DataBlockRequest parseBlockRequestedMessage(final PwpMessage message) {
+        return null;
+    }
+
+    public static DataBlock parseBlockReceivedMessage(final PwpMessage message) {
+        return null;
     }
 }
