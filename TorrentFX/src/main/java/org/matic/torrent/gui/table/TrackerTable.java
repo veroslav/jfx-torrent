@@ -19,7 +19,6 @@
 */
 package org.matic.torrent.gui.table;
 
-import javafx.application.Platform;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.value.ObservableValue;
@@ -92,11 +91,8 @@ public final class TrackerTable {
         createContextMenu();
     }
 
-    public void setContent(final Set<TrackableView> trackableViews) {
-        Platform.runLater(() -> {
-            trackerTable.getItems().clear();
-            trackerTable.getItems().addAll(trackableViews);
-        });
+    public void setContent(final ObservableList<TrackableView> trackableViews) {
+        trackerTable.setItems(trackableViews);
     }
 
     public void refresh() {

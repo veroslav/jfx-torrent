@@ -1,6 +1,6 @@
 /*
 * This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015-2016 Vedran Matic
+* Copyright (C) 2015-2017 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -61,8 +61,6 @@ public final class TrackerManagerTest {
 
     private static final String HTTP_TRACKER_URL = "http://localhost:12345/announce";
     private static final String UDP_TRACKER_URL = "udp://localhost:12345";
-
-    //private final InfoHash infoHash = new InfoHash(DatatypeConverter.parseHexBinary("ABCDEF0123"));
 
     private UdpConnectionManager udpConnectionManagerMock = EasyMock.createMock(UdpConnectionManager.class);
 
@@ -814,6 +812,7 @@ public final class TrackerManagerTest {
         final BinaryEncodedDictionary infoDict = new BinaryEncodedDictionary();
         infoDict.put(BinaryEncodingKeys.KEY_LENGTH, new BinaryEncodedInteger(42));
         infoDict.put(BinaryEncodingKeys.KEY_PIECE_LENGTH, new BinaryEncodedInteger(19));
+        infoDict.put(BinaryEncodingKeys.KEY_NAME, new BinaryEncodedString("a/simple/path/file"));
 
         final BinaryEncodedDictionary metaDataDict = new BinaryEncodedDictionary();
         metaDataDict.put(BinaryEncodingKeys.KEY_INFO, infoDict);

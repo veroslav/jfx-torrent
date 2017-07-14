@@ -25,6 +25,7 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 import org.matic.torrent.codec.BinaryEncodedDictionary;
+import org.matic.torrent.codec.BinaryEncodedInteger;
 import org.matic.torrent.codec.BinaryEncodedString;
 import org.matic.torrent.codec.BinaryEncodingKeys;
 import org.matic.torrent.preferences.TransferProperties;
@@ -972,7 +973,14 @@ public final class QueueControllerTest {
 
     private QueuedTorrent buildTorrent(final String infoHash, final QueueType targetQueue) {
         final BinaryEncodedDictionary metaDataDict = new BinaryEncodedDictionary();
+
+        final BinaryEncodedDictionary infoDict = new BinaryEncodedDictionary();
+        infoDict.put(BinaryEncodingKeys.KEY_LENGTH, new BinaryEncodedInteger(42));
+        infoDict.put(BinaryEncodingKeys.KEY_NAME, new BinaryEncodedString("a/simple/path/file"));
+
+        metaDataDict.put(BinaryEncodingKeys.KEY_INFO, infoDict);
         metaDataDict.put(BinaryEncodingKeys.KEY_INFO_HASH, new BinaryEncodedString(infoHash));
+
         final QueuedTorrentMetaData metaData = new QueuedTorrentMetaData(metaDataDict);
 
         final BinaryEncodedDictionary progressDict = new BinaryEncodedDictionary();

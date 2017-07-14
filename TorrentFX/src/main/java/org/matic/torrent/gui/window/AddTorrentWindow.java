@@ -227,7 +227,7 @@ public final class AddTorrentWindow {
         });
 
         selectNoneButton.setOnAction(event -> {
-            fileTreeViewer.unselectAllEntries();
+            fileTreeViewer.deselectAllEntries();
             selectNoneButton.requestFocus();
         });
 

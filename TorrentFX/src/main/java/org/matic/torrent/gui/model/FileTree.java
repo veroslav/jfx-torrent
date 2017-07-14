@@ -70,13 +70,15 @@ public final class FileTree {
         return metaData.getFiles();
     }
 
-    public FilePriority getFilePriority(final Path filePath) {
-        final FilePriority filePriority = progress.getFilePriority(filePath.toString());
+    public FilePriority getFilePriority(final QueuedFileMetaData fileMetaData) {
+        final FilePriority filePriority = progress.getFilePriority(metaData.getFileMetaDataIndex(fileMetaData));
         return filePriority != null? filePriority : FilePriority.NORMAL;
     }
 
-    public void setFilePriority(final Path filePath, final FilePriority priority, final boolean isPriorityChange) {
-        progress.setFilePriority(filePath.toString(), priority);
+    public void setFilePriority(final QueuedFileMetaData fileMetaData, final FilePriority priority,
+                                final boolean isPriorityChange) {
+        final Path filePath = fileMetaData.getPath();
+        progress.setFilePriority(metaData.getFileMetaDataIndex(fileMetaData), priority);
 
         if(isPriorityChange) {
             final FilePriorityChangeEvent changeEvent = new FilePriorityChangeEvent(filePath, priority);

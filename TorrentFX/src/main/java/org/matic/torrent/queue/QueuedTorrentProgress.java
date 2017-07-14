@@ -36,27 +36,55 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * A class for tracking a torrent's progress between the application restarts.
+ * It makes it possible to resume the torrent on the next application launch.
+ * The contents of this class are saved in a .state file under the application's
+ * configuration path (~/.trabos).
+ *
+ * @author Vedran Matic
+ */
 public final class QueuedTorrentProgress {
 
     private final BinaryEncodedDictionary torrentState;
 
+    /**
+     * Create a new instance.
+     *
+     * @param torrentState Initial state to use for populating the object
+     */
     public QueuedTorrentProgress(final BinaryEncodedDictionary torrentState) {
         this.torrentState = torrentState;
     }
 
+    /**
+     * Get the path on the disk where the torrent's contents are being stored.
+     *
+     * @return A path to the torrent's files on the disk
+     */
     public Path getSavePath() {
         final BinaryEncodedString savePath = (BinaryEncodedString)torrentState.get(BinaryEncodingKeys.STATE_KEY_SAVE_PATH);
         return savePath != null? Paths.get(savePath.getValue()) : Paths.get(System.getProperty("user.home"));
     }
 
+    /**
+     * Make it possible to change the path where a torrent is stored, and relocate its contents to another path.
+     *
+     * @param path The new path under which to store the torrent's contents
+     */
     public void setSavePath(final Path path) {
         torrentState.put(BinaryEncodingKeys.STATE_KEY_SAVE_PATH, new BinaryEncodedString(path.toString()));
     }
 
+    /**
+     * Get the name of a torrent. If it is a single-file torrent, the file's name itself is returned.
+     * For multi-file torrents, the name denotes the folder name in which the torrent's contents are saved.
+     *
+     * @return
+     */
     public String getName() {
         final BinaryEncodable name = torrentState.get(BinaryEncodingKeys.KEY_NAME);
         return name != null? name.toString() : null;
@@ -107,35 +135,25 @@ public final class QueuedTorrentProgress {
         return priority != null? (int)priority.getValue() : 0;
     }
 
-    public void setFilePriorities(final Map<String, FilePriority> filePrios) {
+    public void setFilePriority(final int fileIndex, final FilePriority priority) {
         BinaryEncodedDictionary filePrioMap = (BinaryEncodedDictionary)torrentState.get(
                 BinaryEncodingKeys.STATE_KEY_FILE_PRIO);
         if(filePrioMap == null) {
             filePrioMap = new BinaryEncodedDictionary();
             torrentState.put(BinaryEncodingKeys.STATE_KEY_FILE_PRIO, filePrioMap);
         }
-        final BinaryEncodedDictionary finalFilePrioMap = filePrioMap;
-        filePrios.forEach((path, prio) -> finalFilePrioMap.put(
-                new BinaryEncodedString(path), new BinaryEncodedString(prio.toString())));
+        filePrioMap.put(new BinaryEncodedString(String.valueOf(fileIndex)),
+                new BinaryEncodedInteger(priority.getValue()));
     }
 
-    public void setFilePriority(final String fileId, final FilePriority priority) {
-        BinaryEncodedDictionary filePrioMap = (BinaryEncodedDictionary)torrentState.get(
-                BinaryEncodingKeys.STATE_KEY_FILE_PRIO);
-        if(filePrioMap == null) {
-            filePrioMap = new BinaryEncodedDictionary();
-            torrentState.put(BinaryEncodingKeys.STATE_KEY_FILE_PRIO, filePrioMap);
-        }
-        filePrioMap.put(new BinaryEncodedString(fileId), new BinaryEncodedInteger(priority.getValue()));
-    }
-
-    public FilePriority getFilePriority(final String filePath) {
+    public FilePriority getFilePriority(final int fileIndex) {
         final BinaryEncodedDictionary filePriorityMap = (BinaryEncodedDictionary)torrentState.get(
                 BinaryEncodingKeys.STATE_KEY_FILE_PRIO);
         if(filePriorityMap == null) {
             return FilePriority.NORMAL;
         }
-        final BinaryEncodedInteger filePriority = (BinaryEncodedInteger)filePriorityMap.get(new BinaryEncodedString(filePath));
+        final BinaryEncodedInteger filePriority = (BinaryEncodedInteger)filePriorityMap.get(
+                new BinaryEncodedString(String.valueOf(fileIndex)));
         if(filePriority == null) {
             return FilePriority.NORMAL;
         }

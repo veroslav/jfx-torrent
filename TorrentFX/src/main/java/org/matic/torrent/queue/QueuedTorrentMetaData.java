@@ -132,6 +132,15 @@ public final class QueuedTorrentMetaData {
         return metaData.toExportableValue();
     }
 
+    /**
+     * Get a file's order within the torrent.
+     *
+     * @return The position of the file within the torrent
+     */
+    public int getFileMetaDataIndex(final QueuedFileMetaData fileMetaData) {
+        return fileMetaDatas.indexOf(fileMetaData);
+    }
+
     private Long getSingleFileLength() {
         final BinaryEncodedInteger fileLength = (BinaryEncodedInteger)infoDictionary.get(BinaryEncodingKeys.KEY_LENGTH);
         return fileLength != null? fileLength.getValue() : null;

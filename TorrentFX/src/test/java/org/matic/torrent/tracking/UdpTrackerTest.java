@@ -141,6 +141,7 @@ public final class UdpTrackerTest {
         final BinaryEncodedDictionary infoDict = new BinaryEncodedDictionary();
         infoDict.put(BinaryEncodingKeys.KEY_LENGTH, new BinaryEncodedInteger(42));
         infoDict.put(BinaryEncodingKeys.KEY_PIECE_LENGTH, new BinaryEncodedInteger(19));
+        infoDict.put(BinaryEncodingKeys.KEY_NAME, new BinaryEncodedString("a/simple/path/file"));
 
         final BinaryEncodedDictionary metaDataDict = new BinaryEncodedDictionary();
         metaDataDict.put(BinaryEncodingKeys.KEY_INFO, infoDict);

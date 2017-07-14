@@ -33,14 +33,29 @@ import java.io.IOException;
  */
 public final class TorrentDiskFileProxy {
 
-    private final DataPieceCache<InfoHash,DataPiece> cache;
+    private final DataPieceCache<InfoHash> cache;
     private final TorrentFileIO fileIO;
 
-    public TorrentDiskFileProxy(final TorrentFileIO fileIO, final DataPieceCache<InfoHash,DataPiece> cache) {
+    /**
+     * Create a new instance.
+     *
+     * @param fileIO For writing/reading piece data to/from the disk
+     * @param cache For writing/reading piece data to/from the cache
+     */
+    public TorrentDiskFileProxy(final TorrentFileIO fileIO, final DataPieceCache<InfoHash> cache) {
         this.fileIO = fileIO;
         this.cache = cache;
     }
 
+    /**
+     * Get a piece's data, either from cache if it has been cached, or directly from the disk.
+     *
+     * @param infoHash Torrent identifier used as a cache key
+     * @param pieceIndex Target data piece's index within the torrent
+     * @param pieceLength How many bytes to read into the piece data
+     * @return The read data piece
+     * @throws IOException If any I/O error occurs while reading the piece data from the disk
+     */
     public DataPiece retrievePiece(final InfoHash infoHash, final int pieceIndex,
                                    final int pieceLength) throws IOException {
         final DataPiece cachedPiece = cache.getItem(infoHash);
@@ -54,6 +69,13 @@ public final class TorrentDiskFileProxy {
         return pieceFromDisk;
     }
 
+    /**
+     * Store a piece's data in both the cache and on the disk.
+     *
+     * @param piece The piece data to be stored
+     * @param infoHash Torrent identifier used as a cache key
+     * @throws IOException If any I/O error occurs while writing the piece data to the disk
+     */
     public void storePiece(final DataPiece piece, final InfoHash infoHash) throws IOException {
         cache.addItem(infoHash, piece);
         fileIO.writePieceToDisk(piece);

@@ -206,6 +206,10 @@ public final class QueuedTorrentController implements PreferenceChangeListener, 
         transferExecutor.shutdownNow();
         synchronized(queuedTorrents) {
             queuedTorrents.forEach(t -> {
+
+                final QueuedTorrentJob torrentJob = queuedTorrentJobs.remove(t.getInfoHash());
+                torrentJob.getTransferTask().shutdown();
+
                 final QueuedTorrentProgress progress = t.getProgress();
                 final QueueType queueType = t.getQueueType();
                 progress.setQueueType(queueType != QueueType.INACTIVE? QueueType.ACTIVE : QueueType.INACTIVE);
@@ -359,13 +363,11 @@ public final class QueuedTorrentController implements PreferenceChangeListener, 
             final QueuedTorrent targetTorrent = queuedTorrents.stream().filter(
                     t -> t.getInfoHash().equals(torrentView.getInfoHash())).findFirst().orElse(null);
             if(targetTorrent != null) {
-                //TODO: Remove statusProperty listener (this) from this torrent
                 final InfoHash infoHash = targetTorrent.getInfoHash();
                 final QueuedTorrentJob queuedTorrentJob = queuedTorrentJobs.remove(infoHash);
 
                 final TransferTask transferTask = queuedTorrentJob.getTransferTask();
-                connectionManager.removeConnectionListener(transferTask);
-                connectionManager.removeMessageListener(transferTask);
+                torrentView.getFileTree().removeFilePriorityChangeListener(transferTask);
 
                 final Future<?> transferTaskFuture = transferTasks.remove(infoHash);
                 if(transferTaskFuture != null) {

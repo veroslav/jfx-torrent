@@ -26,6 +26,8 @@ import javafx.beans.property.SimpleLongProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.beans.value.ChangeListener;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.queue.QueuedTorrent;
 import org.matic.torrent.queue.QueuedTorrentMetaData;
@@ -48,8 +50,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * @author Vedran Matic
  */
 public final class TorrentView {
-
-    private static final String FORCED_PRIORITY_INDICATOR = "*";
 
     private final BitsView availabilityView;
     private final QueuedTorrent queuedTorrent;
@@ -86,7 +86,7 @@ public final class TorrentView {
     private long completionTime;
     private long havePieces;
 
-    private final Set<TrackableView> trackerViews = new LinkedHashSet<>();
+    private final ObservableList<TrackableView> trackerViews = FXCollections.observableArrayList();
     private final Set<PeerView> peerViews = new LinkedHashSet<>();
 
     private final List<TorrentPriorityChangeListener> priorityChangeListeners = new CopyOnWriteArrayList<>();
@@ -94,16 +94,16 @@ public final class TorrentView {
 
     private final FileTree fileTree;
 
-	public TorrentView(final QueuedTorrent queuedTorrent) {
-		this.priority = new SimpleIntegerProperty(0);
-		this.selectedLength = new SimpleLongProperty(0);
+    public TorrentView(final QueuedTorrent queuedTorrent) {
+        this.priority = new SimpleIntegerProperty(0);
+        this.selectedLength = new SimpleLongProperty(0);
         this.queuedTorrent = queuedTorrent;
 
         availabilityView = new BitsView(this.queuedTorrent.getMetaData().getTotalPieces());
         fileTree = new FileTree(queuedTorrent.getMetaData(), queuedTorrent.getProgress());
 
         this.priority.addListener((obs, oldV, newV) ->
-            lifeCycleChange.setValue(String.valueOf(newV.intValue())));
+                lifeCycleChange.setValue(String.valueOf(newV.intValue())));
 
         queuedTorrent.statusProperty().addListener((obs, oldV, newV) -> {
             final TorrentStatusChangeEvent statusChangeEvent = new TorrentStatusChangeEvent(this, oldV, newV);
@@ -111,8 +111,8 @@ public final class TorrentView {
         });
 
         queuedTorrent.addPriorityChangeListener(event ->
-            priorityChangeListeners.forEach(l -> l.onTorrentPriorityChanged(event)));
-	}
+                priorityChangeListeners.forEach(l -> l.onTorrentPriorityChanged(event)));
+    }
 
     public boolean addPeerViews(final Collection<PeerView> peerViews) {
         return this.peerViews.addAll(peerViews);
@@ -130,12 +130,12 @@ public final class TorrentView {
         return fileTree;
     }
 
-    public Set<TrackableView> getTrackerViews() {
+    public ObservableList<TrackableView> getTrackerViews() {
         return trackerViews;
     }
-    
+
     public String getTrackerUrl() {
-    	return queuedTorrent.getMetaData().getAnnounceUrl();
+        return queuedTorrent.getMetaData().getAnnounceUrl();
     }
 
     public InfoHash getInfoHash() {
@@ -147,9 +147,9 @@ public final class TorrentView {
     }
 
     public QueuedTorrentProgress getProgress() { return queuedTorrent.getProgress(); }
-    
+
     public final LongProperty selectedLengthProperty() {
-    	return selectedLength;
+        return selectedLength;
     }
 
     public final StringProperty lifeCycleChangeProperty() {
@@ -157,7 +157,7 @@ public final class TorrentView {
     }
 
     public String getLifeCycleChange() {
-	    return lifeCycleChange.getValue();
+        return lifeCycleChange.getValue();
     }
 
     public void addQueueStatusChangeListener(final ChangeListener<QueueType> listener) {
@@ -185,7 +185,7 @@ public final class TorrentView {
     }
 
     public long getSelectedLength() {
-    	return selectedLength.get();
+        return selectedLength.get();
     }
 
     public final IntegerProperty priorityProperty() {
@@ -317,31 +317,31 @@ public final class TorrentView {
     public long getHavePieces() {
         return havePieces;
     }
-    
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((queuedTorrent == null) ? 0 : queuedTorrent.hashCode());
-		return result;
-	}
-	
-	@Override
-	public boolean equals(final Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		TorrentView other = (TorrentView) obj;
-		if (queuedTorrent == null) {
-			if (other.queuedTorrent != null)
-				return false;
-		} else if (!queuedTorrent.equals(other.queuedTorrent))
-			return false;
-		return true;
-	}
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((queuedTorrent == null) ? 0 : queuedTorrent.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        TorrentView other = (TorrentView) obj;
+        if (queuedTorrent == null) {
+            if (other.queuedTorrent != null)
+                return false;
+        } else if (!queuedTorrent.equals(other.queuedTorrent))
+            return false;
+        return true;
+    }
 
     @Override
     public String toString() {

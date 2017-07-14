@@ -118,9 +118,9 @@ import java.util.prefs.PreferenceChangeListener;
 import java.util.stream.Collectors;
 
 /**
- * A main application window, showing all of the GUI components.
+ * The main application window.
  *
- * @author vedran
+ * @author Vedran Matic
  *
  */
 public final class ApplicationWindow implements PreferenceChangeListener {
@@ -442,27 +442,27 @@ public final class ApplicationWindow implements PreferenceChangeListener {
         //TODO: Extract property listeners' code to a common method
         torrentViewTable.totalTorrentsProperty().addListener((obs, oldV, newV) ->
                 Platform.runLater(() -> {
-                        torrentsRootLabel.setText(torrentsRootLabelId + " (" + newV + ")");
-                        torrentViewTable.filter(
-                                filterTreeView.getSelectionModel().getSelectedItem().getValue().getId(),
-                                searchFilterCombo.getEditor().getText());
+                    torrentsRootLabel.setText(torrentsRootLabelId + " (" + newV + ")");
+                    torrentViewTable.filter(
+                            filterTreeView.getSelectionModel().getSelectedItem().getValue().getId(),
+                            searchFilterCombo.getEditor().getText());
                 }));
 
         torrentViewTable.activeTorrentsProperty().addListener((obs, oldV, newV) ->
                 Platform.runLater(() -> {
-                        torrentLabels[3].setText(torrentLabelNames[3] + " (" + newV + ")");
-                        torrentViewTable.filter(
+                    torrentLabels[3].setText(torrentLabelNames[3] + " (" + newV + ")");
+                    torrentViewTable.filter(
                             filterTreeView.getSelectionModel().getSelectedItem().getValue().getId(),
                             searchFilterCombo.getEditor().getText());
                 }));
 
         torrentViewTable.inactiveTorrentsProperty().addListener((obs, oldV, newV) ->
                 Platform.runLater(() -> {
-                        torrentLabels[4].setText(torrentLabelNames[4] + " (" + newV + ")");
-                        torrentViewTable.filter(
-                                filterTreeView.getSelectionModel().getSelectedItem().getValue().getId(),
-                                searchFilterCombo.getEditor().getText());
-        }));
+                    torrentLabels[4].setText(torrentLabelNames[4] + " (" + newV + ")");
+                    torrentViewTable.filter(
+                            filterTreeView.getSelectionModel().getSelectedItem().getValue().getId(),
+                            searchFilterCombo.getEditor().getText());
+                }));
 
         final List<TreeItem<Label>> allNodes = Arrays.asList(torrentsRootNode, labelsRootNode, rssFeedsRootNode);
 
@@ -685,7 +685,7 @@ public final class ApplicationWindow implements PreferenceChangeListener {
         prioUpButton.setOnAction(event -> {
             final ObservableList<TorrentView> selectedTorrents = torrentViewTable.getSelectedJobs();
             torrentJobActionHandler.onRequestTorrentPriorityChange(queuedTorrentManager,
-                   selectedTorrents, PriorityChange.HIGHER);
+                    selectedTorrents, PriorityChange.HIGHER);
         });
         prioDownButton.setOnAction(event -> {
             final ObservableList<TorrentView> selectedTorrents = torrentViewTable.getSelectedJobs();
@@ -1078,13 +1078,14 @@ public final class ApplicationWindow implements PreferenceChangeListener {
                         deleteErrorAlert.setHeaderText(null);
                         deleteErrorAlert.showAndWait();
                     }
+                    fileTreeViewer.detach(t.getInfoHash());
                 });
                 torrentViewTable.deleteJobs(torrentsToDelete);
                 final ObservableList<TorrentView> newSelection = torrentViewTable.getSelectedJobs();
                 if(newSelection.isEmpty()) {
                     fileTreeViewer.hide();
                     infoPanel.setContent(null);
-                    trackerTable.setContent(FXCollections.emptyObservableSet());
+                    trackerTable.setContent(FXCollections.emptyObservableList());
                     peerTable.setContent(FXCollections.emptyObservableList());
                 }
                 else {
@@ -1108,7 +1109,7 @@ public final class ApplicationWindow implements PreferenceChangeListener {
             fileTreeViewer.hide();
         }
         trackerTable.setContent(torrentSelected? selectedTorrentView.getTrackerViews() :
-                FXCollections.emptyObservableSet());
+                FXCollections.emptyObservableList());
         peerTable.setContent(torrentSelected? selectedTorrentView.getPeerViews() :
                 FXCollections.emptyObservableList());
         infoPanel.setContent(torrentSelected? selectedTorrentView : null);

@@ -19,37 +19,42 @@
 */
 package org.matic.torrent.io.cache;
 
+import org.matic.torrent.io.DataPiece;
+
 import java.util.TreeMap;
 
 /**
- * A simple cache for generic kind of items (mostly DataPiece:s).
+ * A simple cache for data pieces.
  *
- * @param <T> The key that uniquely identifies each cached item
- * @param <U> The type of cached items
+ * @param <T> The key that uniquely identifies each cached data piece
  */
-public final class DataPieceCache<T,U> {
+public final class DataPieceCache<T> {
 
-    private TreeMap<T, CachedItem<U>> cache;
-    private int maxSize;
+    private TreeMap<T, CachedItem<DataPiece>> cache;
+    private long currentSize;
+    private long maxSize;
 
-    public DataPieceCache(final int maxSize) {
+    public DataPieceCache(final long maxSize) {
         cache = new TreeMap<>();
         this.maxSize = maxSize;
     }
 
     //TODO: Can we remove synchronization?
-    public synchronized void setMaxSize(final int maxSize) {
+    public synchronized void setMaxSize(final long maxSize) {
         this.maxSize = maxSize;
     }
 
-    public synchronized U getItem(final T itemKey) {
+    public synchronized DataPiece getItem(final T itemKey) {
         return cache.get(itemKey).getItem();
     }
 
-    public synchronized void addItem(final T itemKey, final U item) {
-        if(cache.size() == maxSize) {
-            cache.remove(cache.lastEntry());
+    public synchronized void addItem(final T itemKey, final DataPiece item) {
+        final int itemLength = item.getLength();
+        while (currentSize + itemLength > maxSize) {
+            final DataPiece oldestEntry = cache.remove(cache.lastEntry()).getItem();
+            currentSize -= oldestEntry.getLength();
         }
         cache.put(itemKey, new CachedItem<>(item));
+        currentSize += itemLength;
     }
 }

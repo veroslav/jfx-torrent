@@ -1,5 +1,5 @@
 /*
-* This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
+* This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
 * Copyright (C) 2015-2017 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
@@ -17,23 +17,26 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-package org.matic.torrent.net.pwp;
+package org.matic.torrent.io;
 
-/**
- * An exception that is thrown if a message received from a peer can't be understood.
- *
- * @author Vedran Matic
- *
- */
-public final class InvalidPeerMessageException extends Exception {
+import org.matic.torrent.gui.model.PeerView;
+import org.matic.torrent.transfer.DataBlockRequest;
 
-    private static final long serialVersionUID = 1L;
+public final class DataPieceRequest {
 
-    public InvalidPeerMessageException(final String message) {
-        super(message);
+    private final DataBlockRequest blockRequest;
+    private final PeerView requester;
+
+    public DataPieceRequest(final DataBlockRequest blockRequest, final PeerView requester) {
+        this.blockRequest = blockRequest;
+        this.requester = requester;
     }
 
-    public InvalidPeerMessageException(final String message, final Exception cause) {
-        super(message, cause);
+    public DataBlockRequest getBlockRequest() {
+        return blockRequest;
+    }
+
+    public PeerView getRequester() {
+        return requester;
     }
 }

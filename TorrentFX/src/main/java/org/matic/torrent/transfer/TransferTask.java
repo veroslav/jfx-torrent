@@ -25,36 +25,43 @@ import org.matic.torrent.gui.model.PeerView;
 import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.io.DataBlock;
 import org.matic.torrent.io.DataPiece;
+import org.matic.torrent.io.DataPieceRequest;
+import org.matic.torrent.io.DataPieceResponse;
+import org.matic.torrent.io.FileIOWorker;
 import org.matic.torrent.io.TorrentDiskFileProxy;
 import org.matic.torrent.io.TorrentFileIO;
+import org.matic.torrent.net.pwp.InvalidPeerMessageException;
 import org.matic.torrent.net.pwp.PeerConnectionController;
 import org.matic.torrent.net.pwp.PeerConnectionStateChangeEvent;
 import org.matic.torrent.net.pwp.PwpConnectionStateListener;
 import org.matic.torrent.net.pwp.PwpMessage;
 import org.matic.torrent.net.pwp.PwpMessageEvent;
+import org.matic.torrent.net.pwp.PwpMessageFactory;
 import org.matic.torrent.net.pwp.PwpMessageListener;
 import org.matic.torrent.net.pwp.PwpMessageRequest;
-import org.matic.torrent.net.pwp.PwpMessageRequestFactory;
 import org.matic.torrent.queue.QueuedFileMetaData;
 import org.matic.torrent.queue.QueuedTorrent;
 import org.matic.torrent.queue.action.FilePriorityChangeEvent;
 import org.matic.torrent.queue.action.FilePriorityChangeListener;
 import org.matic.torrent.utils.UnitConverter;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 /**
- * This class manages download and upload of data in a torrent.
+ * This class manages download and upload of data for a torrent.
  *
  * @author Vedran Matic
  */
@@ -72,28 +79,58 @@ public final class TransferTask implements PwpMessageListener, PwpConnectionStat
 
     private final Map<Integer, List<DataBlockRequest>> sentBlockRequests = new HashMap<>();
 
-    //Sorted on offsets within the torrent, 0 to torrent.length() - 1
-    private TreeMap<Long, TorrentDiskFileProxy> diskFileProxies = new TreeMap<>();
-
-    private FilePriorityChangeEvent filePriorityChangeEventsQueue = null;
+    private FilePriorityChangeEvent queuedFilePriorityChangeEvent = null;
     private final List<PeerConnectionStateChangeEvent> peerStateChangeEventQueue = new LinkedList<>();
+    private final List<DataPieceResponse> requestedDataPieceQueue = new LinkedList<>();
     private final List<PwpMessageEvent> messageQueue = new LinkedList<>();
 
     private final ObjectProperty<TransferStatusChangeEvent> statusProperty = new SimpleObjectProperty();
 
+    private final ExecutorService ioWorkerExecutor = Executors.newSingleThreadExecutor();
+    private final FileIOWorker fileIOWorker;
+    private Future<?> fileIOWorkerJob;
+
     private final PeerConnectionController connectionManager;
     private final QueuedTorrent torrent;
 
+    /**
+     * Create a new instance.
+     *
+     * @param torrent The torrent for which the data will be transferred
+     * @param connectionManager For sending/receiving messages to/from remote peers
+     */
     public TransferTask(final QueuedTorrent torrent, final PeerConnectionController connectionManager) {
         this.connectionManager = connectionManager;
         this.torrent = torrent;
 
         final List<QueuedFileMetaData> fileMetaDatas = torrent.getMetaData().getFiles();
+        final TreeMap<Long, TorrentDiskFileProxy> diskFileProxies = new TreeMap<>();
+
         for(final QueuedFileMetaData fileMetaData : fileMetaDatas) {
             diskFileProxies.put(fileMetaData.getOffset(), buildDiskFileProxy(fileMetaData));
         }
+
+        final Consumer<DataPieceResponse> pieceConsumer = this::pieceAvailable;
+        this.fileIOWorker = new FileIOWorker(diskFileProxies, this.torrent.getMetaData(), pieceConsumer);
     }
 
+    public void shutdown() {
+        ioWorkerExecutor.shutdownNow();
+    }
+
+    public void pieceAvailable(final DataPieceResponse dataPieceResponse) {
+        synchronized (this) {
+            requestedDataPieceQueue.add(dataPieceResponse);
+            this.notifyAll();
+        }
+    }
+
+    /**
+     * Notify listeners when a transfer change has occurred. An example of this can be a transfer completion,
+     * an error during file I/O and similar.
+     *
+     * @param statusChangeHandler Handler of the status change
+     */
     public void addStatusChangeListener(final Consumer<TransferStatusChangeEvent> statusChangeHandler) {
         statusProperty.addListener((obs, oldV, newV) -> statusChangeHandler.accept(newV));
     }
@@ -104,7 +141,7 @@ public final class TransferTask implements PwpMessageListener, PwpConnectionStat
     @Override
     public void filePriorityChanged(final FilePriorityChangeEvent changeEvent) {
         synchronized (this) {
-            filePriorityChangeEventsQueue = changeEvent;
+            queuedFilePriorityChangeEvent = changeEvent;
             this.notifyAll();
         }
     }
@@ -161,7 +198,6 @@ public final class TransferTask implements PwpMessageListener, PwpConnectionStat
         };
     }
 
-    //TODO: Offload file I/O to another thread, don't handle it here
     @Override
     public void run() {
         restoreState();
@@ -174,10 +210,12 @@ public final class TransferTask implements PwpMessageListener, PwpConnectionStat
 
             FilePriorityChangeEvent filePriorityChangeEvent = null;
             PeerConnectionStateChangeEvent peerEvent = null;
+            DataPieceResponse dataPieceResponse = null;
             PwpMessageEvent messageEvent = null;
 
             synchronized(this) {
-                while(peerStateChangeEventQueue.isEmpty() && messageQueue.isEmpty()) {
+                while(peerStateChangeEventQueue.isEmpty() && messageQueue.isEmpty()
+                        && requestedDataPieceQueue.isEmpty() && queuedFilePriorityChangeEvent == null) {
                     try {
                         this.wait();
                     } catch (final InterruptedException ie) {
@@ -193,9 +231,12 @@ public final class TransferTask implements PwpMessageListener, PwpConnectionStat
                 if(!messageQueue.isEmpty()) {
                     messageEvent = messageQueue.remove(0);
                 }
-                if(filePriorityChangeEventsQueue != null) {
-                    filePriorityChangeEvent = filePriorityChangeEventsQueue;
-                    filePriorityChangeEventsQueue = null;
+                if(!requestedDataPieceQueue.isEmpty()) {
+                    dataPieceResponse = requestedDataPieceQueue.remove(0);
+                }
+                if(queuedFilePriorityChangeEvent != null) {
+                    filePriorityChangeEvent = queuedFilePriorityChangeEvent;
+                    queuedFilePriorityChangeEvent = null;
                 }
             }
 
@@ -205,10 +246,24 @@ public final class TransferTask implements PwpMessageListener, PwpConnectionStat
             if(messageEvent != null) {
                 handlePeerMessage(messageEvent);
             }
+            if(dataPieceResponse != null) {
+                handlePieceAvailable(dataPieceResponse);
+            }
             if(filePriorityChangeEvent != null) {
                 handleFilePriorityChangeEvent(filePriorityChangeEvent);
             }
         }
+    }
+
+    private void handlePieceAvailable(final DataPieceResponse dataPieceResponse) {
+        final DataPiece dataPiece = dataPieceResponse.getDataPiece();
+        final DataBlockRequest blockRequest = dataPieceResponse.getBlockRequest();
+
+        final DataBlock dataBlock = dataPiece.getBlock(
+                blockRequest.getPieceOffset(), blockRequest.getBlockLength());
+        connectionManager.send(new PwpMessageRequest(
+                PwpMessageFactory.buildSendBlockMessage(dataBlock), dataPieceResponse.getRequester()));
+        uploadingBlocks.put(blockRequest.getPieceIndex(), dataBlock);
     }
 
     private void handleFilePriorityChangeEvent(final FilePriorityChangeEvent filePriorityChangeEvent) {
@@ -267,7 +322,14 @@ public final class TransferTask implements PwpMessageListener, PwpConnectionStat
     }
 
     private void handleBlockReceived(final PwpMessage message, final PeerView sender) {
-        final DataBlock block = PwpMessageRequestFactory.parseBlockReceivedMessage(message);
+        final DataBlock block;
+        try {
+            block = PwpMessageFactory.parseBlockReceivedMessage(message);
+        }
+        catch(final InvalidPeerMessageException ipme) {
+            System.err.println(ipme.getMessage());
+            return;
+        }
 
         final int pieceIndex = block.getPieceIndex();
         final DataPiece dataPiece = downloadingPieces.get(pieceIndex);
@@ -285,7 +347,9 @@ public final class TransferTask implements PwpMessageListener, PwpConnectionStat
         if(dataPiece.hasCompleted()) {
             final boolean validPiece = dataPiece.validate(torrent.getMetaData().getPieceHash(pieceIndex));
             if(validPiece) {
-                handlePieceCompleted(dataPiece);
+                fileIOWorker.writeDataPiece(dataPiece);
+                connectionManager.send(new PwpMessageRequest(
+                        PwpMessageFactory.buildHavePieceMessage(dataPiece.getIndex())));
             }
             downloadingPieces.remove(dataPiece);
             //TODO: Request a new piece, if any left
@@ -297,32 +361,19 @@ public final class TransferTask implements PwpMessageListener, PwpConnectionStat
     }
 
     private void handleBlockRequested(final PwpMessage message, final PeerView requester) {
-
-        final DataBlockRequest blockRequest = PwpMessageRequestFactory.parseBlockRequestedMessage(message);
+        final DataBlockRequest blockRequest;
+        try {
+            blockRequest = PwpMessageFactory.parseBlockRequestedMessage(message);
+        } catch (final InvalidPeerMessageException ipme) {
+            System.err.println(ipme.getMessage());
+            return;
+        }
 
         if(!unchockedPeersForUpload.contains(requester)) {
             return;
         }
 
-        final int pieceLength = torrent.getMetaData().getPieceLength();
-        final long pieceStart = pieceLength * blockRequest.getPieceIndex();
-        final long fileProxyPieceOffset = diskFileProxies.floorKey(pieceStart);
-
-        //TODO: Handle case when block/piece are spread across two or more files
-        final TorrentDiskFileProxy fileProxy = diskFileProxies.get(fileProxyPieceOffset);
-        try {
-            final DataPiece dataPiece = fileProxy.retrievePiece(torrent.getInfoHash(),
-                    blockRequest.getPieceIndex(), pieceLength);
-            final DataBlock dataBlock = dataPiece.getBlock(
-                    blockRequest.getPieceOffset(), blockRequest.getBlockLength());
-            connectionManager.send(new PwpMessageRequest(
-                    PwpMessageRequestFactory.buildSendBlockMessage(dataBlock), requester));
-            uploadingBlocks.put(blockRequest.getPieceIndex(), dataBlock);
-        }
-        catch (final IOException ioe) {
-            ioe.printStackTrace();
-        }
-
+        fileIOWorker.readDataPiece(new DataPieceRequest(blockRequest, requester));
     }
 
     private void requestBlocks(final DataPiece dataPiece, final PeerView receiver) {
@@ -336,17 +387,11 @@ public final class TransferTask implements PwpMessageListener, PwpConnectionStat
                     REQUESTED_BLOCK_LENGTH : dataPiece.getLength() - pieceOffset;
 
             final DataBlockRequest blockRequest = new DataBlockRequest(dataPiece.getIndex(), pieceOffset, blockLength);
-            final PwpMessage message = PwpMessageRequestFactory.buildRequestMessage(blockRequest);
+            final PwpMessage message = PwpMessageFactory.buildRequestMessage(blockRequest);
             connectionManager.send(new PwpMessageRequest(message, receiver));
             requestedBlocks.add(blockRequest);
             pieceOffset += blockLength;
         }
-    }
-
-    private void handlePieceCompleted(final DataPiece piece) {
-        //TODO: Implement method
-        connectionManager.send(new PwpMessageRequest(
-                PwpMessageRequestFactory.buildHavePieceMessage(piece.getIndex())));
     }
 
     private void onHaveMessage(final PwpMessage message, final PeerView peerView) {
@@ -356,14 +401,15 @@ public final class TransferTask implements PwpMessageListener, PwpConnectionStat
     }
 
     private TorrentDiskFileProxy buildDiskFileProxy(final QueuedFileMetaData fileMetaData) {
-        final Path filePath = torrent.getProgress().getSavePath().resolve(fileMetaData.getPath());
+        final Path filePath = torrent.getProgress().getSavePath()
+                .resolve(Paths.get(torrent.getMetaData().getName())).resolve(fileMetaData.getPath());
 
         try {
             final TorrentFileIO fileIO = new TorrentFileIO(filePath, fileMetaData);
             return new TorrentDiskFileProxy(fileIO, null);
-        } catch (final FileNotFoundException fnfe) {
+        } catch (final IOException ioe) {
             statusProperty.setValue(new TransferStatusChangeEvent(TransferStatusChangeEvent.EventType.ERROR,
-                    fnfe.getMessage()));
+                    ioe.getMessage()));
             return null;
         }
     }
@@ -373,10 +419,18 @@ public final class TransferTask implements PwpMessageListener, PwpConnectionStat
 
         connectionManager.removeConnectionListener(this);
         connectionManager.removeMessageListener(this);
+
+        if(fileIOWorkerJob != null) {
+            fileIOWorkerJob.cancel(true);
+        }
+
+
     }
 
     private void restoreState() {
         System.out.println(torrent.getInfoHash() + ": TransferTask.restoreState()");
+
+        fileIOWorkerJob = ioWorkerExecutor.submit(fileIOWorker);
 
         connectionManager.addConnectionListener(this);
         connectionManager.addMessageListener(this);

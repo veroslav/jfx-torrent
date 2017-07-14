@@ -35,19 +35,18 @@ import org.matic.torrent.io.DataPersistenceSupport;
 import org.matic.torrent.net.pwp.PeerConnectionController;
 import org.matic.torrent.queue.enums.QueueType;
 import org.matic.torrent.queue.enums.TorrentStatus;
-import org.matic.torrent.tracking.Tracker;
 import org.matic.torrent.tracking.TrackerManager;
 import org.matic.torrent.tracking.TrackerSession;
-import org.matic.torrent.transfer.TransferTask;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-public final class QueuedTorrentManagerTest {
+public final class QueuedTorrentControllerTest {
 
     private final DataPersistenceSupport dataPersistenceSupportMock = EasyMock.createMock(DataPersistenceSupport.class);
     private final TrackerManager trackerManagerMock = EasyMock.createMock(TrackerManager.class);
@@ -68,12 +67,6 @@ public final class QueuedTorrentManagerTest {
 
         EasyMock.expect(dataPersistenceSupportMock.isPersisted(infoHash)).andReturn(true);
         connectionManagerMock.accept(EasyMock.anyObject(TorrentView.class));
-        EasyMock.expectLastCall();
-
-        connectionManagerMock.addConnectionListener(EasyMock.anyObject(TransferTask.class));
-        EasyMock.expectLastCall();
-
-        connectionManagerMock.addMessageListener(EasyMock.anyObject(TransferTask.class));
         EasyMock.expectLastCall();
 
         EasyMock.replay(dataPersistenceSupportMock, trackerManagerMock, connectionManagerMock);
@@ -104,12 +97,6 @@ public final class QueuedTorrentManagerTest {
         connectionManagerMock.accept(EasyMock.anyObject(TorrentView.class));
         EasyMock.expectLastCall().times(2);
 
-        connectionManagerMock.addConnectionListener(EasyMock.anyObject(TransferTask.class));
-        EasyMock.expectLastCall().times(2);
-
-        connectionManagerMock.addMessageListener(EasyMock.anyObject(TransferTask.class));
-        EasyMock.expectLastCall().times(2);
-
         EasyMock.replay(dataPersistenceSupportMock, trackerManagerMock, connectionManagerMock);
 
         final List<TorrentView> torrentViews = unitUnderTest.addTorrents(Arrays.asList(template1, template2));
@@ -138,12 +125,6 @@ public final class QueuedTorrentManagerTest {
 
         EasyMock.expect(dataPersistenceSupportMock.isPersisted(infoHash)).andReturn(true);
         connectionManagerMock.accept(EasyMock.anyObject(TorrentView.class));
-        EasyMock.expectLastCall();
-
-        connectionManagerMock.addConnectionListener(EasyMock.anyObject(TransferTask.class));
-        EasyMock.expectLastCall();
-
-        connectionManagerMock.addMessageListener(EasyMock.anyObject(TransferTask.class));
         EasyMock.expectLastCall();
 
         EasyMock.replay(dataPersistenceSupportMock, trackerManagerMock, connectionManagerMock);
@@ -177,47 +158,36 @@ public final class QueuedTorrentManagerTest {
         final QueuedTorrentController unitUnderTest = new QueuedTorrentController(
                 dataPersistenceSupportMock, trackerManagerMock, connectionManagerMock);
 
-        final InfoHash infoHash = new InfoHash("1".getBytes());
-        final TorrentTemplate template = buildTorrentTemplate(infoHash, QueueType.ACTIVE);
+        final InfoHash infoHash = new InfoHash("1".getBytes(StandardCharsets.UTF_8));
+        final TorrentTemplate template = buildTorrentTemplate(infoHash, QueueType.INACTIVE);
 
         EasyMock.expect(dataPersistenceSupportMock.isPersisted(infoHash)).andReturn(true);
-        dataPersistenceSupportMock.delete(infoHash);
-        EasyMock.expectLastCall();
+
         connectionManagerMock.accept(EasyMock.anyObject(TorrentView.class));
-        EasyMock.expectLastCall();
-
-        connectionManagerMock.addConnectionListener(EasyMock.anyObject(TransferTask.class));
-        EasyMock.expectLastCall();
-
-        connectionManagerMock.addMessageListener(EasyMock.anyObject(TransferTask.class));
         EasyMock.expectLastCall();
 
         EasyMock.replay(dataPersistenceSupportMock, connectionManagerMock);
 
         final List<TorrentView> torrentViews = unitUnderTest.addTorrents(Arrays.asList(template));
 
+        EasyMock.verify(dataPersistenceSupportMock, connectionManagerMock);
         Assert.assertEquals(1, torrentViews.size());
-        EasyMock.verify(connectionManagerMock);
-        EasyMock.reset(connectionManagerMock);
+
+        EasyMock.reset(dataPersistenceSupportMock, connectionManagerMock);
 
         final TorrentView view = torrentViews.get(0);
         Assert.assertEquals(infoHash, view.getInfoHash());
-        Assert.assertEquals(TorrentStatus.ACTIVE, view.getStatus());
+        Assert.assertEquals(TorrentStatus.STOPPED, view.getStatus());
 
         EasyMock.expect(trackerManagerMock.removeTorrent(view)).andReturn(0);
-        trackerManagerMock.issueTorrentEvent(view, Tracker.Event.STOPPED);
-        EasyMock.expectLastCall();
-
-        connectionManagerMock.removeMessageListener(EasyMock.anyObject(TransferTask.class));
-        EasyMock.expectLastCall();
-
-        connectionManagerMock.removeConnectionListener(EasyMock.anyObject(TransferTask.class));
-        EasyMock.expectLastCall();
 
         connectionManagerMock.reject(view);
         EasyMock.expectLastCall();
 
-        EasyMock.replay(trackerManagerMock, connectionManagerMock);
+        dataPersistenceSupportMock.delete(infoHash);
+        EasyMock.expectLastCall();
+
+        EasyMock.replay(connectionManagerMock, dataPersistenceSupportMock, trackerManagerMock);
 
         Assert.assertTrue(unitUnderTest.remove(view));
 
@@ -230,16 +200,10 @@ public final class QueuedTorrentManagerTest {
                 dataPersistenceSupportMock, trackerManagerMock, connectionManagerMock);
 
         final InfoHash infoHash = new InfoHash("1".getBytes());
-        final TorrentTemplate template = buildTorrentTemplate(infoHash, QueueType.ACTIVE);
+        final TorrentTemplate template = buildTorrentTemplate(infoHash, QueueType.INACTIVE);
 
         EasyMock.expect(dataPersistenceSupportMock.isPersisted(infoHash)).andReturn(true);
         connectionManagerMock.accept(EasyMock.anyObject(TorrentView.class));
-        EasyMock.expectLastCall();
-
-        connectionManagerMock.addConnectionListener(EasyMock.anyObject(TransferTask.class));
-        EasyMock.expectLastCall();
-
-        connectionManagerMock.addMessageListener(EasyMock.anyObject(TransferTask.class));
         EasyMock.expectLastCall();
 
         EasyMock.replay(dataPersistenceSupportMock, connectionManagerMock);
@@ -253,7 +217,7 @@ public final class QueuedTorrentManagerTest {
 
         final TorrentView view = torrentViews.get(0);
         Assert.assertEquals(infoHash, view.getInfoHash());
-        Assert.assertEquals(TorrentStatus.ACTIVE, view.getStatus());
+        Assert.assertEquals(TorrentStatus.STOPPED, view.getStatus());
 
         final TrackerSession session1 = EasyMock.createMock(TrackerSession.class);
         final TrackerView view1 = new TrackerView(session1);
@@ -304,13 +268,6 @@ public final class QueuedTorrentManagerTest {
 
         connectionManagerMock.accept(EasyMock.anyObject(TorrentView.class));
         EasyMock.expectLastCall();
-
-        connectionManagerMock.addConnectionListener(EasyMock.anyObject(TransferTask.class));
-        EasyMock.expectLastCall();
-
-        connectionManagerMock.addMessageListener(EasyMock.anyObject(TransferTask.class));
-        EasyMock.expectLastCall();
-
         EasyMock.replay(dataPersistenceSupportMock, trackerManagerMock, connectionManagerMock);
 
         final List<TorrentView> torrentViews = unitUnderTest.addTorrents(Arrays.asList(template));
@@ -334,6 +291,7 @@ public final class QueuedTorrentManagerTest {
         final BinaryEncodedDictionary infoDict = new BinaryEncodedDictionary();
         infoDict.put(BinaryEncodingKeys.KEY_LENGTH, new BinaryEncodedInteger(42));
         infoDict.put(BinaryEncodingKeys.KEY_PIECE_LENGTH, new BinaryEncodedInteger(42));
+        infoDict.put(BinaryEncodingKeys.KEY_NAME, new BinaryEncodedString("a/simple/path/file"));
 
         metaDataDict.put(BinaryEncodingKeys.KEY_INFO, infoDict);
         final QueuedTorrentMetaData metaData = new QueuedTorrentMetaData(metaDataDict);

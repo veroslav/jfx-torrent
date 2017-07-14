@@ -135,7 +135,7 @@ public class PeerConnectionController implements PeerFoundListener, TorrentStatu
         synchronized(servedTorrents) {
             final InfoHash infoHash = torrentView.getInfoHash();
             servedTorrents.put(infoHash, torrentView);
-            cachedHandshakeMessageBytes.put(infoHash, PwpMessageRequestFactory.buildHandshakeMessage(infoHash));
+            cachedHandshakeMessageBytes.put(infoHash, PwpMessageFactory.buildHandshakeMessage(infoHash));
             torrentView.addTorrentStatusChangeListener(this);
         }
     }
@@ -456,7 +456,7 @@ public class PeerConnectionController implements PeerFoundListener, TorrentStatu
                 }
 
                 messageRequests.add(new PwpMessageRequest(new PwpMessage(MessageType.KEEP_ALIVE,
-                        PwpMessageRequestFactory.buildKeepAliveMessage())));
+                        PwpMessageFactory.buildKeepAliveMessage())));
             }
         }
 

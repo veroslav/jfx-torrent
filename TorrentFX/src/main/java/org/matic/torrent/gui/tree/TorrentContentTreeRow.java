@@ -76,7 +76,7 @@ public final class TorrentContentTreeRow extends TreeTableRow<TorrentFileEntry> 
         selectMenuItem.setOnAction(evt -> onSelectAction());
         unselectMenuItem.setOnAction(evt -> onUnselectAction());
         selectAllMenuItem.setOnAction(evt -> fileTreeViewer.selectAllEntries());
-        selectNoneMenuItem.setOnAction(evt -> fileTreeViewer.unselectAllEntries());
+        selectNoneMenuItem.setOnAction(evt -> fileTreeViewer.deselectAllEntries());
 	}
 				
 	@Override
