@@ -32,6 +32,7 @@ import org.matic.torrent.gui.model.TrackableView;
 import org.matic.torrent.gui.model.TrackerView;
 import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.io.DataPersistenceSupport;
+import org.matic.torrent.io.cache.DataPieceCache;
 import org.matic.torrent.net.pwp.PeerConnectionController;
 import org.matic.torrent.net.pwp.PeerConnectionStateChangeEvent;
 import org.matic.torrent.net.pwp.PwpConnectionStateListener;
@@ -99,6 +100,9 @@ public final class QueuedTorrentController implements PreferenceChangeListener, 
     private final TrackerManager trackerManager;
     private final DataPersistenceSupport persistenceSupport;
     private final PeerConnectionController connectionManager;
+
+    //TODO: Read cache size from a property. Also, add a cache timeout property
+    private final DataPieceCache<InfoHash> pieceCache = new DataPieceCache<>(128 * 1048576);    //128 MB
 
     public QueuedTorrentController(final DataPersistenceSupport persistenceSupport,
                                    final TrackerManager trackerManager,
@@ -284,7 +288,7 @@ public final class QueuedTorrentController implements PreferenceChangeListener, 
     }
 
     private void initTransferController(final QueuedTorrent torrent, final TorrentView torrentView) {
-        final TransferTask transferTask = new TransferTask(torrent, connectionManager);
+        final TransferTask transferTask = new TransferTask(torrent, connectionManager, pieceCache);
         torrentView.getFileTree().addFilePriorityChangeListener(transferTask);
 
         transferTask.addStatusChangeListener(event -> {

@@ -35,6 +35,7 @@ import java.nio.file.Path;
  */
 public final class TorrentFileIO {
 
+    private static final byte[] EMPTY_BYTES = new byte[0];
     private static final String FILE_ACCESS_MODE = "rw";
 
     private final RandomAccessFile fileAccessor;
@@ -59,32 +60,71 @@ public final class TorrentFileIO {
     }
 
     /**
-     * Write the contents of a data piece into the correct place of the file on the disk.
+     * Write as much as possible of a data piece into the correct place of the file on the disk.
      *
      * @param dataPiece Data piece to write into the file on the disk
+     * @return How many bytes were written
      * @throws IOException If any errors occur during the file writing
      */
-    public void writePieceToDisk(final DataPiece dataPiece) throws IOException {
-        fileAccessor.seek(dataPiece.getFileOffset());
-        fileAccessor.write(dataPiece.getPieceBytes());
+    public int writePieceToDisk(final DataPiece dataPiece) throws IOException {
+        final long pieceIndex = dataPiece.getIndex();
+        final long pieceLength = dataPiece.getLength();
+
+        //Piece's total position offset within the torrent file
+        final long pieceBeginPosition = pieceIndex * pieceLength;
+        final long pieceEndPosition = pieceBeginPosition + pieceLength;
+
+        final long fileBeginPosition = fileMetaData.getOffset();
+        final long fileEndPosition = fileBeginPosition + fileMetaData.getLength();
+
+        //Check whether the piece is inside this file
+        if(pieceEndPosition < fileBeginPosition || pieceBeginPosition > fileEndPosition) {
+            return 0;
+        }
+
+        fileAccessor.seek(pieceBeginPosition < fileBeginPosition? 0: pieceBeginPosition - fileBeginPosition);
+
+        //Calculate how much of the piece data is contained in this file
+        final int writeDataLength = (int)(pieceBeginPosition < fileBeginPosition?
+                pieceEndPosition - fileBeginPosition : fileEndPosition - pieceBeginPosition);
+
+        final int pieceBytesStart = pieceBeginPosition < fileBeginPosition?
+                (int)(pieceBeginPosition + (pieceEndPosition - fileBeginPosition)) : 0;
+
+        fileAccessor.write(dataPiece.getPieceBytes(), pieceBytesStart, writeDataLength);
+        return writeDataLength;
     }
 
     /**
-     * Read contents of a data piece from a file on the disk.
+     * Read as much as possible of a data piece from this file on the disk.
      *
-     * @param pieceLength The length of data piece to read
+     * @param pieceLength The length of data piece
      * @param pieceIndex The data piece index relative to the torrent's contents
-     * @return Read data piece
+     * @return Read data piece bytes
      * @throws IOException If any errors occur during the file reading
      */
-    public DataPiece readPieceFromDisk(final int pieceLength, final int pieceIndex) throws IOException {
-        final byte[] pieceBytes = new byte[pieceLength];
-        final long piecePosition = fileMetaData.getOffset() - pieceIndex * pieceLength;
+    public byte[] readPieceFromDisk(final int pieceLength, final int pieceIndex) throws IOException {
 
-        fileAccessor.seek(piecePosition);
-        fileAccessor.read(pieceBytes, 0, pieceLength);
+        //Piece's total position offset within the torrent file
+        final long pieceBeginPosition = pieceIndex * pieceLength;
+        final long pieceEndPosition = pieceBeginPosition + pieceLength;
 
-        final DataPiece dataPiece = new DataPiece(pieceBytes, pieceIndex, piecePosition);
-        return dataPiece;
+        final long fileBeginPosition = fileMetaData.getOffset();
+        final long fileEndPosition = fileBeginPosition + fileMetaData.getLength();
+
+        //Check whether the piece is inside this file
+        if(pieceEndPosition < fileBeginPosition || pieceBeginPosition > fileEndPosition) {
+            return EMPTY_BYTES;
+        }
+
+        fileAccessor.seek(pieceBeginPosition < fileBeginPosition? 0: pieceBeginPosition - fileBeginPosition);
+
+        //Calculate how much of the piece data is contained in this file
+        final int readDataLength = (int)(pieceBeginPosition < fileBeginPosition?
+                pieceEndPosition - fileBeginPosition : fileEndPosition - pieceBeginPosition);
+
+        final byte[] pieceBytes = new byte[readDataLength];
+        fileAccessor.read(pieceBytes, 0, pieceBytes.length);
+        return pieceBytes;
     }
 }

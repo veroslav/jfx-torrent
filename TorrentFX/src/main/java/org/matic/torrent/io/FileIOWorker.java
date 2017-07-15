@@ -19,6 +19,8 @@
 */
 package org.matic.torrent.io;
 
+import org.matic.torrent.hash.InfoHash;
+import org.matic.torrent.io.cache.DataPieceCache;
 import org.matic.torrent.queue.QueuedTorrentMetaData;
 import org.matic.torrent.transfer.DataBlockRequest;
 
@@ -30,20 +32,23 @@ import java.util.function.Consumer;
 
 public final class FileIOWorker implements Runnable {
 
-    private final List<DataPieceRequest> fileReaderQueue = new LinkedList<>();
+    private final List<ReadDataPieceRequest> fileReaderQueue = new LinkedList<>();
     private final List<DataPiece> fileWriterQueue = new LinkedList<>();
 
-    private final Consumer<DataPieceResponse> dataPieceConsumer;
+    private final Consumer<FileOperationResult> dataPieceConsumer;
+    private final DataPieceCache<InfoHash> pieceCache;
 
     //Sorted on offsets within the torrent, 0 to torrent.length() - 1
-    private final TreeMap<Long, TorrentDiskFileProxy> diskFileProxies;
+    private final TreeMap<Long, TorrentFileIO> diskFileIOs;
     private final QueuedTorrentMetaData torrentMetaData;
 
-    public FileIOWorker(final TreeMap<Long, TorrentDiskFileProxy> diskFileProxies,
+    public FileIOWorker(final TreeMap<Long, TorrentFileIO> diskFileIOs,
+                        final DataPieceCache<InfoHash> pieceCache,
                         final QueuedTorrentMetaData torrentMetaData,
-                        final Consumer<DataPieceResponse> dataPieceConsumer) {
-        this.diskFileProxies = diskFileProxies;
+                        final Consumer<FileOperationResult> dataPieceConsumer) {
+        this.diskFileIOs = diskFileIOs;
         this.torrentMetaData = torrentMetaData;
+        this.pieceCache = pieceCache;
         this.dataPieceConsumer = dataPieceConsumer;
     }
 
@@ -54,7 +59,7 @@ public final class FileIOWorker implements Runnable {
         }
     }
 
-    public void readDataPiece(final DataPieceRequest blockRequest) {
+    public void readDataPiece(final ReadDataPieceRequest blockRequest) {
         synchronized(this) {
             fileReaderQueue.add(blockRequest);
             this.notifyAll();
@@ -69,7 +74,7 @@ public final class FileIOWorker implements Runnable {
                 return;
             }
 
-            DataPieceRequest dataPieceRequest = null;
+            ReadDataPieceRequest readDataPieceRequest = null;
             DataPiece dataPiece = null;
 
             synchronized(this) {
@@ -88,36 +93,98 @@ public final class FileIOWorker implements Runnable {
                     dataPiece = fileWriterQueue.remove(0);
                 }
                 if(!fileReaderQueue.isEmpty()) {
-                    dataPieceRequest = fileReaderQueue.remove(0);
+                    readDataPieceRequest = fileReaderQueue.remove(0);
                 }
             }
 
             if(dataPiece != null) {
                 handleWriteRequest(dataPiece);
             }
-            if(dataPieceRequest != null) {
-                handleReadRequest(dataPieceRequest);
+            if(readDataPieceRequest != null) {
+                handleReadRequest(readDataPieceRequest);
             }
         }
     }
 
-    private void handleReadRequest(final DataPieceRequest pieceRequest) {
+    private void handleReadRequest(final ReadDataPieceRequest pieceRequest) {
         final int pieceLength = torrentMetaData.getPieceLength();
         final DataBlockRequest blockRequest = pieceRequest.getBlockRequest();
         final long pieceStart = pieceLength * blockRequest.getPieceIndex();
-        final long fileProxyPieceOffset = diskFileProxies.floorKey(pieceStart);
 
-        //TODO: Handle case when block/piece are spread across two or more files
-        final TorrentDiskFileProxy fileProxy = diskFileProxies.get(fileProxyPieceOffset);
-        try {
-            final DataPiece dataPiece = fileProxy.retrievePiece(torrentMetaData.getInfoHash(),
-                        blockRequest.getPieceIndex(), pieceLength);
-            dataPieceConsumer.accept(new DataPieceResponse(dataPiece, pieceRequest.getRequester(), blockRequest));
-        } catch (final IOException ioe) {
+        final long firstFileBeginPosition = diskFileIOs.floorKey(pieceStart);
+        final long lastFileBeginPosition = diskFileIOs.floorKey(pieceStart + pieceLength);
+
+        //Check whether the piece has been cached (faster)
+        final InfoHash infoHash = torrentMetaData.getInfoHash();
+        final DataPiece cachedPiece = pieceCache.getItem(infoHash);
+        if(cachedPiece != null) {
+            dataPieceConsumer.accept(new FileOperationResult(FileOperationResult.OperationType.READ,
+                    cachedPiece, pieceRequest.getRequester(), blockRequest));
         }
+
+        //Retrieve piece data from the disk (slower)
+        final int pieceIndex = pieceRequest.getBlockRequest().getPieceIndex();
+
+        final byte[] pieceBytes = new byte[pieceLength];
+        int pieceBytesPosition = 0;
+
+        //Read bytes from all files that the piece spans across
+        for(Long currentFilePosition = firstFileBeginPosition;
+            currentFilePosition != null && currentFilePosition <= lastFileBeginPosition;
+            currentFilePosition = diskFileIOs.higherKey(currentFilePosition)) {
+
+            final TorrentFileIO fileIO = diskFileIOs.get(currentFilePosition);
+            final byte[] pieceBytesFromFile;
+            try {
+                pieceBytesFromFile = fileIO.readPieceFromDisk(pieceLength, pieceIndex);
+                System.arraycopy(pieceBytesFromFile, 0, pieceBytes, pieceBytesPosition, pieceBytesFromFile.length);
+                pieceBytesPosition += pieceBytesFromFile.length;
+            } catch (final IOException ioe) {
+                ioe.printStackTrace();
+                return;
+            }
+        }
+
+        final DataPiece dataPiece = new DataPiece(pieceBytes, pieceIndex);
+        pieceCache.addItem(infoHash, dataPiece);
+        dataPieceConsumer.accept(new FileOperationResult(FileOperationResult.OperationType.READ,
+                dataPiece, pieceRequest.getRequester(), blockRequest));
     }
 
     private void handleWriteRequest(final DataPiece dataPiece) {
+        final int pieceLength = torrentMetaData.getPieceLength();
 
+        if(dataPiece.getLength() != pieceLength) {
+            //TODO: And throw a new InvalidPeerMessageException
+            System.err.println("Invalid piece length: expected " + pieceLength
+                    + " but was " + dataPiece.getLength());
+            return;
+        }
+
+        final int pieceIndex = dataPiece.getIndex();
+        final long pieceStart = dataPiece.getLength() * pieceIndex;
+
+        final long firstFileBeginPosition = diskFileIOs.floorKey(pieceStart);
+        final long lastFileBeginPosition = diskFileIOs.floorKey(pieceStart + pieceLength);
+
+        //Write bytes to all files that the piece spans across
+        for(Long currentFilePosition = firstFileBeginPosition;
+            currentFilePosition != null && currentFilePosition <= lastFileBeginPosition;
+            currentFilePosition = diskFileIOs.higherKey(currentFilePosition)) {
+
+            final TorrentFileIO fileIO = diskFileIOs.get(currentFilePosition);
+
+            try {
+                //TODO: Check whether write failed (written bytes == 0) and handle it
+                fileIO.writePieceToDisk(dataPiece);
+            } catch (final IOException ioe) {
+                ioe.printStackTrace();
+                return;
+            }
+        }
+
+        pieceCache.addItem(torrentMetaData.getInfoHash(), dataPiece);
+        dataPieceConsumer.accept(new FileOperationResult(FileOperationResult.OperationType.WRITE,
+                dataPiece, null, null));
     }
 }

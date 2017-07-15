@@ -557,9 +557,9 @@ public class TrackerManager implements TrackerResponseListener, UdpTrackerRespon
 			final Map<TrackerSession, ScrapeStatistics> sessionStatistics = new HashMap<>();
 			
 			for(final TrackerSession trackerSession : scrapedTrackerSessions) {
-				final int complete = dis.readInt();
-				final int downloaded = dis.readInt();
-				final int incomplete = dis.readInt();
+				final int complete = dis.available() >= Integer.BYTES? dis.readInt() : 0;
+				final int downloaded = dis.available() >= Integer.BYTES? dis.readInt() : 0;
+				final int incomplete = dis.available() >= Integer.BYTES? dis.readInt() : 0;
 				
 				final ScrapeStatistics scrapeStatistics = new ScrapeStatistics(
 						complete, downloaded, incomplete, null);

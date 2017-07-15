@@ -36,14 +36,12 @@ public final class DataPiece {
     private final MessageDigest validatorDigest;
 
     private final byte[] pieceBytes;
-    private final long fileOffset;
     private final int pieceIndex;
 
     private int blockPointer = 0;
 
-    public DataPiece(final byte[] pieceBytes, final int pieceIndex, final long fileOffset) {
+    public DataPiece(final byte[] pieceBytes, final int pieceIndex) {
         this.pieceBytes = pieceBytes;
-        this.fileOffset = fileOffset;
         this.pieceIndex = pieceIndex;
 
         try {
@@ -90,10 +88,6 @@ public final class DataPiece {
     public boolean validate(final byte[] expectedPieceHash) {
         final byte[] pieceHash = validatorDigest.digest();
         return Arrays.equals(expectedPieceHash, pieceHash);
-    }
-
-    public long getFileOffset() {
-        return fileOffset;
     }
 
     protected byte[] getPieceBytes() {

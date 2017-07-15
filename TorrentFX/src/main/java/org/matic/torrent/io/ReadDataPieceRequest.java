@@ -17,31 +17,23 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-
 package org.matic.torrent.io;
 
 import org.matic.torrent.gui.model.PeerView;
 import org.matic.torrent.transfer.DataBlockRequest;
 
-public final class DataPieceResponse {
+public final class ReadDataPieceRequest {
 
     private final DataBlockRequest blockRequest;
-    private final DataPiece dataPiece;
     private final PeerView requester;
 
-    public DataPieceResponse(final DataPiece dataPiece, final PeerView requester,
-                             final DataBlockRequest blockRequest) {
-        this.dataPiece = dataPiece;
-        this.requester = requester;
+    public ReadDataPieceRequest(final DataBlockRequest blockRequest, final PeerView requester) {
         this.blockRequest = blockRequest;
+        this.requester = requester;
     }
 
     public DataBlockRequest getBlockRequest() {
         return blockRequest;
-    }
-
-    public DataPiece getDataPiece() {
-        return dataPiece;
     }
 
     public PeerView getRequester() {
