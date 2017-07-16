@@ -692,11 +692,16 @@ public class PeerConnectionController implements PeerFoundListener, TorrentStatu
         try {
             if(channel.finishConnect()) {
                 selectionKey.interestOps(SelectionKey.OP_READ);
-
+                final InfoHash infoHash = peerView.getInfoHash();
                 //Send a handshake to the remote peer
-                final byte[] messageBytes = cachedHandshakeMessageBytes.get(peerView.getInfoHash());
-                peerSession.putOnWriteQueue(new PwpMessageRequest(new PwpMessage(MessageType.HANDSHAKE,
-                        messageBytes), peerView));
+                synchronized (servedTorrents) {
+                    if(!cachedHandshakeMessageBytes.containsKey(infoHash)) {
+                        throw new IOException("Torrent not served anymore: " + peerView);
+                    }
+                    final byte[] messageBytes = cachedHandshakeMessageBytes.get(infoHash);
+                    peerSession.putOnWriteQueue(new PwpMessageRequest(new PwpMessage(MessageType.HANDSHAKE,
+                            messageBytes), peerView));
+                }
                 writeToChannel(selectionKey);
             }
         } catch (final IOException ioe) {

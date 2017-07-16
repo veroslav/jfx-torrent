@@ -73,4 +73,12 @@ public final class PwpMessageRequest {
     public PwpMessage getMessage() {
         return message;
     }
+
+    @Override
+    public String toString() {
+        return "PwpMessageRequest{" +
+                "peers=" + peers +
+                ", message=" + message +
+                '}';
+    }
 }

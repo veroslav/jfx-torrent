@@ -244,6 +244,7 @@ public final class TorrentViewTable {
     private void updateTorrentStatusStatistics(final QueueType oldQueueType, final QueueType newQueueType) {
         switch(newQueueType) {
             case ACTIVE:
+            case FORCED:
                 activeTorrents.set(activeTorrents.intValue() + 1);
                 break;
             case INACTIVE:
@@ -253,6 +254,7 @@ public final class TorrentViewTable {
         }
         switch(oldQueueType) {
             case ACTIVE:
+            case FORCED:
                 activeTorrents.set(activeTorrents.intValue() - 1);
                 break;
             case INACTIVE:

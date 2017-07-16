@@ -73,6 +73,7 @@ public final class PwpMessageFactory {
             baos.write(RESERVED_BYTES);
             baos.write(infoHash.getBytes());
             baos.write(PEER_ID_BYTES);
+            baos.flush();
         }
         catch(final IOException ioe) {
             //This can't happen for ByteArrayOutputStream

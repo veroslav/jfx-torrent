@@ -125,7 +125,11 @@ public final class QueuedTorrentController implements PreferenceChangeListener, 
     public void peerConnectionStateChanged(final PeerConnectionStateChangeEvent event) {
         synchronized(queuedTorrents) {
             final PeerView peerView = event.getPeerView();
-            final TorrentView torrentView = queuedTorrentJobs.get(peerView.getInfoHash()).getTorrentView();
+            final QueuedTorrentJob torrentJob = queuedTorrentJobs.get(peerView.getInfoHash());
+            if(torrentJob == null) {
+                return;
+            }
+            final TorrentView torrentView = torrentJob.getTorrentView();
             if(torrentView == null) {
                 return;
             }
@@ -378,6 +382,7 @@ public final class QueuedTorrentController implements PreferenceChangeListener, 
                     transferTaskFuture.cancel(true);
                 }
 
+                transferTask.shutdown();
                 queuedTorrents.remove(targetTorrent);
                 trackerManager.removeTorrent(torrentView);
                 connectionManager.reject(torrentView);

@@ -19,6 +19,8 @@
 */
 package org.matic.torrent.net.pwp;
 
+import java.util.Arrays;
+
 /**
  * A message sent between the client and remote peers.
  * 
@@ -71,7 +73,8 @@ public class PwpMessage {
     @Override
     public String toString() {
         return "PwpMessage{" +
-                "messageType=" + messageType +
+                "payload=" + Arrays.toString(payload) +
+                ", messageType=" + messageType +
                 '}';
     }
 }

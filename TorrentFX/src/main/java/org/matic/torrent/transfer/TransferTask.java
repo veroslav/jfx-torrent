@@ -61,7 +61,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 /**
  * This class manages download and upload of data for a torrent.
@@ -316,6 +315,11 @@ public final class TransferTask implements PwpMessageListener, PwpConnectionStat
                     applyOptimisticUnchoking();
                     lastOptimisticUnchokeTime = currentTime;
                 }
+
+                System.out.println("\nROTATION: downloaders = " + unchokedAndInterestedPeers.size()
+                    + ", choked+interested = " + chokedAndInterestedPeers.size()
+                    + ", have_unchoked_us = " + unchokedUsPeers.size()
+                    + ", stand_by_peers = " + standbyPeers.size());
             }
         }
     }
@@ -338,37 +342,56 @@ public final class TransferTask implements PwpMessageListener, PwpConnectionStat
     }
 
     private void applyAntiSnubbingCheck() {
-        final List<PeerView> snubbingPeers = unchokedAndInterestedPeers.stream().filter(peerView -> {
+
+        System.out.println("ANTI_SNUBBING_CHECK");
+
+        /*final List<PeerView> snubbingPeers = unchokedAndInterestedPeers.stream().filter(peerView -> {
             final Long lastSentBlockTime = sentBlockRequests.get(peerView).stream().map(
                     DataBlockRequest::getCreationTime).min(Long::compareTo).get();
             return lastSentBlockTime != null && lastSentBlockTime > ANTI_SNUBBING_INTERVAL;
         }).collect(Collectors.toList());
 
+        System.out.println("Removing " + snubbingPeers.size() + " due to anti-snubbing check");
         unchokedAndInterestedPeers.removeAll(snubbingPeers);
+
         chokedAndInterestedPeers.addAll(0, snubbingPeers);
 
         connectionManager.send(new PwpMessageRequest(PwpMessageFactory.getChokeMessage(), snubbingPeers));
-        snubbingPeers.forEach(peer -> peer.setAreWeChoking(true));
+        snubbingPeers.forEach(peer -> peer.setAreWeChoking(true));*/
 
         //TODO: Re-request choked peer's blocks from some other peer
     }
 
     private void applyOptimisticUnchoking() {
+
+        System.out.println("OPTIMISTIC_UNCHOKING");
+
         final int randomUnchokingDistribution = ClientProperties.RANDOM_INSTANCE.nextInt(4);
 
         if(randomUnchokingDistribution < 3) {
+
+            System.out.println("Unchoking a newly connected peer");
+
             //3x more likely to unchoke a newly connected peer
             if(!standbyPeers.isEmpty()) {
-                final PeerView optimisticPeer = standbyPeers.remove(standbyPeers.size());
+
+                System.out.println("Stand-by peers is not empty");
+
+                final PeerView optimisticPeer = standbyPeers.remove(standbyPeers.size()-1);
 
                 //TODO: Replace "the slowest uploader" instead of random peer below
-                final PeerView slowestPeer = unchokedAndInterestedPeers.remove(
-                        ClientProperties.RANDOM_INSTANCE.nextInt(unchokedAndInterestedPeers.size()));
+                if(unchokedAndInterestedPeers.size() == MAX_UNCHOKED_AND_INTERESTED_PEERS) {
 
-                //TODO: Place the slowestPeer into correct queue + send messages based on interest and choking
-                chokedAndInterestedPeers.add(slowestPeer);
-                connectionManager.send(new PwpMessageRequest(PwpMessageFactory.getChokeMessage(), slowestPeer));
-                slowestPeer.setAreWeChoking(true);
+                    System.out.println("Removing slowest downloader due to optimistic unchoking");
+
+                    final PeerView slowestPeer = unchokedAndInterestedPeers.remove(
+                            ClientProperties.RANDOM_INSTANCE.nextInt(unchokedAndInterestedPeers.size()));
+
+                    //TODO: Place the slowestPeer into correct queue + send messages based on interest and choking
+                    chokedAndInterestedPeers.add(slowestPeer);
+                    connectionManager.send(new PwpMessageRequest(PwpMessageFactory.getChokeMessage(), slowestPeer));
+                    slowestPeer.setAreWeChoking(true);
+                }
 
                 //Add optimistically unchoked peer last in the queue
                 unchokedAndInterestedPeers.add(optimisticPeer);
@@ -377,9 +400,15 @@ public final class TransferTask implements PwpMessageListener, PwpConnectionStat
             }
         }
         else {
+
+            System.out.println("Unchoking a random peer");
+
             //Unchoke a random peer
             while(unchokedAndInterestedPeers.size() < MAX_UNCHOKED_AND_INTERESTED_PEERS
                     && !chokedAndInterestedPeers.isEmpty()) {
+
+                System.out.println("Unchoking inside while");
+
                 final PeerView unchokedPeer = chokedAndInterestedPeers.remove(
                         ClientProperties.RANDOM_INSTANCE.nextInt(chokedAndInterestedPeers.size()));
                 unchokedAndInterestedPeers.add(0, unchokedPeer);
@@ -395,6 +424,8 @@ public final class TransferTask implements PwpMessageListener, PwpConnectionStat
     }
 
     private void applyChokingRotation() {
+
+        System.out.println("CHOKING_ROTATION");
 
     }
 
@@ -416,14 +447,19 @@ public final class TransferTask implements PwpMessageListener, PwpConnectionStat
     }
 
     private void handleFilePriorityChangeEvent(final FilePriorityChangeEvent filePriorityChangeEvent) {
-        System.out.println("Priority set to " + filePriorityChangeEvent.getFilePriority()
-                + " for file: " + filePriorityChangeEvent.getFilePath());
+        /*System.out.println("Priority set to " + filePriorityChangeEvent.getFilePriority()
+                + " for file: " + filePriorityChangeEvent.getFilePath());*/
     }
 
     private void handlePeerStateChange(final PeerConnectionStateChangeEvent changeEvent) {
         final PeerView peer = changeEvent.getPeerView();
+
         chokedAndInterestedPeers.remove(peer);
-        unchokedAndInterestedPeers.remove(peer);
+
+        if(unchokedAndInterestedPeers.remove(peer)) {
+            System.out.println("Removing downloader due to peer disconnection");
+        }
+
         standbyPeers.remove(peer);
 
         //Update piece statistics, remove all piece counts for pieces that this peer had
@@ -478,6 +514,11 @@ public final class TransferTask implements PwpMessageListener, PwpConnectionStat
                     ++peerPieceAvailabilities[i];
                 }
             }
+
+            //START DEBUG
+            /*connectionManager.send(new PwpMessageRequest(PwpMessageFactory.getInterestedMessage(), peerView));
+            peerView.setAreWeInterestedIn(true);*/
+            //END DEBUG
         }
     }
 
@@ -488,6 +529,9 @@ public final class TransferTask implements PwpMessageListener, PwpConnectionStat
     }
 
     private void handleInterestedMessage(final PeerView peerView) {
+
+        System.out.println("INTERESTED from " + peerView.getIp() + ":" + peerView.getPort());
+
         peerView.setInterestedInUs(true);
         if(standbyPeers.remove(peerView) && !chokedAndInterestedPeers.contains(peerView)) {
             chokedAndInterestedPeers.add(peerView);
@@ -495,8 +539,14 @@ public final class TransferTask implements PwpMessageListener, PwpConnectionStat
     }
 
     private void handleNotInterestedMessage(final PeerView peerView) {
+
+        System.out.println("NOT_INTERESTED from " + peerView.getIp() + ":" + peerView.getPort());
+
         peerView.setInterestedInUs(false);
         if(unchokedAndInterestedPeers.remove(peerView)) {
+
+            System.out.println("Removing peer due to it sending NOT_INTERESTED");
+
             unchokedUsPeers.add(peerView);
         }
         else if(chokedAndInterestedPeers.remove(peerView)) {
@@ -509,17 +559,32 @@ public final class TransferTask implements PwpMessageListener, PwpConnectionStat
     }
 
     private void handleUnchokeMessage(final PeerView peerView) {
+
+        System.out.println("UNCHOKED by " + peerView.getIp() + ":" + peerView.getPort());
+
         peerView.setChokingUs(false);
-        if(standbyPeers.remove(peerView)) {
-            unchokedUsPeers.add(peerView);
+        if(!unchokedAndInterestedPeers.contains(peerView) && standbyPeers.remove(peerView)) {
+            if(unchokedAndInterestedPeers.size() < MAX_UNCHOKED_AND_INTERESTED_PEERS) {
+                unchokedAndInterestedPeers.add(0, peerView);
+            }
+            else {
+                unchokedUsPeers.add(peerView);
+            }
+
             connectionManager.send(new PwpMessageRequest(PwpMessageFactory.getUnchokeMessage(), peerView));
             peerView.setAreWeChoking(false);
         }
     }
 
     private void handleChokeMessage(final PeerView peerView) {
+
+        System.out.println("CHOKED by " + peerView.getIp() + ":" + peerView.getPort());
+
         peerView.setChokingUs(true);
         if(unchokedAndInterestedPeers.remove(peerView) || unchokedUsPeers.remove(peerView)) {
+
+            System.out.println("Might removed downloader due to it CHOKEing us");
+
             //TODO: Should we choke this peer here or in choking algorithm?
             standbyPeers.add(peerView);
         }

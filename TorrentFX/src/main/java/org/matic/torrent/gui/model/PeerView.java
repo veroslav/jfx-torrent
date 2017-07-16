@@ -74,7 +74,7 @@ public final class PeerView {
         this.isInterestedInUs = isInterestedInUs;
     }
 
-    public boolean isAreWeChoking() {
+    public boolean areWeChoking() {
         return areWeChoking;
     }
 
@@ -82,7 +82,7 @@ public final class PeerView {
         this.areWeChoking = areWeChoking;
     }
 
-    public boolean isAreWeInterestedIn() {
+    public boolean areWeInterestedIn() {
         return areWeInterestedIn;
     }
 
