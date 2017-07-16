@@ -56,6 +56,10 @@ public final class PeerView {
         return peer;
     }
 
+    public boolean getHave(final int pieceIndex) {
+        return pieces.getHave(pieceIndex);
+    }
+
     public void setHave(final int pieceIndex, final boolean have) {
         pieces.setHave(pieceIndex, have);
         percentDone.set((double)pieces.getHavePiecesCount() / pieces.getTotalPieces() * 100);
