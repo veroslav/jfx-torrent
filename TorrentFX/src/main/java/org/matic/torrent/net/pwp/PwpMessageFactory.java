@@ -45,6 +45,11 @@ public final class PwpMessageFactory {
     private static final byte[] KEEP_ALIVE_MESSAGE_BYTES = new byte[] {0, 0, 0, 0};
     private static final byte[] RESERVED_BYTES = new byte[]{0, 0, 0, 0, 0, 0, 0, 0};
 
+    private static final PwpMessage INTERESTED_MESSAGE = PwpMessageFactory.buildInterestedMessage();
+
+    private static final PwpMessage UNCHOKE_MESSAGE = PwpMessageFactory.buildUnchokeMessage();
+    private static final PwpMessage CHOKE_MESSAGE = PwpMessageFactory.buildChokeMessage();
+
     /**
      * Create raw bytes representing a KEEP_ALIVE message.
      *
@@ -73,6 +78,18 @@ public final class PwpMessageFactory {
             //This can't happen for ByteArrayOutputStream
         }
         return baos.toByteArray();
+    }
+
+    public static PwpMessage getUnchokeMessage() {
+        return UNCHOKE_MESSAGE;
+    }
+
+    public static PwpMessage getChokeMessage() {
+        return CHOKE_MESSAGE;
+    }
+
+    public static PwpMessage getInterestedMessage() {
+        return INTERESTED_MESSAGE;
     }
 
     /**
@@ -211,6 +228,51 @@ public final class PwpMessageFactory {
         }
         catch(final IOException ioe) {
             throw new InvalidPeerMessageException("Invalid PIECE message: " + message, ioe);
+        }
+    }
+
+    private static PwpMessage buildChokeMessage() {
+        try(final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            final DataOutputStream dos = new DataOutputStream(baos)) {
+            dos.writeInt(1);            //Message length
+            dos.writeByte(0);           //Message id
+            dos.flush();
+
+            return new PwpMessage(PwpMessage.MessageType.CHOKE, baos.toByteArray());
+        }
+        catch (final IOException ioe) {
+            //This can't happen for ByteArrayOutputStream
+            return null;
+        }
+    }
+
+    private static PwpMessage buildUnchokeMessage() {
+        try(final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            final DataOutputStream dos = new DataOutputStream(baos)) {
+            dos.writeInt(1);            //Message length
+            dos.writeByte(1);           //Message id
+            dos.flush();
+
+            return new PwpMessage(PwpMessage.MessageType.UNCHOKE, baos.toByteArray());
+        }
+        catch (final IOException ioe) {
+            //This can't happen for ByteArrayOutputStream
+            return null;
+        }
+    }
+
+    private static PwpMessage buildInterestedMessage() {
+        try(final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            final DataOutputStream dos = new DataOutputStream(baos)) {
+            dos.writeInt(1);            //Message length
+            dos.writeByte(2);           //Message id
+            dos.flush();
+
+            return new PwpMessage(PwpMessage.MessageType.INTERESTED, baos.toByteArray());
+        }
+        catch (final IOException ioe) {
+            //This can't happen for ByteArrayOutputStream
+            return null;
         }
     }
 }

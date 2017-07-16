@@ -47,9 +47,47 @@ public final class PeerView {
 
     private BitsView pieces = new BitsView(0);
 
+    private boolean isChokingUs = true;
+    private boolean isInterestedInUs = false;
+
+    private boolean areWeChoking = true;
+    private boolean areWeInterestedIn = false;
+
     public PeerView(final PwpPeer peer) {
         this.peer = peer;
         ip.setValue(peer.getIp());
+    }
+
+    public boolean isChokingUs() {
+        return isChokingUs;
+    }
+
+    public void setChokingUs(final boolean isChokingUs) {
+        this.isChokingUs = isChokingUs;
+    }
+
+    public boolean isInterestedInUs() {
+        return isInterestedInUs;
+    }
+
+    public void setInterestedInUs(final boolean isInterestedInUs) {
+        this.isInterestedInUs = isInterestedInUs;
+    }
+
+    public boolean isAreWeChoking() {
+        return areWeChoking;
+    }
+
+    public void setAreWeChoking(final boolean areWeChoking) {
+        this.areWeChoking = areWeChoking;
+    }
+
+    public boolean isAreWeInterestedIn() {
+        return areWeInterestedIn;
+    }
+
+    public void setAreWeInterestedIn(final boolean areWeInterestedIn) {
+        this.areWeInterestedIn = areWeInterestedIn;
     }
 
     public PwpPeer getPeer() {

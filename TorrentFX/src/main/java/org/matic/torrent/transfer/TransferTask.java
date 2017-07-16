@@ -39,6 +39,7 @@ import org.matic.torrent.net.pwp.PwpMessageEvent;
 import org.matic.torrent.net.pwp.PwpMessageFactory;
 import org.matic.torrent.net.pwp.PwpMessageListener;
 import org.matic.torrent.net.pwp.PwpMessageRequest;
+import org.matic.torrent.peer.ClientProperties;
 import org.matic.torrent.queue.QueuedFileMetaData;
 import org.matic.torrent.queue.QueuedTorrent;
 import org.matic.torrent.queue.action.FilePriorityChangeEvent;
@@ -60,6 +61,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * This class manages download and upload of data for a torrent.
@@ -69,7 +71,8 @@ import java.util.function.Predicate;
 public final class TransferTask implements PwpMessageListener, PwpConnectionStateListener,
         FilePriorityChangeListener, Runnable {
 
-    private static final int MAX_UNCHOKED_AND_INTERESTED_PEERS = 4;
+    //4 interested and 1 optimistic peer
+    private static final int MAX_UNCHOKED_AND_INTERESTED_PEERS = 5;
     private static final int MAX_RAREST_PIECES = 10;
 
     private static final int MAX_BLOCK_REQUESTS_FOR_PIECE = 10;
@@ -93,7 +96,7 @@ public final class TransferTask implements PwpMessageListener, PwpConnectionStat
     private final List<PeerView> standbyPeers = new ArrayList<>();
 
     //Piece download/upload state tracking
-    private final Map<Integer, List<DataBlockRequest>> sentBlockRequests = new HashMap<>();
+    private final Map<PeerView, List<DataBlockRequest>> sentBlockRequests = new HashMap<>();
     private final Map<Integer, DataPiece> downloadingPieces = new HashMap<>();
     private final Map<Integer, DataBlock> uploadingBlocks = new HashMap<>();
 
@@ -193,7 +196,8 @@ public final class TransferTask implements PwpMessageListener, PwpConnectionStat
         return messageEvent -> {
             final InfoHash senderInfoHash = messageEvent.getPeerView().getInfoHash();
             final PwpMessage.MessageType messageType = messageEvent.getMessage().getMessageType();
-            return torrent.getInfoHash().equals(senderInfoHash) && (messageType == PwpMessage.MessageType.HAVE
+            return torrent.getInfoHash().equals(senderInfoHash) &&
+                    (messageType == PwpMessage.MessageType.HAVE
                     || messageType == PwpMessage.MessageType.CHOKE
                     || messageType == PwpMessage.MessageType.UNCHOKE
                     || messageType == PwpMessage.MessageType.INTERESTED
@@ -299,17 +303,18 @@ public final class TransferTask implements PwpMessageListener, PwpConnectionStat
 
             if(timeLeftForChokingRotation <= 0) {
                 final long currentTime = System.currentTimeMillis();
+
+                if(getTimeLeftUntilAntiSnubbingCheck(lastAntiSnubbingCheckTime) <= 0) {
+                    applyAntiSnubbingCheck();
+                    lastAntiSnubbingCheckTime = currentTime;
+                }
+
                 applyChokingRotation();
                 lastChokingRotationTime = currentTime;
 
                 if(getTimeLeftUntilOptimisticUnchoking(lastOptimisticUnchokeTime) <= 0) {
                     applyOptimisticUnchoking();
                     lastOptimisticUnchokeTime = currentTime;
-                }
-
-                if(getTimeLeftUntilAntiSnubbingCheck(lastAntiSnubbingCheckTime) <= 0) {
-                    applyAntiSnubbingCheck();
-                    lastAntiSnubbingCheckTime = currentTime;
                 }
             }
         }
@@ -333,11 +338,60 @@ public final class TransferTask implements PwpMessageListener, PwpConnectionStat
     }
 
     private void applyAntiSnubbingCheck() {
+        final List<PeerView> snubbingPeers = unchokedAndInterestedPeers.stream().filter(peerView -> {
+            final Long lastSentBlockTime = sentBlockRequests.get(peerView).stream().map(
+                    DataBlockRequest::getCreationTime).min(Long::compareTo).get();
+            return lastSentBlockTime != null && lastSentBlockTime > ANTI_SNUBBING_INTERVAL;
+        }).collect(Collectors.toList());
 
+        unchokedAndInterestedPeers.removeAll(snubbingPeers);
+        chokedAndInterestedPeers.addAll(0, snubbingPeers);
+
+        connectionManager.send(new PwpMessageRequest(PwpMessageFactory.getChokeMessage(), snubbingPeers));
+        snubbingPeers.forEach(peer -> peer.setAreWeChoking(true));
+
+        //TODO: Re-request choked peer's blocks from some other peer
     }
 
     private void applyOptimisticUnchoking() {
+        final int randomUnchokingDistribution = ClientProperties.RANDOM_INSTANCE.nextInt(4);
 
+        if(randomUnchokingDistribution < 3) {
+            //3x more likely to unchoke a newly connected peer
+            if(!standbyPeers.isEmpty()) {
+                final PeerView optimisticPeer = standbyPeers.remove(standbyPeers.size());
+
+                //TODO: Replace "the slowest uploader" instead of random peer below
+                final PeerView slowestPeer = unchokedAndInterestedPeers.remove(
+                        ClientProperties.RANDOM_INSTANCE.nextInt(unchokedAndInterestedPeers.size()));
+
+                //TODO: Place the slowestPeer into correct queue + send messages based on interest and choking
+                chokedAndInterestedPeers.add(slowestPeer);
+                connectionManager.send(new PwpMessageRequest(PwpMessageFactory.getChokeMessage(), slowestPeer));
+                slowestPeer.setAreWeChoking(true);
+
+                //Add optimistically unchoked peer last in the queue
+                unchokedAndInterestedPeers.add(optimisticPeer);
+                connectionManager.send(new PwpMessageRequest(PwpMessageFactory.getUnchokeMessage(), optimisticPeer));
+                optimisticPeer.setAreWeChoking(false);
+            }
+        }
+        else {
+            //Unchoke a random peer
+            while(unchokedAndInterestedPeers.size() < MAX_UNCHOKED_AND_INTERESTED_PEERS
+                    && !chokedAndInterestedPeers.isEmpty()) {
+                final PeerView unchokedPeer = chokedAndInterestedPeers.remove(
+                        ClientProperties.RANDOM_INSTANCE.nextInt(chokedAndInterestedPeers.size()));
+                unchokedAndInterestedPeers.add(0, unchokedPeer);
+
+                connectionManager.send(new PwpMessageRequest(PwpMessageFactory.getUnchokeMessage(), unchokedPeer));
+                connectionManager.send(new PwpMessageRequest(PwpMessageFactory.getInterestedMessage(), unchokedPeer));
+
+                unchokedPeer.setAreWeChoking(false);
+                unchokedPeer.setAreWeInterestedIn(true);
+            }
+            //TODO: check unchokedUsPeers and standByPeers
+        }
     }
 
     private void applyChokingRotation() {
@@ -434,15 +488,19 @@ public final class TransferTask implements PwpMessageListener, PwpConnectionStat
     }
 
     private void handleInterestedMessage(final PeerView peerView) {
+        peerView.setInterestedInUs(true);
         if(standbyPeers.remove(peerView) && !chokedAndInterestedPeers.contains(peerView)) {
             chokedAndInterestedPeers.add(peerView);
         }
     }
 
     private void handleNotInterestedMessage(final PeerView peerView) {
+        peerView.setInterestedInUs(false);
         if(unchokedAndInterestedPeers.remove(peerView)) {
-            //TODO: Should we choke this peer?
-            standbyPeers.add(peerView);
+            unchokedUsPeers.add(peerView);
+        }
+        else if(chokedAndInterestedPeers.remove(peerView)) {
+            unchokedUsPeers.add(peerView);
         }
     }
 
@@ -451,12 +509,16 @@ public final class TransferTask implements PwpMessageListener, PwpConnectionStat
     }
 
     private void handleUnchokeMessage(final PeerView peerView) {
+        peerView.setChokingUs(false);
         if(standbyPeers.remove(peerView)) {
             unchokedUsPeers.add(peerView);
+            connectionManager.send(new PwpMessageRequest(PwpMessageFactory.getUnchokeMessage(), peerView));
+            peerView.setAreWeChoking(false);
         }
     }
 
     private void handleChokeMessage(final PeerView peerView) {
+        peerView.setChokingUs(true);
         if(unchokedAndInterestedPeers.remove(peerView) || unchokedUsPeers.remove(peerView)) {
             //TODO: Should we choke this peer here or in choking algorithm?
             standbyPeers.add(peerView);
@@ -520,7 +582,7 @@ public final class TransferTask implements PwpMessageListener, PwpConnectionStat
         int pieceOffset = dataPiece.getBlockPointer();
 
         final List<DataBlockRequest> requestedBlocks = sentBlockRequests.computeIfAbsent(
-                dataPiece.getIndex(), blocks -> new ArrayList<>());
+                receiver, blocks -> new ArrayList<>());
 
         while(pieceOffset < dataPiece.getLength() && requestedBlocks.size() < MAX_BLOCK_REQUESTS_FOR_PIECE) {
             final int blockLength = pieceOffset + REQUESTED_BLOCK_LENGTH <= dataPiece.getLength()?

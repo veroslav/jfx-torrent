@@ -25,10 +25,14 @@ public final class DataBlockRequest {
     private final int pieceOffset;
     private final int blockLength;
 
+    private final long creationTime;
+
     public DataBlockRequest(final int pieceIndex, final int pieceOffset, final int blockLength) {
         this.pieceIndex = pieceIndex;
         this.pieceOffset = pieceOffset;
         this.blockLength = blockLength;
+
+        this.creationTime = System.currentTimeMillis();
     }
 
     public int getPieceIndex() {
@@ -41,5 +45,9 @@ public final class DataBlockRequest {
 
     public int getBlockLength() {
         return blockLength;
+    }
+
+    public long getCreationTime() {
+        return creationTime;
     }
 }
