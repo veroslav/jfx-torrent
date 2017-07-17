@@ -53,6 +53,9 @@ public final class PeerView {
     private boolean areWeChoking = true;
     private boolean areWeInterestedIn = false;
 
+    private long bytesSentToUsSinceUnchoke = 0;
+    private long unchokedByUsTime = 0;
+
     public PeerView(final PwpPeer peer) {
         this.peer = peer;
         ip.setValue(peer.getIp());
@@ -80,6 +83,18 @@ public final class PeerView {
 
     public void setAreWeChoking(final boolean areWeChoking) {
         this.areWeChoking = areWeChoking;
+        if(!areWeChoking) {
+            unchokedByUsTime = System.currentTimeMillis();
+            bytesSentToUsSinceUnchoke = 0;
+        }
+    }
+
+    public void updateBytesReceived(final long byteCount) {
+        bytesSentToUsSinceUnchoke += byteCount;
+    }
+
+    public double getAverageUploadRateSinceLastUnchoke() {
+        return (System.currentTimeMillis() - unchokedByUsTime) / (double)bytesSentToUsSinceUnchoke;
     }
 
     public boolean areWeInterestedIn() {
