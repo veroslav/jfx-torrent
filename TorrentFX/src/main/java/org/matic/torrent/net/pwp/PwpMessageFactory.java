@@ -213,16 +213,14 @@ public final class PwpMessageFactory {
     public static DataBlock parseBlockReceivedMessage(final PwpMessage message)
             throws InvalidPeerMessageException {
 
-        try(final ByteArrayInputStream bais = new ByteArrayInputStream(message.getPayload());
+        final byte[] messagePayload = message.getPayload();
+        try(final ByteArrayInputStream bais = new ByteArrayInputStream(messagePayload);
             final DataInputStream dis = new DataInputStream(bais)) {
-
-            final int messageLength = dis.readInt();    //Total length of received message
-            dis.skipBytes(1);                           //Skip message id
 
             final int pieceIndex = dis.readInt();       //Piece index
             final int pieceOffset = dis.readInt();      //Block offset within the piece
 
-            final byte[] blockData = new byte[messageLength - 9];
+            final byte[] blockData = new byte[messagePayload.length - 8];
             dis.read(blockData);                        //Block data bytes
 
             return new DataBlock(blockData, pieceIndex, pieceOffset);

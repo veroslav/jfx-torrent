@@ -48,4 +48,13 @@ public final class DataBlock {
     public byte[] getBlockData() {
         return blockData;
     }
+
+    @Override
+    public String toString() {
+        return "DataBlock{" +
+                "pieceIndex=" + pieceIndex +
+                ", pieceOffset=" + pieceOffset +
+                ", length=" + blockData.length +
+                '}';
+    }
 }

@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -92,6 +93,29 @@ public final class QueuedTorrentProgress {
 
     protected void setName(final String name) {
         torrentState.put(BinaryEncodingKeys.KEY_NAME, new BinaryEncodedString(name));
+    }
+
+    public BitSet getObtainedPieces(final int totalPieces) {
+        final BinaryEncodedList pieces = (BinaryEncodedList)torrentState.get(BinaryEncodingKeys.STATE_KEY_PIECES);
+        if(pieces == null) {
+            return new BitSet(totalPieces);
+        }
+        final long[] bitSetArray = new long[pieces.size()];
+        for(int i = 0; i < bitSetArray.length; ++i) {
+            final BinaryEncodedInteger arrayElementValue = (BinaryEncodedInteger)pieces.get(i);
+            bitSetArray[i] = arrayElementValue.getValue();
+        }
+
+        return BitSet.valueOf(bitSetArray);
+    }
+
+    public void storeObtainedPieces(final BitSet pieces) {
+        final BinaryEncodedList pieceList = new BinaryEncodedList();
+        final long[] pieceArray = pieces.toLongArray();
+
+        Arrays.stream(pieceArray).forEach(arrayElement -> pieceList.add(new BinaryEncodedInteger(arrayElement)));
+
+        torrentState.put(BinaryEncodingKeys.STATE_KEY_PIECES, pieceList);
     }
 
     public void addTrackerUrls(final Set<String> trackerUrls) {

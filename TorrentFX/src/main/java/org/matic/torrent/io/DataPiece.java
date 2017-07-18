@@ -53,6 +53,7 @@ public final class DataPiece {
 
     public boolean addBlock(final DataBlock block) {
         final byte[] blockData = block.getBlockData();
+
         if(block.getPieceOffset() == blockPointer) {
             validatorDigest.update(block.getBlockData());
             System.arraycopy(blockData, 0, pieceBytes, block.getPieceOffset(), blockData.length);
@@ -92,5 +93,14 @@ public final class DataPiece {
 
     protected byte[] getPieceBytes() {
         return pieceBytes;
+    }
+
+    @Override
+    public String toString() {
+        return "DataPiece{" +
+                "pieceIndex=" + pieceIndex +
+                ", blockPointer=" + blockPointer +
+                ", length=" + pieceBytes.length +
+                '}';
     }
 }

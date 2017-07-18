@@ -94,7 +94,8 @@ public final class PeerView {
     }
 
     public double getAverageUploadRateSinceLastUnchoke() {
-        return (System.currentTimeMillis() - unchokedByUsTime) / (double)bytesSentToUsSinceUnchoke;
+        return bytesSentToUsSinceUnchoke == 0? 0 :
+                (System.currentTimeMillis() - unchokedByUsTime) / (double)bytesSentToUsSinceUnchoke;
     }
 
     public boolean areWeInterestedIn() {

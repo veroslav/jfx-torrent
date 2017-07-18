@@ -171,7 +171,7 @@ public final class QueuedTorrentMetaData {
 
             final BinaryEncodedList filePaths = (BinaryEncodedList)fileDictionary.get(BinaryEncodingKeys.KEY_PATH);
             final String filePath = filePaths.stream().map(path ->
-                    ((BinaryEncodedString)path).getValue()).collect(Collectors.joining(File.pathSeparator));
+                    ((BinaryEncodedString)path).getValue()).collect(Collectors.joining(File.separator));
 
             final QueuedFileMetaData fileMetaData = new QueuedFileMetaData(
                     Paths.get(filePath), fileLength, currentLength);

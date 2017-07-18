@@ -407,7 +407,11 @@ public class PeerConnectionController implements PeerFoundListener, TorrentStatu
                             m -> m.keySet().stream()).collect(Collectors.toSet()) : messageRequestPeers;
 
             targetPeers.forEach(p -> {
-                final SelectionKey selectionKey = handshakenConnections.get(p.getInfoHash()).get(p);
+                final Map<PeerView, SelectionKey> peerSelectionKeys = handshakenConnections.get(p.getInfoHash());
+                if(peerSelectionKeys == null) {
+                    return;
+                }
+                final SelectionKey selectionKey = peerSelectionKeys.get(p);
                 if(selectionKey != null) {
                     try {
                         final PeerSession peerSession = (PeerSession)selectionKey.attachment();

@@ -23,7 +23,6 @@ import org.matic.torrent.queue.QueuedFileMetaData;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
@@ -49,15 +48,25 @@ public final class TorrentFileIO {
      * @throws IOException If any errors occur during I/O operations on the file
      */
     public TorrentFileIO(final Path filePath, final QueuedFileMetaData fileMetaData) throws IOException {
+        this(fileMetaData, new RandomAccessFile(filePath.toFile(), FILE_ACCESS_MODE));
+    }
 
-        Files.createDirectories(filePath.getParent());
-        Files.createFile(filePath);
-
-        fileAccessor = new RandomAccessFile(filePath.toFile(), FILE_ACCESS_MODE);
+    //A constructor to use in unit tests
+    protected TorrentFileIO(final QueuedFileMetaData fileMetaData,
+                            final RandomAccessFile fileAccessor) throws IOException {
         this.fileMetaData = fileMetaData;
+        this.fileAccessor = fileAccessor;
 
         //TODO: Call fileAccessor.setLength(fileMetaData.getLength()) based on user preference in Properties
     }
+
+    /*public void cleanup() {
+        try {
+            fileAccessor.close();
+        } catch (final IOException e) {
+            e.printStackTrace();
+        }
+    }*/
 
     /**
      * Write as much as possible of a data piece into the correct place of the file on the disk.
@@ -72,10 +81,10 @@ public final class TorrentFileIO {
 
         //Piece's total position offset within the torrent file
         final long pieceBeginPosition = pieceIndex * pieceLength;
-        final long pieceEndPosition = pieceBeginPosition + pieceLength;
+        final long pieceEndPosition = pieceBeginPosition + pieceLength - 1;
 
         final long fileBeginPosition = fileMetaData.getOffset();
-        final long fileEndPosition = fileBeginPosition + fileMetaData.getLength();
+        final long fileEndPosition = fileBeginPosition + fileMetaData.getLength() - 1;
 
         //Check whether the piece is inside this file
         if(pieceEndPosition < fileBeginPosition || pieceBeginPosition > fileEndPosition) {
@@ -85,13 +94,15 @@ public final class TorrentFileIO {
         fileAccessor.seek(pieceBeginPosition < fileBeginPosition? 0: pieceBeginPosition - fileBeginPosition);
 
         //Calculate how much of the piece data is contained in this file
-        final int writeDataLength = (int)(pieceBeginPosition < fileBeginPosition?
-                pieceEndPosition - fileBeginPosition : fileEndPosition - pieceBeginPosition);
+        final int writeDataLength = getFileAccessorInputDataLength(
+                pieceBeginPosition, pieceEndPosition, fileBeginPosition, fileEndPosition);
 
-        final int pieceBytesStart = pieceBeginPosition < fileBeginPosition?
-                (int)(pieceBeginPosition + (pieceEndPosition - fileBeginPosition)) : 0;
+        final int pieceBytesStart = (pieceBeginPosition < fileBeginPosition)?
+                (pieceEndPosition <= fileEndPosition? (int)(pieceLength - writeDataLength) :
+                        (int)(fileBeginPosition - pieceBeginPosition)): 0;
 
         fileAccessor.write(dataPiece.getPieceBytes(), pieceBytesStart, writeDataLength);
+
         return writeDataLength;
     }
 
@@ -107,10 +118,10 @@ public final class TorrentFileIO {
 
         //Piece's total position offset within the torrent file
         final long pieceBeginPosition = pieceIndex * pieceLength;
-        final long pieceEndPosition = pieceBeginPosition + pieceLength;
+        final long pieceEndPosition = pieceBeginPosition + pieceLength - 1;
 
         final long fileBeginPosition = fileMetaData.getOffset();
-        final long fileEndPosition = fileBeginPosition + fileMetaData.getLength();
+        final long fileEndPosition = fileBeginPosition + fileMetaData.getLength() - 1;
 
         //Check whether the piece is inside this file
         if(pieceEndPosition < fileBeginPosition || pieceBeginPosition > fileEndPosition) {
@@ -120,11 +131,32 @@ public final class TorrentFileIO {
         fileAccessor.seek(pieceBeginPosition < fileBeginPosition? 0: pieceBeginPosition - fileBeginPosition);
 
         //Calculate how much of the piece data is contained in this file
-        final int readDataLength = (int)(pieceBeginPosition < fileBeginPosition?
-                pieceEndPosition - fileBeginPosition : fileEndPosition - pieceBeginPosition);
+        final int readDataLength = getFileAccessorInputDataLength(
+                pieceBeginPosition, pieceEndPosition, fileBeginPosition, fileEndPosition);
 
         final byte[] pieceBytes = new byte[readDataLength];
         fileAccessor.read(pieceBytes, 0, pieceBytes.length);
         return pieceBytes;
+    }
+
+    //Calculate how many of the piece's bytes we can write into this file
+    private int getFileAccessorInputDataLength(long pieceBeginPosition, long pieceEndPosition,
+                                               long fileBeginPosition, long fileEndPosition) {
+        //Check whether any parts of the piece belong to the previous file
+        if(pieceBeginPosition < fileBeginPosition) {
+            if(pieceEndPosition > fileEndPosition) {
+                return (int)(fileEndPosition - fileBeginPosition + 1);
+            } else {
+                return (int)(pieceEndPosition - fileBeginPosition + 1);
+            }
+        }
+        //Check whether any parts of the piece belong to the next file
+        else if(pieceEndPosition > fileEndPosition) {
+            return (int)((pieceEndPosition - pieceBeginPosition + 1) - (pieceEndPosition - fileEndPosition));
+        }
+        //All of the piece's blocks belong to this file
+        else {
+            return (int)(pieceEndPosition - pieceBeginPosition + 1);
+        }
     }
 }

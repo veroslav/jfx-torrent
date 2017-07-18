@@ -71,6 +71,8 @@ public final class FileIOWorker implements Runnable {
         while(true) {
             if (Thread.currentThread().isInterrupted()) {
                 Thread.interrupted();
+                //cleanup();
+
                 return;
             }
 
@@ -86,9 +88,12 @@ public final class FileIOWorker implements Runnable {
                         if (Thread.currentThread().isInterrupted()) {
                             Thread.interrupted();
                         }
+
+                        //cleanup();
                         return;
                     }
                 }
+
                 if(!fileWriterQueue.isEmpty()) {
                     dataPiece = fileWriterQueue.remove(0);
                 }
@@ -105,6 +110,11 @@ public final class FileIOWorker implements Runnable {
             }
         }
     }
+
+    //TODO: Will need to close all of the file accessors on exit (RandomAccessFile.close())
+    /*private void cleanup() {
+        diskFileIOs.values().forEach(TorrentFileIO::cleanup);
+    }*/
 
     private void handleReadRequest(final ReadDataPieceRequest pieceRequest) {
         final int pieceLength = torrentMetaData.getPieceLength();
@@ -183,7 +193,9 @@ public final class FileIOWorker implements Runnable {
             }
         }
 
-        pieceCache.addItem(torrentMetaData.getInfoHash(), dataPiece);
+        //TODO: Correctly cache the piece (ClassCastException: nfoHash cannot be cast to Comparable)
+        //pieceCache.addItem(torrentMetaData.getInfoHash(), dataPiece);
+
         dataPieceConsumer.accept(new FileOperationResult(FileOperationResult.OperationType.WRITE,
                 dataPiece, null, null));
     }

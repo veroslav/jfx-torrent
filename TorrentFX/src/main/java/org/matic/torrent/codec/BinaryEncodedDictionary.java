@@ -39,6 +39,7 @@ public final class BinaryEncodedDictionary implements BinaryEncodable {
 	protected static final char BEGIN_TOKEN = 'd';
 	protected static final char END_TOKEN = 'e';
 
+	//TODO: Use a synchronized Map in order to prevent concurrent modifications
 	private final Map<BinaryEncodedString, BinaryEncodable> map;
 	
 	public BinaryEncodedDictionary() {

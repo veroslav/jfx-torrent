@@ -252,7 +252,7 @@ public final class PeerSession {
 		if(messageId >= 0 && messageId < 4) {			
 			return new PwpMessage(PwpMessage.fromMessageId(messageId));
 		}
-		
+
 		//Check whether there is enough data in buffer to completely parse the message
 		if(buffer.remaining() < messageLength - 1) {
 			//Backup remaining buffer data for the partial message
@@ -268,6 +268,7 @@ public final class PeerSession {
 		//Parse message completely contained in the buffer
 		final byte[] messagePayload = new byte[messageLength - 1];
 		buffer.get(messagePayload);
+
 		return new PwpMessage(PwpMessage.fromMessageId(messageId), messagePayload);
 	}
 	

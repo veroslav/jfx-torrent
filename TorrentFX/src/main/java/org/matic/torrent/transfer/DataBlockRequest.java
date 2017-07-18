@@ -54,4 +54,13 @@ public final class DataBlockRequest {
     public void setSentTime(final long sentTime) {
         this.sentTime = sentTime;
     }
+
+    @Override
+    public String toString() {
+        return "DataBlockRequest{" +
+                "pieceIndex=" + pieceIndex +
+                ", pieceOffset=" + pieceOffset +
+                ", blockLength=" + blockLength +
+                '}';
+    }
 }
