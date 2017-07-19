@@ -29,7 +29,7 @@ import java.nio.charset.StandardCharsets;
 import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.io.DataBlock;
 import org.matic.torrent.peer.ClientProperties;
-import org.matic.torrent.transfer.DataBlockRequest;
+import org.matic.torrent.transfer.DataBlockIdentifier;
 
 /**
  * A factory class and a parser for messages sent between the client and remote peers.
@@ -128,17 +128,17 @@ public final class PwpMessageFactory {
      *
      * [msg_length=int(13)][msg_id=byte(6)][piece_index=int][block_begin_offset=int][block_length=int]
      *
-     * @param dataBlockRequest Data block request
+     * @param dataBlockIdentifier Data block request
      * @return The constructed REQUEST message
      */
-    public static PwpMessage buildRequestMessage(final DataBlockRequest dataBlockRequest) {
+    public static PwpMessage buildRequestMessage(final DataBlockIdentifier dataBlockIdentifier) {
         try(final ByteArrayOutputStream baos = new ByteArrayOutputStream();
             final DataOutputStream dos = new DataOutputStream(baos)) {
             dos.writeInt(13);                               //Message length
             dos.writeByte(6);                               //Message id
-            dos.writeInt(dataBlockRequest.getPieceIndex()); //Piece index
-            dos.writeInt(dataBlockRequest.getPieceOffset());//Block offset within the piece
-            dos.writeInt(dataBlockRequest.getBlockLength());//Requested block's length
+            dos.writeInt(dataBlockIdentifier.getPieceIndex()); //Piece index
+            dos.writeInt(dataBlockIdentifier.getPieceOffset());//Block offset within the piece
+            dos.writeInt(dataBlockIdentifier.getBlockLength());//Requested block's length
             dos.flush();
 
             return new PwpMessage(PwpMessage.MessageType.REQUEST, baos.toByteArray());
@@ -182,7 +182,7 @@ public final class PwpMessageFactory {
      * @return Resulting data block request
      * @throws InvalidPeerMessageException If the message has invalid format
      */
-    public static DataBlockRequest parseBlockRequestedMessage(final PwpMessage message)
+    public static DataBlockIdentifier parseBlockRequestedMessage(final PwpMessage message)
             throws InvalidPeerMessageException {
 
         try(final ByteArrayInputStream bais = new ByteArrayInputStream(message.getPayload());
@@ -194,7 +194,7 @@ public final class PwpMessageFactory {
             final int pieceOffset = dis.readInt();  //Block offset within the piece
             final int blockLength = dis.readInt();  //Requested block's length
 
-            return new DataBlockRequest(pieceIndex, pieceOffset, blockLength);
+            return new DataBlockIdentifier(pieceIndex, pieceOffset, blockLength);
         }
         catch(final IOException ioe) {
             throw new InvalidPeerMessageException("Invalid REQUEST message: " + message, ioe);

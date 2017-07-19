@@ -29,7 +29,7 @@ import java.util.Arrays;
  *
  * @author Vedran Matic
  */
-public final class DataPiece {
+public class DataPiece {
 
     private static final String DIGEST_ALGORITHM = "SHA-1";
 

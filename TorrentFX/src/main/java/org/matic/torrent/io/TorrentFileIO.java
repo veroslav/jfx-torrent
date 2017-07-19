@@ -60,13 +60,16 @@ public final class TorrentFileIO {
         //TODO: Call fileAccessor.setLength(fileMetaData.getLength()) based on user preference in Properties
     }
 
-    /*public void cleanup() {
+    /**
+     * Close and release all file accessor resources on shutdown.
+     */
+    public void cleanup() {
         try {
             fileAccessor.close();
         } catch (final IOException e) {
             e.printStackTrace();
         }
-    }*/
+    }
 
     /**
      * Write as much as possible of a data piece into the correct place of the file on the disk.

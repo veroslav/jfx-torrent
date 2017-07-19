@@ -19,20 +19,22 @@
 */
 package org.matic.torrent.transfer;
 
-public final class DataBlockRequest {
+public final class DataBlockIdentifier {
 
     private final int pieceIndex;
     private final int pieceOffset;
     private final int blockLength;
 
-    private long sentTime;
+    private long timeRequested;
+    private long timeReceived;
 
-    public DataBlockRequest(final int pieceIndex, final int pieceOffset, final int blockLength) {
+    public DataBlockIdentifier(final int pieceIndex, final int pieceOffset, final int blockLength) {
         this.pieceIndex = pieceIndex;
         this.pieceOffset = pieceOffset;
         this.blockLength = blockLength;
 
-        this.sentTime = System.currentTimeMillis();
+        this.timeRequested = System.currentTimeMillis();
+        this.timeReceived = 0;
     }
 
     public int getPieceIndex() {
@@ -47,17 +49,25 @@ public final class DataBlockRequest {
         return blockLength;
     }
 
-    public long getSentTime() {
-        return sentTime;
+    public long getTimeReceived() {
+        return timeReceived;
     }
 
-    public void setSentTime(final long sentTime) {
-        this.sentTime = sentTime;
+    public void setTimeReceived(final long timeReceived) {
+        this.timeReceived = timeReceived;
+    }
+
+    public long getTimeRequested() {
+        return timeRequested;
+    }
+
+    public void setTimeRequested(final long timeRequested) {
+        this.timeRequested = timeRequested;
     }
 
     @Override
     public String toString() {
-        return "DataBlockRequest{" +
+        return "DataBlockIdentifier{" +
                 "pieceIndex=" + pieceIndex +
                 ", pieceOffset=" + pieceOffset +
                 ", blockLength=" + blockLength +

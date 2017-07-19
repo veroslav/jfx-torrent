@@ -20,41 +20,82 @@
 package org.matic.torrent.io.cache;
 
 import org.matic.torrent.io.DataPiece;
+import org.matic.torrent.io.DataPieceIdentifier;
 
+import java.util.Optional;
 import java.util.TreeMap;
 
 /**
  * A simple cache for data pieces.
  *
- * @param <T> The key that uniquely identifies each cached data piece
+ * @author Vedran Matic
  */
-public final class DataPieceCache<T> {
+public final class DataPieceCache {
 
-    private TreeMap<T, CachedItem<DataPiece>> cache;
+    private final TreeMap<DataPieceIdentifier, DataPiece> cache = new TreeMap<>();
     private long currentSize;
     private long maxSize;
 
+    //TODO: Add cache timeout (TTL)
+
+    /**
+     * Create a new instance.
+     *
+     * @param maxSize Max cache size (in bytes)
+     */
     public DataPieceCache(final long maxSize) {
-        cache = new TreeMap<>();
         this.maxSize = maxSize;
     }
 
-    //TODO: Can we remove synchronization?
+    protected int getItemCount() {
+        return cache.size();
+    }
+
+    protected long getSize() {
+        return currentSize;
+    }
+
     public synchronized void setMaxSize(final long maxSize) {
+        if(maxSize < this.maxSize) {
+            trimCache(maxSize);
+        }
         this.maxSize = maxSize;
     }
 
-    public synchronized DataPiece getItem(final T itemKey) {
-        return cache.get(itemKey).getItem();
+    public synchronized Optional<DataPiece> get(final DataPieceIdentifier itemKey) {
+        return Optional.ofNullable(cache.get(itemKey));
     }
 
-    public synchronized void addItem(final T itemKey, final DataPiece item) {
+    public synchronized boolean put(final DataPieceIdentifier itemKey, final DataPiece item) {
+        if(cache.containsKey(itemKey)) {
+            return false;
+        }
+
+        itemKey.setCachingTime(System.currentTimeMillis());
+        cache.put(itemKey, item);
+
         final int itemLength = item.getLength();
-        while (currentSize + itemLength > maxSize) {
-            final DataPiece oldestEntry = cache.remove(cache.lastEntry()).getItem();
+        currentSize += itemLength;
+
+        if(currentSize > maxSize) {
+            trimCache(maxSize);
+        }
+
+        return true;
+
+        /*while (currentSize + itemLength > maxSize) {
+            final DataPiece oldestEntry = cache.remove(cache.lastEntry());
+            currentSize -= oldestEntry.getLength();
+        }*/
+    }
+
+    private void trimCache(final long targetSize) {
+        while (targetSize < currentSize) {
+
+            //System.out.println(cache.firstEntry());
+
+            final DataPiece oldestEntry = cache.remove(cache.firstEntry().getKey());
             currentSize -= oldestEntry.getLength();
         }
-        cache.put(itemKey, new CachedItem<>(item));
-        currentSize += itemLength;
     }
 }

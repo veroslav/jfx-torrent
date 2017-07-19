@@ -102,7 +102,7 @@ public final class QueuedTorrentController implements PreferenceChangeListener, 
     private final PeerConnectionController connectionManager;
 
     //TODO: Read cache size from a property. Also, add a cache timeout property
-    private final DataPieceCache<InfoHash> pieceCache = new DataPieceCache<>(128 * 1048576);    //128 MB
+    private final DataPieceCache pieceCache = new DataPieceCache(128 * 1048576);    //128 MB
 
     public QueuedTorrentController(final DataPersistenceSupport persistenceSupport,
                                    final TrackerManager trackerManager,

@@ -28,7 +28,7 @@ import org.matic.torrent.net.pwp.PwpPeer;
 
 import java.util.Objects;
 
-public final class PeerView {
+public class PeerView {
 
     private final PwpPeer peer;
 
