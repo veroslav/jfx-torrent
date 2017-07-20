@@ -30,7 +30,7 @@ import java.util.Arrays;
  * but must be non-negative (zero is allowed), while the String contents itself are
  * UTF-8 encoded.
  * 
- * @author vedran
+ * @author Vedran Matic
  *
  */
 public final class BinaryEncodedString implements BinaryEncodable, Comparable<BinaryEncodedString> {	
@@ -53,7 +53,7 @@ public final class BinaryEncodedString implements BinaryEncodable, Comparable<Bi
 	}
 
 	public byte[] getBytes(final int offset, final int length) {
-	    final byte[] bytesSegment = new byte[length - offset];
+	    final byte[] bytesSegment = new byte[length];
 	    System.arraycopy(bytes, offset, bytesSegment, 0, length);
 	    return bytesSegment;
     }
@@ -63,7 +63,7 @@ public final class BinaryEncodedString implements BinaryEncodable, Comparable<Bi
 	}
 	
 	public int getLength() {
-		return value.length();
+		return bytes.length;
 	}
 	
 	@Override

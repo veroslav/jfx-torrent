@@ -188,8 +188,6 @@ public final class PwpMessageFactory {
         try(final ByteArrayInputStream bais = new ByteArrayInputStream(message.getPayload());
             final DataInputStream dis = new DataInputStream(bais)) {
 
-            dis.skipBytes(5);                       //Skip message length and id
-
             final int pieceIndex = dis.readInt();   //Piece index
             final int pieceOffset = dis.readInt();  //Block offset within the piece
             final int blockLength = dis.readInt();  //Requested block's length

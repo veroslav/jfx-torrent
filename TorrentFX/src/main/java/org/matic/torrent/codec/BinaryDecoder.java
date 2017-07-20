@@ -1,6 +1,6 @@
 /*
 * This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015-2016 Vedran Matic
+* Copyright (C) 2015-2017 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,6 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-
 package org.matic.torrent.codec;
 
 import org.matic.torrent.exception.BinaryDecoderException;
@@ -33,7 +32,7 @@ import java.util.zip.GZIPInputStream;
  * A parser and decoder for binary encoded data types. Input can be read from 
  * a torrent meta file or directly from a (GZip compressed) stream. 
  * 
- * @author vedran
+ * @author Vedran Matic
  *
  */
 public final class BinaryDecoder {
@@ -260,13 +259,9 @@ public final class BinaryDecoder {
 			throw new BinaryDecoderException("Parsed string length is invalid: '"
 					+ length.toString() + "'");
 		}
-		
+
 		final byte[] rawValue = new byte[lengthAsInt];
-		int currentPosition = 0;
-		
-		while(currentPosition < rawValue.length && (currentByte = input.read()) != -1) {
-			rawValue[currentPosition++] = (byte)currentByte;
-		}
+        input.read(rawValue, 0, rawValue.length);
 		
 		if(copyDictionary) {
 			messageDigest.update(rawValue);

@@ -167,7 +167,10 @@ public final class FileIOWorker implements Runnable {
         }
 
         final DataPiece dataPiece = new DataPiece(pieceBytes, pieceIndex);
-        pieceCache.put(dataPieceIdentifier, dataPiece);
+
+        //TODO: Re-enable after fixing the cache implementation
+        //pieceCache.put(dataPieceIdentifier, dataPiece);
+
         dataPieceConsumer.accept(new FileOperationResult(FileOperationResult.OperationType.READ,
                 dataPiece, requester, blockIdentifier, null));
     }
@@ -211,7 +214,8 @@ public final class FileIOWorker implements Runnable {
             }
         }
 
-        pieceCache.put(dataPieceIdentifier, dataPiece);
+        //TODO: Re-enable after fixing the cache implementation
+        //pieceCache.put(dataPieceIdentifier, dataPiece);
 
         dataPieceConsumer.accept(new FileOperationResult(FileOperationResult.OperationType.WRITE,
                 dataPiece, null, null, null));
