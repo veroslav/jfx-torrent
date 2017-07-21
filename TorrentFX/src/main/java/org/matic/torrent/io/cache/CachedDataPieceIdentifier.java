@@ -17,27 +17,22 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-package org.matic.torrent.io;
+package org.matic.torrent.io.cache;
 
-import org.matic.torrent.gui.model.PeerView;
-import org.matic.torrent.transfer.DataBlockIdentifier;
+import org.matic.torrent.hash.InfoHash;
 
 import java.util.Objects;
-import java.util.Optional;
 
-public class DataPieceIdentifier implements Comparable<DataPieceIdentifier> {
+public class CachedDataPieceIdentifier implements Comparable<CachedDataPieceIdentifier> {
 
-    private final DataBlockIdentifier dataBlockIdentifier;
-    private final DataPiece dataPiece;
-    private final PeerView targetPeer;
+    private final InfoHash infoHash;
+    private final int pieceIndex;
 
     private long cachingTime = 0;
 
-    public DataPieceIdentifier(final DataPiece dataPiece, final DataBlockIdentifier blockIdentifier,
-                               final PeerView targetPeer) {
-        this.dataBlockIdentifier = blockIdentifier;
-        this.targetPeer = targetPeer;
-        this.dataPiece = dataPiece;
+    public CachedDataPieceIdentifier(final int pieceIndex, final InfoHash infoHash) {
+        this.pieceIndex = pieceIndex;
+        this.infoHash = infoHash;
     }
 
     /**
@@ -49,40 +44,40 @@ public class DataPieceIdentifier implements Comparable<DataPieceIdentifier> {
         this.cachingTime = cachingTime;
     }
 
-    public Optional<DataPiece> getDataPiece() {
-        return Optional.ofNullable(dataPiece);
-    }
-
-    public Optional<DataBlockIdentifier> getBlockIdentifier() {
-        return Optional.ofNullable(dataBlockIdentifier);
-    }
-
-    public PeerView getTargetPeer() {
-        return targetPeer;
+    public int getPieceIndex() {
+        return pieceIndex;
     }
 
     @Override
     public boolean equals(final Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        DataPieceIdentifier that = (DataPieceIdentifier) o;
-        return Objects.equals(dataPiece.getIndex(), that.dataPiece.getIndex()) &&
-                Objects.equals(targetPeer.getInfoHash(), that.targetPeer.getInfoHash());
+        final CachedDataPieceIdentifier that = (CachedDataPieceIdentifier) o;
+        return Objects.equals(pieceIndex, that.pieceIndex) &&
+                Objects.equals(infoHash, that.infoHash);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(dataPiece.getIndex(), targetPeer.getInfoHash());
+        return Objects.hash(pieceIndex, infoHash);
     }
 
-    //TODO: Implement equals(), hashCode() and compareTo() correctly
     @Override
-    public int compareTo(final DataPieceIdentifier other) {
-        if(cachingTime <= other.cachingTime) {
+    public int compareTo(final CachedDataPieceIdentifier other) {
+        if(cachingTime < other.cachingTime) {
             return -1;
         }
-        else {
+        else if(cachingTime > other.cachingTime) {
             return 1;
+        }
+        else {
+            final int pieceIndexCompare = Integer.compare(pieceIndex, other.pieceIndex);
+
+            if(pieceIndexCompare != 0) {
+                return pieceIndexCompare;
+            }
+
+            return infoHash.toString().compareTo(other.infoHash.toString());
         }
     }
 }

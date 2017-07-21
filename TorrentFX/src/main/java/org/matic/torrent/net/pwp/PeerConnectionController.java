@@ -30,7 +30,6 @@ import org.matic.torrent.queue.action.TorrentStatusChangeEvent;
 import org.matic.torrent.queue.action.TorrentStatusChangeListener;
 import org.matic.torrent.queue.enums.TorrentStatus;
 import org.matic.torrent.tracking.listeners.PeerFoundListener;
-import org.matic.torrent.utils.UnitConverter;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -608,12 +607,10 @@ public class PeerConnectionController implements PeerFoundListener, TorrentStatu
 
             final BitsView torrentPieces = servedTorrents.get(peerView.getInfoHash()).getAvailabilityView();
             final int expectedPieceCount = torrentPieces.getTotalPieces();
-            final byte[] payload = bitfield.getPayload();
-
-            final BitSet bitSet = BitSet.valueOf(UnitConverter.reverseBits(payload));
+            final BitSet bitSet = PwpMessageFactory.parseBitfieldMessage(bitfield);
             final BitsView bitsView = new BitsView(expectedPieceCount, bitSet);
 
-            if(bitSet.length() > expectedPieceCount || (payload.length * Byte.SIZE < expectedPieceCount)) {
+            if(bitSet.length() > expectedPieceCount || (bitfield.getPayload().length * Byte.SIZE < expectedPieceCount)) {
                 //Disconnect this peer, invalid bitfield
                 disconnectPeer(selectionKey, peerView);
                 System.out.println("Invalid BITFIELD received from: " + peerView);

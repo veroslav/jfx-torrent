@@ -212,6 +212,11 @@ public final class QueuedTorrentController implements PreferenceChangeListener, 
      */
     public void storeState() {
         transferExecutor.shutdownNow();
+        try {
+            transferExecutor.awaitTermination(10, TimeUnit.SECONDS);
+        } catch (final InterruptedException ie) {
+            System.err.println("Timeout while waiting for transfer controller to complete");
+        }
         synchronized(queuedTorrents) {
             queuedTorrents.forEach(t -> {
 
@@ -292,7 +297,7 @@ public final class QueuedTorrentController implements PreferenceChangeListener, 
     }
 
     private void initTransferController(final QueuedTorrent torrent, final TorrentView torrentView) {
-        final TransferTask transferTask = new TransferTask(torrent, connectionManager, pieceCache);
+        final TransferTask transferTask = new TransferTask(torrentView, connectionManager, pieceCache);
         torrentView.getFileTree().addFilePriorityChangeListener(transferTask);
 
         transferTask.addStatusChangeListener(event -> {

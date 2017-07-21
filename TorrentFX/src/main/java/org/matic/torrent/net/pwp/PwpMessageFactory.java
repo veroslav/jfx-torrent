@@ -25,11 +25,13 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.BitSet;
 
 import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.io.DataBlock;
 import org.matic.torrent.peer.ClientProperties;
 import org.matic.torrent.transfer.DataBlockIdentifier;
+import org.matic.torrent.utils.UnitConverter;
 
 /**
  * A factory class and a parser for messages sent between the client and remote peers.
@@ -91,6 +93,29 @@ public final class PwpMessageFactory {
 
     public static PwpMessage getInterestedMessage() {
         return INTERESTED_MESSAGE;
+    }
+
+    public static PwpMessage buildBitfieldMessage(final BitSet receivedPieces, final int totalPieces) {
+        //[(x, x, x, x), (5), (y, y, y, y)... (y, y, y, y)]
+        //  msg_length  msg_id  bitfield_data = (msg_length -5)
+        final byte[] bitfieldArray = new byte[Integer.BYTES * (int)Math.ceil(((double)totalPieces) / Integer.SIZE)];
+        final byte[] bitSetArray = receivedPieces.toByteArray();
+
+        System.arraycopy(bitSetArray, 0, bitfieldArray, 0, bitSetArray.length);
+
+        try(final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            final DataOutputStream dos = new DataOutputStream(baos)) {
+
+            dos.writeInt(bitfieldArray.length + 1);             //Message length (bitfield_length + message_id)
+            dos.writeByte(5);                                   //Message id
+            dos.write(bitfieldArray);                           //Bitfield bytes
+            dos.flush();
+
+            return new PwpMessage(PwpMessage.MessageType.BITFIELD, baos.toByteArray());
+        } catch(final IOException ioe) {
+            //This can't happen for ByteArrayOutputStream
+            return null;
+        }
     }
 
     /**
@@ -171,6 +196,11 @@ public final class PwpMessageFactory {
             //This can't happen for ByteArrayOutputStream
             return null;
         }
+    }
+
+    public static BitSet parseBitfieldMessage(final PwpMessage message) {
+        final byte[] payload = message.getPayload();
+        return BitSet.valueOf(UnitConverter.reverseBits(payload));
     }
 
     /**

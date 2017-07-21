@@ -1,6 +1,6 @@
 /*
 * This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015-2016 Vedran Matic
+* Copyright (C) 2015-2017 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -21,37 +21,42 @@ package org.matic.torrent.gui.model;
 
 import java.util.BitSet;
 
+//TODO: Why do we need this class?
 public final class BitsView {
-	
-	private final BitSet pieces;
-	private final int totalPieces;	
 
-	public BitsView(final int totalPieces) {
-	    this(totalPieces, new BitSet(totalPieces));
-	}
+    private final BitSet pieces;
+    private final int totalPieces;
+
+    public BitsView(final int totalPieces) {
+        this(totalPieces, new BitSet(totalPieces));
+    }
 
     public BitsView(final int totalPieces, final BitSet pieces) {
         this.totalPieces = totalPieces;
         this.pieces = pieces;
     }
 
-	public int getLastHaveIndex() {
-		return pieces.length();
-	}
+    public int getLastHaveIndex() {
+        return pieces.length();
+    }
 
-	public int getTotalPieces() {
-		return totalPieces;
-	}
+    public int getTotalPieces() {
+        return totalPieces;
+    }
 
-	public void setHave(final int pieceIndex, final boolean have) {
-		pieces.set(pieceIndex, have);
-	}
+    public void setHave(final int pieceIndex, final boolean have) {
+        pieces.set(pieceIndex, have);
+    }
 
-	public boolean getHave(final int pieceIndex) {
-		return pieces.get(pieceIndex);
-	}
+    public void setHaveFrom(final byte[] pieceAvailabilityBytes) {
+        pieces.or(BitSet.valueOf(pieceAvailabilityBytes));
+    }
 
-	public int getHavePiecesCount() {
-		return pieces.cardinality();
-	}		
+    public boolean getHave(final int pieceIndex) {
+        return pieces.get(pieceIndex);
+    }
+
+    public int getHavePiecesCount() {
+        return pieces.cardinality();
+    }
 }

@@ -101,6 +101,7 @@ public final class PeerSession {
 
             //If buffer is empty, we process a new message, otherwise we write buffered data
             if(localOutputBuffer.position() == 0) {
+                //TODO: Check why BufferOverflowException can happen here
                 localOutputBuffer.put(messageRequest.getMessage().getPayload());
             }
 

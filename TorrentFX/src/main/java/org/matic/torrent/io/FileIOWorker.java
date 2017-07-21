@@ -33,8 +33,8 @@ import java.util.function.Consumer;
 
 public final class FileIOWorker implements Runnable {
 
-    private final List<DataPieceIdentifier> fileReaderQueue = new LinkedList<>();
-    private final List<DataPieceIdentifier> fileWriterQueue = new LinkedList<>();
+    private final List<WriteDataPieceRequest> fileWriterQueue = new LinkedList<>();
+    private final List<ReadDataPieceRequest> fileReaderQueue = new LinkedList<>();
 
     private final Consumer<FileOperationResult> dataPieceConsumer;
     private final DataPieceCache pieceCache;
@@ -53,16 +53,16 @@ public final class FileIOWorker implements Runnable {
         this.dataPieceConsumer = dataPieceConsumer;
     }
 
-    public void writeDataPiece(final DataPieceIdentifier dataPieceIdentifier) {
+    public void writeDataPiece(final WriteDataPieceRequest writeDataPieceRequest) {
         synchronized(this) {
-            fileWriterQueue.add(dataPieceIdentifier);
+            fileWriterQueue.add(writeDataPieceRequest);
             this.notifyAll();
         }
     }
 
-    public void readDataPiece(final DataPieceIdentifier dataPieceIdentifier) {
+    public void readDataPiece(final ReadDataPieceRequest readDataPieceRequest) {
         synchronized(this) {
-            fileReaderQueue.add(dataPieceIdentifier);
+            fileReaderQueue.add(readDataPieceRequest);
             this.notifyAll();
         }
     }
@@ -77,8 +77,8 @@ public final class FileIOWorker implements Runnable {
                 return;
             }
 
-            DataPieceIdentifier dataPieceToRead = null;
-            DataPieceIdentifier dataPieceToWrite = null;
+            WriteDataPieceRequest writeDataPieceRequest = null;
+            ReadDataPieceRequest readDataPieceRequest = null;
 
             synchronized(this) {
                 while(fileWriterQueue.isEmpty() && fileReaderQueue.isEmpty()) {
@@ -96,18 +96,18 @@ public final class FileIOWorker implements Runnable {
                 }
 
                 if(!fileWriterQueue.isEmpty()) {
-                    dataPieceToWrite = fileWriterQueue.remove(0);
+                    writeDataPieceRequest = fileWriterQueue.remove(0);
                 }
                 if(!fileReaderQueue.isEmpty()) {
-                    dataPieceToRead = fileReaderQueue.remove(0);
+                    readDataPieceRequest = fileReaderQueue.remove(0);
                 }
             }
 
-            if(dataPieceToWrite != null) {
-                handleWriteRequest(dataPieceToWrite);
+            if(writeDataPieceRequest != null) {
+                handleWriteRequest(writeDataPieceRequest);
             }
-            if(dataPieceToRead != null) {
-                handleReadRequest(dataPieceToRead);
+            if(readDataPieceRequest != null) {
+                handleReadRequest(readDataPieceRequest);
             }
         }
     }
@@ -117,10 +117,10 @@ public final class FileIOWorker implements Runnable {
         diskFileIOs.values().forEach(TorrentFileIO::cleanup);
     }
 
-    private void handleReadRequest(final DataPieceIdentifier dataPieceIdentifier) {
+    private void handleReadRequest(final ReadDataPieceRequest readDataPieceRequest) {
         final int pieceLength = torrentMetaData.getPieceLength();
-        final DataBlockIdentifier blockIdentifier = dataPieceIdentifier.getBlockIdentifier().get();
-        final PeerView requester = dataPieceIdentifier.getTargetPeer();
+        final DataBlockIdentifier blockIdentifier = readDataPieceRequest.getBlockIdentifier();
+        final PeerView requester = readDataPieceRequest.getRequester();
 
         final int pieceIndex = blockIdentifier.getPieceIndex();
         final long pieceStart = pieceLength * pieceIndex;
@@ -129,7 +129,7 @@ public final class FileIOWorker implements Runnable {
         final long lastFileBeginPosition = diskFileIOs.floorKey(pieceStart + pieceLength);
 
         //Check whether the piece has been cached (faster)
-        final Optional<DataPiece> cachedPiece = pieceCache.get(dataPieceIdentifier);
+        final Optional<DataPiece> cachedPiece = pieceCache.get(readDataPieceRequest.getCachedDataPieceIdentifier());
         if(cachedPiece.isPresent()) {
             dataPieceConsumer.accept(new FileOperationResult(FileOperationResult.OperationType.READ,
                     cachedPiece.get(), requester, blockIdentifier, null));
@@ -167,16 +167,14 @@ public final class FileIOWorker implements Runnable {
         }
 
         final DataPiece dataPiece = new DataPiece(pieceBytes, pieceIndex);
-
-        //TODO: Re-enable after fixing the cache implementation
-        //pieceCache.put(dataPieceIdentifier, dataPiece);
+        pieceCache.put(readDataPieceRequest.getCachedDataPieceIdentifier(), dataPiece);
 
         dataPieceConsumer.accept(new FileOperationResult(FileOperationResult.OperationType.READ,
                 dataPiece, requester, blockIdentifier, null));
     }
 
-    private void handleWriteRequest(final DataPieceIdentifier dataPieceIdentifier) {
-        final DataPiece dataPiece = dataPieceIdentifier.getDataPiece().get();
+    private void handleWriteRequest(final WriteDataPieceRequest writeDataPieceRequest) {
+        final DataPiece dataPiece = writeDataPieceRequest.getDataPiece();
         final int expectedPieceLength = torrentMetaData.getPieceLength();
         final int pieceLength = dataPiece.getLength();
 
@@ -198,6 +196,13 @@ public final class FileIOWorker implements Runnable {
             currentFilePosition != null && currentFilePosition <= lastFileBeginPosition;
             currentFilePosition = diskFileIOs.higherKey(currentFilePosition)) {
 
+            /*TODO: Wait to write the pieces to disk until a piece in the cache expires and is
+                removed from it. When it does, we can write all of the neighbouring pieces
+                still left in the cache, but not written yet, to the disk together. This will
+                both minimize disk tear (by jumping too much when writing) and also improve the
+                write times (as the neighbouring pieces can be written in one continuous write
+                without changing the writer position
+             */
             final TorrentFileIO fileIO = diskFileIOs.get(currentFilePosition);
 
             try {
@@ -214,9 +219,7 @@ public final class FileIOWorker implements Runnable {
             }
         }
 
-        //TODO: Re-enable after fixing the cache implementation
-        //pieceCache.put(dataPieceIdentifier, dataPiece);
-
+        pieceCache.put(writeDataPieceRequest.getCachedDataPieceIdentifier(), dataPiece);
         dataPieceConsumer.accept(new FileOperationResult(FileOperationResult.OperationType.WRITE,
                 dataPiece, null, null, null));
     }

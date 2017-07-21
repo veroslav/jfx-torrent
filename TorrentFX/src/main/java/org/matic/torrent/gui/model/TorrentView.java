@@ -59,8 +59,11 @@ public final class TorrentView {
 
     private final StringProperty lifeCycleChange = new SimpleStringProperty();
 
+    private final IntegerProperty hashFailures = new SimpleIntegerProperty(0);
+    private final LongProperty downloadedBytes = new SimpleLongProperty(0);
+    private final LongProperty wastedBytes = new SimpleLongProperty();
+
     private long elapsedTime;
-    private long downloadedBytes;
     private long downloadSpeed;
     private long downloadLimit;
 
@@ -68,9 +71,6 @@ public final class TorrentView {
     private long uploadedBytes;
     private long uploadSpeed;
     private long uploadLimit;
-
-    private long wastedBytes;
-    private int hashFailures;
 
     private int seedsConnected;
     private int seedsAvailable;
@@ -84,7 +84,6 @@ public final class TorrentView {
     private String saveDirectory;
 
     private long completionTime;
-    private long havePieces;
 
     private final ObservableList<TrackableView> trackerViews = FXCollections.observableArrayList();
     private final Set<PeerView> peerViews = new LinkedHashSet<>();
@@ -112,6 +111,8 @@ public final class TorrentView {
 
         queuedTorrent.addPriorityChangeListener(event ->
                 priorityChangeListeners.forEach(l -> l.onTorrentPriorityChanged(event)));
+
+        this.saveDirectory = queuedTorrent.getProgress().getSavePath().toString();
     }
 
     public boolean addPeerViews(final Collection<PeerView> peerViews) {
@@ -208,8 +209,12 @@ public final class TorrentView {
         return elapsedTime;
     }
 
-    public long getDownloadedBytes() {
+    public LongProperty downloadedBytesProperty() {
         return downloadedBytes;
+    }
+
+    public long getDownloadedBytes() {
+        return downloadedBytes.get();
     }
 
     public long getDownloadSpeed() {
@@ -236,12 +241,20 @@ public final class TorrentView {
         return uploadLimit;
     }
 
-    public long getWastedBytes() {
+    public LongProperty wastedBytesProperty() {
         return wastedBytes;
     }
 
-    public int getHashFailures() {
+    public long getWastedBytes() {
+        return wastedBytes.get();
+    }
+
+    public IntegerProperty hashFailuresProperty() {
         return hashFailures;
+    }
+
+    public int getHashFailures() {
+        return hashFailures.get();
     }
 
     public int getSeedsConnected() {
@@ -314,8 +327,16 @@ public final class TorrentView {
 
     public long getTotalLength() {return queuedTorrent.getMetaData().getTotalLength(); }
 
+    public void setHavePiece(final int pieceIndex) {
+        this.availabilityView.setHave(pieceIndex, true);
+    }
+
+    public void setHavePieces(final byte[] havePieces) {
+        this.availabilityView.setHaveFrom(havePieces);
+    }
+
     public long getHavePieces() {
-        return havePieces;
+        return this.availabilityView.getHavePiecesCount();
     }
 
     @Override

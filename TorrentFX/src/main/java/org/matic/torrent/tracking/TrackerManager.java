@@ -409,9 +409,22 @@ public class TrackerManager implements TrackerResponseListener, UdpTrackerRespon
 	 * Cleanup after closing down the tracker manager
 	 */
 	public void stop() {
-		tcpRequestExecutor.shutdownNow();
         requestScheduler.shutdownNow();
-	}
+
+        try {
+            requestScheduler.awaitTermination(5, TimeUnit.SECONDS);
+        } catch (final InterruptedException ie) {
+            System.err.println("Failed to stop tracker's request scheduler within time limits.");
+        }
+
+        tcpRequestExecutor.shutdownNow();
+
+        try {
+            tcpRequestExecutor.awaitTermination(5, TimeUnit.SECONDS);
+        } catch (final InterruptedException ie) {
+            System.err.println("Failed to stop tracker's TCP request worker within time limits.");
+        }
+    }
 	
 	protected TrackerSession getTrackerSession(final TorrentView torrentView, final Tracker tracker) {
 		return trackerSessions.get(torrentView).stream().filter(ts -> ts.getTracker().equals(tracker)).findFirst().orElse(null);

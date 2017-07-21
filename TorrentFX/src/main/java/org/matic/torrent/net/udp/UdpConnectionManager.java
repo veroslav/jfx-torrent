@@ -169,11 +169,25 @@ public class UdpConnectionManager {
 	 */
 	public void unmanage() {
 		connectionManagerExecutor.shutdownNow();
+
+        try {
+            connectionManagerExecutor.awaitTermination(5, TimeUnit.SECONDS);
+        } catch (final InterruptedException ie) {
+            System.err.println("Failed to stop UDP connection manager's worker within time limits.");
+        }
+
 		channelWriterExecutor.shutdownNow();
-		if(connectionSelector != null) {
+
+        try {
+            channelWriterExecutor.awaitTermination(5, TimeUnit.SECONDS);
+        } catch (final InterruptedException ie) {
+            System.err.println("Failed to stop UDP channel writer within time limits.");
+        }
+
+        if(connectionSelector != null) {
 			connectionSelector.wakeup();
 		}
-	}
+    }
 	
 	private void processPendingReadOperations(final DatagramChannel channel) throws IOException {
 		final int keysSelected = connectionSelector.select();
