@@ -26,6 +26,7 @@ import javafx.beans.property.StringProperty;
 import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.net.pwp.PwpPeer;
 
+import java.util.BitSet;
 import java.util.Objects;
 
 public class PeerView {
@@ -45,7 +46,7 @@ public class PeerView {
     private final DoubleProperty downloaded = new SimpleDoubleProperty();
     private final DoubleProperty peerDownload = new SimpleDoubleProperty();
 
-    private BitsView pieces = new BitsView(0);
+    private final BitSet pieces = new BitSet();
 
     private boolean isChokingUs = true;
     private boolean isInterestedInUs = false;
@@ -111,17 +112,21 @@ public class PeerView {
     }
 
     public boolean getHave(final int pieceIndex) {
-        return pieces.getHave(pieceIndex);
+        return pieces.get(pieceIndex);
     }
 
-    public void setHave(final int pieceIndex, final boolean have) {
-        pieces.setHave(pieceIndex, have);
-        percentDone.set((double)pieces.getHavePiecesCount() / pieces.getTotalPieces() * 100);
+    public BitSet getPieces(final int pieceCount) {
+        return pieces.get(0, pieceCount);
     }
 
-    public void setPieces(final BitsView pieces) {
-        this.pieces = pieces;
-        percentDone.set((double)pieces.getHavePiecesCount() / pieces.getTotalPieces() * 100);
+    public void setHave(final int pieceIndex, final boolean have, final int pieceCount) {
+        pieces.set(pieceIndex, have);
+        percentDone.set((double)pieces.cardinality() / pieceCount * 100);
+    }
+
+    public void setPieces(final BitSet pieces, final int pieceCount) {
+        this.pieces.and(pieces);
+        percentDone.set((double)pieces.cardinality()/ pieceCount * 100);
     }
 
     public int getPort() {
@@ -267,8 +272,6 @@ public class PeerView {
 
     @Override
     public String toString() {
-        return "PeerView{" +
-                "peer=" + peer +
-                '}';
+        return "[" + getIp() + ":" + getPort() + "]";
     }
 }

@@ -25,6 +25,7 @@ import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 public abstract class PieceSelectionStrategy {
 
@@ -32,27 +33,48 @@ public abstract class PieceSelectionStrategy {
     protected final int[] pieceAvailabilities;
     protected BitSet receivedPieces;
 
-    protected PieceSelectionStrategy(int pieceCount, final BitSet receivedPieces) {
+    protected PieceSelectionStrategy(final int pieceCount, final BitSet receivedPieces) {
         pieceAvailabilities = new int[pieceCount];
         this.receivedPieces = receivedPieces;
     }
 
-    public boolean hasCompleted() {
-        return receivedPieces.cardinality() == pieceAvailabilities.length;
+    public abstract Optional<Integer> selectNext(BitSet peerCondition);
+    public abstract void occurrenceIncreased(int pieceIndex);
+    public abstract void occurrenceDecreased(int pieceIndex);
+
+    public DataPiece getRequestedPiece(final int pieceIndex) {
+        return downloadingPieces.get(pieceIndex);
     }
 
-    protected void pieceRequested(final int pieceIndex, final DataPiece piece) {
-        downloadingPieces.put(pieceIndex, piece);
+    public boolean anyRequested(final BitSet peerPieces) {
+        return downloadingPieces.keySet().stream().filter(
+                pieceIndex -> peerPieces.get(pieceIndex)).findAny().isPresent();
     }
 
-    protected Optional<DataPiece> pieceObtained(final int pieceIndex) {
+    public boolean pieceRequested(final int pieceIndex, final DataPiece piece) {
+        return downloadingPieces.put(pieceIndex, piece) == null;
+    }
+
+    public boolean pieceFailure(final int pieceIndex) {
+        return downloadingPieces.remove(pieceIndex) != null;
+    }
+
+    public void pieceObtained(final int pieceIndex) {
         receivedPieces.set(pieceIndex);
-        return Optional.ofNullable(downloadingPieces.remove(pieceIndex));
+        downloadingPieces.remove(pieceIndex);
     }
 
-    protected abstract Optional<Integer> selectNext(BitSet peerCondition);
-    protected abstract void occurrenceIncreased(int pieceIndex);
-    protected abstract void occurrenceDecreased(int pieceIndex);
+    public void peerLost(final BitSet peerPieces) {
+        peerStateChanged(peerPieces, pieceIndex -> occurrenceDecreased(pieceIndex));
+    }
 
-    protected abstract boolean hasNext();
+    public void peerGained(final BitSet peerPieces) {
+        peerStateChanged(peerPieces, pieceIndex -> occurrenceIncreased(pieceIndex));
+    }
+
+    private void peerStateChanged(final BitSet peerPieces, final Consumer<Integer> pieceAvailabilityChangeHandler) {
+        for(int i = peerPieces.nextSetBit(0); i >= 0; i = peerPieces.nextSetBit(i + 1)) {
+            pieceAvailabilityChangeHandler.accept(i);
+        }
+    }
 }

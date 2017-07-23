@@ -608,7 +608,6 @@ public class PeerConnectionController implements PeerFoundListener, TorrentStatu
             final BitsView torrentPieces = servedTorrents.get(peerView.getInfoHash()).getAvailabilityView();
             final int expectedPieceCount = torrentPieces.getTotalPieces();
             final BitSet bitSet = PwpMessageFactory.parseBitfieldMessage(bitfield);
-            final BitsView bitsView = new BitsView(expectedPieceCount, bitSet);
 
             if(bitSet.length() > expectedPieceCount || (bitfield.getPayload().length * Byte.SIZE < expectedPieceCount)) {
                 //Disconnect this peer, invalid bitfield
@@ -616,7 +615,7 @@ public class PeerConnectionController implements PeerFoundListener, TorrentStatu
                 System.out.println("Invalid BITFIELD received from: " + peerView);
                 return;
             }
-            peerView.setPieces(bitsView);
+            peerView.setPieces(bitSet, expectedPieceCount);
         }
     }
 
@@ -806,8 +805,6 @@ public class PeerConnectionController implements PeerFoundListener, TorrentStatu
                 return connections;
             });
 
-            peerChannel.bind(NetworkUtilities.getSocketAddress(0));
-
             final boolean isConnected = peerChannel.connect(
                     new InetSocketAddress(peer.getIp(), peer.getPort()));
 
@@ -827,6 +824,7 @@ public class PeerConnectionController implements PeerFoundListener, TorrentStatu
 
     private void setChannelOptions(final NetworkChannel channel) throws IOException {
         channel.setOption(StandardSocketOptions.SO_RCVBUF, PeerConnectionController.SO_RCVBUF_VALUE);
+        channel.bind(NetworkUtilities.getSocketAddress(0));
         //channel.setOption(StandardSocketOptions.SO_REUSEADDR, PeerConnectionController.SO_REUSEADDR);
     }
 }

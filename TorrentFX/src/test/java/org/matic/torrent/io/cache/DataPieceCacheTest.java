@@ -22,7 +22,6 @@ package org.matic.torrent.io.cache;
 import org.easymock.EasyMock;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.matic.torrent.gui.model.PeerView;
 import org.matic.torrent.hash.InfoHash;
@@ -373,18 +372,5 @@ public final class DataPieceCacheTest {
 
         EasyMock.verify(searchedDataPieceMock, dataPieceMock, peerMock, searchedPeerMock);
         Assert.assertFalse(searchMiss.isPresent());
-    }
-
-    @Test
-    @Ignore
-    public void testAddDataPieceReadFromDiskToCache() {
-        final CachedDataPieceIdentifier identifier = new CachedDataPieceIdentifier(0, infoHash);
-
-        EasyMock.replay(dataPieceMock);
-
-        //A received piece that is cached has a non-null
-        unitUnderTest.put(identifier, dataPieceMock);
-
-        EasyMock.verify(dataPieceMock);
     }
 }

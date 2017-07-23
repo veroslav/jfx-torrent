@@ -50,6 +50,8 @@ import org.matic.torrent.peer.ClientProperties;
 import org.matic.torrent.queue.QueuedFileMetaData;
 import org.matic.torrent.queue.action.FilePriorityChangeEvent;
 import org.matic.torrent.queue.action.FilePriorityChangeListener;
+import org.matic.torrent.transfer.strategy.PieceSelectionStrategy;
+import org.matic.torrent.transfer.strategy.RarestFirstPieceSelectionStrategy;
 import org.matic.torrent.utils.UnitConverter;
 
 import java.io.IOException;
@@ -107,7 +109,6 @@ public final class TransferTask implements PwpMessageListener, PwpConnectionStat
 
     //Piece download/upload state tracking
     private final Map<PeerView, List<DataBlockIdentifier>> sentBlockRequests = new HashMap<>();
-    private final Map<Integer, DataPiece> downloadingPieces = new HashMap<>();
     private final Map<Integer, DataBlock> uploadingBlocks = new HashMap<>();
 
     //Event queues
@@ -122,7 +123,7 @@ public final class TransferTask implements PwpMessageListener, PwpConnectionStat
     private final FileIOWorker fileIOWorker;
     private Future<?> fileIOWorkerJob;
 
-    private final int[] peerPieceAvailabilities;
+    private final PieceSelectionStrategy pieceSelectionStrategy;
     private final BitSet receivedPieces;
 
     private final PeerConnectionController connectionManager;
@@ -155,11 +156,13 @@ public final class TransferTask implements PwpMessageListener, PwpConnectionStat
         this.fileIOWorker = new FileIOWorker(diskFileIOs, pieceCache, this.torrentView.getMetaData(), pieceConsumer);
 
         final int pieceCount = this.torrentView.getMetaData().getTotalPieces();
-        peerPieceAvailabilities = new int[pieceCount];
 
         receivedPieces = this.torrentView.getProgress().getObtainedPieces(pieceCount);
-        torrentView.setHavePieces(receivedPieces.toByteArray());
 
+        pieceSelectionStrategy = new RarestFirstPieceSelectionStrategy(MAX_RAREST_PIECES,
+                this.torrentView.getMetaData().getPieceLength(), receivedPieces);
+
+        torrentView.setHavePieces(receivedPieces.toByteArray());
         torrentView.hashFailuresProperty().bindBidirectional(hashFailures);
         torrentView.downloadedBytesProperty().bind(totalDownloadedBytes);
         torrentView.wastedBytesProperty().bind(wastedBytes);
@@ -364,13 +367,15 @@ public final class TransferTask implements PwpMessageListener, PwpConnectionStat
             //TODO: Handle the I/O exception (re-download the piece if OperationType == WRITE)
 
             totalDownloadedBytes.setValue(totalDownloadedBytes.get() - fileOperationResult.getDataPiece().getLength());
-            downloadingPieces.remove(fileOperationResult.getDataPiece().getIndex());
+
+            //downloadingPieces.remove(fileOperationResult.getDataPiece().getIndex());
+            pieceSelectionStrategy.pieceFailure(fileOperationResult.getDataPiece().getIndex());
         }
         else if(fileOperationResult.getOperationType() == FileOperationResult.OperationType.READ) {
             handlePieceRead(fileOperationResult);
         }
         else if(fileOperationResult.getOperationType() == FileOperationResult.OperationType.WRITE) {
-            handlePieceWritten(fileOperationResult.getDataPiece().getIndex());
+            handlePieceWritten(fileOperationResult);
         }
     }
 
@@ -510,13 +515,19 @@ public final class TransferTask implements PwpMessageListener, PwpConnectionStat
         connectionManager.send(new PwpMessageRequest(PwpMessageFactory.getUnchokeMessage(), unchokedPeer));
     }
 
-    private void handlePieceWritten(final int pieceIndex) {
+    private void handlePieceWritten(final FileOperationResult fileOperationResult) {
+        final int pieceIndex = fileOperationResult.getDataPiece().getIndex();
         receivedPieces.set(pieceIndex);
-        downloadingPieces.remove(pieceIndex);
+
+        //downloadingPieces.remove(pieceIndex);
+        pieceSelectionStrategy.pieceObtained(pieceIndex);
         torrentView.setHavePiece(pieceIndex);
 
         connectionManager.send(new PwpMessageRequest(
                 PwpMessageFactory.buildHavePieceMessage(pieceIndex)));
+
+        //Request a new piece from this peer
+        requestPiece(fileOperationResult.getSender());
     }
 
     private void handlePieceRead(final FileOperationResult fileOperationResult) {
@@ -566,11 +577,7 @@ public final class TransferTask implements PwpMessageListener, PwpConnectionStat
 
         if(wasRemoved) {
             //Update piece statistics, remove all piece counts for pieces that this peer had
-            for (int i = 0; i < peerPieceAvailabilities.length; ++i) {
-                if (peer.getHave(i)) {
-                    --peerPieceAvailabilities[i];
-                }
-            }
+            pieceSelectionStrategy.peerLost(peer.getPieces(torrentView.getTotalPieces()));
         }
     }
 
@@ -614,14 +621,16 @@ public final class TransferTask implements PwpMessageListener, PwpConnectionStat
 
     private void handleBitfieldMessage(final PwpMessage message, final PeerView peerView) {
         if(standbyPeers.contains(peerView)) {
-            for(int i = 0; i < torrentView.getMetaData().getTotalPieces(); ++i) {
-                if(peerView.getHave(i)) {
-                    ++peerPieceAvailabilities[i];
-                }
-            }
-
             //Check whether this peer has anything we are interested in
-            final BitSet peerPieces = BitSet.valueOf(PwpMessageFactory.parseBitfieldMessage(message).toByteArray());
+
+            final BitSet parsedBitField = PwpMessageFactory.parseBitfieldMessage(message);
+
+            final int totalPieces = torrentView.getMetaData().getTotalPieces();
+            final BitSet peerPieces = parsedBitField.get(0, totalPieces);
+
+            //final BitSet peerPieces = BitSet.valueOf(PwpMessageFactory.parseBitfieldMessage(message).toByteArray());
+
+            pieceSelectionStrategy.peerGained(peerView.getPieces(totalPieces));
             peerPieces.andNot(receivedPieces);
 
             if(peerPieces.isEmpty()) {
@@ -630,10 +639,12 @@ public final class TransferTask implements PwpMessageListener, PwpConnectionStat
             }
 
             //The peer has pieces that we haven't yet got. Check whether we have pending requests for those
-            final boolean piecesAlreadyRequested = downloadingPieces.keySet().stream().filter(pieceIndex ->
-                    peerPieces.get(pieceIndex)).findAny().isPresent();
+            final boolean piecesAlreadyRequested = pieceSelectionStrategy.anyRequested(peerPieces);
 
             if(!piecesAlreadyRequested) {
+
+                System.out.println("We are INTERESTED in " + peerView + " after receiving its BITFIELD");
+
                 connectionManager.send(new PwpMessageRequest(PwpMessageFactory.getInterestedMessage(), peerView));
                 peerView.setAreWeInterestedIn(true);
             }
@@ -688,7 +699,7 @@ public final class TransferTask implements PwpMessageListener, PwpConnectionStat
 
     private void handleUnchokeMessage(final PeerView peerView) {
 
-        //System.out.println("UNCHOKED by " + peerView.getIp() + ":" + peerView.getPort());
+        System.out.println("UNCHOKED by " + peerView);
 
         if(!peerView.isChokingUs()) {
             return;
@@ -710,23 +721,8 @@ public final class TransferTask implements PwpMessageListener, PwpConnectionStat
             }
         }
 
-        //TODO: Request one of the rarest pieces from this peer, below is a simple test
-        /*int pieceIndex = -1;
-        for(int i = 0; i < torrentView.getMetaData().getPieceLength(); ++i) {
-            if(!downloadingPieces.containsKey(i) && !receivedPieces.get(i) && peerView.getHave(i)) {
-                pieceIndex = i;
-                break;
-            }
-        }
-
-        if(pieceIndex != -1) {
-
-            //System.out.println("Requesting piece " + pieceIndex + " from " + peerView.getIp() + ":" + peerView.getPort());
-
-            final DataPiece requestedDataPiece = new DataPiece(new byte[torrentView.getMetaData().getPieceLength()], pieceIndex);
-            downloadingPieces.put(pieceIndex, requestedDataPiece);
-            requestBlocks(requestedDataPiece, peerView);
-        }*/
+        //Request one of the rarest pieces from this peer, below is a simple test
+        requestPiece(peerView);
     }
 
     private void handleChokeMessage(final PeerView peerView) {
@@ -800,7 +796,7 @@ public final class TransferTask implements PwpMessageListener, PwpConnectionStat
         blockRequests.remove(matchingRequest.get());
 
         final int pieceIndex = block.getPieceIndex();
-        final DataPiece dataPiece = downloadingPieces.get(pieceIndex);
+        final DataPiece dataPiece = pieceSelectionStrategy.getRequestedPiece(pieceIndex);
 
         //System.out.println("Data piece for the received block from " + peerInfo + " is " + dataPiece.getIndex());
 
@@ -823,20 +819,20 @@ public final class TransferTask implements PwpMessageListener, PwpConnectionStat
         if(dataPiece.hasCompleted()) {
             final boolean validPiece = dataPiece.validate(torrentView.getMetaData().getPieceHash(pieceIndex));
 
-            /*System.out.println("\nPIECE COMPLETED from " + peerInfo + " : " + dataPiece.getIndex()
-                    + ", valid? " + validPiece + "\n");*/
+            System.out.println("\nPIECE COMPLETED from " + sender + " : " + dataPiece.getIndex()
+                    + ", valid? " + validPiece + "\n");
 
             if(validPiece) {
                 final CachedDataPieceIdentifier cachedDataPieceIdentifier =
                         new CachedDataPieceIdentifier(dataPiece.getIndex(), sender.getInfoHash());
                 fileIOWorker.writeDataPiece(new WriteDataPieceRequest(cachedDataPieceIdentifier, dataPiece));
-
-                //TODO: Request a new piece, if any left
             }
             else {
                 hashFailures.set(hashFailures.get() + 1);
                 totalDownloadedBytes.set(totalDownloadedBytes.get() - dataPiece.getLength());
-                downloadingPieces.remove(pieceIndex);
+
+                pieceSelectionStrategy.pieceFailure(pieceIndex);
+                //downloadingPieces.remove(pieceIndex);
 
                 //TODO: re-request this piece from another peer
             }
@@ -874,13 +870,30 @@ public final class TransferTask implements PwpMessageListener, PwpConnectionStat
         }
     }
 
+    private void requestPiece(final PeerView peerView) {
+
+        System.out.println("Looking for a piece to request from " + peerView);
+
+        final Optional<Integer> nextPieceCandidate = pieceSelectionStrategy.selectNext(
+                peerView.getPieces(torrentView.getMetaData().getTotalPieces()));
+        if(nextPieceCandidate.isPresent()) {
+            final int pieceIndex = nextPieceCandidate.get();
+            final DataPiece requestedDataPiece = new DataPiece(
+                    new byte[torrentView.getMetaData().getPieceLength()], pieceIndex);
+
+
+            //downloadingPieces.put(pieceIndex, requestedDataPiece);
+
+            System.out.println("Requesting piece " + pieceIndex + " from " + peerView);
+
+            requestBlocks(requestedDataPiece, peerView);
+            pieceSelectionStrategy.pieceRequested(pieceIndex, requestedDataPiece);
+        }
+    }
+
     private void requestBlocks(final DataPiece dataPiece, final PeerView receiver) {
         final List<DataBlockIdentifier> requestedBlocks = sentBlockRequests.computeIfAbsent(
                 receiver, blocks -> new ArrayList<>());
-
-        //START TEST
-        //final String peerInfo = "[" + receiver.getIp() + ":" + receiver.getPort() + "]";
-        //END TEST
 
         int pieceOffset;
 
@@ -916,14 +929,19 @@ public final class TransferTask implements PwpMessageListener, PwpConnectionStat
 
     private void handleHaveMessage(final PwpMessage message, final PeerView peerView) {
         final int pieceIndex = UnitConverter.getInt(message.getPayload());
-        ++peerPieceAvailabilities[pieceIndex];
-        peerView.setHave(pieceIndex, true);
+
+        //++peerPieceAvailabilities[pieceIndex];
+        pieceSelectionStrategy.occurrenceIncreased(pieceIndex);
+
+        peerView.setHave(pieceIndex, true, torrentView.getMetaData().getTotalPieces());
 
         //If we don't yet have this piece, let's show some interest
-        if(!receivedPieces.get(pieceIndex) && !downloadingPieces.containsKey(pieceIndex)
+        if(!receivedPieces.get(pieceIndex) && pieceSelectionStrategy.getRequestedPiece(pieceIndex) == null
                 && !peerView.areWeInterestedIn()) {
             connectionManager.send(new PwpMessageRequest(PwpMessageFactory.getInterestedMessage(), peerView));
             peerView.setAreWeInterestedIn(true);
+
+            System.out.println("Sent INTERESTED to " + peerView + " in piece " + pieceIndex);
         }
     }
 
