@@ -46,7 +46,7 @@ public class PeerView {
     private final DoubleProperty downloaded = new SimpleDoubleProperty();
     private final DoubleProperty peerDownload = new SimpleDoubleProperty();
 
-    private final BitSet pieces = new BitSet();
+    private BitSet pieces = new BitSet();
 
     private boolean isChokingUs = true;
     private boolean isInterestedInUs = false;
@@ -94,6 +94,10 @@ public class PeerView {
         bytesSentToUsSinceUnchoke += byteCount;
     }
 
+    public long getUnchokedByUsTime() {
+        return unchokedByUsTime;
+    }
+
     public double getAverageUploadRateSinceLastUnchoke() {
         return bytesSentToUsSinceUnchoke == 0? 0 :
                 (System.currentTimeMillis() - unchokedByUsTime) / (double)bytesSentToUsSinceUnchoke;
@@ -115,8 +119,8 @@ public class PeerView {
         return pieces.get(pieceIndex);
     }
 
-    public BitSet getPieces(final int pieceCount) {
-        return pieces.get(0, pieceCount);
+    public BitSet getPieces() {
+        return pieces;
     }
 
     public void setHave(final int pieceIndex, final boolean have, final int pieceCount) {
@@ -125,7 +129,7 @@ public class PeerView {
     }
 
     public void setPieces(final BitSet pieces, final int pieceCount) {
-        this.pieces.and(pieces);
+        this.pieces = pieces;
         percentDone.set((double)pieces.cardinality()/ pieceCount * 100);
     }
 

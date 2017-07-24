@@ -70,9 +70,9 @@ public class PeerConnectionController implements PeerFoundListener, TorrentStatu
     private static final int SO_RCVBUF_VALUE = 4 * 1024;
     //private static final boolean SO_REUSEADDR = true;
 
-    private static final int MAX_CONNECTIONS_PER_TORRENT = 100;
-    private static final int GLOBAL_CONNECTION_LIMIT = 500;
-    private static final int INCOMING_CONNECTION_LIMIT = 50;
+    private static final int MAX_CONNECTIONS_PER_TORRENT = Integer.MAX_VALUE;   //100;
+    private static final int GLOBAL_CONNECTION_LIMIT = Integer.MAX_VALUE;       //500;
+    private static final int INCOMING_CONNECTION_LIMIT = Integer.MAX_VALUE;     //50;
     private int totalConnectionCount = 0;
 
     //Listeners for connection state changes and incoming peer messages
@@ -422,7 +422,7 @@ public class PeerConnectionController implements PeerFoundListener, TorrentStatu
                 }
             });
 
-            if(finalRequest.getMessage().getMessageType() == MessageType.KEEP_ALIVE) {
+            if(finalRequest.getRequestType() == MessageType.KEEP_ALIVE) {
                 lastKeepAliveSent = System.currentTimeMillis();
             }
         }
@@ -805,6 +805,8 @@ public class PeerConnectionController implements PeerFoundListener, TorrentStatu
                 return connections;
             });
 
+            peerChannel.bind(NetworkUtilities.getSocketAddress(0));
+
             final boolean isConnected = peerChannel.connect(
                     new InetSocketAddress(peer.getIp(), peer.getPort()));
 
@@ -824,7 +826,7 @@ public class PeerConnectionController implements PeerFoundListener, TorrentStatu
 
     private void setChannelOptions(final NetworkChannel channel) throws IOException {
         channel.setOption(StandardSocketOptions.SO_RCVBUF, PeerConnectionController.SO_RCVBUF_VALUE);
-        channel.bind(NetworkUtilities.getSocketAddress(0));
+        //channel.bind(NetworkUtilities.getSocketAddress(0));
         //channel.setOption(StandardSocketOptions.SO_REUSEADDR, PeerConnectionController.SO_REUSEADDR);
     }
 }

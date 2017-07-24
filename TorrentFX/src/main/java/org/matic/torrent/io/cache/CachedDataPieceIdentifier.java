@@ -80,4 +80,12 @@ public class CachedDataPieceIdentifier implements Comparable<CachedDataPieceIden
             return infoHash.toString().compareTo(other.infoHash.toString());
         }
     }
+
+    @Override
+    public String toString() {
+        return "CachedDataPieceIdentifier{" +
+                "infoHash=" + infoHash +
+                ", pieceIndex=" + pieceIndex +
+                '}';
+    }
 }

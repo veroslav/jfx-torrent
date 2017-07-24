@@ -221,6 +221,6 @@ public final class FileIOWorker implements Runnable {
 
         pieceCache.put(writeDataPieceRequest.getCachedDataPieceIdentifier(), dataPiece);
         dataPieceConsumer.accept(new FileOperationResult(FileOperationResult.OperationType.WRITE,
-                dataPiece, null, null, null));
+                dataPiece, writeDataPieceRequest.getSender(), null, null));
     }
 }

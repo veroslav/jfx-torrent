@@ -45,36 +45,38 @@ public class RarestFirstPieceSelectionStrategy extends PieceSelectionStrategy {
 
     @Override
     public Optional<Integer> selectNext(final BitSet peerCondition) {
-        if(rarestPieces.isEmpty()) {
-            return Optional.empty();
+        final List<Integer> pieceCandidates = rarestPieces.entrySet().stream().flatMap(
+                entry -> entry.getValue().stream()).filter(pieceIndex ->
+                peerCondition.get(pieceIndex) && !receivedPieces.get(pieceIndex) &&
+                        !downloadingPieces.containsKey(pieceIndex)).collect(Collectors.toList());
+
+        if(pieceCandidates.isEmpty()) {
+            //None of the pieces this peer has are among the rarest, simply request any piece we don't yet have
+            final BitSet candidatePieces = BitSet.valueOf(peerCondition.toByteArray());
+            candidatePieces.andNot(receivedPieces);
+
+            //Check which of the candidate peers has the lowest availability
+            int lowestAvailability = Integer.MAX_VALUE;
+            int rarestPieceIndex = -1;
+
+            for(int i = candidatePieces.nextSetBit(0); i != -1; i = candidatePieces.nextSetBit(i + 1)) {
+                if(super.pieceAvailabilities[i] < lowestAvailability) {
+                    rarestPieceIndex = i;
+                    lowestAvailability = super.pieceAvailabilities[i];
+                }
+            }
+
+            //System.out.println("Rarest pieces: " + rarestPieces + " , piece to request = " + rarestPieceIndex);
+
+            return rarestPieceIndex != -1 && !downloadingPieces.containsKey(rarestPieceIndex)
+                    && !receivedPieces.get(rarestPieceIndex)? Optional.of(rarestPieceIndex) : Optional.empty();
         }
         else {
-            final List<Integer> pieceCandidates = rarestPieces.entrySet().stream().flatMap(
-                    entry -> entry.getValue().stream()).filter(pieceIndex -> peerCondition.get(pieceIndex)
-            ).collect(Collectors.toList());
 
-            if(pieceCandidates.isEmpty()) {
-                //None of the pieces this peer has are among the rarest, simply request any piece we don't yet have
-                final BitSet candidatePieces = BitSet.valueOf(peerCondition.toByteArray());
-                candidatePieces.andNot(receivedPieces);
+            //System.out.println("Rarest pieces: " + rarestPieces + " , download candidates =  " + pieceCandidates);
 
-                //Check which of the candidate peers has the lowest availability
-                int lowestAvailability = Integer.MAX_VALUE;
-                int rarestPieceIndex = -1;
-                int nextSetBit = 0;
-
-                while((nextSetBit = candidatePieces.nextSetBit(nextSetBit)) != -1) {
-                    if(super.pieceAvailabilities[nextSetBit] < lowestAvailability) {
-                        rarestPieceIndex = nextSetBit;
-                    }
-                }
-
-                return rarestPieceIndex != -1? Optional.of(rarestPieceIndex) : Optional.empty();
-            }
-            else {
-                return Optional.of(pieceCandidates.get(
-                        ClientProperties.RANDOM_INSTANCE.nextInt(pieceCandidates.size())));
-            }
+            return Optional.of(pieceCandidates.get(
+                    ClientProperties.RANDOM_INSTANCE.nextInt(pieceCandidates.size())));
         }
     }
 
@@ -179,8 +181,7 @@ public class RarestFirstPieceSelectionStrategy extends PieceSelectionStrategy {
     public boolean pieceRequested(final int pieceIndex, final DataPiece piece) {
         final boolean wasRequested = super.pieceRequested(pieceIndex, piece);
 
-        if(rarestPieces.containsKey(pieceAvailabilities[pieceIndex])
-                && rarestPieces.remove(pieceIndex) != null) {
+        if(wasRequested && removeFromRarestPieces(pieceIndex)) {
             updateRarestPieces((index, avail) -> index == pieceIndex);
         }
 
@@ -191,14 +192,26 @@ public class RarestFirstPieceSelectionStrategy extends PieceSelectionStrategy {
     public void pieceObtained(final int pieceIndex) {
         super.pieceObtained(pieceIndex);
 
-        if(rarestPieces.containsKey(pieceAvailabilities[pieceIndex])
-                && rarestPieces.remove(pieceIndex) != null) {
+        if(removeFromRarestPieces(pieceIndex)) {
             updateRarestPieces((index, avail) -> index == pieceIndex);
         }
     }
 
     protected int getRarestPiecesCount() {
         return (int)rarestPieces.values().stream().flatMap(List::stream).count();
+    }
+
+    private boolean removeFromRarestPieces(final int pieceIndex) {
+        if(!rarestPieces.containsKey(pieceAvailabilities[pieceIndex])) {
+            return false;
+        }
+        final List<Integer> sameAvailabilityPieces = rarestPieces.get(pieceAvailabilities[pieceIndex]);
+
+        final boolean removed = sameAvailabilityPieces.remove((Integer)pieceIndex);
+        if(sameAvailabilityPieces.isEmpty()) {
+            rarestPieces.remove(pieceAvailabilities[pieceIndex]);
+        }
+        return removed;
     }
 
     private OptionalInt findAvailabilityPiece(final BiFunction<Integer, Integer, Boolean> condition) {
@@ -221,13 +234,23 @@ public class RarestFirstPieceSelectionStrategy extends PieceSelectionStrategy {
         for(int i = 0; i < super.pieceAvailabilities.length; ++i) {
             //Skip this piece if we have it or if it is among the rarest pieces already
             final int availability = pieceAvailabilities[i];
-            if(availability == 0 || super.receivedPieces.get(i) || skipPieceCondition.apply(i, availability)) {
+            final boolean isAmongRarestPieces = rarestPieces.containsKey(availability)
+                    && rarestPieces.get(availability).contains(i);
+            if(availability == 0 || super.receivedPieces.get(i) || isAmongRarestPieces
+                    || skipPieceCondition.apply(i, availability)) {
                 continue;
             }
             if(result.size() < targetPiecesCount) {
                 result.computeIfAbsent(super.pieceAvailabilities[i], value -> new ArrayList<>()).add(i);
             }
             else {
+
+                //START TEST
+                if(result.isEmpty()) {
+                    System.err.println("RESULT IS EMPTY");
+                }
+                //END TEST
+
                 final int highestFoundAvailability = result.lastKey();
                 if(super.pieceAvailabilities[i] < highestFoundAvailability) {
                     result.remove(highestFoundAvailability);

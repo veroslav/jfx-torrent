@@ -19,6 +19,7 @@
 */
 package org.matic.torrent.io;
 
+import org.matic.torrent.gui.model.PeerView;
 import org.matic.torrent.io.cache.CachedDataPieceIdentifier;
 
 import java.util.Objects;
@@ -27,10 +28,17 @@ public final class WriteDataPieceRequest {
 
     private final CachedDataPieceIdentifier pieceIdentifier;
     private final DataPiece dataPiece;
+    private final PeerView sender;
 
-    public WriteDataPieceRequest(final CachedDataPieceIdentifier pieceIdentifier, final DataPiece dataPiece) {
+    public WriteDataPieceRequest(final CachedDataPieceIdentifier pieceIdentifier, final DataPiece dataPiece,
+                                 final PeerView sender) {
         this.pieceIdentifier = pieceIdentifier;
         this.dataPiece = dataPiece;
+        this.sender = sender;
+    }
+
+    public PeerView getSender() {
+        return sender;
     }
 
     public CachedDataPieceIdentifier getCachedDataPieceIdentifier() {
@@ -47,11 +55,12 @@ public final class WriteDataPieceRequest {
         if (o == null || getClass() != o.getClass()) return false;
         WriteDataPieceRequest that = (WriteDataPieceRequest) o;
         return Objects.equals(pieceIdentifier, that.pieceIdentifier) &&
-                Objects.equals(dataPiece, that.dataPiece);
+                Objects.equals(dataPiece, that.dataPiece) &&
+                Objects.equals(sender, that.sender);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(pieceIdentifier, dataPiece);
+        return Objects.hash(pieceIdentifier, dataPiece, sender);
     }
 }

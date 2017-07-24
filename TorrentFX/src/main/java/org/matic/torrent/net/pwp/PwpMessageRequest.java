@@ -34,51 +34,79 @@ import java.util.Collections;
 public final class PwpMessageRequest {
 
     private final Collection<PeerView> peers;
-    private final PwpMessage message;
+    private final Collection<PwpMessage> messages;
+    private final PwpMessage.MessageType messageType;
 
     /**
      * Create a new request with data to be sent to specified peers.
      *
-     * @param message The message to be sent
-     * @param peers Peers to which to send the message
+     * @param messages The messages to be sent
+     * @param peers Peers to which to send the messages
      */
-    public PwpMessageRequest(final PwpMessage message, final Collection<PeerView> peers) {
-        this.message = message;
+    public PwpMessageRequest(final Collection<PwpMessage> messages, final Collection<PeerView> peers,
+                             final PwpMessage.MessageType messageType) {
+        this.messageType = messageType;
+        this.messages = messages;
         this.peers = peers;
     }
 
     /**
-     * Create a new request with data to be sent to a peer.
+     * Create a new request with a single message to be sent to a single peer.
      *
      * @param message The message to be sent
      * @param peer Peer to which to send the message
      */
     public PwpMessageRequest(final PwpMessage message, final PeerView peer) {
-        this(message, Arrays.asList(peer));
+        this(Arrays.asList(message), Arrays.asList(peer), message.getMessageType());
     }
 
     /**
-     * Create a new request with data to be sent to all handshaken peers.
+     * Create a new request with multiple messages to be sent to a single peer.
+     *
+     * @param messages The messages to be sent
+     * @param peer Peer to which to send the messages
+     */
+    public PwpMessageRequest(final Collection<PwpMessage> messages, final PeerView peer,
+                             final PwpMessage.MessageType messageType) {
+        this(messages, Arrays.asList(peer), messageType);
+    }
+
+    /**
+     * Create a new request with a single message to be sent to all handshaken peers.
      *
      * @param message The message to be sent
      */
     public PwpMessageRequest(final PwpMessage message) {
-        this(message, Collections.emptyList());
+        this(Arrays.asList(message), Collections.emptyList(), message.getMessageType());
+    }
+
+    /**
+     * Create a new request with a single message to be sent to target peers.
+     *
+     * @param message The message to be sent
+     * @param peers Target peers
+     */
+    public PwpMessageRequest(final PwpMessage message, final Collection<PeerView> peers) {
+        this(Arrays.asList(message), peers, message.getMessageType());
     }
 
     public Collection<PeerView> getPeers() {
         return peers;
     }
 
-    public PwpMessage getMessage() {
-        return message;
+    public Collection<PwpMessage> getMessages() {
+        return messages;
+    }
+
+    public PwpMessage.MessageType getRequestType() {
+        return messageType;
     }
 
     @Override
     public String toString() {
         return "PwpMessageRequest{" +
                 "peers=" + peers +
-                ", message=" + message +
+                ", messages=" + messages +
                 '}';
     }
 }
