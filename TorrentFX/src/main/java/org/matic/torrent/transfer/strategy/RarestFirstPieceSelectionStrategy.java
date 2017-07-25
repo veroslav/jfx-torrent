@@ -24,6 +24,7 @@ import org.matic.torrent.peer.ClientProperties;
 
 import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -60,7 +61,8 @@ public class RarestFirstPieceSelectionStrategy extends PieceSelectionStrategy {
             int rarestPieceIndex = -1;
 
             for(int i = candidatePieces.nextSetBit(0); i != -1; i = candidatePieces.nextSetBit(i + 1)) {
-                if(super.pieceAvailabilities[i] < lowestAvailability) {
+                if(super.pieceAvailabilities[i] < lowestAvailability && !downloadingPieces.containsKey(i)
+                        && !receivedPieces.get(i)) {
                     rarestPieceIndex = i;
                     lowestAvailability = super.pieceAvailabilities[i];
                 }
@@ -68,8 +70,7 @@ public class RarestFirstPieceSelectionStrategy extends PieceSelectionStrategy {
 
             //System.out.println("Rarest pieces: " + rarestPieces + " , piece to request = " + rarestPieceIndex);
 
-            return rarestPieceIndex != -1 && !downloadingPieces.containsKey(rarestPieceIndex)
-                    && !receivedPieces.get(rarestPieceIndex)? Optional.of(rarestPieceIndex) : Optional.empty();
+            return rarestPieceIndex != -1? Optional.of(rarestPieceIndex) : Optional.empty();
         }
         else {
 
@@ -141,10 +142,6 @@ public class RarestFirstPieceSelectionStrategy extends PieceSelectionStrategy {
             return;
         }
 
-        final Map.Entry<Integer, List<Integer>> lastRarestEntry = rarestPieces.lastEntry();
-        final List<Integer> lastRarestEntryPieceIndexes = lastRarestEntry.getValue();
-        final int lastRarestEntryAvailability = lastRarestEntry.getKey();
-
         final List<Integer> oldAvailabilityEntries = rarestPieces.get(oldAvailability);
 
         //Check whether the piece was among the rarest pieces
@@ -165,15 +162,23 @@ public class RarestFirstPieceSelectionStrategy extends PieceSelectionStrategy {
             }
         }
         //Check whether the piece has become one of the rarest pieces
-        else if(pieceAvailabilities[pieceIndex] < lastRarestEntryAvailability) {
-            //This piece become one of the rarest pieces, replace one of the highest availability pieces there
-            lastRarestEntryPieceIndexes.remove(0);
+        else {
+            final Map.Entry<Integer, List<Integer>> lastRarestEntry = rarestPieces.lastEntry();
 
-            if(lastRarestEntryPieceIndexes.isEmpty()) {
-                rarestPieces.remove(lastRarestEntry.getKey());
+            final List<Integer> lastRarestEntryPieceIndexes = lastRarestEntry != null?
+                    lastRarestEntry.getValue() : Collections.emptyList();
+            final int lastRarestEntryAvailability = lastRarestEntry.getKey();
+
+            if (pieceAvailabilities[pieceIndex] < lastRarestEntryAvailability) {
+                //This piece become one of the rarest pieces, replace one of the highest availability pieces there
+                lastRarestEntryPieceIndexes.remove(0);
+
+                if (lastRarestEntryPieceIndexes.isEmpty()) {
+                    rarestPieces.remove(lastRarestEntry.getKey());
+                }
+
+                rarestPieces.computeIfAbsent(pieceAvailabilities[pieceIndex], value -> new ArrayList<>()).add(pieceIndex);
             }
-
-            rarestPieces.computeIfAbsent(pieceAvailabilities[pieceIndex], value -> new ArrayList<>()).add(pieceIndex);
         }
     }
 
@@ -195,6 +200,22 @@ public class RarestFirstPieceSelectionStrategy extends PieceSelectionStrategy {
         if(removeFromRarestPieces(pieceIndex)) {
             updateRarestPieces((index, avail) -> index == pieceIndex);
         }
+    }
+
+    @Override
+    public boolean pieceFailure(final int pieceIndex) {
+        final boolean failureHandled = super.pieceFailure(pieceIndex);
+
+        //TODO: Check whether we need to update the rarest pieces
+
+        return failureHandled;
+    }
+
+    @Override
+    public void peerLost(final BitSet peerPieces) {
+        super.peerLost(peerPieces);
+
+        //TODO: Check whether we need to update the rarest pieces
     }
 
     protected int getRarestPiecesCount() {
@@ -244,13 +265,6 @@ public class RarestFirstPieceSelectionStrategy extends PieceSelectionStrategy {
                 result.computeIfAbsent(super.pieceAvailabilities[i], value -> new ArrayList<>()).add(i);
             }
             else {
-
-                //START TEST
-                if(result.isEmpty()) {
-                    System.err.println("RESULT IS EMPTY");
-                }
-                //END TEST
-
                 final int highestFoundAvailability = result.lastKey();
                 if(super.pieceAvailabilities[i] < highestFoundAvailability) {
                     result.remove(highestFoundAvailability);

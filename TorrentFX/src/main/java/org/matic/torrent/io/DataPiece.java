@@ -22,6 +22,8 @@ package org.matic.torrent.io;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * A piece of data that is a part of a torrent. Its contents can be checked
@@ -38,7 +40,9 @@ public class DataPiece {
     private final byte[] pieceBytes;
     private final int pieceIndex;
 
-    private int blockPointer = 0;
+    private final TreeMap<Integer, DataBlock> queuedBlocks = new TreeMap<>();
+
+    private int digestedBlocksPointer = 0;
 
     public DataPiece(final byte[] pieceBytes, final int pieceIndex) {
         this.pieceBytes = pieceBytes;
@@ -53,14 +57,41 @@ public class DataPiece {
 
     public boolean addBlock(final DataBlock block) {
         final byte[] blockData = block.getBlockData();
+        final int pieceOffset = block.getPieceOffset();
 
-        if(block.getPieceOffset() == blockPointer) {
+        //TODO: Re-enable the check below after the fix is implemented
+        /*if(pieceOffset + blockData.length >= this.getLength()) {
+            return false;
+        }*/
+
+        if(pieceOffset == digestedBlocksPointer) {
             validatorDigest.update(block.getBlockData());
             System.arraycopy(blockData, 0, pieceBytes, block.getPieceOffset(), blockData.length);
-            blockPointer += blockData.length;
-            return true;
+
+            digestedBlocksPointer += blockData.length;
+
+            Map.Entry<Integer, DataBlock> nextQueuedBlock;
+            while((nextQueuedBlock = queuedBlocks.firstEntry()) != null) {
+                final DataBlock queuedDataBlock = nextQueuedBlock.getValue();
+                final byte[] queuedBlockBytes = queuedDataBlock.getBlockData();
+                if(queuedDataBlock.getPieceOffset() == digestedBlocksPointer) {
+                    validatorDigest.update(queuedBlockBytes);
+                    final int queuedDataBlockLength = queuedBlockBytes.length;
+                    System.arraycopy(queuedBlockBytes, 0, pieceBytes,
+                            queuedDataBlock.getPieceOffset(), queuedBlockBytes.length);
+
+                    digestedBlocksPointer += queuedDataBlockLength;
+                }
+                else {
+                    break;
+                }
+            }
         }
-        return false;
+        else {
+            queuedBlocks.put(pieceOffset, block);
+        }
+
+        return true;
     }
 
     public DataBlock getBlock(final int offset, final int blockLength) {
@@ -78,12 +109,8 @@ public class DataPiece {
         return pieceBytes.length;
     }
 
-    public int getBlockPointer() {
-        return blockPointer;
-    }
-
     public boolean hasCompleted() {
-        return pieceBytes.length == blockPointer;
+        return pieceBytes.length == digestedBlocksPointer;
     }
 
     public boolean validate(final byte[] expectedPieceHash) {
@@ -99,7 +126,7 @@ public class DataPiece {
     public String toString() {
         return "DataPiece{" +
                 "pieceIndex=" + pieceIndex +
-                ", blockPointer=" + blockPointer +
+                ", digestedBlocksPointer=" + digestedBlocksPointer +
                 ", length=" + pieceBytes.length +
                 '}';
     }

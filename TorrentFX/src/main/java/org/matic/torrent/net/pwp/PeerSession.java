@@ -50,8 +50,8 @@ public final class PeerSession {
 	//Leftover data, if any, left from a previous read on this session's connection
 	protected ByteBuffer backupReaderBuffer = null;
 
-    private static final int INPUT_BUFFER_SIZE = 1024;
-    private static final int OUTPUT_BUFFER_SIZE = 1024;
+    private static final int INPUT_BUFFER_SIZE = 4 * 1024;
+    private static final int OUTPUT_BUFFER_SIZE = 4 * 1024;
 
     private final ByteBuffer inputBuffer = ByteBuffer.allocateDirect(INPUT_BUFFER_SIZE);
     private final ThreadLocal<ByteBuffer> outputBuffer =

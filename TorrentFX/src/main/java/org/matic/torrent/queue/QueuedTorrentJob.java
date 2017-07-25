@@ -20,7 +20,7 @@
 package org.matic.torrent.queue;
 
 import org.matic.torrent.gui.model.TorrentView;
-import org.matic.torrent.transfer.TransferTask;
+import org.matic.torrent.transfer.TransferController;
 
 /**
  * This class is a simple bean that groups relevant queued torrent info under the same roof.
@@ -29,19 +29,19 @@ import org.matic.torrent.transfer.TransferTask;
  */
 public final class QueuedTorrentJob {
 
-    private final TransferTask transferTask;
+    private final TransferController transferController;
     private final TorrentView torrentView;
     private final QueuedTorrent torrent;
 
     public QueuedTorrentJob(final QueuedTorrent torrent, final TorrentView torrentView,
-                            final TransferTask transferTask) {
+                            final TransferController transferController) {
         this.torrent = torrent;
-        this.transferTask = transferTask;
+        this.transferController = transferController;
         this.torrentView = torrentView;
     }
 
-    public TransferTask getTransferTask() {
-        return transferTask;
+    public TransferController getTransferController() {
+        return transferController;
     }
 
     public TorrentView getTorrentView() {

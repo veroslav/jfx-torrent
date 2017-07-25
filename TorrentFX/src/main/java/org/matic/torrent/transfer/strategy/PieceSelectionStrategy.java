@@ -56,6 +56,7 @@ public abstract class PieceSelectionStrategy {
     }
 
     public boolean pieceFailure(final int pieceIndex) {
+        receivedPieces.clear(pieceIndex);
         return downloadingPieces.remove(pieceIndex) != null;
     }
 

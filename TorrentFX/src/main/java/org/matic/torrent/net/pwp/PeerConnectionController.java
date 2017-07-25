@@ -67,7 +67,7 @@ public class PeerConnectionController implements PeerFoundListener, TorrentStatu
     private static final long STALE_CONNECTION_THRESHOLD_TIME = 300000; //5m
     private static final long KEEP_ALIVE_INTERVAL = 30000;	//30 seconds
 
-    private static final int SO_RCVBUF_VALUE = 4 * 1024;
+    private static final int SO_RCVBUF_VALUE = 8 * 1024;
     //private static final boolean SO_REUSEADDR = true;
 
     private static final int MAX_CONNECTIONS_PER_TORRENT = Integer.MAX_VALUE;   //100;
@@ -612,10 +612,8 @@ public class PeerConnectionController implements PeerFoundListener, TorrentStatu
             if(bitSet.length() > expectedPieceCount || (bitfield.getPayload().length * Byte.SIZE < expectedPieceCount)) {
                 //Disconnect this peer, invalid bitfield
                 disconnectPeer(selectionKey, peerView);
-                System.out.println("Invalid BITFIELD received from: " + peerView);
                 return;
             }
-            peerView.setPieces(bitSet, expectedPieceCount);
         }
     }
 

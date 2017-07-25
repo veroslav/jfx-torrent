@@ -47,8 +47,8 @@ import org.matic.torrent.tracking.TrackerManager;
 import org.matic.torrent.tracking.methods.dht.DhtSession;
 import org.matic.torrent.tracking.methods.peerdiscovery.LocalPeerDiscoverySession;
 import org.matic.torrent.tracking.methods.pex.PeerExchangeSession;
+import org.matic.torrent.transfer.TransferController;
 import org.matic.torrent.transfer.TransferStatusChangeEvent;
-import org.matic.torrent.transfer.TransferTask;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -221,7 +221,7 @@ public final class QueuedTorrentController implements PreferenceChangeListener, 
             queuedTorrents.forEach(t -> {
 
                 final QueuedTorrentJob torrentJob = queuedTorrentJobs.remove(t.getInfoHash());
-                torrentJob.getTransferTask().shutdown();
+                torrentJob.getTransferController().shutdown();
 
                 final QueuedTorrentProgress progress = t.getProgress();
                 final QueueType queueType = t.getQueueType();
@@ -297,16 +297,16 @@ public final class QueuedTorrentController implements PreferenceChangeListener, 
     }
 
     private void initTransferController(final QueuedTorrent torrent, final TorrentView torrentView) {
-        final TransferTask transferTask = new TransferTask(torrentView, connectionManager, pieceCache);
-        torrentView.getFileTree().addFilePriorityChangeListener(transferTask);
+        final TransferController transferController = new TransferController(torrentView, connectionManager, pieceCache);
+        torrentView.getFileTree().addFilePriorityChangeListener(transferController);
 
-        transferTask.addStatusChangeListener(event -> {
+        transferController.addStatusChangeListener(event -> {
             if(event.getEventType() == TransferStatusChangeEvent.EventType.ERROR) {
                 queueController.changeStatus(torrent, TorrentStatus.ERROR);
             }
         });
         queuedTorrentJobs.put(torrentView.getInfoHash(),
-                new QueuedTorrentJob(torrent, torrentView, transferTask));
+                new QueuedTorrentJob(torrent, torrentView, transferController));
     }
 
     private void persistTorrent(final QueuedTorrent torrent) {
@@ -379,15 +379,15 @@ public final class QueuedTorrentController implements PreferenceChangeListener, 
                 final InfoHash infoHash = targetTorrent.getInfoHash();
                 final QueuedTorrentJob queuedTorrentJob = queuedTorrentJobs.remove(infoHash);
 
-                final TransferTask transferTask = queuedTorrentJob.getTransferTask();
-                torrentView.getFileTree().removeFilePriorityChangeListener(transferTask);
+                final TransferController transferController = queuedTorrentJob.getTransferController();
+                torrentView.getFileTree().removeFilePriorityChangeListener(transferController);
 
                 final Future<?> transferTaskFuture = transferTasks.remove(infoHash);
                 if(transferTaskFuture != null) {
                     transferTaskFuture.cancel(true);
                 }
 
-                transferTask.shutdown();
+                transferController.shutdown();
                 queuedTorrents.remove(targetTorrent);
                 trackerManager.removeTorrent(torrentView);
                 connectionManager.reject(torrentView);
@@ -420,7 +420,7 @@ public final class QueuedTorrentController implements PreferenceChangeListener, 
                 final InfoHash infoHash = torrentView.getInfoHash();
                 final QueuedTorrentJob torrentJob = queuedTorrentJobs.get(infoHash);
                 if(torrentJob != null) {
-                    final Future<?> transferTask = transferExecutor.submit(torrentJob.getTransferTask());
+                    final Future<?> transferTask = transferExecutor.submit(torrentJob.getTransferController());
                     transferTasks.put(infoHash, transferTask);
                 }
             }
