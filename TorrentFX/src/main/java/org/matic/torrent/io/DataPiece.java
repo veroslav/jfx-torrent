@@ -60,9 +60,9 @@ public class DataPiece {
         final int pieceOffset = block.getPieceOffset();
 
         //TODO: Re-enable the check below after the fix is implemented
-        /*if(pieceOffset + blockData.length >= this.getLength()) {
+        if(pieceOffset + blockData.length >= this.getLength()) {
             return false;
-        }*/
+        }
 
         if(pieceOffset == digestedBlocksPointer) {
             validatorDigest.update(block.getBlockData());
@@ -80,6 +80,7 @@ public class DataPiece {
                     System.arraycopy(queuedBlockBytes, 0, pieceBytes,
                             queuedDataBlock.getPieceOffset(), queuedBlockBytes.length);
 
+                    queuedBlocks.remove(nextQueuedBlock.getKey());
                     digestedBlocksPointer += queuedDataBlockLength;
                 }
                 else {

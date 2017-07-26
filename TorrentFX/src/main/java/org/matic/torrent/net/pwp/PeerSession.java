@@ -51,13 +51,13 @@ public final class PeerSession {
 	protected ByteBuffer backupReaderBuffer = null;
 
     private static final int INPUT_BUFFER_SIZE = 4 * 1024;
-    private static final int OUTPUT_BUFFER_SIZE = 4 * 1024;
+    private static final int OUTPUT_BUFFER_SIZE = 17 * 1024;
 
     private final ByteBuffer inputBuffer = ByteBuffer.allocateDirect(INPUT_BUFFER_SIZE);
     private final ThreadLocal<ByteBuffer> outputBuffer =
             ThreadLocal.withInitial(() -> ByteBuffer.allocateDirect(OUTPUT_BUFFER_SIZE));
 
-    private final List<PwpMessageRequest> messageWriteQueue = new ArrayList<>();
+    private final List<PwpMessage> messageWriteQueue = new ArrayList<>();
 
     private final SocketChannel channel;
     private final PeerView peerView;
@@ -96,15 +96,12 @@ public final class PeerSession {
      */
     protected boolean flushWriteQueue() throws IOException {
          while(!messageWriteQueue.isEmpty()) {
-            final PwpMessageRequest messageRequest = messageWriteQueue.get(0);
+            final PwpMessage message = messageWriteQueue.get(0);
             final ByteBuffer localOutputBuffer = outputBuffer.get();
 
             //If buffer is empty, we process a new message, otherwise we write buffered data
             if(localOutputBuffer.position() == 0) {
-
-                //TODO: Check why BufferOverflowException can happen here
-
-                messageRequest.getMessages().forEach(m -> localOutputBuffer.put(m.getPayload()));
+                localOutputBuffer.put(message.getPayload());
             }
 
             localOutputBuffer.flip();
@@ -121,7 +118,7 @@ public final class PeerSession {
     }
 
     protected void putOnWriteQueue(final PwpMessageRequest messageRequest) throws IOException {
-        messageWriteQueue.add(messageRequest);
+        messageWriteQueue.addAll(messageRequest.getMessages());
     }
 
 	/**

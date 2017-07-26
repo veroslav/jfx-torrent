@@ -660,26 +660,153 @@ public final class RarestFirstPieceSelectionStrategyTest {
 
     @Test
     public void testPeerLost() {
+        final int downloadingOnlyPieceIndex = 5;
+        final int downloadingMoreAvailablePieceIndex = 6;
+        final int rarestOnlyPieceIndex = 7;
 
+        unitUnderTest.downloadingPieces.put(downloadingOnlyPieceIndex, EasyMock.createMock(DataPiece.class));
+        unitUnderTest.rarestPieces.put(1, new ArrayList<>(Arrays.asList(rarestOnlyPieceIndex)));
+        unitUnderTest.rarestPieces.put(2, new ArrayList<>(Arrays.asList(downloadingMoreAvailablePieceIndex)));
+
+        unitUnderTest.pieceAvailabilities[downloadingOnlyPieceIndex] = 1;
+        unitUnderTest.pieceAvailabilities[downloadingMoreAvailablePieceIndex] = 2;
+        unitUnderTest.pieceAvailabilities[rarestOnlyPieceIndex] = 1;
+
+        final BitSet peerPieces = new BitSet();
+        peerPieces.set(downloadingOnlyPieceIndex);
+        peerPieces.set(downloadingMoreAvailablePieceIndex);
+        peerPieces.set(rarestOnlyPieceIndex);
+
+        Assert.assertEquals(2, unitUnderTest.getRarestPiecesCount());
+
+        unitUnderTest.pieceFailure(downloadingOnlyPieceIndex);
+        unitUnderTest.peerLost(peerPieces);
+
+        Assert.assertEquals(1, unitUnderTest.getRarestPiecesCount());
+        Assert.assertTrue(unitUnderTest.rarestPieces.containsKey(1));
+        Assert.assertTrue(unitUnderTest.rarestPieces.get(1).contains(downloadingMoreAvailablePieceIndex));
+
+        Assert.assertEquals(0, unitUnderTest.pieceAvailabilities[downloadingOnlyPieceIndex]);
+        Assert.assertEquals(0, unitUnderTest.pieceAvailabilities[rarestOnlyPieceIndex]);
+        Assert.assertEquals(1, unitUnderTest.pieceAvailabilities[downloadingMoreAvailablePieceIndex]);
+
+        Assert.assertFalse(unitUnderTest.downloadingPieces.containsKey(downloadingOnlyPieceIndex));
     }
 
     @Test
     public void testPeerGained() {
+        final int obtainedPieceIndex = 5;
 
+        unitUnderTest.rarestPieces.put(1, new ArrayList<>(Arrays.asList(3)));
+        unitUnderTest.rarestPieces.put(2, new ArrayList<>(Arrays.asList(4)));
+        unitUnderTest.rarestPieces.put(3, new ArrayList<>(Arrays.asList(0)));
+        unitUnderTest.rarestPieces.put(4, new ArrayList<>(Arrays.asList(1)));
+        unitUnderTest.rarestPieces.put(5, new ArrayList<>(Arrays.asList(2)));
+
+        unitUnderTest.pieceAvailabilities[obtainedPieceIndex] = 0;
+        unitUnderTest.pieceAvailabilities[4] = 2;
+        unitUnderTest.pieceAvailabilities[3] = 1;
+        unitUnderTest.pieceAvailabilities[0] = 3;
+        unitUnderTest.pieceAvailabilities[1] = 4;
+        unitUnderTest.pieceAvailabilities[2] = 5;
+
+        final BitSet peerPieces = new BitSet();
+        peerPieces.set(obtainedPieceIndex);
+        peerPieces.set(0);
+        peerPieces.set(1);
+        peerPieces.set(2);
+        peerPieces.set(3);
+        peerPieces.set(4);
+        peerPieces.set(6);
+        peerPieces.set(7);
+
+        //Set some pieces as already have
+        unitUnderTest.receivedPieces.set(6);
+        unitUnderTest.receivedPieces.set(7);
+
+        Assert.assertEquals(5, unitUnderTest.getRarestPiecesCount());
+
+        unitUnderTest.peerGained(peerPieces);
+
+        Assert.assertEquals(5, unitUnderTest.getRarestPiecesCount());
+
+        Assert.assertTrue(unitUnderTest.rarestPieces.containsKey(1));
+        final List<Integer> oneOccurrencePieces = unitUnderTest.rarestPieces.get(1);
+        Assert.assertEquals(1, oneOccurrencePieces.size());
+        Assert.assertTrue(oneOccurrencePieces.contains(obtainedPieceIndex));
+
+        Assert.assertTrue(unitUnderTest.rarestPieces.containsKey(2));
+        final List<Integer> twoOccurrencesPieces = unitUnderTest.rarestPieces.get(2);
+        Assert.assertEquals(1, twoOccurrencesPieces.size());
+        Assert.assertTrue(twoOccurrencesPieces.contains(3));
+
+        Assert.assertTrue(unitUnderTest.rarestPieces.containsKey(3));
+        final List<Integer> threeOccurrencesPieces = unitUnderTest.rarestPieces.get(3);
+        Assert.assertEquals(1, threeOccurrencesPieces.size());
+        Assert.assertTrue(threeOccurrencesPieces.contains(4));
+
+        Assert.assertTrue(unitUnderTest.rarestPieces.containsKey(4));
+        final List<Integer> fourOccurrencesPieces = unitUnderTest.rarestPieces.get(4);
+        Assert.assertEquals(1, fourOccurrencesPieces.size());
+        Assert.assertTrue(fourOccurrencesPieces.contains(0));
+
+        Assert.assertTrue(unitUnderTest.rarestPieces.containsKey(5));
+        final List<Integer> fiveOccurrencesPieces = unitUnderTest.rarestPieces.get(5);
+        Assert.assertEquals(1, fiveOccurrencesPieces.size());
+        Assert.assertTrue(fiveOccurrencesPieces.contains(1));
+
+        Assert.assertEquals(1, unitUnderTest.pieceAvailabilities[obtainedPieceIndex]);
+        Assert.assertEquals(3, unitUnderTest.pieceAvailabilities[4]);
+        Assert.assertEquals(2, unitUnderTest.pieceAvailabilities[3]);
+        Assert.assertEquals(4, unitUnderTest.pieceAvailabilities[0]);
+        Assert.assertEquals(5, unitUnderTest.pieceAvailabilities[1]);
+        Assert.assertEquals(6, unitUnderTest.pieceAvailabilities[2]);
+        Assert.assertEquals(1, unitUnderTest.pieceAvailabilities[6]);
+        Assert.assertEquals(1, unitUnderTest.pieceAvailabilities[7]);
+
+        Assert.assertTrue(unitUnderTest.downloadingPieces.isEmpty());
     }
 
     @Test
     public void testPieceRequested() {
+        final int requestedRarestPieceIndex = 9;
+        final int requestedNotRarestPieceIndex = 0;
 
+        unitUnderTest.rarestPieces.put(42, new ArrayList<>(Arrays.asList(requestedRarestPieceIndex)));
+
+        unitUnderTest.pieceAvailabilities[requestedRarestPieceIndex] = 42;
+        unitUnderTest.pieceAvailabilities[requestedNotRarestPieceIndex] = 89;
+
+        final boolean notRarestPieceRequested = unitUnderTest.pieceRequested(
+                requestedNotRarestPieceIndex, EasyMock.createMock(DataPiece.class));
+
+        Assert.assertTrue(notRarestPieceRequested);
+        Assert.assertTrue(unitUnderTest.downloadingPieces.containsKey(requestedNotRarestPieceIndex));
+        Assert.assertEquals(1, unitUnderTest.getRarestPiecesCount());
+
+        final boolean rarestPieceRequested = unitUnderTest.pieceRequested(
+                requestedRarestPieceIndex, EasyMock.createMock(DataPiece.class));
+
+        Assert.assertTrue(rarestPieceRequested);
+        Assert.assertTrue(unitUnderTest.downloadingPieces.containsKey(requestedRarestPieceIndex));
+        Assert.assertEquals(0, unitUnderTest.getRarestPiecesCount());
     }
 
     @Test
-    public void testPieceFailureAndWasRequested() {
+    public void testPieceFailure() {
+        final int failedDownloadPieceIndex = 3;
 
-    }
+        unitUnderTest.pieceAvailabilities[failedDownloadPieceIndex] = 5;
+        unitUnderTest.downloadingPieces.put(failedDownloadPieceIndex, EasyMock.createMock(DataPiece.class));
 
-    @Test
-    public void testPieceFailureAndWasNotRequested() {
+        Assert.assertEquals(0, unitUnderTest.getRarestPiecesCount());
 
+        final boolean pieceWasRequestedResult = unitUnderTest.pieceFailure(3);
+
+        Assert.assertTrue(pieceWasRequestedResult);
+        Assert.assertFalse(unitUnderTest.downloadingPieces.containsKey(failedDownloadPieceIndex));
+        Assert.assertFalse(unitUnderTest.receivedPieces.get(failedDownloadPieceIndex));
+
+        Assert.assertEquals(1, unitUnderTest.getRarestPiecesCount());
     }
 }
