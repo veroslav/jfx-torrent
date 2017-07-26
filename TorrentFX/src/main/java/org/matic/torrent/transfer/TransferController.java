@@ -540,7 +540,6 @@ public final class TransferController implements PwpMessageListener, PwpConnecti
 
     private void handlePieceWritten(final FileOperationResult fileOperationResult) {
         final int pieceIndex = fileOperationResult.getDataPiece().getIndex();
-        //receivedPieces.set(pieceIndex);
 
         connectionManager.send(new PwpMessageRequest(
                 PwpMessageFactory.buildHavePieceMessage(pieceIndex)));
@@ -793,22 +792,21 @@ public final class TransferController implements PwpMessageListener, PwpConnecti
         final List<DataBlockIdentifier> blockRequests = sentBlockRequests.computeIfAbsent(
                 sender, requestList -> new ArrayList());
         final Optional<DataBlockIdentifier> matchingRequest = blockRequests.stream().filter(request ->
-                request.getBlockLength() == blockLength
-                        && request.getPieceIndex() == block.getPieceIndex()
+                request.getBlockLength() == blockLength &&
+                        request.getPieceIndex() == block.getPieceIndex()
                         && request.getPieceOffset() == block.getPieceOffset()
         ).findAny();
 
         //System.out.println("Received block: " + block + " from " + sender
                 //+ ", requested blocks: " + blockRequests.size() + ", matching request? " + matchingRequest.isPresent());
 
-        //TODO: Re-enable the check below after the fix is implemented
-        /*if(!matchingRequest.isPresent()) {
+        if(!matchingRequest.isPresent()) {
             //We haven't requested this block
             System.out.println("WASTED: Didn't request this block: " + block + " from " + sender
                 + ", requested blocks are: " + blockRequests);
             wastedBytes.set(wastedBytes.get() + blockLength);
             return;
-        }*/
+        }
 
         /*System.out.println("Received " + block + " from " + peerInfo + " , correct_piece_length: "
                 + torrentView.getMetaData().getPieceLength());*/
@@ -839,10 +837,15 @@ public final class TransferController implements PwpMessageListener, PwpConnecti
         if(dataPiece.hasCompleted()) {
             final boolean validPiece = dataPiece.validate(torrentView.getMetaData().getPieceHash(pieceIndex));
 
-            System.out.println("\nPIECE COMPLETED from " + sender + " : " + dataPiece.getIndex()
-                    + ", valid? " + validPiece + "\n");
-
             if(validPiece) {
+
+                /*System.out.println("\nPIECE COMPLETED from " + sender + " : " + dataPiece.getIndex()
+                        + ", valid? " + validPiece + ", already downloaded before? "
+                        + receivedPieces.get(dataPiece.getIndex()) + "\n");
+
+                System.out.println("Pending requests for the peer we received the block from: "
+                    + sentBlockRequests.get(sender));*/
+
                 pieceSelectionStrategy.pieceObtained(pieceIndex);
                 torrentView.setHavePiece(pieceIndex);
 

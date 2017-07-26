@@ -46,7 +46,7 @@ public final class NetworkUtilities {
 
     public static final String DEFAULT_NETWORK_INTERFACE = "Any interface";
 
-    public static final int HTTP_CONNECTION_TIMEOUT = 5000; //5 seconds
+    public static final int HTTP_CONNECTION_TIMEOUT = 10000; //10 seconds
 
     //Protocol constants
     public static final String HTTPS_PROTOCOL = "https";

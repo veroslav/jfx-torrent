@@ -97,7 +97,7 @@ public final class DataPieceCache {
 
     private void trimCache(final long targetSize) {
 
-        System.out.println("[CACHE]: Trimming cache...");
+        //System.out.println("[CACHE]: Trimming cache...");
 
         while (targetSize < currentSize) {
             final DataPiece oldestEntry = cache.remove(cache.firstEntry().getKey());

@@ -58,6 +58,10 @@ public final class TorrentFileIO {
         this.fileAccessor = fileAccessor;
 
         //TODO: Call fileAccessor.setLength(fileMetaData.getLength()) based on user preference in Properties
+        final long fileLength = fileMetaData.getLength();
+        if(fileAccessor.length() < fileLength) {
+            fileAccessor.setLength(fileLength);
+        }
     }
 
     /**

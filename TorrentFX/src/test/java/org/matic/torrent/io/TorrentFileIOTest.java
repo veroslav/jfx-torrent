@@ -58,6 +58,8 @@ public final class TorrentFileIOTest {
         fileAccessorMock.write(blocks, 0, 3);
         EasyMock.expectLastCall();
 
+        EasyMock.expect(fileAccessorMock.length()).andReturn(42L);
+
         EasyMock.replay(fileAccessorMock, pathMock);
 
         unitUnderTest = new TorrentFileIO(fileMetaData, fileAccessorMock);
@@ -84,6 +86,8 @@ public final class TorrentFileIOTest {
 
         fileAccessorMock.write(blocks, 0, 3);
         EasyMock.expectLastCall();
+
+        EasyMock.expect(fileAccessorMock.length()).andReturn(42L);
 
         EasyMock.replay(fileAccessorMock, pathMock);
 
@@ -112,6 +116,8 @@ public final class TorrentFileIOTest {
         fileAccessorMock.write(blocks, 0, 5);
         EasyMock.expectLastCall();
 
+        EasyMock.expect(fileAccessorMock.length()).andReturn(42L);
+
         EasyMock.replay(fileAccessorMock, pathMock);
 
         unitUnderTest = new TorrentFileIO(fileMetaData, fileAccessorMock);
@@ -138,6 +144,8 @@ public final class TorrentFileIOTest {
 
         fileAccessorMock.write(blocks, 1, 4);
         EasyMock.expectLastCall();
+
+        EasyMock.expect(fileAccessorMock.length()).andReturn(42L);
 
         EasyMock.replay(fileAccessorMock, pathMock);
 
@@ -166,6 +174,8 @@ public final class TorrentFileIOTest {
         fileAccessorMock.write(blocks, 0, 1);
         EasyMock.expectLastCall();
 
+        EasyMock.expect(fileAccessorMock.length()).andReturn(42L);
+
         EasyMock.replay(fileAccessorMock, pathMock);
 
         unitUnderTest = new TorrentFileIO(fileMetaData, fileAccessorMock);
@@ -189,6 +199,8 @@ public final class TorrentFileIOTest {
 
         fileAccessorMock.seek(0);
         EasyMock.expectLastCall();
+
+        EasyMock.expect(fileAccessorMock.length()).andReturn(42L);
 
         fileAccessorMock.write(blocks, 4, 3);
         EasyMock.expectLastCall();
@@ -242,6 +254,10 @@ public final class TorrentFileIOTest {
 
         thirdFileAccessorMock.write(blocks, 6, 4);
         EasyMock.expectLastCall();
+
+        EasyMock.expect(firstFileAccessorMock.length()).andReturn(42L);
+        EasyMock.expect(secondFileAccessorMock.length()).andReturn(42L);
+        EasyMock.expect(thirdFileAccessorMock.length()).andReturn(42L);
 
         EasyMock.replay(firstFileAccessorMock, secondFileAccessorMock, thirdFileAccessorMock, pathMock);
 

@@ -54,7 +54,8 @@ public final class DownloadProgressBar extends Canvas {
 	
 	public void update(final BitsView availabilityView) {
 		this.availabilityView = availabilityView;
-		final GraphicsContext context = this.getGraphicsContext2D();		
+		final GraphicsContext context = this.getGraphicsContext2D();
+		context.clearRect(0, 0, this.getWidth(), this.getHeight());
 		
 		//Draw a 3D effect around the bar
 		context.setFill(Color.DARKGRAY);
@@ -66,7 +67,7 @@ public final class DownloadProgressBar extends Canvas {
 		
 		//Draw status bars (progress and availability)		
 		drawProgressBar(context);
-		drawAvailabilityBar(context);		
+		drawAvailabilityBar(context);
 	}
 	
 	private void drawProgressBar(final GraphicsContext context) {
@@ -81,6 +82,7 @@ public final class DownloadProgressBar extends Canvas {
 		if(availabilityView == null) {
 			return;
 		}
+
 		final double pieceWidth = (this.getWidth() - 2) / availabilityView.getTotalPieces();
 		
 		context.setFill(DOWNLOADED_PIECE_COLOR);

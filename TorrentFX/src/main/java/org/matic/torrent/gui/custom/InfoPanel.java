@@ -87,6 +87,10 @@ public final class InfoPanel extends VBox {
             availabilityBar.update(availabilityView);
             downloadProgress.update(availabilityView);
         }
+        else {
+            downloadProgress.update(null);
+        }
+
 		updateValues(torrentView);
 	}
 	

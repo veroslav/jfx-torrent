@@ -21,7 +21,6 @@ package org.matic.torrent.gui.model;
 
 import java.util.BitSet;
 
-//TODO: Why do we need this class?
 public final class BitsView {
 
     private final BitSet pieces;
