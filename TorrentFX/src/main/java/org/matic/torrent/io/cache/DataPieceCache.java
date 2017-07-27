@@ -20,7 +20,6 @@
 package org.matic.torrent.io.cache;
 
 import org.matic.torrent.io.DataPiece;
-import org.matic.torrent.utils.UnitConverter;
 
 import java.util.Optional;
 import java.util.TreeMap;
@@ -69,9 +68,6 @@ public final class DataPieceCache {
     }
 
     public synchronized Optional<DataPiece> get(final CachedDataPieceIdentifier itemKey) {
-
-        System.out.println("[CACHE]: retrieving " + itemKey);
-
         return Optional.ofNullable(cache.get(itemKey));
     }
 
@@ -86,8 +82,6 @@ public final class DataPieceCache {
         final int itemLength = item.getLength();
         currentSize += itemLength;
 
-        System.out.println("[CACHE]: added " + itemKey + ", size: " + UnitConverter.formatByteCount(currentSize));
-
         if(currentSize > maxSize) {
             trimCache(maxSize);
         }
@@ -96,9 +90,6 @@ public final class DataPieceCache {
     }
 
     private void trimCache(final long targetSize) {
-
-        //System.out.println("[CACHE]: Trimming cache...");
-
         while (targetSize < currentSize) {
             final DataPiece oldestEntry = cache.remove(cache.firstEntry().getKey());
             currentSize -= oldestEntry.getLength();

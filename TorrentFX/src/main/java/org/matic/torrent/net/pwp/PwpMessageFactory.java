@@ -101,7 +101,7 @@ public final class PwpMessageFactory {
 
         final int bytesNeeded = (int)Math.ceil(((double)totalPieces) / Byte.SIZE);
         final byte[] bitfieldArray = new byte[bytesNeeded];
-        final byte[] bitSetArray = receivedPieces.toByteArray();
+        final byte[] bitSetArray = UnitConverter.reverseBits(receivedPieces.toByteArray());
 
         System.arraycopy(bitSetArray, 0, bitfieldArray, 0, bitSetArray.length);
 

@@ -64,21 +64,27 @@ public class CachedDataPieceIdentifier implements Comparable<CachedDataPieceIden
 
     @Override
     public int compareTo(final CachedDataPieceIdentifier other) {
-        if(cachingTime < other.cachingTime) {
+        //First check whether the pieces come from the same torrent
+        if(!infoHash.equals(other.infoHash)) {
+            return infoHash.toString().compareTo(other.infoHash.toString());
+        }
+
+        //Then check whether they have the same piece indexes
+        final int pieceIndexCompare = Integer.compare(pieceIndex, other.pieceIndex);
+        if(pieceIndexCompare != 0) {
+            return pieceIndexCompare;
+        }
+
+        //Finally, compare them based on their caching time
+        /*if(cachingTime < other.cachingTime) {
             return -1;
         }
         else if(cachingTime > other.cachingTime) {
             return 1;
-        }
-        else {
-            final int pieceIndexCompare = Integer.compare(pieceIndex, other.pieceIndex);
+        }*/
 
-            if(pieceIndexCompare != 0) {
-                return pieceIndexCompare;
-            }
-
-            return infoHash.toString().compareTo(other.infoHash.toString());
-        }
+        //These pieces are equivalent
+        return 0;
     }
 
     @Override

@@ -166,14 +166,6 @@ public final class TransferController implements PwpMessageListener, PwpConnecti
         pieceSelectionStrategy = new RarestFirstPieceSelectionStrategy(MAX_RAREST_PIECES,
                 this.torrentView.getMetaData().getPieceLength(), receivedPieces);
 
-        //START TEST
-        System.out.print("HAVE pieces: [");
-        for(int i = receivedPieces.nextSetBit(0); i >= 0; i = receivedPieces.nextSetBit(i + 1)) {
-            System.out.print(i + " ");
-        }
-        System.out.println("]");
-        //END TEST
-
         torrentView.setHavePieces(receivedPieces.toByteArray());
         torrentView.hashFailuresProperty().bindBidirectional(hashFailures);
         torrentView.downloadedBytesProperty().bind(totalDownloadedBytes);
@@ -584,7 +576,7 @@ public final class TransferController implements PwpMessageListener, PwpConnecti
         connectionManager.send(new PwpMessageRequest(
                 PwpMessageFactory.buildSendBlockMessage(dataBlock), fileOperationResult.getSender()));
 
-        System.out.println("Sent block " + blockRequest + " to " + fileOperationResult.getSender());
+        //System.out.println("Sent block " + blockRequest + " to " + fileOperationResult.getSender());
 
         //TODO: Consider whether we need to track uploaded blocks
         //uploadingBlocks.put(blockRequest.getPieceIndex(), dataBlock);
@@ -702,9 +694,11 @@ public final class TransferController implements PwpMessageListener, PwpConnecti
         if(!standbyPeers.contains(peerView)) {
             standbyPeers.add(peerView);
 
-            //Send a BITFIELD message to this peer
-            connectionManager.send(new PwpMessageRequest(PwpMessageFactory.buildBitfieldMessage(
-                    receivedPieces, torrentView.getMetaData().getTotalPieces()), peerView));
+            //Send a BITFIELD message to this peer if we have any pieces to share
+            if(receivedPieces.cardinality() > 0) {
+                connectionManager.send(new PwpMessageRequest(PwpMessageFactory.buildBitfieldMessage(
+                        receivedPieces, torrentView.getMetaData().getTotalPieces()), peerView));
+            }
         }
     }
 
@@ -722,9 +716,6 @@ public final class TransferController implements PwpMessageListener, PwpConnecti
     }
 
     private void handleNotInterestedMessage(final PeerView peerView) {
-
-        //System.out.println("NOT_INTERESTED from " + peerView.getIp() + ":" + peerView.getPort());
-
         if(!peerView.isInterestedInUs()) {
             return;
         }
@@ -858,9 +849,7 @@ public final class TransferController implements PwpMessageListener, PwpConnecti
         if(dataPiece.hasCompleted()) {
             final boolean validPiece = dataPiece.validate(torrentView.getMetaData().getPieceHash(pieceIndex));
 
-            System.out.println("\nPIECE COMPLETED from " + sender + " : " + dataPiece.getIndex()
-                    + ", valid? " + validPiece + ", already downloaded before? "
-                    + receivedPieces.get(dataPiece.getIndex()) + "\n");
+            System.out.println("\nPIECE COMPLETED from " + sender + " : " + dataPiece.getIndex());
 
             if(validPiece) {
                 pieceSelectionStrategy.pieceObtained(pieceIndex);
@@ -908,8 +897,8 @@ public final class TransferController implements PwpMessageListener, PwpConnecti
             return;
         }
 
-        System.out.println("\nREQUEST from " + requester + ": " + blockRequest
-                + ", do we have the piece? " + receivedPieces.get(blockRequest.getPieceIndex()) + "\n");
+        /*System.out.println("\nREQUEST from " + requester + ": " + blockRequest
+                + ", do we have the piece? " + receivedPieces.get(blockRequest.getPieceIndex()) + "\n");*/
 
         //Don't allow requests for blocks that are longer than 16 kB
         final int blockLength = blockRequest.getBlockLength();

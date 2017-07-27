@@ -22,6 +22,7 @@ package org.matic.torrent.net.pwp;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.matic.torrent.utils.UnitConverter;
 
 import java.util.Arrays;
 import java.util.BitSet;
@@ -45,7 +46,7 @@ public final class PwpMessageFactoryTest {
 
         Assert.assertEquals(PwpMessage.MessageType.BITFIELD, builtBitfieldMessage.getMessageType());
 
-        final byte[] messagePayload = builtBitfieldMessage.getPayload();
+        final byte[] messagePayload = UnitConverter.reverseBits(builtBitfieldMessage.getPayload());
         final byte[] builtBitfieldBytes = Arrays.copyOfRange(messagePayload, 5, messagePayload.length);
 
         final BitSet builtPiecesBitSet = BitSet.valueOf(builtBitfieldBytes);

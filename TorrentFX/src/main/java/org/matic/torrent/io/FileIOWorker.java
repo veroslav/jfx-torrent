@@ -131,9 +131,14 @@ public final class FileIOWorker implements Runnable {
         //Check whether the piece has been cached (faster)
         final Optional<DataPiece> cachedPiece = pieceCache.get(readDataPieceRequest.getCachedDataPieceIdentifier());
         if(cachedPiece.isPresent()) {
+
+            //System.out.println("[CACHE HIT] for piece: " + cachedPiece.get().getIndex());
+
             dataPieceConsumer.accept(new FileOperationResult(FileOperationResult.OperationType.READ,
                     cachedPiece.get(), requester, blockIdentifier, null));
         }
+
+        //System.out.println("[CACHE MISS] for piece: " + readDataPieceRequest.getCachedDataPieceIdentifier().getPieceIndex());
 
         //Retrieve piece data from the disk (slower)
         final byte[] pieceBytes = new byte[pieceLength];
@@ -152,7 +157,7 @@ public final class FileIOWorker implements Runnable {
                 if(pieceBytesFromFile.length != pieceLength) {
                     dataPieceConsumer.accept(new FileOperationResult(FileOperationResult.OperationType.READ,
                             null, requester, blockIdentifier,
-                            new IOException("Read piece data length missmatch: expected " + pieceLength
+                            new IOException("Read piece data length mismatch: expected " + pieceLength
                                     + " but got " + pieceBytesFromFile + " bytes")));
                     return;
                 }
