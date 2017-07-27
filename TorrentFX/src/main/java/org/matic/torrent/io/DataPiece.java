@@ -23,6 +23,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
 
 /**
@@ -40,9 +41,13 @@ public class DataPiece {
     private final byte[] pieceBytes;
     private final int pieceIndex;
 
-    private final TreeMap<Integer, DataBlock> queuedBlocks = new TreeMap<>();
+    protected final TreeMap<Integer, DataBlock> queuedBlocks = new TreeMap<>();
 
-    private int digestedBlocksPointer = 0;
+    protected int digestedBlocksPointer = 0;
+
+    public DataPiece(final int pieceLength, final int pieceIndex) {
+        this(new byte[pieceLength], pieceIndex);
+    }
 
     public DataPiece(final byte[] pieceBytes, final int pieceIndex) {
         this.pieceBytes = pieceBytes;
@@ -59,15 +64,14 @@ public class DataPiece {
         final byte[] blockData = block.getBlockData();
         final int pieceOffset = block.getPieceOffset();
 
-        //TODO: Re-enable the check below after the fix is implemented
-        if(pieceOffset + blockData.length >= this.getLength()) {
+        if(pieceOffset + blockData.length > this.getLength() || block.getPieceIndex() != pieceIndex) {
             return false;
         }
 
+        System.arraycopy(blockData, 0, pieceBytes, block.getPieceOffset(), blockData.length);
+
         if(pieceOffset == digestedBlocksPointer) {
             validatorDigest.update(block.getBlockData());
-            System.arraycopy(blockData, 0, pieceBytes, block.getPieceOffset(), blockData.length);
-
             digestedBlocksPointer += blockData.length;
 
             Map.Entry<Integer, DataBlock> nextQueuedBlock;
@@ -95,11 +99,16 @@ public class DataPiece {
         return true;
     }
 
-    public DataBlock getBlock(final int offset, final int blockLength) {
+    public Optional<DataBlock> getBlock(final int offset, final int blockLength) {
+        if(offset + blockLength > this.getLength() || offset < 0 || offset > this.getLength()
+                || blockLength < 1 || blockLength > this.getLength()) {
+            return Optional.empty();
+        }
+
         final byte[] blockData = new byte[blockLength];
         System.arraycopy(pieceBytes, offset, blockData, 0, blockLength);
         final DataBlock dataBlock = new DataBlock(blockData, pieceIndex, offset);
-        return dataBlock;
+        return Optional.of(dataBlock);
     }
 
     public int getIndex() {

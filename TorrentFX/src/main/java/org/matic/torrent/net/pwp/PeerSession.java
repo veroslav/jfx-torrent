@@ -50,8 +50,8 @@ public final class PeerSession {
 	//Leftover data, if any, left from a previous read on this session's connection
 	protected ByteBuffer backupReaderBuffer = null;
 
-    private static final int INPUT_BUFFER_SIZE = 4 * 1024;
-    private static final int OUTPUT_BUFFER_SIZE = 17 * 1024;
+    private static final int INPUT_BUFFER_SIZE = 1024 * 1024;
+    private static final int OUTPUT_BUFFER_SIZE = 1024 * 1024;
 
     private final ByteBuffer inputBuffer = ByteBuffer.allocateDirect(INPUT_BUFFER_SIZE);
     private final ThreadLocal<ByteBuffer> outputBuffer =
@@ -235,7 +235,8 @@ public final class PeerSession {
 
         //If the message is not BITFIELD, nor PIECE and is too long, it might be obfuscated
         if(messageId != 5 && messageId != 7 && messageLength > 13) {
-            throw new InvalidPeerMessageException("Possibly obfuscated message data from: " + peerView);
+            throw new InvalidPeerMessageException("Possibly obfuscated message data from: " + peerView
+                + " Incoming? " + isIncoming());
         }
 
 		return parseMessageWithId(buffer, messageLength, messageId);
@@ -245,7 +246,8 @@ public final class PeerSession {
 			throws InvalidPeerMessageException {
         if(messageLength < 1) {
             throw new InvalidPeerMessageException("Invalid message: messageId: " + messageId +
-                    ", messageLength = " + messageLength + ", CAUSE: " + peerView.toString());
+                    ", messageLength = " + messageLength + ", CAUSE: " + peerView
+                    + " Incoming? " + isIncoming());
         }
 
 		//Check whether it is a message without payload

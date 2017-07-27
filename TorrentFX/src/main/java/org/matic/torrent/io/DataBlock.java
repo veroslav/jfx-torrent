@@ -19,6 +19,8 @@
 */
 package org.matic.torrent.io;
 
+import java.util.Objects;
+
 /**
  * A block of data that is part of a larger data piece. It is used both
  * when sending data to and receiving data from remote peers.
@@ -47,6 +49,21 @@ public final class DataBlock {
 
     public byte[] getBlockData() {
         return blockData;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        DataBlock dataBlock = (DataBlock) o;
+        return pieceIndex == dataBlock.pieceIndex &&
+                pieceOffset == dataBlock.pieceOffset &&
+                blockData.length == dataBlock.blockData.length;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(pieceIndex, pieceOffset, blockData.length);
     }
 
     @Override

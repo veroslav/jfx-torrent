@@ -34,10 +34,17 @@ public final class PeerConnectionStateChangeEvent {
 
     private final PeerLifeCycleChangeType eventType;
     private final PeerView peerView;
+    private final String cause;
 
-    public PeerConnectionStateChangeEvent(final PeerView peerView, final PeerLifeCycleChangeType eventType) {
+    public PeerConnectionStateChangeEvent(final PeerView peerView, final PeerLifeCycleChangeType eventType,
+                                          final String cause) {
         this.peerView = peerView;
         this.eventType = eventType;
+        this.cause = cause;
+    }
+
+    public String getCause() {
+        return cause;
     }
 
     public PeerLifeCycleChangeType getEventType() {
@@ -67,6 +74,7 @@ public final class PeerConnectionStateChangeEvent {
         return "PeerConnectionStateChangeEvent{" +
                 "eventType=" + eventType +
                 ", peerView=" + peerView +
+                ", cause=" + cause +
                 '}';
     }
 }

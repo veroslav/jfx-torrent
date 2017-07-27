@@ -98,7 +98,9 @@ public final class PwpMessageFactory {
     public static PwpMessage buildBitfieldMessage(final BitSet receivedPieces, final int totalPieces) {
         //[(x, x, x, x), (5), (y, y, y, y)... (y, y, y, y)]
         //  msg_length  msg_id  bitfield_data = (msg_length -5)
-        final byte[] bitfieldArray = new byte[Integer.BYTES * (int)Math.ceil(((double)totalPieces) / Integer.SIZE)];
+
+        final int bytesNeeded = (int)Math.ceil(((double)totalPieces) / Byte.SIZE);
+        final byte[] bitfieldArray = new byte[bytesNeeded];
         final byte[] bitSetArray = receivedPieces.toByteArray();
 
         System.arraycopy(bitSetArray, 0, bitfieldArray, 0, bitSetArray.length);

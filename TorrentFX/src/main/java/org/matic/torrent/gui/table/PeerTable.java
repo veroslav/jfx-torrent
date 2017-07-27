@@ -62,8 +62,16 @@ public final class PeerTable {
 	
 	//Other columns
 	private static final String PORT_COLUMN_NAME = "Port";
-	
-	private final MenuItem logTrafficToLoggerMenuItem = new MenuItem("_Log Traffic to Logger Tab");
+
+	//Flags
+    private static final String CLIENT_NOT_INTERESTED_AND_NOT_CHOKED_FLAG = "K";
+    private static final String PEER_UNCHOKED_AND_NOT_INTERESTED_FLAG = "?";
+    private static final String CLIENT_INTERESTED_AND_NOT_CHOKED_FLAG = "D";
+    private static final String CLIENT_INTERESTED_AND_CHOKED_FLAG = "d";
+    private static final String PEER_UNCHOKED_AND_INTERESTED_FLAG = "U";
+    private static final String PEER_CHOKED_AND_INTERESTED_FLAG = "u";
+
+    private final MenuItem logTrafficToLoggerMenuItem = new MenuItem("_Log Traffic to Logger Tab");
 	private final MenuItem copySelectedHostsMenuItem = new MenuItem("C_opy Selected Hosts");
 	private final MenuItem reloadIpFilterMenuItem = new MenuItem("Reload _IPFilter");
 	private final MenuItem copyPeerListMenuItem = new MenuItem("_Copy Peer List");	
@@ -202,7 +210,26 @@ public final class PeerTable {
 				PeerView::getClientName, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, CLIENT_COLUMN_NAME));
 		
 		columnMappings.put(FLAGS_COLUMN_NAME, TableUtils.buildColumn(flagsValueFactory,
-				PeerView::getFlags, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, FLAGS_COLUMN_NAME));
+				peerView -> {
+		            final StringBuilder flagsBuilder = new StringBuilder();
+
+		            if(!peerView.isInterestedInUs() && !peerView.areWeChoking()) {
+		                flagsBuilder.append(PEER_UNCHOKED_AND_NOT_INTERESTED_FLAG);
+                    }
+                    if(peerView.areWeInterestedIn()) {
+                        flagsBuilder.append(peerView.isChokingUs()? CLIENT_INTERESTED_AND_CHOKED_FLAG
+                                : CLIENT_INTERESTED_AND_NOT_CHOKED_FLAG);
+                    }
+                    if(!peerView.isChokingUs() && !peerView.areWeInterestedIn()) {
+                        flagsBuilder.append(CLIENT_NOT_INTERESTED_AND_NOT_CHOKED_FLAG);
+                    }
+                    if(peerView.isInterestedInUs()) {
+                        flagsBuilder.append(peerView.areWeChoking()? PEER_CHOKED_AND_INTERESTED_FLAG
+                                : PEER_UNCHOKED_AND_INTERESTED_FLAG);
+                    }
+
+		            return flagsBuilder.toString();
+                }, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, FLAGS_COLUMN_NAME));
 		
 		columnMappings.put(PERCENT_DONE_COLUMN_NAME, TableUtils.buildColumn(percentDoneValueFactory,
 				percentDoneValueConverter, GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, PERCENT_DONE_COLUMN_NAME));
