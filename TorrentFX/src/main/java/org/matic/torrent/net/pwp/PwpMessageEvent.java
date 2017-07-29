@@ -19,8 +19,6 @@
 */
 package org.matic.torrent.net.pwp;
 
-import org.matic.torrent.gui.model.PeerView;
-
 /**
  * A notification that is sent to listeners when a new message has been received from a remote peer.
  *
@@ -29,24 +27,24 @@ import org.matic.torrent.gui.model.PeerView;
 public final class PwpMessageEvent {
 
     private final PwpMessage message;
-    private final PeerView peerView;
+    private final PeerSession peerSession;
 
     /**
      * Create a new event instance.
      *
      * @param message The received message
-     * @param peerView The remote peer that sent the message
+     * @param peerSession The remote peer that sent the message
      */
-    public PwpMessageEvent(final PwpMessage message, final PeerView peerView) {
+    public PwpMessageEvent(final PwpMessage message, final PeerSession peerSession) {
         this.message = message;
-        this.peerView = peerView;
+        this.peerSession = peerSession;
     }
 
     public PwpMessage getMessage() {
         return message;
     }
 
-    public PeerView getPeerView() {
-        return peerView;
+    public PeerSession getPeerSession() {
+        return peerSession;
     }
 }

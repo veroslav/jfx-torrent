@@ -19,7 +19,7 @@
 */
 package org.matic.torrent.io;
 
-import org.matic.torrent.gui.model.PeerView;
+import org.matic.torrent.net.pwp.PeerSession;
 import org.matic.torrent.transfer.DataBlockIdentifier;
 
 import java.io.IOException;
@@ -38,7 +38,7 @@ public final class FileOperationResult {
 
     private final DataBlockIdentifier blockRequest;
     private final DataPiece dataPiece;
-    private final PeerView sender;
+    private final PeerSession sender;
 
     private final IOException errorCause;
 
@@ -53,7 +53,7 @@ public final class FileOperationResult {
      * @param blockRequest Info about the block that belong to the piece to be read (if requested)
      * @param errorCause If any I/O error occurs, it will be added here
      */
-    public FileOperationResult(final OperationType operationType, final DataPiece dataPiece, final PeerView sender,
+    public FileOperationResult(final OperationType operationType, final DataPiece dataPiece, final PeerSession sender,
                                final DataBlockIdentifier blockRequest, final IOException errorCause) {
         this.operationType = operationType;
         this.dataPiece = dataPiece;
@@ -74,7 +74,7 @@ public final class FileOperationResult {
         return dataPiece;
     }
 
-    public PeerView getSender() {
+    public PeerSession getSender() {
         return sender;
     }
 

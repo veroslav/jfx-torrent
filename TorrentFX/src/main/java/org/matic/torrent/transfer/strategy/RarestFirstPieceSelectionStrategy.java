@@ -20,7 +20,7 @@
 package org.matic.torrent.transfer.strategy;
 
 import org.matic.torrent.io.DataPiece;
-import org.matic.torrent.peer.ClientProperties;
+import org.matic.torrent.client.ClientProperties;
 
 import java.util.ArrayList;
 import java.util.BitSet;

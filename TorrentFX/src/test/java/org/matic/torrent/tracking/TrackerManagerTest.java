@@ -33,7 +33,7 @@ import org.matic.torrent.gui.model.TrackerView;
 import org.matic.torrent.net.pwp.PwpPeer;
 import org.matic.torrent.net.udp.UdpConnectionManager;
 import org.matic.torrent.net.udp.UdpTrackerResponse;
-import org.matic.torrent.peer.ClientProperties;
+import org.matic.torrent.client.ClientProperties;
 import org.matic.torrent.queue.QueuedTorrent;
 import org.matic.torrent.queue.QueuedTorrentMetaData;
 import org.matic.torrent.queue.QueuedTorrentProgress;

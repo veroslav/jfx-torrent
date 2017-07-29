@@ -19,8 +19,6 @@
 */
 package org.matic.torrent.net.pwp;
 
-import org.matic.torrent.gui.model.PeerView;
-
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -33,7 +31,7 @@ import java.util.Collections;
  */
 public final class PwpMessageRequest {
 
-    private final Collection<PeerView> peers;
+    private final Collection<PeerSession> peers;
     private final Collection<PwpMessage> messages;
     private final PwpMessage.MessageType messageType;
 
@@ -42,8 +40,9 @@ public final class PwpMessageRequest {
      *
      * @param messages The messages to be sent
      * @param peers Peers to which to send the messages
+     * @param messageType Type of the messages to be sent
      */
-    public PwpMessageRequest(final Collection<PwpMessage> messages, final Collection<PeerView> peers,
+    public PwpMessageRequest(final Collection<PwpMessage> messages, final Collection<PeerSession> peers,
                              final PwpMessage.MessageType messageType) {
         this.messageType = messageType;
         this.messages = messages;
@@ -56,7 +55,7 @@ public final class PwpMessageRequest {
      * @param message The message to be sent
      * @param peer Peer to which to send the message
      */
-    public PwpMessageRequest(final PwpMessage message, final PeerView peer) {
+    public PwpMessageRequest(final PwpMessage message, final PeerSession peer) {
         this(Arrays.asList(message), Arrays.asList(peer), message.getMessageType());
     }
 
@@ -65,8 +64,9 @@ public final class PwpMessageRequest {
      *
      * @param messages The messages to be sent
      * @param peer Peer to which to send the messages
+     * @param messageType Type of the messages to be sent
      */
-    public PwpMessageRequest(final Collection<PwpMessage> messages, final PeerView peer,
+    public PwpMessageRequest(final Collection<PwpMessage> messages, final PeerSession peer,
                              final PwpMessage.MessageType messageType) {
         this(messages, Arrays.asList(peer), messageType);
     }
@@ -86,11 +86,11 @@ public final class PwpMessageRequest {
      * @param message The message to be sent
      * @param peers Target peers
      */
-    public PwpMessageRequest(final PwpMessage message, final Collection<PeerView> peers) {
+    public PwpMessageRequest(final PwpMessage message, final Collection<PeerSession> peers) {
         this(Arrays.asList(message), peers, message.getMessageType());
     }
 
-    public Collection<PeerView> getPeers() {
+    public Collection<PeerSession> getPeers() {
         return peers;
     }
 

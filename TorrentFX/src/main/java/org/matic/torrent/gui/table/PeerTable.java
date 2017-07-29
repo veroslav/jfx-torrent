@@ -19,32 +19,32 @@
 */
 package org.matic.torrent.gui.table;
 
+import javafx.application.Platform;
+import javafx.beans.value.ObservableValue;
+import javafx.scene.control.CheckMenuItem;
+import javafx.scene.control.ContextMenu;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.SelectionMode;
+import javafx.scene.control.SeparatorMenuItem;
+import javafx.scene.control.TableCell;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableColumn.CellDataFeatures;
+import javafx.scene.control.TableView;
+import javafx.scene.control.Tooltip;
+import javafx.util.Callback;
+import org.matic.torrent.gui.GuiUtils;
+import org.matic.torrent.gui.model.PeerView;
+import org.matic.torrent.preferences.GuiProperties;
+import org.matic.torrent.utils.UnitConverter;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
-
-import javafx.application.Platform;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.control.TableRow;
-import org.matic.torrent.gui.GuiUtils;
-import org.matic.torrent.gui.model.PeerView;
-import org.matic.torrent.preferences.GuiProperties;
-
-import javafx.beans.property.ReadOnlyObjectWrapper;
-import javafx.beans.value.ObservableValue;
-import javafx.scene.control.CheckMenuItem;
-import javafx.scene.control.ContextMenu;
-import javafx.scene.control.MenuItem;
-import javafx.scene.control.SelectionMode;
-import javafx.scene.control.SeparatorMenuItem;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableColumn.CellDataFeatures;
-import javafx.scene.control.TableView;
-import javafx.util.Callback;
-import org.matic.torrent.utils.UnitConverter;
+import java.util.stream.Collectors;
 
 public final class PeerTable {
 	
@@ -62,14 +62,6 @@ public final class PeerTable {
 	
 	//Other columns
 	private static final String PORT_COLUMN_NAME = "Port";
-
-	//Flags
-    private static final String CLIENT_NOT_INTERESTED_AND_NOT_CHOKED_FLAG = "K";
-    private static final String PEER_UNCHOKED_AND_NOT_INTERESTED_FLAG = "?";
-    private static final String CLIENT_INTERESTED_AND_NOT_CHOKED_FLAG = "D";
-    private static final String CLIENT_INTERESTED_AND_CHOKED_FLAG = "d";
-    private static final String PEER_UNCHOKED_AND_INTERESTED_FLAG = "U";
-    private static final String PEER_CHOKED_AND_INTERESTED_FLAG = "u";
 
     private final MenuItem logTrafficToLoggerMenuItem = new MenuItem("_Log Traffic to Logger Tab");
 	private final MenuItem copySelectedHostsMenuItem = new MenuItem("C_opy Selected Hosts");
@@ -95,13 +87,21 @@ public final class PeerTable {
         });
 	}
 
-    /**
-     * Sort the table based on the current sort order and latest table entry values.
-     */
-    public void sort() {
-        final List<TableColumn<PeerView, ?>> sortOrder = new ArrayList<>(peerTable.getSortOrder());
-        peerTable.getSortOrder().clear();
-        peerTable.getSortOrder().addAll(sortOrder);
+	public void updateContent(final Collection<PeerView> peers) {
+        Platform.runLater(() -> {
+            final List<PeerView> peersInTable = peerTable.getItems();
+
+            final List<PeerView> newPeers = peers.stream().filter(peer ->
+                    !peersInTable.contains(peer)).collect(Collectors.toList());
+
+            if(!newPeers.isEmpty()) {
+                peersInTable.addAll(newPeers);
+            }
+            else {
+                peersInTable.forEach(PeerView::update);
+            }
+            this.sort();
+        });
     }
 
 	public void storeColumnStates() {
@@ -114,7 +114,13 @@ public final class PeerTable {
     public void wrapWith(final ScrollPane wrapper) {
         wrapper.setContent(peerTable);
     }
-	
+
+    private void sort() {
+        final List<TableColumn<PeerView, ?>> sortOrder = new ArrayList<>(peerTable.getSortOrder());
+        peerTable.getSortOrder().clear();
+        peerTable.getSortOrder().addAll(sortOrder);
+    }
+
 	private void initComponents() {
 		peerTable.setPlaceholder(GuiUtils.getEmptyTablePlaceholder());
 		peerTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
@@ -144,10 +150,7 @@ public final class PeerTable {
 				new SeparatorMenuItem(), resolveIpsMenuItem, wholePeerListMenuItem);
 
         peerTable.setContextMenu(contextMenu);
-        peerTable.setRowFactory(table -> {
-            final TableRow<PeerView> tableRow = new PeerTableRow<>();
-            return tableRow;
-        });
+        peerTable.setRowFactory(table -> new PeerTableRow());
 	}
 	
 	private LinkedHashMap<String, TableColumn<PeerView, ?>> buildColumnMappings() {
@@ -184,7 +187,7 @@ public final class PeerTable {
                 p -> p.getValue().peerDownloadProperty();
                 
         final Callback<CellDataFeatures<PeerView, Number>, ObservableValue<Number>> portValueFactory =
-                p -> new ReadOnlyObjectWrapper<>(p.getValue().getPort());
+                p -> p.getValue().portProperty();
                 
         final Function<PeerView, String> percentDoneValueConverter = p -> UnitConverter.formatDouble(p.getPercentDone());
         
@@ -208,28 +211,13 @@ public final class PeerTable {
 		
 		columnMappings.put(CLIENT_COLUMN_NAME, TableUtils.buildColumn(clientValueFactory,
 				PeerView::getClientName, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, CLIENT_COLUMN_NAME));
-		
-		columnMappings.put(FLAGS_COLUMN_NAME, TableUtils.buildColumn(flagsValueFactory,
-				peerView -> {
-		            final StringBuilder flagsBuilder = new StringBuilder();
 
-		            if(!peerView.isInterestedInUs() && !peerView.areWeChoking()) {
-		                flagsBuilder.append(PEER_UNCHOKED_AND_NOT_INTERESTED_FLAG);
-                    }
-                    if(peerView.areWeInterestedIn()) {
-                        flagsBuilder.append(peerView.isChokingUs()? CLIENT_INTERESTED_AND_CHOKED_FLAG
-                                : CLIENT_INTERESTED_AND_NOT_CHOKED_FLAG);
-                    }
-                    if(!peerView.isChokingUs() && !peerView.areWeInterestedIn()) {
-                        flagsBuilder.append(CLIENT_NOT_INTERESTED_AND_NOT_CHOKED_FLAG);
-                    }
-                    if(peerView.isInterestedInUs()) {
-                        flagsBuilder.append(peerView.areWeChoking()? PEER_CHOKED_AND_INTERESTED_FLAG
-                                : PEER_UNCHOKED_AND_INTERESTED_FLAG);
-                    }
+		final TableColumn<PeerView, String> flagsColumn = TableUtils.buildColumn(flagsValueFactory,
+                PeerView::getFlags, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, FLAGS_COLUMN_NAME);
 
-		            return flagsBuilder.toString();
-                }, GuiUtils.LEFT_ALIGNED_COLUMN_HEADER_TYPE_NAME, FLAGS_COLUMN_NAME));
+		flagsColumn.setCellFactory(buildFlagsCellFactory());
+
+		columnMappings.put(FLAGS_COLUMN_NAME, flagsColumn);
 		
 		columnMappings.put(PERCENT_DONE_COLUMN_NAME, TableUtils.buildColumn(percentDoneValueFactory,
 				percentDoneValueConverter, GuiUtils.RIGHT_ALIGNED_COLUMN_HEADER_TYPE_NAME, PERCENT_DONE_COLUMN_NAME));
@@ -254,4 +242,55 @@ public final class PeerTable {
 		
 		return columnMappings;
 	}
+
+    private Callback<TableColumn<PeerView, String>, TableCell<PeerView, String>> buildFlagsCellFactory() {
+        return column -> new TableCell<PeerView, String>() {
+            final Tooltip tooltip = new Tooltip();
+
+            @Override
+            protected void updateItem(final String flags, final boolean empty) {
+                super.updateItem(flags, empty);
+                if (!empty) {
+                    final String tooltipText = buildFlagsTooltip(flags);
+                    if (!tooltipText.isEmpty()) {
+                        tooltip.setText(tooltipText);
+                    }
+                    setTooltip(tooltipText.isEmpty() ? null : tooltip);
+                }
+                setText(empty ? null : flags);
+            }
+
+            private String buildFlagsTooltip(final String flags) {
+                final StringBuilder tooltipBuilder = new StringBuilder();
+
+                if(flags == null) {
+                    return tooltipBuilder.toString();
+                }
+
+                if(flags.contains(PeerView.CLIENT_INTERESTED_AND_NOT_CHOKED_FLAG)) {
+                    tooltipBuilder.append("interested(local) and unchoked(peer)\n");
+                }
+                else if(flags.contains(PeerView.CLIENT_INTERESTED_AND_CHOKED_FLAG)) {
+                    tooltipBuilder.append("interested(local) and choked(peer)\n");
+                }
+                if(flags.contains(PeerView.PEER_UNCHOKED_AND_INTERESTED_FLAG)) {
+                    tooltipBuilder.append("interested(peer) and unchoked(local)\n");
+                }
+                else if(flags.contains(PeerView.PEER_CHOKED_AND_INTERESTED_FLAG)) {
+                    tooltipBuilder.append("interested(peer) and choked(peer)\n");
+                }
+                if(flags.contains(PeerView.CLIENT_NOT_INTERESTED_AND_NOT_CHOKED_FLAG)) {
+                    tooltipBuilder.append("not interested(local) and unchoked(local)\n");
+                }
+                if(flags.contains(PeerView.PEER_SNUBBED)) {
+                    tooltipBuilder.append("snubbed(local)\n");
+                }
+                if(flags.contains(PeerView.PEER_UNCHOKED_AND_NOT_INTERESTED_FLAG)) {
+                    tooltipBuilder.append("not interested(peer) and unchoked(peer)\n");
+                }
+
+                return tooltipBuilder.toString();
+            }
+        };
+    }
 }

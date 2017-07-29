@@ -19,7 +19,7 @@
 */
 package org.matic.torrent.net;
 
-import org.matic.torrent.peer.ClientProperties;
+import org.matic.torrent.client.ClientProperties;
 import org.matic.torrent.preferences.ApplicationPreferences;
 import org.matic.torrent.preferences.NetworkProperties;
 

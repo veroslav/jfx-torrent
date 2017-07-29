@@ -25,7 +25,7 @@ import org.matic.torrent.gui.window.ApplicationWindow;
 import org.matic.torrent.io.DataPersistenceSupport;
 import org.matic.torrent.net.pwp.PeerConnectionController;
 import org.matic.torrent.net.udp.UdpConnectionManager;
-import org.matic.torrent.peer.ClientProperties;
+import org.matic.torrent.client.ClientProperties;
 import org.matic.torrent.preferences.ApplicationPreferences;
 import org.matic.torrent.preferences.NetworkProperties;
 import org.matic.torrent.preferences.PathProperties;

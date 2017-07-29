@@ -19,8 +19,8 @@
 */
 package org.matic.torrent.io;
 
-import org.matic.torrent.gui.model.PeerView;
 import org.matic.torrent.io.cache.CachedDataPieceIdentifier;
+import org.matic.torrent.net.pwp.PeerSession;
 
 import java.util.Objects;
 
@@ -28,16 +28,16 @@ public final class WriteDataPieceRequest {
 
     private final CachedDataPieceIdentifier pieceIdentifier;
     private final DataPiece dataPiece;
-    private final PeerView sender;
+    private final PeerSession sender;
 
     public WriteDataPieceRequest(final CachedDataPieceIdentifier pieceIdentifier, final DataPiece dataPiece,
-                                 final PeerView sender) {
+                                 final PeerSession sender) {
         this.pieceIdentifier = pieceIdentifier;
         this.dataPiece = dataPiece;
         this.sender = sender;
     }
 
-    public PeerView getSender() {
+    public PeerSession getSender() {
         return sender;
     }
 

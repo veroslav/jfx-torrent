@@ -20,18 +20,26 @@
 package org.matic.torrent.gui.model;
 
 import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleDoubleProperty;
+import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
-import org.matic.torrent.hash.InfoHash;
+import org.matic.torrent.net.pwp.PeerSession;
 import org.matic.torrent.net.pwp.PwpPeer;
 
-import java.util.BitSet;
 import java.util.Objects;
 
-public class PeerView {
+public final class PeerView {
 
-    private final PwpPeer peer;
+    //Flags
+    public static final String CLIENT_NOT_INTERESTED_AND_NOT_CHOKED_FLAG = "K";
+    public static final String PEER_UNCHOKED_AND_NOT_INTERESTED_FLAG = "?";
+    public static final String CLIENT_INTERESTED_AND_NOT_CHOKED_FLAG = "D";
+    public static final String CLIENT_INTERESTED_AND_CHOKED_FLAG = "d";
+    public static final String PEER_UNCHOKED_AND_INTERESTED_FLAG = "U";
+    public static final String PEER_CHOKED_AND_INTERESTED_FLAG = "u";
+    public static final String PEER_SNUBBED = "S";
 
     private final StringProperty clientId = new SimpleStringProperty();
     private final StringProperty requests = new SimpleStringProperty();
@@ -46,107 +54,24 @@ public class PeerView {
     private final DoubleProperty downloaded = new SimpleDoubleProperty();
     private final DoubleProperty peerDownload = new SimpleDoubleProperty();
 
-    private BitSet pieces = new BitSet();
+    private final IntegerProperty port = new SimpleIntegerProperty();
 
-    private boolean isChokingUs = true;
-    private boolean isInterestedInUs = false;
+    private final PeerSession peerSession;
+    private final int pieceCount;
 
-    private boolean areWeChoking = true;
-    private boolean areWeInterestedIn = false;
+    public PeerView(final PeerSession peerSession, final int pieceCount) {
+        this.peerSession = peerSession;
+        this.pieceCount = pieceCount;
 
-    private long bytesSentToUsSinceUnchoke = 0;
-    private long unchokedByUsTime = 0;
+        final PwpPeer peer = peerSession.getPeer();
 
-    public PeerView(final PwpPeer peer) {
-        this.peer = peer;
-        ip.setValue(peer.getIp());
-    }
-
-    public boolean isChokingUs() {
-        return isChokingUs;
-    }
-
-    public void setChokingUs(final boolean isChokingUs) {
-        this.isChokingUs = isChokingUs;
-    }
-
-    public boolean isInterestedInUs() {
-        return isInterestedInUs;
-    }
-
-    public void setInterestedInUs(final boolean isInterestedInUs) {
-        this.isInterestedInUs = isInterestedInUs;
-    }
-
-    public boolean areWeChoking() {
-        return areWeChoking;
-    }
-
-    public void setAreWeChoking(final boolean areWeChoking) {
-        this.areWeChoking = areWeChoking;
-        if(!areWeChoking) {
-            unchokedByUsTime = System.currentTimeMillis();
-            bytesSentToUsSinceUnchoke = 0;
-        }
-    }
-
-    public void updateBytesReceived(final long byteCount) {
-        bytesSentToUsSinceUnchoke += byteCount;
-    }
-
-    public long getUnchokedByUsTime() {
-        return unchokedByUsTime;
-    }
-
-    public double getAverageUploadRateSinceLastUnchoke() {
-        return bytesSentToUsSinceUnchoke == 0? 0 :
-                (System.currentTimeMillis() - unchokedByUsTime) / (double)bytesSentToUsSinceUnchoke;
-    }
-
-    public boolean areWeInterestedIn() {
-        return areWeInterestedIn;
-    }
-
-    public void setAreWeInterestedIn(final boolean areWeInterestedIn) {
-        this.areWeInterestedIn = areWeInterestedIn;
+        ip.set(peer.getIp());
+        port.set(peer.getPort());
+        clientId.set(peerSession.getClientId());
     }
 
     public PwpPeer getPeer() {
-        return peer;
-    }
-
-    public boolean getHave(final int pieceIndex) {
-        return pieces.get(pieceIndex);
-    }
-
-    public BitSet getPieces() {
-        return pieces;
-    }
-
-    public void setHave(final int pieceIndex, final boolean have, final int pieceCount) {
-        pieces.set(pieceIndex, have);
-        percentDone.set((double)pieces.cardinality() / pieceCount * 100);
-    }
-
-    public void setPieces(final BitSet pieces, final int pieceCount) {
-        this.pieces = pieces;
-        percentDone.set((double)pieces.cardinality()/ pieceCount * 100);
-    }
-
-    public int getPort() {
-        return peer.getPort();
-    }
-
-    public InfoHash getInfoHash() {
-        return peer.getInfoHash();
-    }
-
-    public void setInfoHash(final InfoHash infoHash) {
-        peer.setInfoHash(infoHash);
-    }
-
-    public void setRequests(final String requests) {
-        this.requests.set(requests);
+        return peerSession.getPeer();
     }
 
     public String getRequests() {
@@ -155,10 +80,6 @@ public class PeerView {
 
     public StringProperty requestsProperty() {
         return requests;
-    }
-
-    public void setFlags(final String flags) {
-        this.flags.set(flags);
     }
 
     public String getFlags() {
@@ -177,8 +98,12 @@ public class PeerView {
         return ip;
     }
 
-    public void setPercentDone(final double percentDone) {
-        this.percentDone.set(percentDone);
+    public IntegerProperty portProperty() {
+        return port;
+    }
+
+    public int getPort() {
+        return port.get();
     }
 
     public double getPercentDone() {
@@ -189,10 +114,6 @@ public class PeerView {
         return percentDone;
     }
 
-    public void setDownSpeed(final double downSpeed) {
-        this.downSpeed.set(downSpeed);
-    }
-
     public double getDownSpeed() {
         return downSpeed.get();
     }
@@ -201,20 +122,12 @@ public class PeerView {
         return downSpeed;
     }
 
-    public void setUpSpeed(final double upSpeed) {
-        this.upSpeed.set(upSpeed);
-    }
-
     public double getUpSpeed() {
         return upSpeed.get();
     }
 
     public DoubleProperty upSpeedProperty() {
         return upSpeed;
-    }
-
-    public void setUploaded(final double uploaded) {
-        this.uploaded.set(uploaded);
     }
 
     public double getUploaded() {
@@ -237,10 +150,6 @@ public class PeerView {
         return downloaded;
     }
 
-    public void setPeerDownload(final double peerDownload) {
-        this.peerDownload.set(peerDownload);
-    }
-
     public double getPeerDownload() {
         return peerDownload.get();
     }
@@ -253,12 +162,52 @@ public class PeerView {
         return clientId;
     }
 
-    public void setClientId(final String clientId) {
-        this.clientId.set(clientId);
-    }
-
     public String getClientName() {
         return clientId.get();
+    }
+
+    public void update() {
+        percentDone.set(updateAndGetPercentDone());
+        flags.set(updateAndGetPeerFlags());
+        requests.set(updateAndGetRequests());
+    }
+
+    private String updateAndGetRequests() {
+        final StringBuilder reqBuilder = new StringBuilder();
+
+        reqBuilder.append(peerSession.getRequestedBlocks());
+        reqBuilder.append("|");
+        reqBuilder.append(peerSession.getSentBlockRequests());
+
+        return reqBuilder.toString();
+    }
+
+    private double updateAndGetPercentDone() {
+        return (double)peerSession.getPieces().cardinality()/ pieceCount * 100;
+    }
+
+    private String updateAndGetPeerFlags() {
+        final StringBuilder flagsBuilder = new StringBuilder();
+
+        if(peerSession.areWeInterestedIn()) {
+            flagsBuilder.append(peerSession.isChokingUs()? CLIENT_INTERESTED_AND_CHOKED_FLAG
+                    : CLIENT_INTERESTED_AND_NOT_CHOKED_FLAG);
+        }
+        if(!peerSession.isChokingUs() && !peerSession.areWeInterestedIn()) {
+            flagsBuilder.append(CLIENT_NOT_INTERESTED_AND_NOT_CHOKED_FLAG);
+        }
+        if(peerSession.isInterestedInUs()) {
+            flagsBuilder.append(peerSession.areWeChoking()? PEER_CHOKED_AND_INTERESTED_FLAG
+                    : PEER_UNCHOKED_AND_INTERESTED_FLAG);
+        }
+        if(peerSession.isSnubbed()) {
+            flagsBuilder.append(PEER_SNUBBED);
+        }
+        if(!peerSession.isInterestedInUs() && !peerSession.areWeChoking()) {
+            flagsBuilder.append(PEER_UNCHOKED_AND_NOT_INTERESTED_FLAG);
+        }
+
+        return flagsBuilder.toString();
     }
 
     @Override
@@ -266,16 +215,16 @@ public class PeerView {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         PeerView peerView = (PeerView) o;
-        return Objects.equals(peer, peerView.peer);
+        return Objects.equals(this.getPeer(), peerView.getPeer());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(peer);
+        return Objects.hash(this.getPeer());
     }
 
     @Override
     public String toString() {
-        return "[" + getIp() + ":" + getPort() + "]";
+        return getPeer().toString();
     }
 }

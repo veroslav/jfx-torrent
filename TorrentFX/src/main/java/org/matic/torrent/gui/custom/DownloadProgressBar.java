@@ -1,6 +1,6 @@
 /*
 * This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015-2016 Vedran Matic
+* Copyright (C) 2015-2017 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,6 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-
 package org.matic.torrent.gui.custom;
 
 import javafx.scene.canvas.Canvas;
@@ -88,6 +87,9 @@ public final class DownloadProgressBar extends Canvas {
 		context.setFill(DOWNLOADED_PIECE_COLOR);
 		double xOffset = 1;
 		for(int j = 0; j < availabilityView.getLastHaveIndex(); xOffset += pieceWidth, ++j) {
+
+		    //TODO: It is better to draw continuous pieces at once in a single fillRect()
+
 			if(availabilityView.getHave(j)) {
 				context.fillRect(xOffset, 7, pieceWidth, this.getHeight() - 1);
 			}

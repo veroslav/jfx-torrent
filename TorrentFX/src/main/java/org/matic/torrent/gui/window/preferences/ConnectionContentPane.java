@@ -37,7 +37,7 @@ import javafx.scene.layout.VBox;
 import org.matic.torrent.gui.action.enums.BorderStyle;
 import org.matic.torrent.gui.custom.TitledBorderPane;
 import org.matic.torrent.net.NetworkUtilities;
-import org.matic.torrent.peer.ClientProperties;
+import org.matic.torrent.client.ClientProperties;
 import org.matic.torrent.preferences.ApplicationPreferences;
 import org.matic.torrent.preferences.GuiProperties;
 import org.matic.torrent.preferences.NetworkProperties;

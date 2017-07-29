@@ -35,6 +35,7 @@ import org.matic.torrent.io.DataPersistenceSupport;
 import org.matic.torrent.io.cache.DataPieceCache;
 import org.matic.torrent.net.pwp.PeerConnectionController;
 import org.matic.torrent.net.pwp.PeerConnectionStateChangeEvent;
+import org.matic.torrent.net.pwp.PeerSession;
 import org.matic.torrent.net.pwp.PwpConnectionStateListener;
 import org.matic.torrent.net.pwp.PwpPeer;
 import org.matic.torrent.preferences.ApplicationPreferences;
@@ -124,8 +125,8 @@ public final class QueuedTorrentController implements PreferenceChangeListener, 
     @Override
     public void peerConnectionStateChanged(final PeerConnectionStateChangeEvent event) {
         synchronized(queuedTorrents) {
-            final PeerView peerView = event.getPeerView();
-            final QueuedTorrentJob torrentJob = queuedTorrentJobs.get(peerView.getInfoHash());
+            final PeerSession peerSession = event.getPeerSession();
+            final QueuedTorrentJob torrentJob = queuedTorrentJobs.get(peerSession.getInfoHash());
             if(torrentJob == null) {
                 return;
             }
@@ -135,10 +136,11 @@ public final class QueuedTorrentController implements PreferenceChangeListener, 
             }
             final PeerConnectionStateChangeEvent.PeerLifeCycleChangeType eventType = event.getEventType();
             if(eventType == PeerConnectionStateChangeEvent.PeerLifeCycleChangeType.CONNECTED) {
-                torrentView.addPeerViews(Arrays.asList(peerView));
+                torrentView.addPeerViews(Arrays.asList(new PeerView(
+                        peerSession, torrentJob.getTorrent().getMetaData().getTotalPieces())));
             }
             else if(eventType == PeerConnectionStateChangeEvent.PeerLifeCycleChangeType.DISCONNECTED) {
-                torrentView.getPeerViews().remove(peerView);
+                torrentView.getPeerViews().removeIf(p -> p.getPeer().equals(peerSession.getPeer()));
             }
         }
     }
@@ -150,7 +152,7 @@ public final class QueuedTorrentController implements PreferenceChangeListener, 
     public Predicate<PeerConnectionStateChangeEvent> getPeerStateChangeAcceptanceFilter() {
         return event -> {
             final PeerConnectionStateChangeEvent.PeerLifeCycleChangeType eventType = event.getEventType();
-            final InfoHash infoHash = event.getPeerView().getInfoHash();
+            final InfoHash infoHash = event.getPeerSession().getInfoHash();
             return infoHash != null && (eventType == PeerConnectionStateChangeEvent.PeerLifeCycleChangeType.CONNECTED ||
                     eventType == PeerConnectionStateChangeEvent.PeerLifeCycleChangeType.DISCONNECTED);
         };

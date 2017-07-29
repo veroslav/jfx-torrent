@@ -23,9 +23,9 @@ import org.easymock.EasyMock;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.matic.torrent.gui.model.PeerView;
 import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.io.DataPiece;
+import org.matic.torrent.net.pwp.PeerSession;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
@@ -43,7 +43,7 @@ public final class DataPieceCacheTest {
     private final InfoHash infoHash = new InfoHash("1".getBytes(StandardCharsets.UTF_8));
 
     private final DataPiece dataPieceMock = EasyMock.createMock(DataPiece.class);
-    private final PeerView peerMock = EasyMock.createMock(PeerView.class);
+    private final PeerSession peerMock = EasyMock.createMock(PeerSession.class);
 
     @Before
     public void setup() {
@@ -70,7 +70,7 @@ public final class DataPieceCacheTest {
     @Test
     public void testTwoPieceInsertionsWithinCacheLimits() {
         final DataPiece secondDataPieceMock = EasyMock.createMock(DataPiece.class);
-        final PeerView secondPeerMock = EasyMock.createMock(PeerView.class);
+        final PeerSession secondPeerMock = EasyMock.createMock(PeerSession.class);
 
         final CachedDataPieceIdentifier firstIdentifier = new CachedDataPieceIdentifier(0, infoHash);
         final CachedDataPieceIdentifier secondIdentifier = new CachedDataPieceIdentifier(1, infoHash);
@@ -100,7 +100,7 @@ public final class DataPieceCacheTest {
     @Test
     public void testTwoPieceInsertionsOutsideOfCacheLimits() {
         final DataPiece secondDataPieceMock = EasyMock.createMock(DataPiece.class);
-        final PeerView secondPeerMock = EasyMock.createMock(PeerView.class);
+        final PeerSession secondPeerMock = EasyMock.createMock(PeerSession.class);
 
         final InfoHash firstInfoHash = new InfoHash("1".getBytes(StandardCharsets.UTF_8));
         final InfoHash secondInfoHash = new InfoHash("2".getBytes(StandardCharsets.UTF_8));
@@ -266,7 +266,7 @@ public final class DataPieceCacheTest {
     @Test
     public void testCacheHit() {
         final DataPiece secondDataPieceMock = EasyMock.createMock(DataPiece.class);
-        final PeerView secondPeerMock = EasyMock.createMock(PeerView.class);
+        final PeerSession secondPeerMock = EasyMock.createMock(PeerSession.class);
 
         final InfoHash firstInfoHash = new InfoHash("1".getBytes(StandardCharsets.UTF_8));
         final InfoHash secondInfoHash = new InfoHash("2".getBytes(StandardCharsets.UTF_8));
@@ -355,7 +355,7 @@ public final class DataPieceCacheTest {
         //Test a cache miss when info hashes differ but the piece indexes are equal
         final InfoHash searchedInfoHash = new InfoHash("2".getBytes(StandardCharsets.UTF_8));
 
-        final PeerView searchedPeerMock = EasyMock.createMock(PeerView.class);
+        final PeerSession searchedPeerMock = EasyMock.createMock(PeerSession.class);
         searchedForIdentifier = new CachedDataPieceIdentifier(1, searchedInfoHash);
 
         EasyMock.expect(searchedDataPieceMock.getLength()).andReturn(pieceLength).anyTimes();

@@ -17,7 +17,7 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-package org.matic.torrent.peer;
+package org.matic.torrent.client;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -41,7 +41,7 @@ public final class ClientProperties {
 	//Unique client id to be sent in tracker requests and to other peers
 	public static final String PEER_ID = ClientProperties.generatePeerId();
 	
-	//Port used for incoming peer-2-peer connections
+	//Port used for incoming client-2-client connections
 	public static final int TCP_PORT = 61668;
 	
 	//UTF-8 encoding is used for all string encoding used in the client

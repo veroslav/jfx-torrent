@@ -68,6 +68,7 @@ public final class TorrentFileIO {
      * Close and release all file accessor resources on shutdown.
      */
     public void cleanup() {
+        //TODO: Don't clean up too fast, might close a file accessor which has a pending write/read in progress!
         try {
             fileAccessor.close();
         } catch (final IOException e) {

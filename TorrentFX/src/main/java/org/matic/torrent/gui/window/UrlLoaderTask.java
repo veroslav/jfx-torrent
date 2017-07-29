@@ -1,6 +1,6 @@
 /*
 * This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015-2016 Vedran Matic
+* Copyright (C) 2015-2017 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@ import org.matic.torrent.codec.BinaryDecoder;
 import org.matic.torrent.codec.BinaryEncodedDictionary;
 import org.matic.torrent.exception.BinaryDecoderException;
 import org.matic.torrent.net.NetworkUtilities;
-import org.matic.torrent.peer.ClientProperties;
+import org.matic.torrent.client.ClientProperties;
 import org.matic.torrent.utils.UnitConverter;
 
 import java.io.ByteArrayInputStream;

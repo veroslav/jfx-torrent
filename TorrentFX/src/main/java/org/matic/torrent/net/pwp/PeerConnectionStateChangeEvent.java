@@ -19,8 +19,6 @@
 */
 package org.matic.torrent.net.pwp;
 
-import org.matic.torrent.gui.model.PeerView;
-
 import java.util.Objects;
 
 /**
@@ -33,12 +31,12 @@ public final class PeerConnectionStateChangeEvent {
     }
 
     private final PeerLifeCycleChangeType eventType;
-    private final PeerView peerView;
+    private final PeerSession peerSession;
     private final String cause;
 
-    public PeerConnectionStateChangeEvent(final PeerView peerView, final PeerLifeCycleChangeType eventType,
+    public PeerConnectionStateChangeEvent(final PeerSession peerSession, final PeerLifeCycleChangeType eventType,
                                           final String cause) {
-        this.peerView = peerView;
+        this.peerSession = peerSession;
         this.eventType = eventType;
         this.cause = cause;
     }
@@ -51,8 +49,8 @@ public final class PeerConnectionStateChangeEvent {
         return eventType;
     }
 
-    public PeerView getPeerView() {
-        return peerView;
+    public PeerSession getPeerSession() {
+        return peerSession;
     }
 
     @Override
@@ -61,19 +59,19 @@ public final class PeerConnectionStateChangeEvent {
         if (o == null || getClass() != o.getClass()) return false;
         PeerConnectionStateChangeEvent that = (PeerConnectionStateChangeEvent) o;
         return eventType == that.eventType &&
-                Objects.equals(peerView, that.peerView);
+                Objects.equals(peerSession, that.peerSession);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(eventType, peerView);
+        return Objects.hash(eventType, peerSession);
     }
 
     @Override
     public String toString() {
         return "PeerConnectionStateChangeEvent{" +
                 "eventType=" + eventType +
-                ", peerView=" + peerView +
+                ", peerSession=" + peerSession +
                 ", cause=" + cause +
                 '}';
     }

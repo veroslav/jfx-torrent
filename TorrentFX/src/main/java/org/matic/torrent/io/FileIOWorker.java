@@ -19,8 +19,8 @@
 */
 package org.matic.torrent.io;
 
-import org.matic.torrent.gui.model.PeerView;
 import org.matic.torrent.io.cache.DataPieceCache;
+import org.matic.torrent.net.pwp.PeerSession;
 import org.matic.torrent.queue.QueuedTorrentMetaData;
 import org.matic.torrent.transfer.DataBlockIdentifier;
 
@@ -120,29 +120,23 @@ public final class FileIOWorker implements Runnable {
     private void handleReadRequest(final ReadDataPieceRequest readDataPieceRequest) {
         final int pieceLength = torrentMetaData.getPieceLength();
         final DataBlockIdentifier blockIdentifier = readDataPieceRequest.getBlockIdentifier();
-        final PeerView requester = readDataPieceRequest.getRequester();
+        final PeerSession requester = readDataPieceRequest.getRequester();
 
         final int pieceIndex = blockIdentifier.getPieceIndex();
-        final long pieceStart = pieceLength * pieceIndex;
-
+        final long pieceStart = (long)pieceLength * pieceIndex;
         final long firstFileBeginPosition = diskFileIOs.floorKey(pieceStart);
         final long lastFileBeginPosition = diskFileIOs.floorKey(pieceStart + pieceLength);
 
         //Check whether the piece has been cached (faster)
         final Optional<DataPiece> cachedPiece = pieceCache.get(readDataPieceRequest.getCachedDataPieceIdentifier());
         if(cachedPiece.isPresent()) {
-
-            //System.out.println("[CACHE HIT] for piece: " + cachedPiece.get().getIndex());
-
             dataPieceConsumer.accept(new FileOperationResult(FileOperationResult.OperationType.READ,
                     cachedPiece.get(), requester, blockIdentifier, null));
         }
 
-        //System.out.println("[CACHE MISS] for piece: " + readDataPieceRequest.getCachedDataPieceIdentifier().getPieceIndex());
-
         //Retrieve piece data from the disk (slower)
         final byte[] pieceBytes = new byte[pieceLength];
-        int pieceBytesPosition = 0;
+        int pieceBytesRead = 0;
 
         //Read bytes from all files that the piece spans across
         for(Long currentFilePosition = firstFileBeginPosition;
@@ -154,21 +148,21 @@ public final class FileIOWorker implements Runnable {
             try {
                 pieceBytesFromFile = fileIO.readPieceFromDisk(pieceLength, pieceIndex);
 
-                if(pieceBytesFromFile.length != pieceLength) {
-                    dataPieceConsumer.accept(new FileOperationResult(FileOperationResult.OperationType.READ,
-                            null, requester, blockIdentifier,
-                            new IOException("Read piece data length mismatch: expected " + pieceLength
-                                    + " but got " + pieceBytesFromFile + " bytes")));
-                    return;
-                }
-
-                System.arraycopy(pieceBytesFromFile, 0, pieceBytes, pieceBytesPosition, pieceBytesFromFile.length);
-                pieceBytesPosition += pieceBytesFromFile.length;
+                System.arraycopy(pieceBytesFromFile, 0, pieceBytes, pieceBytesRead, pieceBytesFromFile.length);
+                pieceBytesRead += pieceBytesFromFile.length;
             } catch (final IOException ioe) {
                 dataPieceConsumer.accept(new FileOperationResult(FileOperationResult.OperationType.READ,
                         null, requester, blockIdentifier, ioe));
                 return;
             }
+        }
+
+        if(pieceBytesRead != pieceLength) {
+            dataPieceConsumer.accept(new FileOperationResult(FileOperationResult.OperationType.READ,
+                    null, requester, blockIdentifier,
+                    new IOException("Read piece data length mismatch: expected " + pieceLength
+                            + " but got " + pieceBytesRead + " bytes")));
+            return;
         }
 
         final DataPiece dataPiece = new DataPiece(pieceBytes, pieceIndex);
@@ -190,9 +184,7 @@ public final class FileIOWorker implements Runnable {
             return;
         }
 
-        final int pieceIndex = dataPiece.getIndex();
-        final long pieceStart = pieceLength * pieceIndex;
-
+        final long pieceStart = pieceLength * (long)dataPiece.getIndex();
         final long firstFileBeginPosition = diskFileIOs.floorKey(pieceStart);
         final long lastFileBeginPosition = diskFileIOs.floorKey(pieceStart + expectedPieceLength);
 

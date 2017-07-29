@@ -1,6 +1,6 @@
 /*
 * This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015 Vedran Matic
+* Copyright (C) 2015-2017 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -17,10 +17,9 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-
 package org.matic.torrent.preferences;
 
-public class BitTorrentProperties {
+public final class BitTorrentProperties {
 
 	//Basic BitTorrent properties
 	public static final String LOCAL_PEER_DISCOVERY_ENABLED = "bt.local.peer.discovery.enabled";

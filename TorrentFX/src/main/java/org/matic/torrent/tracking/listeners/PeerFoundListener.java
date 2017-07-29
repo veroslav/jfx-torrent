@@ -1,6 +1,6 @@
 /*
 * This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015-2016 Vedran Matic
+* Copyright (C) 2015-2017 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@ import java.util.Collection;
 
 /**
  * An interface for notifying implementing classes when a new peer is
- * obtained by peer discovery strategies
+ * obtained by peer discovery strategies.
  *
  * @author Vedran Matic
  *
@@ -33,7 +33,7 @@ import java.util.Collection;
 public interface PeerFoundListener {
 
     /**
-     * Notify implementing classes when new peers are found
+     * Notify implementing classes when new peers are found.
      *
      * @param peers Newly obtained set of peers
      * @param source Name of the source that found the peers

@@ -30,7 +30,7 @@ import java.util.function.Predicate;
 public interface PwpConnectionStateListener {
 
     /**
-     * Notify implementing classes when s peer's connection state has changed.
+     * Notify implementing classes when a peer's connection state has changed.
      *
      * @param event Event containing the information about the connection state change
      */

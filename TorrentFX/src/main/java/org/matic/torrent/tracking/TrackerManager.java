@@ -32,7 +32,7 @@ import org.matic.torrent.net.pwp.PwpPeer;
 import org.matic.torrent.net.udp.UdpConnectionManager;
 import org.matic.torrent.net.udp.UdpRequest;
 import org.matic.torrent.net.udp.UdpTrackerResponse;
-import org.matic.torrent.peer.ClientProperties;
+import org.matic.torrent.client.ClientProperties;
 import org.matic.torrent.queue.enums.TorrentStatus;
 import org.matic.torrent.tracking.Tracker.Event;
 import org.matic.torrent.tracking.TrackerRequest.Type;
@@ -130,8 +130,8 @@ public class TrackerManager implements TrackerResponseListener, UdpTrackerRespon
             System.out.println("Tracker message [" + trackerMessage + "] canEncode [" + canEncode + "]");
         }
 
-                /*!= null?
-                new String(announceResponse.getMessage().getBytes(StandardCharsets.UTF_8)) : null;*/
+        /*!= null?
+        new String(announceResponse.getMessage().getBytes(StandardCharsets.UTF_8)) : null;*/
 		
 		synchronized(trackerSessions) {		
 			if(trackerSessions.containsKey(trackerSession.getTorrentView())) {
@@ -386,7 +386,7 @@ public class TrackerManager implements TrackerResponseListener, UdpTrackerRespon
 	}
 	
 	/**
-	 * Add a listener to be notified when a new peer has been obtained
+	 * Add a listener to be notified when a new peer has been obtained.
 	 * 
 	 * @param peerListener The listener to add
 	 * @return Whether the listener was successfully added
@@ -396,7 +396,7 @@ public class TrackerManager implements TrackerResponseListener, UdpTrackerRespon
 	}
 	
 	/**
-	 * Remove a listener that was notified when a new peer has been obtained
+	 * Remove a listener that was notified when a new peer has been obtained.
 	 * 
 	 * @param peerListener The listener to remove
 	 * @return Whether the listener was successfully removed

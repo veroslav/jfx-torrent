@@ -88,7 +88,7 @@ import org.matic.torrent.gui.table.TrackerTable;
 import org.matic.torrent.gui.tree.FileTreeViewer;
 import org.matic.torrent.gui.tree.TreeTableUtils;
 import org.matic.torrent.hash.InfoHash;
-import org.matic.torrent.peer.ClientProperties;
+import org.matic.torrent.client.ClientProperties;
 import org.matic.torrent.preferences.ApplicationPreferences;
 import org.matic.torrent.preferences.CssProperties;
 import org.matic.torrent.preferences.GuiProperties;
@@ -345,23 +345,22 @@ public final class ApplicationWindow implements PreferenceChangeListener {
             //Render Detailed Info pane contents only if it is visible
             if(showDetailedInfoMenuItem.isSelected()) {
                 final Tab selectedTab = detailedInfoTabPane.getSelectionModel().getSelectedItem();
+                final TorrentView selectedTorrent = selectedTorrents.get(selectedTorrents.size() - 1);
                 switch(selectedTab.getText()) {
                     case GuiProperties.TRACKERS_TAB_ID:
                         //Update and render tracker statistics if Trackers tab is selected
                         trackerTable.updateContent();
-                        trackerTable.sort();
                         break;
                     case GuiProperties.FILES_TAB_ID:
                         //Update and render file progress statistics if Files tab is selected
                         TreeTableUtils.sort(fileContentTree);
                         break;
                     case GuiProperties.INFO_TAB_ID:
-                        infoPanel.setContent(selectedTorrents.get(selectedTorrents.size() - 1));
+                        infoPanel.setContent(selectedTorrent);
                         break;
                     case GuiProperties.PEERS_TAB_ID:
                         //Update and render peer statistics if Peers tab is selected
-                        //TODO: Update peer table
-                        peerTable.sort();
+                        peerTable.updateContent(selectedTorrent.getPeerViews());
                         break;
                 }
             }

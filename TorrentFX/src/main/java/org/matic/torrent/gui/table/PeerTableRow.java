@@ -20,12 +20,13 @@
 package org.matic.torrent.gui.table;
 
 import javafx.scene.control.TableRow;
+import org.matic.torrent.gui.model.PeerView;
 
-public final class PeerTableRow<T> extends TableRow<T> {
+public final class PeerTableRow extends TableRow<PeerView> {
 
     @Override
-    protected void updateItem(final T item, final boolean empty) {
-        super.updateItem(item, empty);
+    protected void updateItem(final PeerView peerView, final boolean empty) {
+        super.updateItem(peerView, empty);
 
         if(!empty) {
             TableUtils.applyTableRowColorization(this);

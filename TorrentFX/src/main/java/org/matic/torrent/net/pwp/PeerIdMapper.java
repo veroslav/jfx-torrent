@@ -1,6 +1,6 @@
 /*
 * This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015-2016 Vedran Matic
+* Copyright (C) 2015-2017 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@ import java.util.Map;
 
 /**
  * A helper class that maps binary peer id to a humanly readable version of
- * the form "client_name client_version"
+ * the form "client_name client_version".
  *
  * @author Vedran Matic
  *

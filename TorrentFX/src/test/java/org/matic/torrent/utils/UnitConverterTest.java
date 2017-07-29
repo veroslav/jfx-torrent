@@ -1,6 +1,6 @@
 /*
 * This file is part of jfxTorrent, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015 Vedran Matic
+* Copyright (C) 2015-2017 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,6 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 *
 */
-
 package org.matic.torrent.utils;
 
 import org.junit.Assert;
@@ -49,4 +48,13 @@ public final class UnitConverterTest {
 		Assert.assertEquals(expectedConvertedTime, UnitConverter.formatMillisToDate(timeToConvert,
 				TimeZone.getTimeZone(UnitConverter.UTC_TIMEZONE)));
 	}
+
+	@Test
+    public void testBytesToInt() {
+	    final int maxInt = 10000;
+        for(int i = 0; i < maxInt; ++i) {
+            final byte[] intBytes = UnitConverter.getBytes(i);
+            Assert.assertEquals(i, UnitConverter.getInt(intBytes));
+        }
+    }
 }

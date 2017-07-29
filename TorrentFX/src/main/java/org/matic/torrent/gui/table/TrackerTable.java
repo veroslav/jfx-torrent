@@ -104,6 +104,7 @@ public final class TrackerTable {
      */
     public void updateContent() {
         trackerTable.getItems().forEach(TrackableView::update);
+        this.sort();
     }
 
     public void addTrackerViews(final Set<TrackerView> trackerViews) {

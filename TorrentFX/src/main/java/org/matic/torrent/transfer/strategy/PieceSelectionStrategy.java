@@ -46,9 +46,14 @@ public abstract class PieceSelectionStrategy {
         return downloadingPieces.get(pieceIndex);
     }
 
-    public boolean anyRequested(final BitSet peerPieces) {
-        return downloadingPieces.keySet().stream().filter(
-                pieceIndex -> peerPieces.get(pieceIndex)).findAny().isPresent();
+    public boolean anyPiecesNotYetRequested(final BitSet peerPieces) {
+        for(int i = peerPieces.nextSetBit(0); i >= 0; i = peerPieces.nextSetBit(i + 1)) {
+            if(!downloadingPieces.containsKey(i)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public boolean pieceRequested(final int pieceIndex, final DataPiece piece) {

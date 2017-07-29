@@ -30,7 +30,7 @@ import org.matic.torrent.hash.HashUtilities;
 import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.net.NetworkUtilities;
 import org.matic.torrent.net.pwp.PwpPeer;
-import org.matic.torrent.peer.ClientProperties;
+import org.matic.torrent.client.ClientProperties;
 import org.matic.torrent.tracking.listeners.TrackerResponseListener;
 
 import java.io.BufferedReader;

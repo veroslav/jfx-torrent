@@ -34,7 +34,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * A remote Peer-Wire-Protocol peer
+ * A remote Peer-Wire-Protocol client.
  *
  * @author Vedran Matic
  *
@@ -141,7 +141,7 @@ public final class PwpPeer {
 
     @Override
     public String toString() {
-        return "PwpPeer [infoHash=" + infoHash + ", peerIp=" + peerIp
-                + ", peerPort=" + peerPort + "]";
+        return "[Info hash = " + infoHash + ", IP = " + peerIp
+                + ", Port = " + peerPort + "]";
     }
 }

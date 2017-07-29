@@ -29,7 +29,7 @@ import java.util.BitSet;
 
 import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.io.DataBlock;
-import org.matic.torrent.peer.ClientProperties;
+import org.matic.torrent.client.ClientProperties;
 import org.matic.torrent.transfer.DataBlockIdentifier;
 import org.matic.torrent.utils.UnitConverter;
 
@@ -41,7 +41,7 @@ import org.matic.torrent.utils.UnitConverter;
  */
 public final class PwpMessageFactory {
 
-    private static final byte[] PROTOCOL_NAME_BYTES = PeerSession.PROTOCOL_NAME.getBytes(StandardCharsets.UTF_8);
+    private static final byte[] PROTOCOL_NAME_BYTES = ConnectionSession.PROTOCOL_NAME.getBytes(StandardCharsets.UTF_8);
     private static final byte[] PEER_ID_BYTES = ClientProperties.PEER_ID.getBytes(StandardCharsets.UTF_8);
 
     private static final byte[] KEEP_ALIVE_MESSAGE_BYTES = new byte[] {0, 0, 0, 0};
@@ -70,7 +70,7 @@ public final class PwpMessageFactory {
     public static byte[] buildHandshakeMessage(final InfoHash infoHash) {
         final ByteArrayOutputStream baos = new ByteArrayOutputStream(70);
         try {
-            baos.write(PeerSession.PROTOCOL_NAME_LENGTH);
+            baos.write(ConnectionSession.PROTOCOL_NAME_LENGTH);
             baos.write(PROTOCOL_NAME_BYTES);
             baos.write(RESERVED_BYTES);
             baos.write(infoHash.getBytes());
