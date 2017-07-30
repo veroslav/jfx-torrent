@@ -62,7 +62,7 @@ public final class TorrentFileIOTest {
 
         EasyMock.replay(fileAccessorMock, pathMock);
 
-        unitUnderTest = new TorrentFileIO(fileMetaData, fileAccessorMock);
+        unitUnderTest = new TorrentFileIO(pathMock, fileMetaData, fileAccessorMock);
         final int bytesWritten = unitUnderTest.writePieceToDisk(pieceToWrite);
 
         EasyMock.verify(fileAccessorMock, pathMock);
@@ -91,7 +91,7 @@ public final class TorrentFileIOTest {
 
         EasyMock.replay(fileAccessorMock, pathMock);
 
-        unitUnderTest = new TorrentFileIO(fileMetaData, fileAccessorMock);
+        unitUnderTest = new TorrentFileIO(pathMock, fileMetaData, fileAccessorMock);
         final int bytesWritten = unitUnderTest.writePieceToDisk(pieceToWrite);
 
         EasyMock.verify(fileAccessorMock, pathMock);
@@ -120,7 +120,7 @@ public final class TorrentFileIOTest {
 
         EasyMock.replay(fileAccessorMock, pathMock);
 
-        unitUnderTest = new TorrentFileIO(fileMetaData, fileAccessorMock);
+        unitUnderTest = new TorrentFileIO(pathMock, fileMetaData, fileAccessorMock);
         final int bytesWritten = unitUnderTest.writePieceToDisk(pieceToWrite);
 
         EasyMock.verify(fileAccessorMock, pathMock);
@@ -149,7 +149,7 @@ public final class TorrentFileIOTest {
 
         EasyMock.replay(fileAccessorMock, pathMock);
 
-        unitUnderTest = new TorrentFileIO(fileMetaData, fileAccessorMock);
+        unitUnderTest = new TorrentFileIO(pathMock, fileMetaData, fileAccessorMock);
         final int bytesWritten = unitUnderTest.writePieceToDisk(pieceToWrite);
 
         EasyMock.verify(fileAccessorMock, pathMock);
@@ -178,7 +178,7 @@ public final class TorrentFileIOTest {
 
         EasyMock.replay(fileAccessorMock, pathMock);
 
-        unitUnderTest = new TorrentFileIO(fileMetaData, fileAccessorMock);
+        unitUnderTest = new TorrentFileIO(pathMock, fileMetaData, fileAccessorMock);
         final int bytesWritten = unitUnderTest.writePieceToDisk(pieceToWrite);
 
         EasyMock.verify(fileAccessorMock, pathMock);
@@ -207,7 +207,7 @@ public final class TorrentFileIOTest {
 
         EasyMock.replay(fileAccessorMock, pathMock);
 
-        unitUnderTest = new TorrentFileIO(fileMetaData, fileAccessorMock);
+        unitUnderTest = new TorrentFileIO(pathMock, fileMetaData, fileAccessorMock);
         final int bytesWritten = unitUnderTest.writePieceToDisk(pieceToWrite);
 
         EasyMock.verify(fileAccessorMock, pathMock);
@@ -261,13 +261,13 @@ public final class TorrentFileIOTest {
 
         EasyMock.replay(firstFileAccessorMock, secondFileAccessorMock, thirdFileAccessorMock, pathMock);
 
-        final TorrentFileIO firstFileIO = new TorrentFileIO(firstFileMetaData, firstFileAccessorMock);
+        final TorrentFileIO firstFileIO = new TorrentFileIO(pathMock, firstFileMetaData, firstFileAccessorMock);
         final int firstFileIOBytesWritten = firstFileIO.writePieceToDisk(pieceToWrite);
 
-        final TorrentFileIO secondFileIO = new TorrentFileIO(secondFileMetaData, secondFileAccessorMock);
+        final TorrentFileIO secondFileIO = new TorrentFileIO(pathMock, secondFileMetaData, secondFileAccessorMock);
         final int secondFileIOBytesWritten = secondFileIO.writePieceToDisk(pieceToWrite);
 
-        final TorrentFileIO thirdFileIO = new TorrentFileIO(thirdFileMetaData, thirdFileAccessorMock);
+        final TorrentFileIO thirdFileIO = new TorrentFileIO(pathMock, thirdFileMetaData, thirdFileAccessorMock);
         final int thirdFileIOBytesWritten = thirdFileIO.writePieceToDisk(pieceToWrite);
 
         EasyMock.verify(firstFileAccessorMock, secondFileAccessorMock, thirdFileAccessorMock, pathMock);

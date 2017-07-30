@@ -21,6 +21,7 @@ package org.matic.torrent.gui.table;
 
 import javafx.application.Platform;
 import javafx.beans.value.ObservableValue;
+import javafx.collections.ObservableList;
 import javafx.scene.control.CheckMenuItem;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.MenuItem;
@@ -79,27 +80,24 @@ public final class PeerTable {
 		createColumns();
 		createContextMenu();
 	}
-	
-	public void setContent(final Collection<PeerView> peers) {
-        Platform.runLater(() -> {
-            peerTable.getItems().clear();
-            peerTable.getItems().addAll(peers);
-        });
-	}
+
+	public void add(final Collection<PeerView> peerViews) {
+	    Platform.runLater(() -> peerTable.getItems().addAll(peerViews));
+    }
+
+    public void remove(final Collection<PeerView> peerViews) {
+	    Platform.runLater(() -> peerTable.getItems().removeAll(peerViews));
+    }
 
 	public void updateContent(final Collection<PeerView> peers) {
         Platform.runLater(() -> {
-            final List<PeerView> peersInTable = peerTable.getItems();
+            final ObservableList<PeerView> peersInTable = peerTable.getItems();
 
-            final List<PeerView> newPeers = peers.stream().filter(peer ->
-                    !peersInTable.contains(peer)).collect(Collectors.toList());
+            peersInTable.removeIf(peerView -> !peers.contains(peerView));
+            peersInTable.addAll(peers.stream().filter(peerView ->
+                    !peersInTable.contains(peerView)).collect(Collectors.toList()));
 
-            if(!newPeers.isEmpty()) {
-                peersInTable.addAll(newPeers);
-            }
-            else {
-                peersInTable.forEach(PeerView::update);
-            }
+            peersInTable.forEach(PeerView::update);
             this.sort();
         });
     }
@@ -277,13 +275,16 @@ public final class PeerTable {
                     tooltipBuilder.append("interested(peer) and unchoked(local)\n");
                 }
                 else if(flags.contains(PeerView.PEER_CHOKED_AND_INTERESTED_FLAG)) {
-                    tooltipBuilder.append("interested(peer) and choked(peer)\n");
+                    tooltipBuilder.append("interested(peer) and choked(local)\n");
                 }
                 if(flags.contains(PeerView.CLIENT_NOT_INTERESTED_AND_NOT_CHOKED_FLAG)) {
                     tooltipBuilder.append("not interested(local) and unchoked(local)\n");
                 }
+                if(flags.contains(PeerView.INCOMING_CONNECTION_FLAG)) {
+                    tooltipBuilder.append("incoming connection\n");
+                }
                 if(flags.contains(PeerView.PEER_SNUBBED)) {
-                    tooltipBuilder.append("snubbed(local)\n");
+                    tooltipBuilder.append("snubbed(peer)\n");
                 }
                 if(flags.contains(PeerView.PEER_UNCHOKED_AND_NOT_INTERESTED_FLAG)) {
                     tooltipBuilder.append("not interested(peer) and unchoked(peer)\n");

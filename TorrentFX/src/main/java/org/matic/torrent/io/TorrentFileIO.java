@@ -21,6 +21,7 @@ package org.matic.torrent.io;
 
 import org.matic.torrent.queue.QueuedFileMetaData;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.file.Path;
@@ -37,8 +38,10 @@ public final class TorrentFileIO {
     private static final byte[] EMPTY_BYTES = new byte[0];
     private static final String FILE_ACCESS_MODE = "rw";
 
-    private final RandomAccessFile fileAccessor;
     private final QueuedFileMetaData fileMetaData;
+    private final Path filePath;
+
+    private RandomAccessFile fileAccessor;
 
     /**
      * Create a new instance.
@@ -48,12 +51,13 @@ public final class TorrentFileIO {
      * @throws IOException If any errors occur during I/O operations on the file
      */
     public TorrentFileIO(final Path filePath, final QueuedFileMetaData fileMetaData) throws IOException {
-        this(fileMetaData, new RandomAccessFile(filePath.toFile(), FILE_ACCESS_MODE));
+        this(filePath, fileMetaData, new RandomAccessFile(filePath.toFile(), FILE_ACCESS_MODE));
     }
 
     //A constructor to use in unit tests
-    protected TorrentFileIO(final QueuedFileMetaData fileMetaData,
+    protected TorrentFileIO(final Path filePath, final QueuedFileMetaData fileMetaData,
                             final RandomAccessFile fileAccessor) throws IOException {
+        this.filePath = filePath;
         this.fileMetaData = fileMetaData;
         this.fileAccessor = fileAccessor;
 
@@ -65,14 +69,29 @@ public final class TorrentFileIO {
     }
 
     /**
+     * Create and setup file accessor resources.
+     */
+    public void setup() {
+        if(fileAccessor == null) {
+            try {
+                fileAccessor = new RandomAccessFile(filePath.toFile(), FILE_ACCESS_MODE);
+            } catch (final FileNotFoundException fnfe) {
+                fnfe.printStackTrace();
+            }
+        }
+    }
+
+    /**
      * Close and release all file accessor resources on shutdown.
      */
     public void cleanup() {
-        //TODO: Don't clean up too fast, might close a file accessor which has a pending write/read in progress!
-        try {
-            fileAccessor.close();
-        } catch (final IOException e) {
-            e.printStackTrace();
+        if(fileAccessor != null) {
+            try {
+                fileAccessor.close();
+            } catch (final IOException ioe) {
+                ioe.printStackTrace();
+            }
+            fileAccessor = null;
         }
     }
 

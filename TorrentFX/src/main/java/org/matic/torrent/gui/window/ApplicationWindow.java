@@ -1034,7 +1034,7 @@ public final class ApplicationWindow implements PreferenceChangeListener {
 
         trackerTable.setContent(torrentView.getTrackerViews());
         torrentViewTable.addJob(torrentView);
-        peerTable.setContent(torrentView.getPeerViews());
+        peerTable.updateContent(torrentView.getPeerViews());
         fileTreeViewer.attach(torrentView.getInfoHash(), contents);
     }
 
@@ -1085,7 +1085,7 @@ public final class ApplicationWindow implements PreferenceChangeListener {
                     fileTreeViewer.hide();
                     infoPanel.setContent(null);
                     trackerTable.setContent(FXCollections.emptyObservableList());
-                    peerTable.setContent(FXCollections.emptyObservableList());
+                    peerTable.updateContent(FXCollections.emptyObservableList());
                 }
                 else {
                     final TorrentView selectedJob = newSelection.get(0);
@@ -1109,7 +1109,7 @@ public final class ApplicationWindow implements PreferenceChangeListener {
         }
         trackerTable.setContent(torrentSelected? selectedTorrentView.getTrackerViews() :
                 FXCollections.emptyObservableList());
-        peerTable.setContent(torrentSelected? selectedTorrentView.getPeerViews() :
+        peerTable.updateContent(torrentSelected? selectedTorrentView.getPeerViews() :
                 FXCollections.emptyObservableList());
         infoPanel.setContent(torrentSelected? selectedTorrentView : null);
         updateGui();

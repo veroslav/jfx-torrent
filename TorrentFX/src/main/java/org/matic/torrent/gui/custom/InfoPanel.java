@@ -1,6 +1,6 @@
 /*
 * This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015-2016 Vedran Matic
+* Copyright (C) 2015-2017 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -29,7 +29,6 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import org.matic.torrent.gui.GuiUtils;
-import org.matic.torrent.gui.model.BitsView;
 import org.matic.torrent.gui.model.TorrentView;
 import org.matic.torrent.preferences.CssProperties;
 import org.matic.torrent.queue.enums.QueueType;
@@ -83,9 +82,8 @@ public final class InfoPanel extends VBox {
 	
 	public void setContent(final TorrentView torrentView) {
         if(torrentView != null) {
-            final BitsView availabilityView = torrentView.getAvailabilityView();
-            availabilityBar.update(availabilityView);
-            downloadProgress.update(availabilityView);
+            availabilityBar.update(torrentView);
+            downloadProgress.update(torrentView);
         }
         else {
             downloadProgress.update(null);

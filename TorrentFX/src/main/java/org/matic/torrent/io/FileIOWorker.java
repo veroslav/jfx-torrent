@@ -69,6 +69,7 @@ public final class FileIOWorker implements Runnable {
 
     @Override
     public void run() {
+        setup();
         while(true) {
             if (Thread.currentThread().isInterrupted()) {
                 Thread.interrupted();
@@ -110,6 +111,11 @@ public final class FileIOWorker implements Runnable {
                 handleReadRequest(readDataPieceRequest);
             }
         }
+    }
+
+    //Need to open the file accessors for read/write when creating the thread
+    private void setup() {
+        diskFileIOs.values().forEach(TorrentFileIO::setup);
     }
 
     //Need to close all of the file accessors on exit (RandomAccessFile.close())

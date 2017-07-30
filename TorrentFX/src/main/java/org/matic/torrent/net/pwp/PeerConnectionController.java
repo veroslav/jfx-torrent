@@ -19,7 +19,6 @@
 */
 package org.matic.torrent.net.pwp;
 
-import org.matic.torrent.gui.model.BitsView;
 import org.matic.torrent.gui.model.TorrentView;
 import org.matic.torrent.hash.InfoHash;
 import org.matic.torrent.net.NetworkUtilities;
@@ -535,14 +534,14 @@ public class PeerConnectionController implements PeerFoundListener, TorrentStatu
         }
     }
 
-    private void checkForHandshake(final SelectionKey selectionKey, final ConnectionSession session,
+    private void checkForHandshake(final SelectionKey selectionKey, final ConnectionSession connectionSession,
                                    final Collection<PwpMessage> messages) {
         final Optional<PwpMessage> potentialHandshake = messages.stream().filter(
                 m -> m.getMessageType() == PwpMessage.MessageType.HANDSHAKE).findAny();
         if(potentialHandshake.isPresent()) {
             final PwpHandshakeMessage handshake = (PwpHandshakeMessage)potentialHandshake.get();
             final InfoHash infoHash = handshake.getInfoHash();
-            final PeerSession peerSession = session.getPeerSession();
+            final PeerSession peerSession = connectionSession.getPeerSession();
 
             final TorrentView targetTorrent;
             final int torrentConnectionCount;
@@ -560,7 +559,7 @@ public class PeerConnectionController implements PeerFoundListener, TorrentStatu
                 return;
             }
 
-            if(!session.isIncoming()) {
+            if(!peerSession.isIncoming()) {
                 targetTorrent.getProgress().addPeer(peerSession.getPeer());
             }
 
@@ -594,8 +593,7 @@ public class PeerConnectionController implements PeerFoundListener, TorrentStatu
         if(potentialBitfield.isPresent()) {
             final PwpMessage bitfield = potentialBitfield.get();
 
-            final BitsView torrentPieces = servedTorrents.get(peerSession.getInfoHash()).getAvailabilityView();
-            final int expectedPieceCount = torrentPieces.getTotalPieces();
+            final int expectedPieceCount = servedTorrents.get(peerSession.getInfoHash()).getTotalPieces();
             final BitSet bitSet = PwpMessageFactory.parseBitfieldMessage(bitfield);
 
             if(bitSet.length() > expectedPieceCount || (bitfield.getPayload().length * Byte.SIZE < expectedPieceCount)) {
@@ -729,7 +727,7 @@ public class PeerConnectionController implements PeerFoundListener, TorrentStatu
             final int remotePeerPort = connectionAddress.getPort();
 
             final PwpPeer peer = new PwpPeer(remotePeerIp, remotePeerPort, null);
-            final ConnectionSession connectionSession = new ConnectionSession(channel, new PeerSession(peer), true);
+            final ConnectionSession connectionSession = new ConnectionSession(channel, new PeerSession(peer, true));
 
             final SelectionKey channelKey = channel.register(selector, SelectionKey.OP_READ);
             channelKey.attach(connectionSession);
@@ -785,8 +783,8 @@ public class PeerConnectionController implements PeerFoundListener, TorrentStatu
 
             final SelectionKey selectionKey = peerChannel.register(
                     selector, SelectionKey.OP_CONNECT, peer);
-            final PeerSession peerSession = new PeerSession(peer);
-            final ConnectionSession session = new ConnectionSession(peerChannel, peerSession, false);
+            final PeerSession peerSession = new PeerSession(peer, false);
+            final ConnectionSession session = new ConnectionSession(peerChannel, peerSession);
             selectionKey.attach(session);
 
             halfOpenConnections.putIfAbsent(peer.getInfoHash(), new HashMap<>());

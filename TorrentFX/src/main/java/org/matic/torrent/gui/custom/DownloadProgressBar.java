@@ -22,18 +22,20 @@ package org.matic.torrent.gui.custom;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
-import org.matic.torrent.gui.model.BitsView;
+import org.matic.torrent.gui.model.TorrentView;
+
+import java.util.BitSet;
 
 public final class DownloadProgressBar extends Canvas {
 	
 	private static final Color DOWNLOADED_PIECE_COLOR = Color.rgb(171, 214, 121);
 	private static final Color PROGRESSBAR_COLOR = Color.rgb(80, 80, 255);
-	
-	private BitsView availabilityView = null;
+
+    private TorrentView torrentView;
 
 	public DownloadProgressBar() {
-		this.widthProperty().addListener(obs -> update(availabilityView));
-		this.heightProperty().addListener(obs -> update(availabilityView));
+		this.widthProperty().addListener(obs -> update(torrentView));
+		this.heightProperty().addListener(obs -> update(torrentView));
 	}
 	
 	@Override
@@ -51,8 +53,8 @@ public final class DownloadProgressBar extends Canvas {
 		return true;
 	}
 	
-	public void update(final BitsView availabilityView) {
-		this.availabilityView = availabilityView;
+	public void update(final TorrentView torrentView) {
+		this.torrentView = torrentView;
 		final GraphicsContext context = this.getGraphicsContext2D();
 		context.clearRect(0, 0, this.getWidth(), this.getHeight());
 		
@@ -70,29 +72,43 @@ public final class DownloadProgressBar extends Canvas {
 	}
 	
 	private void drawProgressBar(final GraphicsContext context) {
-		final double barWidth = availabilityView == null? 0 :
-			(((double)availabilityView.getHavePiecesCount()) / availabilityView.getTotalPieces()) * (this.getWidth() - 1);
+		final double barWidth = torrentView == null? 0 :
+			(((double)torrentView.getHavePieces()) / torrentView.getTotalPieces()) * (this.getWidth() - 1);
 		
 		context.setFill(PROGRESSBAR_COLOR);
 		context.fillRect(1, 1, barWidth, 5);
 	}
 	
 	private void drawAvailabilityBar(final GraphicsContext context) {
-		if(availabilityView == null) {
+		if(torrentView == null) {
 			return;
 		}
 
-		final double pieceWidth = (this.getWidth() - 2) / availabilityView.getTotalPieces();
-		
-		context.setFill(DOWNLOADED_PIECE_COLOR);
-		double xOffset = 1;
-		for(int j = 0; j < availabilityView.getLastHaveIndex(); xOffset += pieceWidth, ++j) {
+        context.setFill(DOWNLOADED_PIECE_COLOR);
 
-		    //TODO: It is better to draw continuous pieces at once in a single fillRect()
+        final BitSet obtainedPieces = torrentView.getObtainedPieces();
 
-			if(availabilityView.getHave(j)) {
-				context.fillRect(xOffset, 7, pieceWidth, this.getHeight() - 1);
-			}
-		}
+		final double pieceWidth = (this.getWidth() - 2) / torrentView.getTotalPieces();
+        int currentSegmentPieceIndex = -1;
+        int segmentStartPieceIndex = obtainedPieces.nextSetBit(0);
+        double xOffset = 1;
+        double segmentStartX = xOffset + segmentStartPieceIndex * pieceWidth;
+
+        for(int i = segmentStartPieceIndex; i != -1; i = obtainedPieces.nextSetBit(i + 1)) {
+            if(i - 1 == currentSegmentPieceIndex) {
+                currentSegmentPieceIndex = i;
+                xOffset += pieceWidth;
+            }
+            else {
+                //End of a segment, we can draw it
+                context.fillRect(segmentStartX, 7, xOffset - segmentStartX, this.getHeight() - 1);
+
+                //Prepare for next segment
+                xOffset += (i - currentSegmentPieceIndex) * pieceWidth;
+
+                segmentStartX = xOffset;
+                currentSegmentPieceIndex = i;
+            }
+        }
 	}
 }

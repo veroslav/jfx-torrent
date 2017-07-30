@@ -1,6 +1,6 @@
 /*
 * This file is part of Trabos, an open-source BitTorrent client written in JavaFX.
-* Copyright (C) 2015-2016 Vedran Matic
+* Copyright (C) 2015-2017 Vedran Matic
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -23,10 +23,11 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
-import org.matic.torrent.gui.model.BitsView;
+import org.matic.torrent.gui.model.TorrentView;
+import org.matic.torrent.queue.enums.TorrentStatus;
 
 /**
- * A bar that graphically displays a torrent's availability
+ * A bar that graphically displays a torrent's availability (piece distribution within the swarm).
  * 
  * @author Vedran Matic
  *
@@ -36,11 +37,11 @@ public final class AvailabilityBar extends Canvas {
 	private static final Paint NOT_AVAILABLE_COLOR = Color.rgb(141, 28, 16);
 	private static final Paint AVAILABLE_COLOR = Color.rgb(171, 214, 121);
 	
-	private BitsView availability = null;
+	private TorrentView torrentView = null;
 	
 	public AvailabilityBar() {
-		this.widthProperty().addListener(obs -> update(availability));
-		this.heightProperty().addListener(obs -> update(availability));		
+		this.widthProperty().addListener(obs -> update(torrentView));
+		this.heightProperty().addListener(obs -> update(torrentView));
 	}
 	
 	@Override
@@ -58,10 +59,12 @@ public final class AvailabilityBar extends Canvas {
 		return true;
 	}
 
-	public void update(final BitsView availability) {
-		this.availability = availability;
+	public void update(final TorrentView torrentView) {
+		this.torrentView = torrentView;
 		final GraphicsContext context = this.getGraphicsContext2D();
-		
+
+		context.clearRect(0, 0, this.getWidth(), this.getHeight());
+
 		//Draw a 3D effect around the bar
 		context.setFill(Color.DARKGRAY);
 		context.fillRect(0, 0, this.getWidth(), 1);
@@ -72,5 +75,10 @@ public final class AvailabilityBar extends Canvas {
 	
 	private void drawAvailabilityBar(final GraphicsContext context) {
 		//TODO: Implement method
+
+        if(torrentView != null && torrentView.getStatus() == TorrentStatus.STOPPED) {
+            context.setFill(NOT_AVAILABLE_COLOR);
+            context.fillRect(1, 1, this.getWidth() - 2, this.getHeight() - 2);
+        }
 	}
 }

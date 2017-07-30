@@ -46,10 +46,21 @@ public class PeerSession {
     private volatile boolean isSnubbed = false;
 
     private BitSet pieces = new BitSet();
+    private final boolean incoming;
     private final PwpPeer peer;
 
-    public PeerSession(final PwpPeer peer) {
+    public PeerSession(final PwpPeer peer, final boolean incoming) {
         this.peer = peer;
+        this.incoming = incoming;
+    }
+
+    /**
+     * Whether this session was initiated by a remote peer (incoming) or the client (outgoing).
+     *
+     * @return true if remote peer initiated this session, false otherwise
+     */
+    public boolean isIncoming() {
+        return incoming;
     }
 
     public PwpPeer getPeer() {

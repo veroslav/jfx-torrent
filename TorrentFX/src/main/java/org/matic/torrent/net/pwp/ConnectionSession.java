@@ -59,24 +59,13 @@ public final class ConnectionSession {
 
     private final SocketChannel channel;
     private final PeerSession peerSession;
-    private final boolean incoming;
 
     private long lastActivityTime = System.currentTimeMillis();
 
-	public ConnectionSession(final SocketChannel channel, final PeerSession peerSession, final boolean incoming) {
+	public ConnectionSession(final SocketChannel channel, final PeerSession peerSession) {
         this.channel = channel;
         this.peerSession = peerSession;
-        this.incoming = incoming;
 	}
-
-    /**
-     * Whether this session was initiated by a remote peer (incoming) or the client (outgoing).
-     *
-     * @return true if remote peer initiated this session, false otherwise
-     */
-	protected boolean isIncoming() {
-	    return incoming;
-    }
 
     protected PeerSession getPeerSession() {
         return peerSession;
@@ -234,7 +223,7 @@ public final class ConnectionSession {
         //If the message is not BITFIELD, nor PIECE and is too long, it might be obfuscated
         if(messageId != 5 && messageId != 7 && messageLength > 13) {
             throw new InvalidPeerMessageException("Possibly obfuscated message data from: " + peerSession
-                + " Incoming? " + isIncoming());
+                + " Incoming? " + peerSession.isIncoming());
         }
 
 		return parseMessageWithId(buffer, messageLength, messageId);
@@ -245,7 +234,7 @@ public final class ConnectionSession {
         if(messageLength < 1) {
             throw new InvalidPeerMessageException("Invalid message: messageId: " + messageId +
                     ", messageLength = " + messageLength + ", CAUSE: " + peerSession
-                    + " Incoming? " + isIncoming());
+                    + " Incoming? " + peerSession.isIncoming());
         }
 
 		//Check whether it is a message without payload

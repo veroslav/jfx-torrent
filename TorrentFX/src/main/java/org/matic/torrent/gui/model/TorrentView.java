@@ -38,6 +38,7 @@ import org.matic.torrent.queue.action.TorrentStatusChangeListener;
 import org.matic.torrent.queue.enums.QueueType;
 import org.matic.torrent.queue.enums.TorrentStatus;
 
+import java.util.BitSet;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -51,7 +52,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public final class TorrentView {
 
-    private final BitsView availabilityView;
+    private final BitSet obtainedPieces;
     private final QueuedTorrent queuedTorrent;
 
     private final LongProperty selectedLength;
@@ -98,7 +99,7 @@ public final class TorrentView {
         this.selectedLength = new SimpleLongProperty(0);
         this.queuedTorrent = queuedTorrent;
 
-        availabilityView = new BitsView(this.queuedTorrent.getMetaData().getTotalPieces());
+        obtainedPieces = new BitSet(this.queuedTorrent.getMetaData().getTotalPieces());
         fileTree = new FileTree(queuedTorrent.getMetaData(), queuedTorrent.getProgress());
 
         this.priority.addListener((obs, oldV, newV) ->
@@ -199,10 +200,6 @@ public final class TorrentView {
 
     public String getFileName() {
         return queuedTorrent.getProgress().getName();
-    }
-
-    public BitsView getAvailabilityView() {
-        return availabilityView;
     }
 
     public long getElapsedTime() {
@@ -328,15 +325,19 @@ public final class TorrentView {
     public long getTotalLength() {return queuedTorrent.getMetaData().getTotalLength(); }
 
     public void setHavePiece(final int pieceIndex) {
-        this.availabilityView.setHave(pieceIndex, true);
+        obtainedPieces.set(pieceIndex);
     }
 
     public void setHavePieces(final byte[] havePieces) {
-        this.availabilityView.setHaveFrom(havePieces);
+        obtainedPieces.or(BitSet.valueOf(havePieces));
     }
 
-    public long getHavePieces() {
-        return this.availabilityView.getHavePiecesCount();
+    public int getHavePieces() {
+        return obtainedPieces.cardinality();
+    }
+
+    public BitSet getObtainedPieces() {
+        return BitSet.valueOf(obtainedPieces.toByteArray());
     }
 
     @Override

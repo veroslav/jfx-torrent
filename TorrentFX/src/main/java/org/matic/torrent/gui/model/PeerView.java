@@ -39,6 +39,7 @@ public final class PeerView {
     public static final String CLIENT_INTERESTED_AND_CHOKED_FLAG = "d";
     public static final String PEER_UNCHOKED_AND_INTERESTED_FLAG = "U";
     public static final String PEER_CHOKED_AND_INTERESTED_FLAG = "u";
+    public static final String INCOMING_CONNECTION_FLAG = "I";
     public static final String PEER_SNUBBED = "S";
 
     private final StringProperty clientId = new SimpleStringProperty();
@@ -192,6 +193,9 @@ public final class PeerView {
         if(peerSession.areWeInterestedIn()) {
             flagsBuilder.append(peerSession.isChokingUs()? CLIENT_INTERESTED_AND_CHOKED_FLAG
                     : CLIENT_INTERESTED_AND_NOT_CHOKED_FLAG);
+        }
+        if(peerSession.isIncoming()) {
+            flagsBuilder.append(INCOMING_CONNECTION_FLAG);
         }
         if(!peerSession.isChokingUs() && !peerSession.areWeInterestedIn()) {
             flagsBuilder.append(CLIENT_NOT_INTERESTED_AND_NOT_CHOKED_FLAG);
