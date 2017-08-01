@@ -36,14 +36,19 @@ public class PeerSession {
     private long bytesSentToUsSinceUnchoke = 0;
     private long unchokedByUsTime = 0;
 
-    private int sentBlockRequests = 0;
-    private int requestedBlocks = 0;
+    private volatile int sentBlockRequests = 0;
+    private volatile int requestedBlocks = 0;
 
     private volatile boolean areWeInterestedIn = false;
     private volatile boolean isInterestedInUs = false;
     private volatile boolean areWeChoking = true;
     private volatile boolean isChokingUs = true;
     private volatile boolean isSnubbed = false;
+
+    private volatile long downloadedBytes = 0;
+    private volatile long uploadedBytes = 0;
+
+    private volatile boolean logTraffic = false;
 
     private BitSet pieces = new BitSet();
     private final boolean incoming;
@@ -83,6 +88,22 @@ public class PeerSession {
         this.clientId = clientId;
     }
 
+    public long getDownloadedBytes() {
+        return downloadedBytes;
+    }
+
+    public void addDownloadedBytes(final long downloadedBytes) {
+        this.downloadedBytes += downloadedBytes;
+    }
+
+    public long getUploadedBytes() {
+        return uploadedBytes;
+    }
+
+    public void addUploadedBytes(final long uploadedBytes) {
+        this.uploadedBytes += uploadedBytes;
+    }
+
     public int getSentBlockRequests() {
         return sentBlockRequests;
     }
@@ -112,7 +133,11 @@ public class PeerSession {
     }
 
     public void setPieces(final BitSet pieces) {
-        this.pieces = pieces;
+        this.pieces.or(pieces);
+    }
+
+    public int getPieceCount() {
+        return pieces.cardinality();
     }
 
     public boolean isSeeder(final int pieceCount) {
@@ -170,6 +195,14 @@ public class PeerSession {
     public double getAverageUploadRateSinceLastUnchoke() {
         return bytesSentToUsSinceUnchoke == 0? 0 :
                 (double)bytesSentToUsSinceUnchoke / (System.currentTimeMillis() - unchokedByUsTime);
+    }
+
+    public boolean isLogTraffic() {
+        return logTraffic;
+    }
+
+    public void setLogTraffic(final boolean logTraffic) {
+        this.logTraffic = logTraffic;
     }
 
     @Override

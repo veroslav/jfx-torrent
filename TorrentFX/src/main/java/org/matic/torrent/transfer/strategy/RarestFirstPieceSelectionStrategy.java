@@ -24,7 +24,6 @@ import org.matic.torrent.client.ClientProperties;
 
 import java.util.ArrayList;
 import java.util.BitSet;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -165,8 +164,13 @@ public class RarestFirstPieceSelectionStrategy extends PieceSelectionStrategy {
         else if(pieceAvailabilities[pieceIndex] != 0) {
             final Map.Entry<Integer, List<Integer>> lastRarestEntry = rarestPieces.lastEntry();
 
-            final List<Integer> lastRarestEntryPieceIndexes = lastRarestEntry != null?
-                    lastRarestEntry.getValue() : Collections.emptyList();
+            if(lastRarestEntry == null) {
+                //There are no entries among the rarest pieces, add this piece there
+                rarestPieces.computeIfAbsent(pieceAvailabilities[pieceIndex], value -> new ArrayList<>()).add(pieceIndex);
+                return;
+            }
+
+            final List<Integer> lastRarestEntryPieceIndexes = lastRarestEntry.getValue();
             final int lastRarestEntryAvailability = lastRarestEntry.getKey();
 
             if (pieceAvailabilities[pieceIndex] < lastRarestEntryAvailability) {

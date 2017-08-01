@@ -47,6 +47,7 @@ public final class PwpMessageFactory {
     private static final byte[] KEEP_ALIVE_MESSAGE_BYTES = new byte[] {0, 0, 0, 0};
     private static final byte[] RESERVED_BYTES = new byte[]{0, 0, 0, 0, 0, 0, 0, 0};
 
+    private static final PwpMessage NOT_INTERESTED_MESSAGE = PwpMessageFactory.buildNotInterestedMessage();
     private static final PwpMessage INTERESTED_MESSAGE = PwpMessageFactory.buildInterestedMessage();
 
     private static final PwpMessage UNCHOKE_MESSAGE = PwpMessageFactory.buildUnchokeMessage();
@@ -93,6 +94,10 @@ public final class PwpMessageFactory {
 
     public static PwpMessage getInterestedMessage() {
         return INTERESTED_MESSAGE;
+    }
+
+    public static PwpMessage getNotInterestedMessage() {
+        return NOT_INTERESTED_MESSAGE;
     }
 
     public static PwpMessage buildBitfieldMessage(final BitSet receivedPieces, final int totalPieces) {
@@ -275,6 +280,8 @@ public final class PwpMessageFactory {
         }
     }
 
+    //TODO: Refactor all simple message buildXXX methods to a common method
+
     private static PwpMessage buildUnchokeMessage() {
         try(final ByteArrayOutputStream baos = new ByteArrayOutputStream();
             final DataOutputStream dos = new DataOutputStream(baos)) {
@@ -298,6 +305,21 @@ public final class PwpMessageFactory {
             dos.flush();
 
             return new PwpMessage(PwpMessage.MessageType.INTERESTED, baos.toByteArray());
+        }
+        catch (final IOException ioe) {
+            //This can't happen for ByteArrayOutputStream
+            return null;
+        }
+    }
+
+    private static PwpMessage buildNotInterestedMessage() {
+        try(final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            final DataOutputStream dos = new DataOutputStream(baos)) {
+            dos.writeInt(1);            //Message length
+            dos.writeByte(3);           //Message id
+            dos.flush();
+
+            return new PwpMessage(PwpMessage.MessageType.NOT_INTERESTED, baos.toByteArray());
         }
         catch (final IOException ioe) {
             //This can't happen for ByteArrayOutputStream

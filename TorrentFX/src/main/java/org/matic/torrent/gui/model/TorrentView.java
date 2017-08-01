@@ -19,6 +19,7 @@
 */
 package org.matic.torrent.gui.model;
 
+import javafx.application.Platform;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.LongProperty;
 import javafx.beans.property.SimpleIntegerProperty;
@@ -50,7 +51,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  *
  * @author Vedran Matic
  */
-public final class TorrentView {
+public class TorrentView {
 
     private final BitSet obtainedPieces;
     private final QueuedTorrent queuedTorrent;
@@ -116,8 +117,8 @@ public final class TorrentView {
         this.saveDirectory = queuedTorrent.getProgress().getSavePath().toString();
     }
 
-    public boolean addPeerViews(final Collection<PeerView> peerViews) {
-        return this.peerViews.addAll(peerViews);
+    public void addPeerViews(final Collection<PeerView> peerViews) {
+        Platform.runLater(() -> this.peerViews.addAll(peerViews));
     }
 
     public Collection<PeerView> getPeerViews() {

@@ -81,14 +81,8 @@ public final class InfoPanel extends VBox {
 	}
 	
 	public void setContent(final TorrentView torrentView) {
-        if(torrentView != null) {
-            availabilityBar.update(torrentView);
-            downloadProgress.update(torrentView);
-        }
-        else {
-            downloadProgress.update(null);
-        }
-
+        availabilityBar.update(torrentView);
+        downloadProgress.update(torrentView);
 		updateValues(torrentView);
 	}
 	

@@ -30,6 +30,7 @@ import java.util.function.Consumer;
 public abstract class PieceSelectionStrategy {
 
     protected final Map<Integer, DataPiece> downloadingPieces = new HashMap<>();
+
     protected final int[] pieceAvailabilities;
     protected BitSet receivedPieces;
 

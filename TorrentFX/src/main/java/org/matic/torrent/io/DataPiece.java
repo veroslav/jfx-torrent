@@ -138,6 +138,7 @@ public class DataPiece {
                 "pieceIndex=" + pieceIndex +
                 ", digestedBlocksPointer=" + digestedBlocksPointer +
                 ", length=" + pieceBytes.length +
+                ", queuedBlocks=" + queuedBlocks.keySet() +
                 '}';
     }
 }

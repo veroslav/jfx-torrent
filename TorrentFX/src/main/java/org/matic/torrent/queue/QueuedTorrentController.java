@@ -19,6 +19,7 @@
 */
 package org.matic.torrent.queue;
 
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import org.matic.torrent.codec.BinaryEncodedList;
@@ -140,7 +141,8 @@ public final class QueuedTorrentController implements PreferenceChangeListener, 
                         peerSession, torrentJob.getTorrent().getMetaData().getTotalPieces())));
             }
             else if(eventType == PeerConnectionStateChangeEvent.PeerLifeCycleChangeType.DISCONNECTED) {
-                torrentView.getPeerViews().removeIf(p -> p.getPeer().equals(peerSession.getPeer()));
+                Platform.runLater(() -> torrentView.getPeerViews().removeIf(
+                        p -> p.getPeer().equals(peerSession.getPeer())));
             }
         }
     }

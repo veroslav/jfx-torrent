@@ -42,7 +42,7 @@ import java.util.stream.Collectors;
  * @author Vedran Matic
  *
  */
-public final class QueuedTorrentMetaData {
+public class QueuedTorrentMetaData {
 
     private static final int PIECE_HASH_LENGTH = 20;
 

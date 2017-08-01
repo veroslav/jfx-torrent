@@ -19,7 +19,6 @@
 */
 package org.matic.torrent.gui.table;
 
-import javafx.application.Platform;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.ObservableList;
 import javafx.scene.control.CheckMenuItem;
@@ -64,7 +63,7 @@ public final class PeerTable {
 	//Other columns
 	private static final String PORT_COLUMN_NAME = "Port";
 
-    private final MenuItem logTrafficToLoggerMenuItem = new MenuItem("_Log Traffic to Logger Tab");
+    private final CheckMenuItem logTrafficToLoggerMenuItem = new CheckMenuItem("_Log Traffic to Logger Tab");
 	private final MenuItem copySelectedHostsMenuItem = new MenuItem("C_opy Selected Hosts");
 	private final MenuItem reloadIpFilterMenuItem = new MenuItem("Reload _IPFilter");
 	private final MenuItem copyPeerListMenuItem = new MenuItem("_Copy Peer List");	
@@ -81,25 +80,15 @@ public final class PeerTable {
 		createContextMenu();
 	}
 
-	public void add(final Collection<PeerView> peerViews) {
-	    Platform.runLater(() -> peerTable.getItems().addAll(peerViews));
-    }
-
-    public void remove(final Collection<PeerView> peerViews) {
-	    Platform.runLater(() -> peerTable.getItems().removeAll(peerViews));
-    }
-
 	public void updateContent(final Collection<PeerView> peers) {
-        Platform.runLater(() -> {
-            final ObservableList<PeerView> peersInTable = peerTable.getItems();
+        final ObservableList<PeerView> peersInTable = peerTable.getItems();
 
-            peersInTable.removeIf(peerView -> !peers.contains(peerView));
-            peersInTable.addAll(peers.stream().filter(peerView ->
-                    !peersInTable.contains(peerView)).collect(Collectors.toList()));
+        peersInTable.removeIf(peerView -> !peers.contains(peerView));
+        peersInTable.addAll(peers.stream().filter(peerView ->
+                !peersInTable.contains(peerView)).collect(Collectors.toList()));
 
-            peersInTable.forEach(PeerView::update);
-            this.sort();
-        });
+        peersInTable.forEach(PeerView::update);
+        this.sort();
     }
 
 	public void storeColumnStates() {
@@ -148,7 +137,16 @@ public final class PeerTable {
 				new SeparatorMenuItem(), resolveIpsMenuItem, wholePeerListMenuItem);
 
         peerTable.setContextMenu(contextMenu);
-        peerTable.setRowFactory(table -> new PeerTableRow());
+
+        final PeerTableRow peerTableRow = new PeerTableRow();
+        peerTableRow.setContextMenu(contextMenu);
+        peerTableRow.setOnContextMenuRequested(cme -> {
+            final PeerView peerView = peerTableRow.getItem();
+            logTrafficToLoggerMenuItem.setSelected(peerView.isLogTraffic());
+            logTrafficToLoggerMenuItem.setOnAction(event ->
+                    peerView.setLogTraffic(logTrafficToLoggerMenuItem.isSelected()));
+        });
+        peerTable.setRowFactory(table -> peerTableRow);
 	}
 	
 	private LinkedHashMap<String, TableColumn<PeerView, ?>> buildColumnMappings() {
@@ -193,9 +191,9 @@ public final class PeerTable {
         
         final Function<PeerView, String> upSpeedValueConverter = p -> String.valueOf(p.getUpSpeed());
         
-        final Function<PeerView, String> uploadedValueConverter = p -> String.valueOf(p.getUploaded());
+        final Function<PeerView, String> uploadedValueConverter = p -> UnitConverter.formatByteCount(p.getUploaded());
         
-        final Function<PeerView, String> downloadedValueConverter = p -> String.valueOf(p.getDownloaded());
+        final Function<PeerView, String> downloadedValueConverter = p -> UnitConverter.formatByteCount(p.getDownloaded());
         
         final Function<PeerView, String> peerDownloadValueConverter = p -> String.valueOf(p.getPeerDownload());
         
@@ -254,6 +252,9 @@ public final class PeerTable {
                         tooltip.setText(tooltipText);
                     }
                     setTooltip(tooltipText.isEmpty() ? null : tooltip);
+                }
+                else {
+                    setTooltip(null);
                 }
                 setText(empty ? null : flags);
             }

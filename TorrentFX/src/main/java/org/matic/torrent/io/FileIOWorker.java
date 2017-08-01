@@ -138,6 +138,7 @@ public final class FileIOWorker implements Runnable {
         if(cachedPiece.isPresent()) {
             dataPieceConsumer.accept(new FileOperationResult(FileOperationResult.OperationType.READ,
                     cachedPiece.get(), requester, blockIdentifier, null));
+            return;
         }
 
         //Retrieve piece data from the disk (slower)

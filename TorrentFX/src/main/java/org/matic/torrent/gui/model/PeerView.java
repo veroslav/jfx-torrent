@@ -21,8 +21,10 @@ package org.matic.torrent.gui.model;
 
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.LongProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleLongProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import org.matic.torrent.net.pwp.PeerSession;
@@ -48,11 +50,11 @@ public final class PeerView {
     private final StringProperty ip = new SimpleStringProperty();
 
     private final DoubleProperty percentDone = new SimpleDoubleProperty();
-    private final DoubleProperty downSpeed = new SimpleDoubleProperty();
+    private final LongProperty downSpeed = new SimpleLongProperty();
     private final DoubleProperty upSpeed = new SimpleDoubleProperty();
 
-    private final DoubleProperty uploaded = new SimpleDoubleProperty();
-    private final DoubleProperty downloaded = new SimpleDoubleProperty();
+    private final LongProperty uploaded = new SimpleLongProperty();
+    private final LongProperty downloaded = new SimpleLongProperty();
     private final DoubleProperty peerDownload = new SimpleDoubleProperty();
 
     private final IntegerProperty port = new SimpleIntegerProperty();
@@ -115,11 +117,11 @@ public final class PeerView {
         return percentDone;
     }
 
-    public double getDownSpeed() {
+    public long getDownSpeed() {
         return downSpeed.get();
     }
 
-    public DoubleProperty downSpeedProperty() {
+    public LongProperty downSpeedProperty() {
         return downSpeed;
     }
 
@@ -131,23 +133,23 @@ public final class PeerView {
         return upSpeed;
     }
 
-    public double getUploaded() {
+    public long getUploaded() {
         return uploaded.get();
     }
 
-    public DoubleProperty uploadedProperty() {
+    public LongProperty uploadedProperty() {
         return uploaded;
     }
 
-    public void setDownloaded(final double downloaded) {
+    public void setDownloaded(final long downloaded) {
         this.downloaded.set(downloaded);
     }
 
-    public double getDownloaded() {
+    public long getDownloaded() {
         return downloaded.get();
     }
 
-    public DoubleProperty downloadedProperty() {
+    public LongProperty downloadedProperty() {
         return downloaded;
     }
 
@@ -167,7 +169,17 @@ public final class PeerView {
         return clientId.get();
     }
 
+    public boolean isLogTraffic() {
+        return peerSession.isLogTraffic();
+    }
+
+    public void setLogTraffic(final boolean logTraffic) {
+        peerSession.setLogTraffic(logTraffic);
+    }
+
     public void update() {
+        downloaded.setValue(peerSession.getDownloadedBytes());
+        uploaded.setValue(peerSession.getUploadedBytes());
         percentDone.set(updateAndGetPercentDone());
         flags.set(updateAndGetPeerFlags());
         requests.set(updateAndGetRequests());
@@ -184,7 +196,7 @@ public final class PeerView {
     }
 
     private double updateAndGetPercentDone() {
-        return (double)peerSession.getPieces().cardinality()/ pieceCount * 100;
+        return (double)peerSession.getPieceCount()/ pieceCount * 100;
     }
 
     private String updateAndGetPeerFlags() {
@@ -193,19 +205,24 @@ public final class PeerView {
         if(peerSession.areWeInterestedIn()) {
             flagsBuilder.append(peerSession.isChokingUs()? CLIENT_INTERESTED_AND_CHOKED_FLAG
                     : CLIENT_INTERESTED_AND_NOT_CHOKED_FLAG);
+            flagsBuilder.append(" ");
         }
         if(peerSession.isIncoming()) {
             flagsBuilder.append(INCOMING_CONNECTION_FLAG);
+            flagsBuilder.append(" ");
         }
         if(!peerSession.isChokingUs() && !peerSession.areWeInterestedIn()) {
             flagsBuilder.append(CLIENT_NOT_INTERESTED_AND_NOT_CHOKED_FLAG);
+            flagsBuilder.append(" ");
         }
         if(peerSession.isInterestedInUs()) {
             flagsBuilder.append(peerSession.areWeChoking()? PEER_CHOKED_AND_INTERESTED_FLAG
                     : PEER_UNCHOKED_AND_INTERESTED_FLAG);
+            flagsBuilder.append(" ");
         }
         if(peerSession.isSnubbed()) {
             flagsBuilder.append(PEER_SNUBBED);
+            flagsBuilder.append(" ");
         }
         if(!peerSession.isInterestedInUs() && !peerSession.areWeChoking()) {
             flagsBuilder.append(PEER_UNCHOKED_AND_NOT_INTERESTED_FLAG);

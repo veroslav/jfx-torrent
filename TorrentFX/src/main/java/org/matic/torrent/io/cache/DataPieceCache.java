@@ -29,7 +29,7 @@ import java.util.TreeMap;
  *
  * @author Vedran Matic
  */
-public final class DataPieceCache {
+public class DataPieceCache {
 
     public static final long DEFAULT_MAX_SIZE = 128 * 1048576;  //128 MB
 
