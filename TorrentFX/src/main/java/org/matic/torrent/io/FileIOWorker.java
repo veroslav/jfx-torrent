@@ -124,14 +124,14 @@ public final class FileIOWorker implements Runnable {
     }
 
     private void handleReadRequest(final ReadDataPieceRequest readDataPieceRequest) {
-        final int pieceLength = torrentMetaData.getPieceLength();
+        final int defaultPieceLength = torrentMetaData.getPieceLength();
         final DataBlockIdentifier blockIdentifier = readDataPieceRequest.getBlockIdentifier();
         final PeerSession requester = readDataPieceRequest.getRequester();
 
         final int pieceIndex = blockIdentifier.getPieceIndex();
-        final long pieceStart = (long)pieceLength * pieceIndex;
+        final long pieceStart = (long)defaultPieceLength * pieceIndex;
         final long firstFileBeginPosition = diskFileIOs.floorKey(pieceStart);
-        final long lastFileBeginPosition = diskFileIOs.floorKey(pieceStart + pieceLength);
+        final long lastFileBeginPosition = diskFileIOs.floorKey(pieceStart + defaultPieceLength);
 
         //Check whether the piece has been cached (faster)
         final Optional<DataPiece> cachedPiece = pieceCache.get(readDataPieceRequest.getCachedDataPieceIdentifier());
@@ -142,6 +142,10 @@ public final class FileIOWorker implements Runnable {
         }
 
         //Retrieve piece data from the disk (slower)
+        final int totalPieces = torrentMetaData.getTotalPieces();
+        final long totalTorrentLength = torrentMetaData.getTotalLength();
+        final int pieceLength = pieceIndex == totalPieces - 1?
+                (int)(totalTorrentLength - ((long)defaultPieceLength * (totalPieces - 1))): defaultPieceLength;
         final byte[] pieceBytes = new byte[pieceLength];
         int pieceBytesRead = 0;
 
@@ -181,13 +185,17 @@ public final class FileIOWorker implements Runnable {
 
     private void handleWriteRequest(final WriteDataPieceRequest writeDataPieceRequest) {
         final DataPiece dataPiece = writeDataPieceRequest.getDataPiece();
-        final int expectedPieceLength = torrentMetaData.getPieceLength();
+        final int totalPieces = torrentMetaData.getTotalPieces();
+        final int defaultPieceLength = torrentMetaData.getPieceLength();
         final int pieceLength = dataPiece.getLength();
+        final long totalTorrentLength = torrentMetaData.getTotalLength();
+        final int expectedPieceLength = dataPiece.getIndex() == totalPieces - 1?
+                (int)(totalTorrentLength - ((long)defaultPieceLength * (totalPieces - 1))): defaultPieceLength;
 
         if(pieceLength != expectedPieceLength) {
             //TODO: And throw a new InvalidPeerMessageException
             System.err.println("Invalid piece length: expected " + expectedPieceLength
-                    + " but was " + pieceLength);
+                    + " but was " + defaultPieceLength);
             return;
         }
 

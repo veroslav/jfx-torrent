@@ -368,8 +368,6 @@ public final class TransferController implements PwpMessageListener, PwpConnecti
 
             //TODO: Handle the I/O exception (re-download the piece if OperationType == WRITE)
 
-            totalDownloadedBytes.setValue(totalDownloadedBytes.get() - fileOperationResult.getDataPiece().getLength());
-
             if(fileOperationResult.getOperationType() == FileOperationResult.OperationType.READ) {
                 final PeerSession sender = fileOperationResult.getSender();
                 uploadingBlocks.computeIfAbsent(sender, peer -> new HashSet<>()).remove(fileOperationResult.getBlockRequest());
@@ -414,26 +412,17 @@ public final class TransferController implements PwpMessageListener, PwpConnecti
                             second.getAverageUploadRateSinceLastUnchoke()? first : second);
             if(slowestUploadingPeer.isPresent()) {
                 final PeerSession slowestPeer = slowestUploadingPeer.get();
+                chokePeer(slowestPeer);
+                connectionManager.send(new PwpMessageRequest(
+                        PwpMessageFactory.getChokeMessage(), slowestPeer));
 
-                //START TEST
-                /*if(System.currentTimeMillis() - slowestPeer.getUnchokedByUsTime() > ANTI_SNUBBING_INTERVAL
-                    && chokePeer(slowestPeer)) {*/
-
-                    /*System.out.println("[CHOKER]: choked slowest client: " + slowestPeer + " ["
-                            + slowestPeer.getAverageUploadRateSinceLastUnchoke() + " b/s]");*/
-
-                    saveInterruptedDownloadState(slowestPeer);
-
-                    connectionManager.send(new PwpMessageRequest(
-                            PwpMessageFactory.getChokeMessage(), slowestPeer));
+                saveInterruptedDownloadState(slowestPeer);
 
                 if(slowestPeer.isLogTraffic()) {
                     System.out.println("Choking slowest peer : " + slowestPeer);
                 }
 
-                    unchokePeer(peerToUnchoke.get());
-                //}
-                //END TEST
+                unchokePeer(peerToUnchoke.get());
             }
         }
     }
@@ -480,7 +469,8 @@ public final class TransferController implements PwpMessageListener, PwpConnecti
         //3x more likely to unchoke a newly connected peer
         final Optional<PeerSession> standByPeer;
 
-        if(randomUnchokingDistribution < 3 && (standByPeer = standbyPeers.stream().min(
+        if(randomUnchokingDistribution < 3 && (standByPeer = standbyPeers.stream().filter(
+                peer -> !peer.isSeeder(torrentView.getTotalPieces())).min(
                 Comparator.comparingInt(PeerSession::getPieceCount))).isPresent()) {
             final PeerSession foundPeer = standByPeer.get();
             standbyPeers.remove(foundPeer);
@@ -496,7 +486,7 @@ public final class TransferController implements PwpMessageListener, PwpConnecti
         final List<PeerSession> unchokeCandidates = new ArrayList<>();
         Collection<PeerSession> chokedPeerQueue;
 
-        //We prioritize peers in this order: interested, generous and then stand-by peers
+        //We prioritize peers in this order: interested and then stand-by peers
         final int pieceCount = torrentView.getMetaData().getTotalPieces();
 
         if(!interestedAndChokedPeers.isEmpty() &&
@@ -562,7 +552,8 @@ public final class TransferController implements PwpMessageListener, PwpConnecti
                     .collect(Collectors.groupingBy(DataBlockIdentifier::getPieceIndex));
 
             inProgressPieceDownloads.addAll(requestedPieces.keySet());
-            //inProgressPieceDownloads.forEach(pieceIndex -> pieceSelectionStrategy.pieceFailure(pieceIndex));
+            inProgressPieceDownloads.forEach(pieceIndex -> pieceSelectionStrategy.pieceInterrupted(pieceIndex,
+                    "saveInterruptedDownloadState"));
 
             downloadedInterruptedPieces.putAll(requestedPieces);
 
@@ -663,8 +654,8 @@ public final class TransferController implements PwpMessageListener, PwpConnecti
             //Update piece statistics, remove all piece counts for pieces
             // that this peer had and store its download state
             final Set<Integer> interruptedPieceDownloadsFromPeer = saveInterruptedDownloadState(peer);
-            interruptedPieceDownloadsFromPeer.forEach(index -> pieceSelectionStrategy.pieceFailure(index));
-            pieceSelectionStrategy.peerLost(peer.getPieces());
+            //interruptedPieceDownloadsFromPeer.forEach(index -> pieceSelectionStrategy.pieceFailure(index));
+            pieceSelectionStrategy.peerLost(peer.getPieces(), interruptedPieceDownloadsFromPeer);
         }
     }
 
@@ -789,7 +780,7 @@ public final class TransferController implements PwpMessageListener, PwpConnecti
 
         peerSession.setChokingUs(false);
 
-        if(peerSession.areWeChoking()) {
+        if(peerSession.areWeChoking() && !peerSession.isSeeder(torrentView.getTotalPieces())) {
             if(downloaderPeers.size() < MAX_UNCHOKED_PEERS) {
                 unchokePeer(peerSession);
             }
@@ -798,6 +789,7 @@ public final class TransferController implements PwpMessageListener, PwpConnecti
             }
         }
 
+        //TODO: Should we show INTEREST in this peer otherwise?
         if(peerSession.areWeInterestedIn()) {
             //Request one of the rarest pieces from this client
             requestPiece(peerSession);
@@ -805,12 +797,8 @@ public final class TransferController implements PwpMessageListener, PwpConnecti
     }
 
     private void handleChokeMessage(final PeerSession peerSession) {
-        if(peerSession.isChokingUs()) {
+        if(peerSession.isChokingUs() || peerSession.isSeeder(torrentView.getTotalPieces())) {
             return;
-        }
-
-        if(peerSession.isLogTraffic()) {
-            System.out.println("[CHOKE] from " + peerSession);
         }
 
         peerSession.setChokingUs(true);
@@ -939,7 +927,9 @@ public final class TransferController implements PwpMessageListener, PwpConnecti
             }
 
             if(validPiece) {
-
+                sentBlockRequests.forEach((peer, blocksRequestedFromPeer) ->
+                    blocksRequestedFromPeer.removeIf(request -> request.getPieceIndex() == pieceIndex));
+                downloadedInterruptedPieces.remove(pieceIndex);
                 pieceSelectionStrategy.pieceObtained(pieceIndex);
                 torrentView.setHavePiece(pieceIndex);
 
@@ -972,13 +962,6 @@ public final class TransferController implements PwpMessageListener, PwpConnecti
             }
 
             requestBlocks(dataPiece, sender);
-
-            //TODO: Must check whether it is time to request next piece blocks!
-            /*if(allRequestedBlocksForPeer.size() < MAX_BLOCK_REQUESTS_PER_PEER) {
-                //System.out.println("Need to request new piece from " + receiver);
-
-                requestPiece(receiver);
-            }*/
         }
     }
 
@@ -1032,9 +1015,8 @@ public final class TransferController implements PwpMessageListener, PwpConnecti
         //First check whether there are any interrupted piece downloads that this peer has
         while(blocksRequestedFromPeer.size() < MAX_BLOCK_REQUESTS_PER_PEER && !interruptedPieces.isEmpty()) {
             final int pieceIndex = interruptedPieces.remove(0);
-
-            //TODO: Bug! Don't create new data piece for interrupted pieces; they have been created already!
-            final DataPiece requestedDataPiece = new DataPiece(torrentView.getMetaData().getPieceLength(), pieceIndex);
+            downloadedInterruptedPieces.remove(pieceIndex);
+            final DataPiece requestedDataPiece = pieceSelectionStrategy.getInterruptedPiece(pieceIndex);
 
             if(pieceSelectionStrategy.pieceRequested(pieceIndex, requestedDataPiece)) {
                 requestBlocks(requestedDataPiece, peerSession);
@@ -1049,13 +1031,18 @@ public final class TransferController implements PwpMessageListener, PwpConnecti
 
         //Also check whether there are any pieces we could request, in case there are no interrupted ones
         Optional<Integer> nextPieceCandidate = pieceSelectionStrategy.selectNext(peerSession.getPieces());
+        final int totalPieces = torrentView.getTotalPieces();
+        final int pieceLength = torrentView.getMetaData().getPieceLength();
+        final long totalTorrentLength = torrentView.getTotalLength();
 
         while(blocksRequestedFromPeer.size() < MAX_BLOCK_REQUESTS_PER_PEER && nextPieceCandidate.isPresent()) {
             final int pieceIndex = nextPieceCandidate.get();
 
-            //TODO: Bug! Calculate the correct piece length for the final piece (shorter)
-            final DataPiece requestedDataPiece = new DataPiece(
-                    torrentView.getMetaData().getPieceLength(), pieceIndex);
+            //Calculate the correct piece length based on whether it is the last one or not
+            final int selectedPieceLength = pieceIndex == totalPieces - 1?
+                    (int)(totalTorrentLength - ((long)pieceLength * (totalPieces - 1))): pieceLength;
+
+            final DataPiece requestedDataPiece = new DataPiece(selectedPieceLength, pieceIndex);
 
             if(pieceSelectionStrategy.pieceRequested(pieceIndex, requestedDataPiece)) {
                 requestBlocks(requestedDataPiece, peerSession);
@@ -1101,7 +1088,7 @@ public final class TransferController implements PwpMessageListener, PwpConnecti
 
         final List<PwpMessage> blockRequestMessages = new ArrayList<>();
 
-        final List<DataBlockIdentifier> interruptedPieceBlocks = downloadedInterruptedPieces.remove(dataPiece.getIndex());
+        final List<DataBlockIdentifier> interruptedPieceBlocks = downloadedInterruptedPieces.get(dataPiece.getIndex());
         if(interruptedPieceBlocks != null && !interruptedPieceBlocks.isEmpty()) {
             while(allRequestedBlocksForPeer.size() < MAX_BLOCK_REQUESTS_PER_PEER && !interruptedPieceBlocks.isEmpty()) {
                 final DataBlockIdentifier blockRequest = interruptedPieceBlocks.remove(0);
@@ -1131,6 +1118,7 @@ public final class TransferController implements PwpMessageListener, PwpConnecti
         }
     }
 
+    //TODO: If the peer becomes seeder after this HAVE, choke it if it was a downloader peer
     private void handleHaveMessage(final PwpMessage message, final PeerSession peerSession) {
         final int pieceIndex = UnitConverter.getInt(message.getPayload());
 
@@ -1147,7 +1135,8 @@ public final class TransferController implements PwpMessageListener, PwpConnecti
         peerSession.setHasPiece(pieceIndex, true);
 
         //If we don't yet have this piece, let's show some interest
-        if(!receivedPieces.get(pieceIndex) && pieceSelectionStrategy.getRequestedPiece(pieceIndex) == null
+        if(!receivedPieces.get(pieceIndex) &&
+                pieceSelectionStrategy.getRequestedPiece(pieceIndex) == null
                 && !peerSession.areWeInterestedIn()) {
 
             if(peerSession.isLogTraffic()) {

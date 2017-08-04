@@ -88,31 +88,12 @@ public final class DownloadProgressBar extends Canvas {
 
         final BitSet obtainedPieces = torrentView.getObtainedPieces();
 
-		final double pieceWidth = (this.getWidth() - 2) / torrentView.getTotalPieces();
-        int currentSegmentPieceIndex = -1;
-        int segmentStartPieceIndex = obtainedPieces.nextSetBit(0);
-        int lastPieceIndex = segmentStartPieceIndex - 1;
+        final double pieceWidth = (this.getWidth() - 2) / torrentView.getTotalPieces();
         double xOffset = 1;
-        double segmentStartX = xOffset + segmentStartPieceIndex * pieceWidth;
-
-        //TODO: Fix availability bar not being rendered correctly
-
-        for(int i = segmentStartPieceIndex; i != -1; i = obtainedPieces.nextSetBit(i + 1)) {
-            if(i - 1 == lastPieceIndex) {
-                currentSegmentPieceIndex = i;
-                xOffset += pieceWidth;
+        for(int j = 0; j < obtainedPieces.length(); xOffset += pieceWidth, ++j) {
+            if(obtainedPieces.get(j)) {
+                context.fillRect(xOffset, 7, pieceWidth, this.getHeight() - 1);
             }
-            else {
-                //End of a segment, we can draw it
-                context.fillRect(segmentStartX, 7, xOffset - segmentStartX, this.getHeight() - 1);
-
-                //Prepare for next segment
-                xOffset += ((i - currentSegmentPieceIndex) * pieceWidth) + pieceWidth;
-
-                segmentStartX = xOffset;
-                currentSegmentPieceIndex = i;
-            }
-            lastPieceIndex = i;
         }
 	}
 }

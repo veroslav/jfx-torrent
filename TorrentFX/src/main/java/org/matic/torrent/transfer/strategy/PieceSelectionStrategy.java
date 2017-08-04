@@ -25,11 +25,13 @@ import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 
 public abstract class PieceSelectionStrategy {
 
     protected final Map<Integer, DataPiece> downloadingPieces = new HashMap<>();
+    protected final Map<Integer, DataPiece> interruptedPieces = new HashMap<>();
 
     protected final int[] pieceAvailabilities;
     protected BitSet receivedPieces;
@@ -44,7 +46,17 @@ public abstract class PieceSelectionStrategy {
     public abstract void occurrenceDecreased(int pieceIndex);
 
     public DataPiece getRequestedPiece(final int pieceIndex) {
+
+        //System.out.println("getRequestedPiece(" + pieceIndex + "): " + downloadingPieces.get(pieceIndex));
+
         return downloadingPieces.get(pieceIndex);
+    }
+
+    public DataPiece getInterruptedPiece(final int pieceIndex) {
+
+        //System.out.println("getInterruptedPiece(" + pieceIndex + "): " + interruptedPieces.get(pieceIndex));
+
+        return interruptedPieces.remove(pieceIndex);
     }
 
     public boolean anyPiecesNotYetRequested(final BitSet peerPieces) {
@@ -58,24 +70,53 @@ public abstract class PieceSelectionStrategy {
     }
 
     public boolean pieceRequested(final int pieceIndex, final DataPiece piece) {
+
+        //System.out.println("pieceRequested(" + pieceIndex + ", " + piece + ")");
+
         return downloadingPieces.put(pieceIndex, piece) == null;
     }
 
     public boolean pieceFailure(final int pieceIndex) {
+
+        //System.out.println("pieceFailure(" + pieceIndex + ")");
+
         receivedPieces.clear(pieceIndex);
         return downloadingPieces.remove(pieceIndex) != null;
     }
 
-    public void pieceObtained(final int pieceIndex) {
-        receivedPieces.set(pieceIndex);
-        downloadingPieces.remove(pieceIndex);
+    public boolean pieceInterrupted(final int pieceIndex, final String caller) {
+
+        //System.out.println("pieceInterrupted(" + pieceIndex + ")");
+
+        receivedPieces.clear(pieceIndex);
+        final DataPiece interruptedPiece = downloadingPieces.remove(pieceIndex);
+        if(interruptedPiece != null) {
+            interruptedPieces.put(pieceIndex, interruptedPiece);
+            return true;
+        }
+        return false;
     }
 
-    public void peerLost(final BitSet peerPieces) {
+    public void pieceObtained(final int pieceIndex) {
+
+        //System.out.println("pieceObtained(" + pieceIndex + ")");
+
+        receivedPieces.set(pieceIndex);
+        downloadingPieces.remove(pieceIndex);
+        interruptedPieces.remove(pieceIndex);
+    }
+
+    public void peerLost(final BitSet peerPieces, final Set<Integer> inProgressPieces) {
+
+        //System.out.println("peerLost(" + peerPieces + ", " + inProgressPieces + ")");
+
         peerStateChanged(peerPieces, pieceIndex -> occurrenceDecreased(pieceIndex));
     }
 
     public void peerGained(final BitSet peerPieces) {
+
+        //System.out.println("peerGained(" + peerPieces + ")");
+
         peerStateChanged(peerPieces, pieceIndex -> occurrenceIncreased(pieceIndex));
     }
 

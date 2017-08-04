@@ -19,8 +19,8 @@
 */
 package org.matic.torrent.transfer.strategy;
 
-import org.matic.torrent.io.DataPiece;
 import org.matic.torrent.client.ClientProperties;
+import org.matic.torrent.io.DataPiece;
 
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
@@ -218,8 +219,8 @@ public class RarestFirstPieceSelectionStrategy extends PieceSelectionStrategy {
     }
 
     @Override
-    public void peerLost(final BitSet peerPieces) {
-        super.peerLost(peerPieces);
+    public void peerLost(final BitSet peerPieces, final Set<Integer> inProgressPieces) {
+        super.peerLost(peerPieces, inProgressPieces);
     }
 
     protected int getRarestPiecesCount() {

@@ -137,16 +137,23 @@ public final class PeerTable {
 				new SeparatorMenuItem(), resolveIpsMenuItem, wholePeerListMenuItem);
 
         peerTable.setContextMenu(contextMenu);
-
-        final PeerTableRow peerTableRow = new PeerTableRow();
-        peerTableRow.setContextMenu(contextMenu);
-        peerTableRow.setOnContextMenuRequested(cme -> {
-            final PeerView peerView = peerTableRow.getItem();
-            logTrafficToLoggerMenuItem.setSelected(peerView.isLogTraffic());
-            logTrafficToLoggerMenuItem.setOnAction(event ->
-                    peerView.setLogTraffic(logTrafficToLoggerMenuItem.isSelected()));
+        peerTable.setRowFactory(table -> {
+            final PeerTableRow peerTableRow = new PeerTableRow();
+            peerTableRow.setOnContextMenuRequested(cme -> {
+                final PeerView peerView = peerTableRow.getItem();
+                if(peerView != null) {
+                    logTrafficToLoggerMenuItem.setSelected(peerView.isLogTraffic());
+                    logTrafficToLoggerMenuItem.setDisable(false);
+                    logTrafficToLoggerMenuItem.setOnAction(event ->
+                            peerView.setLogTraffic(logTrafficToLoggerMenuItem.isSelected()));
+                }
+                else {
+                    logTrafficToLoggerMenuItem.setSelected(false);
+                    logTrafficToLoggerMenuItem.setDisable(true);
+                }
+            });
+            return peerTableRow;
         });
-        peerTable.setRowFactory(table -> peerTableRow);
 	}
 	
 	private LinkedHashMap<String, TableColumn<PeerView, ?>> buildColumnMappings() {

@@ -28,6 +28,7 @@ import org.matic.torrent.io.DataPiece;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -680,7 +681,7 @@ public final class RarestFirstPieceSelectionStrategyTest {
         Assert.assertEquals(2, unitUnderTest.getRarestPiecesCount());
 
         unitUnderTest.pieceFailure(downloadingOnlyPieceIndex);
-        unitUnderTest.peerLost(peerPieces);
+        unitUnderTest.peerLost(peerPieces, Collections.emptySet());
 
         Assert.assertEquals(1, unitUnderTest.getRarestPiecesCount());
         Assert.assertTrue(unitUnderTest.rarestPieces.containsKey(1));
